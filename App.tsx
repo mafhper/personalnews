@@ -112,6 +112,14 @@ const App: React.FC = () => {
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] =
     useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedFeedUrl, setSelectedFeedUrl] = useState<string | null>(null);
+
+  const handleNavigation = useCallback((category: string, feedUrl?: string) => {
+    setSelectedCategory(category);
+    setSelectedFeedUrl(feedUrl || null);
+    pagination.resetPagination();
+  }, []);
+
   // Extended theme system
   const { currentTheme, themeSettings } = useExtendedTheme();
 
@@ -210,7 +218,12 @@ const App: React.FC = () => {
   const displayArticles = useMemo(() => {
     let filteredArticles: Article[];
 
-    if (isSearchActive && searchResults.length >= 0) {
+    if (selectedFeedUrl) {
+      filteredArticles = articles.filter(
+        (article) =>
+          article.link?.includes(new URL(selectedFeedUrl).hostname)
+      );
+    } else if (isSearchActive && searchResults.length >= 0) {
       // When search is active, show search results
       filteredArticles = searchResults;
     } else {
@@ -458,7 +471,8 @@ const App: React.FC = () => {
         onManageFeedsClick={() => setIsModalOpen(true)}
         onRefreshClick={handleRefresh}
         selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
+        onNavigation={handleNavigation}
+        categorizedFeeds={categorizedFeeds}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         onOpenFavorites={() => setIsFavoritesModalOpen(true)}
 
@@ -473,8 +487,7 @@ const App: React.FC = () => {
         totalPages={pagination.totalPages}
         onPageChange={pagination.setPage}
         onGoHome={() => {
-          setSelectedCategory("all");
-          pagination.resetPagination();
+          handleNavigation("all");
         }}
       />
       <main

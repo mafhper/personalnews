@@ -2,15 +2,17 @@
 import { SearchBar, SearchFilters } from "./SearchBar";
 import { HeaderWeatherWidget } from "./HeaderWeatherWidget";
 import { PaginationControls } from "./PaginationControls";
-import { Article, FeedCategory } from "../types";
+import { Article, FeedCategory, FeedSource } from "../types";
 import Logo from "./Logo";
 import { HeaderIcons } from "./icons";
+import FeedDropdown from "./FeedDropdown";
 
 interface HeaderProps {
   onManageFeedsClick: () => void;
   onRefreshClick: () => void;
   selectedCategory: string;
-  onCategorySelect: (category: string) => void;
+  onNavigation: (category: string, feedUrl?: string) => void;
+  categorizedFeeds: Record<string, FeedSource[]>;
   onOpenSettings: () => void;
   articles: Article[];
   onSearch: (query: string, filters: SearchFilters) => void;
@@ -53,13 +55,14 @@ const Header: React.FC<HeaderProps> = (props) => {
             {/* Categorias - Desktop */}
             <div className="hidden lg:flex items-center space-x-2">
               {props.categories.map((category) => (
-                <button
+                <FeedDropdown
                   key={category.id}
-                  onClick={() => props.onCategorySelect(category.id)}
-                  className={`px-3 py-1.5 text-sm rounded-full transition-colors ${props.selectedCategory === category.id ? "bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))]" : "text-gray-400 hover:text-white"}`}
-                >
-                  {category.name}
-                </button>
+                  category={category}
+                  feeds={props.categorizedFeeds[category.id] || []}
+                  onSelectFeed={(feedUrl) => props.onNavigation(category.id, feedUrl)}
+                  onSelectCategory={() => props.onNavigation(category.id)}
+                  selectedCategory={props.selectedCategory}
+                />
               ))}
             </div>
 
@@ -176,7 +179,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 {props.categories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => { props.onCategorySelect(category.id); setMobileMenuOpen(false); }}
+                    onClick={() => { props.onNavigation(category.id); setMobileMenuOpen(false); }}
                     className={`p-3 text-sm rounded-lg flex items-center space-x-2 transition-colors ${props.selectedCategory === category.id ? "bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))]" : "text-gray-300 hover:text-white hover:bg-gray-800/50"}`}
                   >
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />

@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "dev": "bun vite",
-    "build": "bun tsc && bun vite build",
+    "build": "bunx tsc --noEmit && bun vite build",
     "preview": "bun vite preview",
     "test": "bun vitest run --config config/vitest.config.core.ts",
     "test:all": "bun vitest run --config config/vitest.config.minimal.ts",
