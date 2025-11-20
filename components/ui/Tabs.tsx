@@ -22,6 +22,7 @@ interface TabsProps {
   value?: string;
   onValueChange?: (value: string) => void;
   className?: string;
+  variant?: "default" | "pills" | "glass";
 }
 
 interface TabsListProps {
@@ -51,6 +52,7 @@ export const Tabs: React.FC<TabsProps> = ({
   value,
   onValueChange,
   className = "",
+  variant = "default",
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState(
     defaultValue || ""
@@ -70,6 +72,28 @@ export const Tabs: React.FC<TabsProps> = ({
 
   // If tabs prop is provided, render simple tab interface
   if (tabs) {
+    if (variant === "glass" || variant === "pills") {
+      return (
+        <div className={className}>
+          <div className="flex p-1 space-x-1 bg-black/20 backdrop-blur-sm rounded-xl border border-white/5">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 ${currentActiveTab === tab.id
+                  ? "bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20"
+                  : "text-gray-400 hover:text-white hover:bg-white/5"
+                  }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={className}>
         <div className="flex border-b border-[rgb(var(--color-border))]">
@@ -77,11 +101,10 @@ export const Tabs: React.FC<TabsProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 text-sm font-medium transition-colors flex items-center space-x-2 ${
-                currentActiveTab === tab.id
-                  ? "text-[rgb(var(--color-primary))] border-b-2 border-[rgb(var(--color-primary))]"
-                  : "text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]"
-              }`}
+              className={`px-6 py-3 text-sm font-medium transition-colors flex items-center space-x-2 ${currentActiveTab === tab.id
+                ? "text-[rgb(var(--color-primary))] border-b-2 border-[rgb(var(--color-primary))]"
+                : "text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]"
+                }`}
             >
               {tab.icon}
               <span>{tab.label}</span>

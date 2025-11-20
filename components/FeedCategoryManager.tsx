@@ -6,7 +6,7 @@
  * Suporta importação e exportação de configurações de categorias.
  *
  * @author Matheus Pereira
- * @version 2.0.0
+ * @version 2.1.0
  */
 
 import React, { useState, useRef, useCallback } from "react";
@@ -15,12 +15,6 @@ import { useLogger } from "../services/logger";
 import type { FeedSource, FeedCategory } from "../types";
 import { sanitizeHtmlContent } from "../utils/sanitization";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
-import { Card } from "./ui/Card";
-import { Button } from "./ui/Button";
-import { Input } from "./ui/Input";
-import { Badge } from "./ui/Badge";
-import { IconButton } from "./ui/IconButton";
-import { ActionIcons, StatusIcons } from "./icons";
 
 interface FeedCategoryManagerProps {
   feeds: FeedSource[];
@@ -36,7 +30,6 @@ interface DragState {
 export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   feeds,
   setFeeds,
-  onClose,
 }) => {
   const logger = useLogger("FeedCategoryManager");
   const {
@@ -83,6 +76,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         draggedItem: { type, id, data },
       }));
       e.dataTransfer.effectAllowed = "move";
+      // Add a ghost image or styling if needed
     },
     []
   );
@@ -208,16 +202,14 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       let confirmMessage = `Tem certeza que deseja excluir a categoria "${category?.name}"?`;
 
       if (feedCount > 0) {
-        confirmMessage += `\n\nEsta ação irá mover ${feedCount} feed${
-          feedCount > 1 ? "s" : ""
-        } para "Não categorizados":`;
+        confirmMessage += `\n\nEsta ação irá mover ${feedCount} feed${feedCount > 1 ? "s" : ""
+          } para "Não categorizados":`;
         feedsInCategory.slice(0, 3).forEach((feed) => {
           confirmMessage += `\n• ${feed.customTitle || feed.url}`;
         });
         if (feedCount > 3) {
-          confirmMessage += `\n• ... e mais ${feedCount - 3} feed${
-            feedCount - 3 > 1 ? "s" : ""
-          }`;
+          confirmMessage += `\n• ... e mais ${feedCount - 3} feed${feedCount - 3 > 1 ? "s" : ""
+            }`;
         }
       }
 
@@ -232,11 +224,9 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         // Show success message
         const successMessage =
           feedCount > 0
-            ? `Categoria "${
-                category?.name
-              }" excluída com sucesso. ${feedCount} feed${
-                feedCount > 1 ? "s foram movidos" : " foi movido"
-              } para "Não categorizados".`
+            ? `Categoria "${category?.name
+            }" excluída com sucesso. ${feedCount} feed${feedCount > 1 ? "s foram movidos" : " foi movido"
+            } para "Não categorizados".`
             : `Categoria "${category?.name}" excluída com sucesso.`;
 
         // Use a timeout to show the message after the UI updates
@@ -261,9 +251,8 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `feed-categories-${
-      new Date().toISOString().split("T")[0]
-    }.json`;
+    a.download = `feed-categories-${new Date().toISOString().split("T")[0]
+      }.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -321,64 +310,58 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 
   return (
     <div
-      className="w-full max-w-7xl mx-auto p-4 sm:p-6"
+      className="h-full flex flex-col"
       role="dialog"
       aria-labelledby="category-manager-title"
     >
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 gap-4">
-        <div className="flex items-center space-x-3">
-          <StatusIcons.Theme className="w-8 h-8 text-blue-500" />
-          <div>
-            <h2
-              id="category-manager-title"
-              className="text-2xl font-bold text-white"
-            >
-              Feed Category Manager
-            </h2>
-            <p className="text-[rgb(var(--color-textSecondary))] text-sm mt-1">
-              Organize your feeds into categories with drag and drop
-            </p>
-          </div>
-        </div>
-        <IconButton
-          onClick={onClose}
-          variant="ghost"
-          size="sm"
-          icon={<ActionIcons.Close />}
-          aria-label="Close category manager"
-        />
+      <div className="flex justify-between items-center mb-6">
+        <h2
+          id="category-manager-title"
+          className="text-3xl font-bold text-white tracking-tight"
+        >
+          Manage Categories
+        </h2>
+        {/* Close button handled by parent Modal */}
       </div>
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3 mb-8">
-        <Button
+        <button
           onClick={() => setShowNewCategoryForm(true)}
-          variant="primary"
-          icon={<ActionIcons.Add />}
+          className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-white font-medium px-4 py-2 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20 hover:shadow-[rgb(var(--color-accent))]/40 flex items-center"
         >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
           Create Category
-        </Button>
-        <Button
+        </button>
+        <button
           onClick={handleExportCategories}
-          variant="secondary"
-          icon={<ActionIcons.Export />}
+          className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-lg transition-all border border-white/10 hover:border-white/20 flex items-center"
         >
-          Export Categories
-        </Button>
-        <Button
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Export
+        </button>
+        <button
           onClick={() => fileInputRef.current?.click()}
-          variant="secondary"
-          icon={<ActionIcons.Import />}
+          className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-lg transition-all border border-white/10 hover:border-white/20 flex items-center"
         >
-          Import Categories
-        </Button>
-        <Button
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Import
+        </button>
+        <button
           onClick={handleResetToDefaults}
-          variant="danger"
-          icon={<ActionIcons.Refresh />}
+          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 font-medium px-4 py-2 rounded-lg transition-all border border-red-500/20 flex items-center ml-auto"
         >
-          Reset to Defaults
-        </Button>
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Reset Defaults
+        </button>
       </div>
 
       <input
@@ -391,9 +374,13 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 
       {/* New category form */}
       {showNewCategoryForm && (
-        <Card className="mb-8" elevation="md">
+        <div className="bg-gray-800/40 backdrop-blur-md border border-white/5 rounded-xl p-6 mb-8 animate-in slide-in-from-top-4">
           <div className="flex items-center mb-6">
-            <ActionIcons.Add className="w-5 h-5 mr-2 text-blue-500" />
+            <span className="p-2 rounded-lg bg-[rgb(var(--color-accent))]/10 mr-3">
+              <svg className="w-5 h-5 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </span>
             <h3 className="text-lg font-semibold text-white">
               Create New Category
             </h3>
@@ -402,11 +389,11 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
             <div>
               <label
                 htmlFor="category-name"
-                className="block text-sm font-medium text-[rgb(var(--color-text))] mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Category Name
               </label>
-              <Input
+              <input
                 id="category-name"
                 type="text"
                 value={newCategoryForm.name}
@@ -417,17 +404,18 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                   }))
                 }
                 placeholder="Enter category name"
+                className="w-full bg-black/30 text-white rounded-lg px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all"
                 required
               />
             </div>
             <div>
               <label
                 htmlFor="category-color"
-                className="block text-sm font-medium text-[rgb(var(--color-text))] mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Color
+                Color Tag
               </label>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 <input
                   id="category-color"
                   type="color"
@@ -438,21 +426,21 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                       color: e.target.value,
                     }))
                   }
-                  className="w-12 h-12 bg-gray-700 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer"
+                  className="w-14 h-14 bg-transparent rounded-lg cursor-pointer border-0 p-0"
                 />
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3 bg-black/20 px-4 py-2 rounded-lg border border-white/5">
                   <div
-                    className="w-6 h-6 rounded-full border-2 border-[rgb(var(--color-border))]"
+                    className="w-6 h-6 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.3)]"
                     style={{ backgroundColor: newCategoryForm.color }}
                   />
-                  <span className="text-sm text-[rgb(var(--color-text))]">Preview</span>
+                  <span className="text-sm text-gray-400 font-mono">{newCategoryForm.color}</span>
                 </div>
               </div>
             </div>
             <div>
               <label
                 htmlFor="category-description"
-                className="block text-sm font-medium text-[rgb(var(--color-text))] mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Description (optional)
               </label>
@@ -465,47 +453,50 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     description: e.target.value,
                   }))
                 }
-                className="w-full bg-[rgb(var(--color-surface))] text-white rounded-lg px-4 py-3 border border-[rgb(var(--color-border))] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full bg-black/30 text-white rounded-lg px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all resize-none"
                 rows={3}
                 placeholder="Enter a description for this category..."
               />
             </div>
-            <div className="flex gap-3">
-              <Button
+            <div className="flex gap-3 pt-2">
+              <button
                 type="submit"
-                variant="primary"
-                icon={<ActionIcons.Save />}
+                className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-white font-medium px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20"
               >
                 Create Category
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
                 onClick={() => setShowNewCategoryForm(false)}
-                variant="secondary"
+                className="bg-gray-700 hover:bg-gray-600 text-white font-medium px-6 py-2.5 rounded-lg transition-all"
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </form>
-        </Card>
+        </div>
       )}
 
       {/* Edit category form */}
       {editingCategory && (
-        <Card className="mb-8 ring-2 ring-blue-500" elevation="md">
+        <div className="bg-gray-800/40 backdrop-blur-md border border-[rgb(var(--color-accent))]/30 rounded-xl p-6 mb-8 animate-in slide-in-from-top-4 shadow-[0_0_30px_rgba(var(--color-accent),0.1)]">
           <div className="flex items-center mb-6">
-            <ActionIcons.Edit className="w-5 h-5 mr-2 text-blue-500" />
+            <span className="p-2 rounded-lg bg-[rgb(var(--color-accent))]/10 mr-3">
+              <svg className="w-5 h-5 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </span>
             <h3 className="text-lg font-semibold text-white">Edit Category</h3>
           </div>
           <form onSubmit={handleSaveEditCategory} className="space-y-6">
             <div>
               <label
                 htmlFor="edit-category-name"
-                className="block text-sm font-medium text-[rgb(var(--color-text))] mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Category Name
               </label>
-              <Input
+              <input
                 id="edit-category-name"
                 type="text"
                 value={editingCategoryForm.name}
@@ -515,6 +506,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     name: e.target.value,
                   }))
                 }
+                className="w-full bg-black/30 text-white rounded-lg px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all"
                 required
                 autoFocus
               />
@@ -522,11 +514,11 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
             <div>
               <label
                 htmlFor="edit-category-color"
-                className="block text-sm font-medium text-[rgb(var(--color-text))] mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Color
+                Color Tag
               </label>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 <input
                   id="edit-category-color"
                   type="color"
@@ -537,21 +529,21 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                       color: e.target.value,
                     }))
                   }
-                  className="w-12 h-12 bg-gray-700 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer"
+                  className="w-14 h-14 bg-transparent rounded-lg cursor-pointer border-0 p-0"
                 />
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3 bg-black/20 px-4 py-2 rounded-lg border border-white/5">
                   <div
-                    className="w-6 h-6 rounded-full border-2 border-[rgb(var(--color-border))]"
+                    className="w-6 h-6 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.3)]"
                     style={{ backgroundColor: editingCategoryForm.color }}
                   />
-                  <span className="text-sm text-[rgb(var(--color-text))]">Preview</span>
+                  <span className="text-sm text-gray-400 font-mono">{editingCategoryForm.color}</span>
                 </div>
               </div>
             </div>
             <div>
               <label
                 htmlFor="edit-category-description"
-                className="block text-sm font-medium text-[rgb(var(--color-text))] mb-2"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Description (optional)
               </label>
@@ -564,248 +556,239 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     description: e.target.value,
                   }))
                 }
-                className="w-full bg-[rgb(var(--color-surface))] text-white rounded-lg px-4 py-3 border border-[rgb(var(--color-border))] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full bg-black/30 text-white rounded-lg px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all resize-none"
                 rows={3}
                 placeholder="Enter a description for this category..."
               />
             </div>
-            <div className="flex gap-3">
-              <Button
+            <div className="flex gap-3 pt-2">
+              <button
                 type="submit"
-                variant="primary"
-                icon={<ActionIcons.Save />}
+                className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-white font-medium px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20"
               >
                 Save Changes
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
                 onClick={handleCancelEditCategory}
-                variant="secondary"
+                className="bg-gray-700 hover:bg-gray-600 text-white font-medium px-6 py-2.5 rounded-lg transition-all"
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </form>
-        </Card>
+        </div>
       )}
 
       {/* Categories and feeds */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar pr-2 pb-6 flex-grow">
         {categories.map((category) => (
-          <Card
+          <div
             key={category.id}
-            className={`transition-all ${
-              dragState.dragOverCategory === category.id
-                ? "ring-2 ring-blue-500 bg-blue-500/10"
-                : ""
-            }`}
+            className={`bg-gray-800/40 backdrop-blur-sm border rounded-xl p-4 transition-all duration-300 flex flex-col h-full ${dragState.dragOverCategory === category.id
+                ? "border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 shadow-[0_0_30px_rgba(var(--color-accent),0.1)] scale-[1.02]"
+                : "border-white/5 hover:border-white/10 hover:bg-gray-800/60"
+              }`}
             onDragOver={(e) => handleDragOver(e, category.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, category.id)}
-            elevation="sm"
           >
             {/* Category header */}
             <div
-              className="flex items-center justify-between mb-4 cursor-move"
-              draggable={!category.isDefault}
+              className="flex items-center justify-between mb-4 cursor-move group"
+              draggable={true}
               onDragStart={(e) =>
                 handleDragStart(e, "category", category.id, category)
               }
             >
               <div className="flex items-center space-x-3">
                 <div
-                  className="w-5 h-5 rounded-full shadow-sm"
+                  className="w-4 h-4 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.3)] ring-2 ring-white/10"
                   style={{ backgroundColor: category.color }}
                 />
-                <h3 className="font-semibold text-white text-lg">
+                <h3 className="font-bold text-white text-lg tracking-tight group-hover:text-[rgb(var(--color-accent))] transition-colors">
                   {category.name}
                 </h3>
                 {category.isDefault && (
-                  <Badge variant="secondary" className="text-xs">
-                    default
-                  </Badge>
+                  <span className="text-[10px] uppercase tracking-wider font-semibold bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">
+                    Default
+                  </span>
                 )}
               </div>
 
-              {!category.isDefault && (
-                <div className="flex space-x-1">
-                  <IconButton
-                    onClick={() => handleStartEditCategory(category)}
-                    variant="ghost"
-                    size="sm"
-                    icon={<ActionIcons.Edit />}
-                    aria-label={`Edit ${category.name} category`}
-                  />
-                  <IconButton
-                    onClick={() => handleDeleteCategory(category.id)}
-                    variant="ghost"
-                    size="sm"
-                    icon={<ActionIcons.Delete />}
-                    className="text-red-400 hover:text-red-300"
-                    aria-label={`Delete ${category.name} category`}
-                  />
-                </div>
-              )}
+              <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => handleStartEditCategory(category)}
+                  className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  title={`Edit ${category.name}`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleDeleteCategory(category.id)}
+                  className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                  title={`Delete ${category.name}`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {category.description && (
-              <p className="text-[rgb(var(--color-textSecondary))] text-sm mb-4 leading-relaxed">
+              <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
                 {sanitizeHtmlContent(category.description)}
               </p>
             )}
 
             {/* Feeds in category */}
-            <div className="space-y-3 min-h-[120px]">
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="text-xs">
+            <div className="space-y-2 min-h-[100px] flex-grow bg-black/20 rounded-xl p-3 border border-white/5">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {categorizedFeeds[category.id]?.length || 0} feeds
-                </Badge>
+                </span>
                 {(categorizedFeeds[category.id]?.length || 0) > 0 && (
-                  <span className="text-xs text-gray-500">Drag to reorder</span>
+                  <span className="text-[10px] text-gray-600 flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                    Drag to reorder
+                  </span>
                 )}
               </div>
 
               {(categorizedFeeds[category.id] || []).map((feed) => (
                 <div
                   key={feed.url}
-                  className="bg-[rgb(var(--color-surface))] p-3 rounded-lg cursor-move hover:bg-gray-700 transition-all duration-200 border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-border))]"
+                  className="bg-gray-800/50 p-3 rounded-lg cursor-move hover:bg-gray-700 transition-all duration-200 border border-white/5 hover:border-[rgb(var(--color-accent))]/50 group"
                   draggable
                   onDragStart={(e) =>
                     handleDragStart(e, "feed", feed.url, feed)
                   }
                 >
-                  <div
-                    className="text-sm text-white font-medium truncate mb-1"
-                    title={feed.url}
-                  >
-                    {feed.customTitle || feed.url}
-                  </div>
-                  <div className="text-xs text-[rgb(var(--color-textSecondary))] truncate">
-                    {feed.url}
+                  <div className="flex items-center space-x-2">
+                    <div className="w-1 h-8 rounded-full bg-gray-700 group-hover:bg-[rgb(var(--color-accent))] transition-colors"></div>
+                    <div className="flex-grow min-w-0">
+                      <div
+                        className="text-sm text-white font-medium truncate mb-0.5 group-hover:text-[rgb(var(--color-accent))] transition-colors"
+                        title={feed.customTitle || feed.url}
+                      >
+                        {feed.customTitle || feed.url}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate font-mono opacity-60">
+                        {feed.url}
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
                   </div>
                 </div>
               ))}
 
-              {category.id === "uncategorized" &&
-                (categorizedFeeds.uncategorized || []).map((feed) => (
-                  <div
-                    key={feed.url}
-                    className="bg-[rgb(var(--color-surface))] p-3 rounded-lg cursor-move hover:bg-gray-700 transition-all duration-200 border-l-4 border-yellow-500 border-t border-r border-b border-[rgb(var(--color-border))]"
-                    draggable
-                    onDragStart={(e) =>
-                      handleDragStart(e, "feed", feed.url, feed)
-                    }
-                  >
-                    <div
-                      className="text-sm text-white font-medium truncate mb-1"
-                      title={feed.url}
-                    >
-                      {feed.customTitle || feed.url}
-                    </div>
-                    <div className="text-xs text-[rgb(var(--color-textSecondary))] truncate">
-                      {feed.url}
-                    </div>
-                  </div>
-                ))}
+              {(categorizedFeeds[category.id] || []).length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-gray-600 text-xs py-8 border-2 border-dashed border-white/5 rounded-lg">
+                  <span className="mb-1">Empty Category</span>
+                  <span>Drop feeds here</span>
+                </div>
+              )}
             </div>
-          </Card>
+          </div>
         ))}
 
         {/* Uncategorized feeds */}
         {(categorizedFeeds.uncategorized || []).length > 0 && (
-          <Card
-            className={`border-2 border-dashed border-yellow-500 transition-all ${
-              dragState.dragOverCategory === "uncategorized"
-                ? "ring-2 ring-blue-500 bg-blue-500/10"
-                : ""
-            }`}
+          <div
+            className={`bg-gray-800/40 backdrop-blur-sm border-2 border-dashed rounded-xl p-4 transition-all duration-300 flex flex-col h-full ${dragState.dragOverCategory === "uncategorized"
+                ? "border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 shadow-[0_0_30px_rgba(var(--color-accent),0.1)] scale-[1.02]"
+                : "border-yellow-500/30 hover:border-yellow-500/50 hover:bg-gray-800/60"
+              }`}
             onDragOver={(e) => handleDragOver(e, "uncategorized")}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, "uncategorized")}
-            elevation="sm"
           >
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-5 h-5 rounded-full bg-yellow-500 shadow-sm" />
-              <h3 className="font-semibold text-white text-lg">
+              <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]" />
+              <h3 className="font-bold text-white text-lg tracking-tight">
                 Uncategorized
               </h3>
-              <Badge
-                variant="secondary"
-                className="bg-yellow-500/20 text-yellow-300 border-yellow-500"
-              >
-                needs organization
-              </Badge>
+              <span className="text-[10px] uppercase tracking-wider font-semibold bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full border border-yellow-500/20">
+                Needs Organization
+              </span>
             </div>
 
-            <div className="space-y-3">
-              <Badge variant="secondary" className="text-xs">
-                {categorizedFeeds.uncategorized?.length || 0} feeds
-              </Badge>
+            <div className="space-y-2 min-h-[100px] flex-grow bg-black/20 rounded-xl p-3 border border-white/5">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {categorizedFeeds.uncategorized?.length || 0} feeds
+                </span>
+              </div>
 
               {(categorizedFeeds.uncategorized || []).map((feed) => (
                 <div
                   key={feed.url}
-                  className="bg-[rgb(var(--color-surface))] p-3 rounded-lg cursor-move hover:bg-gray-700 transition-all duration-200 border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-border))]"
+                  className="bg-gray-800/50 p-3 rounded-lg cursor-move hover:bg-gray-700 transition-all duration-200 border border-white/5 hover:border-yellow-500/50 group"
                   draggable
                   onDragStart={(e) =>
                     handleDragStart(e, "feed", feed.url, feed)
                   }
                 >
-                  <div
-                    className="text-sm text-white font-medium truncate mb-1"
-                    title={feed.url}
-                  >
-                    {feed.customTitle || feed.url}
-                  </div>
-                  <div className="text-xs text-[rgb(var(--color-textSecondary))] truncate">
-                    {feed.url}
+                  <div className="flex items-center space-x-2">
+                    <div className="w-1 h-8 rounded-full bg-yellow-500/50 group-hover:bg-yellow-500 transition-colors"></div>
+                    <div className="flex-grow min-w-0">
+                      <div
+                        className="text-sm text-white font-medium truncate mb-0.5 group-hover:text-yellow-400 transition-colors"
+                        title={feed.customTitle || feed.url}
+                      >
+                        {feed.customTitle || feed.url}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate font-mono opacity-60">
+                        {feed.url}
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
                   </div>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
       </div>
 
       {/* Instructions */}
-      <Card className="mt-8" elevation="sm">
-        <div className="flex items-center mb-4">
-          <StatusIcons.Info className="w-5 h-5 mr-2 text-blue-500" />
-          <h4 className="font-semibold text-white">How to Use</h4>
+      <div className="mt-6 bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 flex items-start space-x-4">
+        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400 mt-1">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-[rgb(var(--color-text))]">
-          <div className="space-y-2">
-            <div className="flex items-start space-x-2">
-              <span className="text-blue-400 mt-1">•</span>
+        <div className="flex-grow">
+          <h4 className="font-semibold text-blue-100 mb-2">Quick Tips</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-blue-200/70">
+            <div className="flex items-center space-x-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               <span>Drag feeds between categories to organize them</span>
             </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>
-                Drag categories to reorder them (custom categories only)
-              </span>
+            <div className="flex items-center space-x-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              <span>Drag categories to reorder them (custom categories only)</span>
             </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>Click the edit icon to rename custom categories</span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-start space-x-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>Export/import categories to share configurations</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>Default categories cannot be deleted or reordered</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-blue-400 mt-1">•</span>
+            <div className="flex items-center space-x-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               <span>Use color coding to visually distinguish categories</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              <span>Export your setup to share with others</span>
             </div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

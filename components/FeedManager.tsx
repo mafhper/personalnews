@@ -60,6 +60,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lastArticleCount, setLastArticleCount] = useState(0);
 
+
   // Estados para validação de feeds
   const [feedValidations, setFeedValidations] = useState<
     Map<string, FeedValidationResult>
@@ -444,9 +445,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         // Validation failed - offer to add anyway (flexible approach)
         const shouldAddAnyway = await confirm(
           `Validation failed: ${result.error || "Unknown error"}\n\n` +
-            `Many feeds work despite validation errors. Would you like to add this feed anyway?\n\n` +
-            `URL: ${url}\n\n` +
-            `The feed will be added and you can see if it works in the main interface.`
+          `Many feeds work despite validation errors. Would you like to add this feed anyway?\n\n` +
+          `URL: ${url}\n\n` +
+          `The feed will be added and you can see if it works in the main interface.`
         );
 
         if (shouldAddAnyway) {
@@ -470,8 +471,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
           await alertError(
             `Feed added successfully!\n\n` +
-              `Note: The feed had validation issues but was added anyway. ` +
-              `You can check if it works properly in the main interface.`
+            `Note: The feed had validation issues but was added anyway. ` +
+            `You can check if it works properly in the main interface.`
           );
         } else {
           logger.info("User chose not to add invalid feed", {
@@ -487,9 +488,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       // Even if discovery completely fails, offer to add the original URL
       const shouldAddAnyway = await confirm(
         `Failed to process feed: ${error.message}\n\n` +
-          `Would you like to add this URL anyway? Many feeds work despite processing errors.\n\n` +
-          `URL: ${url}\n\n` +
-          `The feed will be added and you can see if it works in the main interface.`
+        `Would you like to add this URL anyway? Many feeds work despite processing errors.\n\n` +
+        `URL: ${url}\n\n` +
+        `The feed will be added and you can see if it works in the main interface.`
       );
 
       if (shouldAddAnyway) {
@@ -511,8 +512,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
         await alertError(
           `Feed added successfully!\n\n` +
-            `Note: The feed had processing issues but was added anyway. ` +
-            `You can check if it works properly in the main interface.`
+          `Note: The feed had processing issues but was added anyway. ` +
+          `You can check if it works properly in the main interface.`
         );
       } else {
         logger.error("Feed discovery process failed and user rejected", error, {
@@ -562,8 +563,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         });
 
         await alertError(
-          `Feed added successfully!\nTitle: ${
-            discoveredFeed.title || "Unknown"
+          `Feed added successfully!\nTitle: ${discoveredFeed.title || "Unknown"
           }\nURL: ${discoveredFeed.url}`
         );
       } else {
@@ -638,10 +638,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           prev.map((feed) =>
             feed.url === url
               ? {
-                  ...feed,
-                  url: result.url, // Use discovered URL if different
-                  customTitle: result.title || feed.customTitle,
-                }
+                ...feed,
+                url: result.url, // Use discovered URL if different
+                customTitle: result.title || feed.customTitle,
+              }
               : feed
           )
         );
@@ -659,10 +659,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         });
 
         await alertError(
-          `Feed discovery successful!\n${
-            result.finalMethod === "discovery"
-              ? `Discovered feed: ${result.url}`
-              : "Feed validated successfully"
+          `Feed discovery successful!\n${result.finalMethod === "discovery"
+            ? `Discovered feed: ${result.url}`
+            : "Feed validated successfully"
           }`
         );
       } else if (
@@ -681,7 +680,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         setFeedValidations((prev) => new Map(prev.set(url, result)));
         await alertError(
           result.error ||
-            "No RSS feeds found on this website. Please check the URL."
+          "No RSS feeds found on this website. Please check the URL."
         );
       }
     } catch (error: any) {
@@ -747,9 +746,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     if (duplicateResult.isDuplicate) {
       const shouldReplace = await confirm(
         `This feed appears to be a duplicate of an existing feed:\n\n` +
-          `Existing: ${duplicateResult.duplicateOf?.url}\n` +
-          `New: ${url}\n\n` +
-          `Would you like to replace the existing feed with this one?`
+        `Existing: ${duplicateResult.duplicateOf?.url}\n` +
+        `New: ${url}\n\n` +
+        `Would you like to replace the existing feed with this one?`
       );
 
       if (shouldReplace && duplicateResult.duplicateOf) {
@@ -780,8 +779,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
     await alertError(
       `Feed added successfully!\n\n` +
-        `Note: The feed was added without validation. ` +
-        `You can check if it works properly in the main interface.`
+      `Note: The feed was added without validation. ` +
+      `You can check if it works properly in the main interface.`
     );
   };
 
@@ -905,7 +904,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       try {
         const defaultFeeds = resetToDefaultFeeds();
         setFeeds(defaultFeeds);
-        
+
         await alertSuccess(
           `✅ Feeds resetados com sucesso! Agora você tem ${defaultFeeds.length} feeds organizados por categoria.`
         );
@@ -1029,21 +1028,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       let message = `Successfully exported ${duplicateResult.uniqueFeeds.length} unique feeds to ${filename}`;
 
       if (duplicateResult.removedDuplicates.length > 0) {
-        message += `\n\nNote: ${
-          duplicateResult.removedDuplicates.length
-        } duplicate feed${
-          duplicateResult.removedDuplicates.length > 1 ? "s were" : " was"
-        } automatically removed during export.`;
+        message += `\n\nNote: ${duplicateResult.removedDuplicates.length
+          } duplicate feed${duplicateResult.removedDuplicates.length > 1 ? "s were" : " was"
+          } automatically removed during export.`;
 
         // Show details about duplicates if there are only a few
         if (duplicateResult.removedDuplicates.length <= 3) {
           const duplicateDetails = duplicateResult.removedDuplicates
             .map(
               (d) =>
-                `• ${
-                  d.originalFeed.customTitle || d.originalFeed.url
-                } (duplicate of ${
-                  d.duplicateOf.customTitle || d.duplicateOf.url
+                `• ${d.originalFeed.customTitle || d.originalFeed.url
+                } (duplicate of ${d.duplicateOf.customTitle || d.duplicateOf.url
                 })`
             )
             .join("\n");
@@ -1073,127 +1068,141 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   }
 
   return (
-    <div role="dialog" aria-labelledby="feed-manager-title">
+    <div role="dialog" aria-labelledby="feed-manager-title" className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <h2 id="feed-manager-title" className="text-2xl font-bold text-white">
+        <h2 id="feed-manager-title" className="text-3xl font-bold text-white tracking-tight">
           Manage Feeds
         </h2>
-        <button
-          onClick={closeModal}
-          className="text-gray-400 hover:text-white transition-colors"
-          aria-label="Close feed manager"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+        {/* Close button handled by Modal component */}
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 mb-6 bg-gray-800 p-1 rounded-lg">
-        <button
-          onClick={() => setActiveTab("feeds")}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            activeTab === "feeds"
-              ? "bg-[rgb(var(--color-accent))] text-white"
-              : "text-gray-300 hover:text-white hover:bg-gray-700"
-          }`}
-        >
-          Feeds
-        </button>
-        <button
-          onClick={() => setActiveTab("categories")}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            (activeTab as string) === "categories"
-              ? "bg-[rgb(var(--color-accent))] text-white"
-              : "text-gray-300 hover:text-white hover:bg-gray-700"
-          }`}
-        >
-          Categories
-        </button>
+      <div className="mb-8">
+        <div className="flex p-1 space-x-1 bg-black/20 backdrop-blur-sm rounded-xl border border-white/5">
+          <button
+            onClick={() => setActiveTab("feeds")}
+            className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === "feeds"
+              ? "bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20"
+              : "text-gray-400 hover:text-white hover:bg-white/5"
+              }`}
+          >
+            Feeds
+          </button>
+          <button
+            onClick={() => setActiveTab("categories")}
+            className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${(activeTab as string) === "categories"
+              ? "bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20"
+              : "text-gray-400 hover:text-white hover:bg-white/5"
+              }`}
+          >
+            Categories
+          </button>
+        </div>
       </div>
 
-      <section aria-labelledby="add-feed-section">
+      <section aria-labelledby="add-feed-section" className="mb-8">
         <h3 id="add-feed-section" className="sr-only">
           Add New Feed
         </h3>
-        <div className="mb-6">
-          <form onSubmit={handleAddFeed} className="flex gap-2 mb-2">
-            <label htmlFor="feed-url-input" className="sr-only">
-              RSS Feed URL
-            </label>
-            <input
-              id="feed-url-input"
-              type="url"
-              value={newFeedUrl}
-              onChange={(e) => setNewFeedUrl(e.target.value)}
-              placeholder="https://example.com/rss.xml"
-              className="flex-grow bg-gray-700 text-white rounded-md px-4 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]"
-              required
-              aria-label="Enter RSS feed URL"
-              aria-describedby="feed-url-help"
-            />
-            <div id="feed-url-help" className="sr-only">
-              Enter a valid RSS feed URL to add to your feed list
-            </div>
-            <button
-              type="submit"
-              disabled={discoveryInProgress.size > 0}
-              className="bg-[rgb(var(--color-accent))] text-white font-bold px-4 py-2 rounded-md hover:bg-[rgb(var(--color-accent-dark))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Add RSS feed with validation and discovery"
-            >
-              {discoveryInProgress.size > 0 ? "Processing..." : "Add"}
-            </button>
-          </form>
+        <div className="bg-gray-800/40 backdrop-blur-md border border-white/5 rounded-xl p-6 hover:border-white/10 transition-colors duration-300">
+          <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <span className="p-2 rounded-lg bg-[rgb(var(--color-accent))]/10 mr-3">
+              <svg className="w-5 h-5 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </span>
+            Add New Feed
+          </h4>
+          <div className="mb-2">
+            <form onSubmit={handleAddFeed} className="flex flex-col sm:flex-row gap-3">
+              <label htmlFor="feed-url-input" className="sr-only">
+                RSS Feed URL
+              </label>
+              <div className="relative flex-grow">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </div>
+                <input
+                  id="feed-url-input"
+                  type="url"
+                  value={newFeedUrl}
+                  onChange={(e) => setNewFeedUrl(e.target.value)}
+                  placeholder="https://example.com/rss.xml"
+                  className="w-full bg-black/30 text-white rounded-lg pl-10 pr-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all placeholder-gray-500"
+                  required
+                  aria-label="Enter RSS feed URL"
+                  aria-describedby="feed-url-help"
+                />
+              </div>
+              <div id="feed-url-help" className="sr-only">
+                Enter a valid RSS feed URL to add to your feed list
+              </div>
+              <button
+                type="submit"
+                disabled={discoveryInProgress.size > 0}
+                className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg shadow-[rgb(var(--color-accent))]/20 hover:shadow-[rgb(var(--color-accent))]/40 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                aria-label="Add RSS feed with validation and discovery"
+              >
+                {discoveryInProgress.size > 0 ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : "Add Feed"}
+              </button>
+            </form>
 
-          {/* Alternative direct add button */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleAddFeedDirectly}
-              disabled={!newFeedUrl.trim() || discoveryInProgress.size > 0}
-              className="text-sm bg-gray-600 text-white px-3 py-1 rounded-md hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Add RSS feed directly without validation"
-              title="Add feed directly without validation (for feeds that work despite validation errors)"
-            >
-              Add Anyway
-            </button>
+            {/* Alternative direct add button */}
+            <div className="flex justify-end mt-2">
+              <button
+                type="button"
+                onClick={handleAddFeedDirectly}
+                disabled={!newFeedUrl.trim() || discoveryInProgress.size > 0}
+                className="text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center"
+                aria-label="Add RSS feed directly without validation"
+                title="Add feed directly without validation (for feeds that work despite validation errors)"
+              >
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Quick Add (Skip Validation)
+              </button>
+            </div>
           </div>
         </div>
 
+
         {/* Enhanced Discovery Progress Indicator */}
         {discoveryInProgress.size > 0 && (
-          <div className="bg-blue-900/20 border border-blue-500/30 rounded-md p-4 mb-4">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-4 animate-in slide-in-from-top-2">
             <div className="flex items-center space-x-3">
-              <svg
-                className="animate-spin h-5 w-5 text-blue-400"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+              <div className="relative">
+                <div className="absolute inset-0 bg-blue-500 blur opacity-20 rounded-full"></div>
+                <svg
+                  className="animate-spin h-5 w-5 text-blue-400 relative z-10"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </div>
               <div className="flex-grow">
                 <div className="text-sm font-medium text-blue-300">
                   Processing feed discovery...
@@ -1202,12 +1211,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   ([url, progress]) => (
                     <div key={url} className="mt-2">
                       <div className="flex items-center justify-between text-xs text-gray-300 mb-1">
-                        <span className="truncate max-w-xs">{url}</span>
+                        <span className="truncate max-w-xs font-mono text-blue-200/70">{url}</span>
                         <span>{progress.progress}%</span>
                       </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="w-full bg-gray-700/50 rounded-full h-1.5 overflow-hidden">
                         <div
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                          className="bg-blue-500 h-1.5 rounded-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
                           style={{ width: `${progress.progress}%` }}
                         ></div>
                       </div>
@@ -1224,15 +1233,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
         {/* Feed Discovery Results Modal */}
         {showDiscoveryModal && currentDiscoveryResult && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center p-6 border-b border-white/10">
                 <h3 className="text-xl font-bold text-white">
                   Multiple Feeds Discovered
                 </h3>
                 <button
                   onClick={handleCancelDiscovery}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
                   aria-label="Close discovery modal"
                 >
                   <svg
@@ -1251,76 +1260,88 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 </button>
               </div>
 
-              <div className="mb-4">
-                <p className="text-gray-300 text-sm">
-                  Found {currentDiscoveryResult.discoveredFeeds.length} RSS
-                  feeds on{" "}
-                  <span className="font-mono text-blue-300">
-                    {currentDiscoveryResult.originalUrl}
-                  </span>
-                </p>
-                <p className="text-gray-400 text-xs mt-1">
-                  Select the feed you want to add to your collection:
-                </p>
-              </div>
+              <div className="p-6 overflow-y-auto custom-scrollbar">
+                <div className="mb-6">
+                  <p className="text-gray-300 text-sm mb-1">
+                    Found {currentDiscoveryResult.discoveredFeeds.length} RSS
+                    feeds on{" "}
+                    <span className="font-mono text-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 px-2 py-0.5 rounded">
+                      {currentDiscoveryResult.originalUrl}
+                    </span>
+                  </p>
+                  <p className="text-gray-500 text-xs">
+                    Select the feed you want to add to your collection:
+                  </p>
+                </div>
 
-              <div className="space-y-3">
-                {currentDiscoveryResult.discoveredFeeds.map((feed, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-700 rounded-md p-4 border border-gray-600 hover:border-gray-500 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-grow">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span
-                            className={`text-lg ${getFeedTypeColor(feed.type)}`}
-                          >
-                            {getFeedTypeIcon(feed.type)}
-                          </span>
-                          <h4 className="font-medium text-white">
-                            {feed.title || "Untitled Feed"}
-                          </h4>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${getConfidenceColor(
-                              feed.confidence
-                            )}`}
-                          >
-                            {getConfidenceText(feed.confidence)}
-                          </span>
+                <div className="space-y-3">
+                  {currentDiscoveryResult.discoveredFeeds.map((feed, index) => (
+                    <div
+                      key={index}
+                      className="bg-gray-800/50 rounded-xl p-4 border border-white/5 hover:border-[rgb(var(--color-accent))]/50 hover:bg-gray-800/80 transition-all duration-200 group"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <span
+                              className="text-xl"
+                              title={`${feed.type.toUpperCase()} feed`}
+                            >
+                              {getFeedTypeIcon(feed.type)}
+                            </span>
+                            <h4 className="font-medium text-white truncate text-lg group-hover:text-[rgb(var(--color-accent))] transition-colors">
+                              {feed.title || "Untitled Feed"}
+                            </h4>
+                            <span
+                              className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${getFeedTypeColor(
+                                feed.type
+                              )} bg-opacity-20 border border-opacity-20`}
+                            >
+                              {getFeedTypeIcon(feed.type)} {feed.type.toUpperCase()}
+                            </span>
+                          </div>
+
+                          {feed.description && (
+                            <p className="text-sm text-gray-300 mb-2 line-clamp-2 leading-relaxed">
+                              {sanitizeArticleDescription(feed.description)}
+                            </p>
+                          )}
+
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span className="font-mono bg-black/20 px-2 py-1 rounded truncate max-w-[200px]">
+                              {feed.url}
+                            </span>
+                            <span className="flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                              {getDiscoveryMethodText(feed.discoveryMethod)}
+                            </span>
+                            <span className={`flex items-center ${getConfidenceColor(feed.confidence)}`}>
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {getConfidenceText(feed.confidence)}
+                            </span>
+                          </div>
                         </div>
 
-                        {feed.description && (
-                          <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-                            {sanitizeArticleDescription(feed.description)}
-                          </p>
-                        )}
-
-                        <div className="flex items-center space-x-4 text-xs text-gray-400">
-                          <span className="font-mono bg-gray-800 px-2 py-1 rounded">
-                            {feed.url}
-                          </span>
-                          <span>
-                            {getDiscoveryMethodText(feed.discoveryMethod)}
-                          </span>
-                        </div>
+                        <button
+                          onClick={() => handleSelectDiscoveredFeed(feed)}
+                          className="ml-4 bg-[rgb(var(--color-accent))] text-white px-4 py-2 rounded-lg hover:bg-[rgb(var(--color-accent))]/90 transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20 hover:shadow-[rgb(var(--color-accent))]/40 text-sm font-medium whitespace-nowrap"
+                        >
+                          Select
+                        </button>
                       </div>
-
-                      <button
-                        onClick={() => handleSelectDiscoveredFeed(feed)}
-                        className="ml-4 bg-[rgb(var(--color-accent))] text-white px-4 py-2 rounded-md hover:bg-[rgb(var(--color-accent-dark))] transition-colors text-sm font-medium"
-                      >
-                        Select
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="flex justify-end space-x-3 p-6 border-t border-white/10 bg-gray-900/50">
                 <button
                   onClick={handleCancelDiscovery}
-                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors hover:bg-white/5 rounded-lg"
                 >
                   Cancel
                 </button>
@@ -1330,24 +1351,27 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         )}
       </section>
 
-      <section aria-labelledby="current-feeds-section">
+      <section aria-labelledby="current-feeds-section" className="flex-grow flex flex-col min-h-0">
         <div className="flex justify-between items-center mb-4">
           <h3
             id="current-feeds-section"
-            className="text-lg font-semibold text-white"
+            className="text-xl font-semibold text-white flex items-center"
           >
-            Current Feeds ({currentFeeds.length})
+            Current Feeds
+            <span className="ml-3 px-2.5 py-0.5 rounded-full bg-white/10 text-sm text-gray-300 font-normal">
+              {currentFeeds.length}
+            </span>
             {isSelectMode && selectedFeeds.size > 0 && (
-              <span className="text-sm text-[rgb(var(--color-accent))] ml-2">
-                ({selectedFeeds.size} selecionados)
+              <span className="text-sm text-[rgb(var(--color-accent))] ml-2 font-normal animate-in fade-in">
+                ({selectedFeeds.size} selected)
               </span>
             )}
           </h3>
           <div className="flex items-center space-x-2">
             {isValidating && (
-              <div className="flex items-center text-blue-400 text-sm">
+              <div className="flex items-center text-blue-400 text-sm bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20">
                 <svg
-                  className="animate-spin h-4 w-4 mr-1"
+                  className="animate-spin h-4 w-4 mr-2"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
@@ -1365,89 +1389,123 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Validando...
+                Validating...
               </div>
             )}
             <button
               onClick={validateAllFeeds}
               disabled={isValidating}
-              className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded-md transition-colors disabled:opacity-50"
-              title="Revalidar todos os feeds"
+              className="text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-all border border-white/10 hover:border-white/20 disabled:opacity-50 flex items-center"
+              title="Revalidate all feeds"
             >
-              🔄 Verificar
+              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Verify All
             </button>
             {currentFeeds.length > 0 && (
               <button
                 onClick={handleToggleSelectMode}
-                className={`text-xs px-3 py-1 rounded-md transition-colors ${
-                  isSelectMode
-                    ? "bg-[rgb(var(--color-accent))] text-white hover:bg-[rgb(var(--color-accent-dark))]"
-                    : "bg-gray-700 hover:bg-gray-600 text-white"
-                }`}
-                title={isSelectMode ? "Cancelar seleção" : "Selecionar feeds"}
+                className={`text-xs px-3 py-2 rounded-lg transition-all flex items-center border ${isSelectMode
+                  ? "bg-[rgb(var(--color-accent))] border-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20"
+                  : "bg-gray-800 border-white/10 hover:bg-gray-700 text-white hover:border-white/20"
+                  }`}
+                title={isSelectMode ? "Cancel selection" : "Select feeds"}
               >
-                {isSelectMode ? "✕ Cancelar" : "☑️ Selecionar"}
+                {isSelectMode ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Select
+                  </>
+                )}
               </button>
             )}
           </div>
         </div>
 
-        {/* Controles de seleção múltipla */}
+        {/* Bulk Selection Controls */}
         {isSelectMode && currentFeeds.length > 0 && (
-          <div className="bg-gray-800 p-3 rounded-md mb-4 border border-gray-600">
+          <div className="bg-[rgb(var(--color-accent))]/10 p-4 rounded-xl mb-6 border border-[rgb(var(--color-accent))]/20 animate-in slide-in-from-top-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={handleSelectAll}
-                  className="text-sm text-[rgb(var(--color-accent))] hover:text-[rgb(var(--color-accent-dark))] transition-colors"
+                  className="text-sm font-medium text-[rgb(var(--color-accent))] hover:text-[rgb(var(--color-accent))]/80 transition-colors flex items-center"
                 >
-                  {selectedFeeds.size === currentFeeds.length
-                    ? "🔲 Desmarcar Todos"
-                    : "☑️ Selecionar Todos"}
+                  {selectedFeeds.size === currentFeeds.length ? (
+                    <>
+                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Deselect All
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Select All
+                    </>
+                  )}
                 </button>
-                <span className="text-sm text-gray-400">
-                  {selectedFeeds.size} de {currentFeeds.length} selecionados
+                <span className="text-sm text-gray-400 border-l border-[rgb(var(--color-accent))]/20 pl-4">
+                  {selectedFeeds.size} of {currentFeeds.length} selected
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 {selectedFeeds.size > 0 && (
                   <button
                     onClick={handleDeleteSelected}
-                    className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 rounded-md transition-colors"
-                    title={`Excluir ${selectedFeeds.size} feeds selecionados`}
+                    className="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-sm px-4 py-2 rounded-lg transition-colors border border-red-500/20 flex items-center"
+                    title={`Delete ${selectedFeeds.size} selected feeds`}
                   >
-                    🗑️ Excluir Selecionados ({selectedFeeds.size})
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete Selected
                   </button>
                 )}
                 <button
                   onClick={handleDeleteAll}
-                  className="bg-red-800 hover:bg-red-900 text-white text-sm px-3 py-1 rounded-md transition-colors"
-                  title="Excluir todos os feeds"
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-sm px-4 py-2 rounded-lg transition-colors border border-red-500/20 flex items-center"
+                  title="Delete all feeds"
                 >
-                  🗑️ Excluir Todos
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete All
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Busca e Filtros */}
+        {/* Search and Filters */}
         {currentFeeds.length > 0 && (
-          <div className="bg-gray-800 p-4 rounded-md mb-4 border border-gray-600">
-            <div className="flex flex-col space-y-3">
-              {/* Linha superior: Busca */}
-              <div className="flex items-center space-x-3">
+          <div className="bg-gray-800/40 backdrop-blur-md border border-white/5 rounded-xl p-4 mb-6">
+            <div className="flex flex-col space-y-4">
+              {/* Top row: Search */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-grow relative">
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por URL, título, descrição ou categoria..."
-                    className="w-full bg-gray-700 text-white rounded-md px-4 py-2 pl-10 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] text-sm"
-                    aria-label="Buscar feeds"
+                    placeholder="Search by URL, title, description or category..."
+                    className="w-full bg-black/30 text-white rounded-lg px-4 py-2.5 pl-10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] text-sm placeholder-gray-500"
+                    aria-label="Search feeds"
                   />
                   <svg
-                    className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
+                    className="absolute left-3 top-3 h-4 w-4 text-gray-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1461,50 +1519,57 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   </svg>
                 </div>
 
-                {/* Filtro por Status */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-gray-700 text-white rounded-md px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] text-sm"
-                  aria-label="Filtrar por status"
-                >
-                  <option value="all">Todos os Status</option>
-                  <option value="valid">✅ Válidos</option>
-                  <option value="invalid">❌ Com Problemas</option>
-                  <option value="unchecked">❓ Não Verificados</option>
-                </select>
+                {/* Status Filter */}
+                <div className="relative min-w-[180px]">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full bg-black/30 text-white rounded-lg px-4 py-2.5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] text-sm appearance-none cursor-pointer"
+                    aria-label="Filter by status"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="valid">✅ Valid</option>
+                    <option value="invalid">❌ Issues</option>
+                    <option value="unchecked">❓ Unchecked</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
 
-                {/* Botão Limpar Filtros */}
+                {/* Clear Filters Button */}
                 {(searchTerm || statusFilter !== "all") && (
                   <button
                     onClick={handleClearFilters}
-                    className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded-md transition-colors text-sm"
-                    title="Limpar filtros"
+                    className="bg-white/5 hover:bg-white/10 text-white px-4 py-2.5 rounded-lg transition-colors text-sm border border-white/10 whitespace-nowrap"
+                    title="Clear filters"
                   >
-                    🗑️ Limpar
+                    Clear
                   </button>
                 )}
               </div>
 
-              {/* Linha inferior: Informações dos resultados */}
-              <div className="flex items-center justify-between text-sm text-gray-400">
+              {/* Bottom row: Results info */}
+              <div className="flex items-center justify-between text-xs text-gray-400 px-1">
                 <span>
                   {filteredFeeds.length === currentFeeds.length
-                    ? `Mostrando todos os ${currentFeeds.length} feeds`
-                    : `Mostrando ${filteredFeeds.length} de ${currentFeeds.length} feeds`}
+                    ? `Showing all ${currentFeeds.length} feeds`
+                    : `Showing ${filteredFeeds.length} of ${currentFeeds.length} feeds`}
                 </span>
 
                 {(searchTerm || statusFilter !== "all") && (
-                  <span className="text-[rgb(var(--color-accent))]">
-                    {searchTerm && `Busca: "${searchTerm}"`}
+                  <span className="text-[rgb(var(--color-accent))] flex items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-accent))] mr-2"></span>
+                    {searchTerm && `Search: "${searchTerm}"`}
                     {searchTerm && statusFilter !== "all" && " • "}
                     {statusFilter !== "all" &&
-                      `Status: ${
-                        statusFilter === "valid"
-                          ? "Válidos"
-                          : statusFilter === "invalid"
-                          ? "Com Problemas"
-                          : "Não Verificados"
+                      `Status: ${statusFilter === "valid"
+                        ? "Valid"
+                        : statusFilter === "invalid"
+                          ? "Issues"
+                          : "Unchecked"
                       }`}
                   </span>
                 )}
@@ -1514,7 +1579,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         )}
 
         <div
-          className="space-y-3 max-h-80 overflow-y-auto pr-2 mb-6"
+          className="space-y-3 overflow-y-auto pr-2 mb-6 custom-scrollbar flex-grow"
           role="list"
           aria-label={`Current RSS feeds (${filteredFeeds.length} of ${currentFeeds.length} feeds)`}
         >
@@ -1526,48 +1591,48 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               return (
                 <div
                   key={feed.url}
-                  className="bg-gray-800 p-3 rounded-md border-l-4"
+                  className="group bg-gray-800/40 backdrop-blur-sm p-4 rounded-xl border border-white/5 hover:border-white/10 transition-all duration-200 hover:bg-gray-800/60"
                   style={{
+                    borderLeftWidth: '4px',
                     borderLeftColor:
                       validation?.status === "valid"
                         ? "#10b981"
                         : validation?.status === "invalid"
-                        ? "#ef4444"
-                        : validation?.status === "timeout"
-                        ? "#f59e0b"
-                        : validation?.status === "checking"
-                        ? "#3b82f6"
-                        : "#6b7280",
+                          ? "#ef4444"
+                          : validation?.status === "timeout"
+                            ? "#f59e0b"
+                            : validation?.status === "checking"
+                              ? "#3b82f6"
+                              : "#6b7280",
                   }}
                   role="listitem"
                   aria-label={`Feed ${index + 1}: ${feed.url}`}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3 flex-grow min-w-0">
-                      {/* Checkbox para seleção múltipla */}
+                    <div className="flex items-start space-x-4 flex-grow min-w-0">
+                      {/* Checkbox for multiple selection */}
                       {isSelectMode && (
                         <div className="flex items-center pt-1">
                           <input
                             type="checkbox"
                             checked={selectedFeeds.has(feed.url)}
                             onChange={() => handleSelectFeed(feed.url)}
-                            className="w-4 h-4 text-[rgb(var(--color-accent))] bg-gray-700 border-gray-600 rounded focus:ring-[rgb(var(--color-accent))] focus:ring-2"
-                            aria-label={`Selecionar feed ${
-                              validation?.title || feed.url
-                            }`}
+                            className="w-5 h-5 text-[rgb(var(--color-accent))] bg-black/30 border-white/20 rounded focus:ring-[rgb(var(--color-accent))] focus:ring-offset-0 cursor-pointer"
+                            aria-label={`Select feed ${validation?.title || feed.url
+                              }`}
                           />
                         </div>
                       )}
 
                       <div className="flex-grow min-w-0">
-                        {/* Status e título */}
-                        <div className="flex items-center space-x-2 mb-1">
+                        {/* Status and title */}
+                        <div className="flex items-center space-x-3 mb-1.5">
                           <span
                             className="text-lg"
                             title={
                               validation
                                 ? getFeedStatusText(validation.status)
-                                : "Não verificado"
+                                : "Unchecked"
                             }
                           >
                             {validation
@@ -1580,12 +1645,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                                 type="url"
                                 value={editUrl}
                                 onChange={(e) => setEditUrl(e.target.value)}
-                                className="w-full bg-gray-700 text-white text-sm rounded px-2 py-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]"
+                                className="w-full bg-black/30 text-white text-sm rounded-lg px-3 py-1.5 border border-[rgb(var(--color-accent))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]/50"
                                 placeholder="https://example.com/rss.xml"
+                                autoFocus
                               />
                             ) : (
                               <div
-                                className="text-sm text-gray-300 truncate"
+                                className="font-medium text-white truncate group-hover:text-[rgb(var(--color-accent))] transition-colors"
                                 title={feed.url}
                               >
                                 {validation?.title ||
@@ -1596,7 +1662,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                           </div>
                         </div>
 
-                        {/* URL e informações adicionais */}
+                        {/* URL and additional info */}
                         {!isEditing && (
                           <>
                             {(validation?.title || feed.customTitle) && (
@@ -1618,14 +1684,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                             )}
 
                             {feed.categoryId && (
-                              <div className="text-xs text-[rgb(var(--color-accent))] mb-1">
-                                Categoria: {feed.categoryId}
+                              <div className="text-xs text-[rgb(var(--color-accent))] mb-1 inline-flex items-center bg-[rgb(var(--color-accent))]/10 px-2 py-0.5 rounded-full">
+                                Category: {feed.categoryId}
                               </div>
                             )}
 
                             {/* Enhanced Status and Validation Details */}
                             {validation && (
-                              <div className="space-y-2">
+                              <div className="space-y-2 mt-2">
                                 <div className="flex items-center space-x-3 text-xs">
                                   <span
                                     className={`font-medium ${getFeedStatusColor(
@@ -1654,14 +1720,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
                                 {/* Error Message with Suggestions */}
                                 {validation.error && (
-                                  <div className="bg-red-900/20 border border-red-500/30 rounded p-2 text-xs">
+                                  <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3 text-xs">
                                     <div className="text-red-300 font-medium mb-1">
                                       {validation.error}
                                     </div>
                                     {validation.suggestions &&
                                       validation.suggestions.length > 0 && (
-                                        <div className="space-y-1">
-                                          <div className="text-red-200 text-xs">
+                                        <div className="space-y-1 mt-2">
+                                          <div className="text-red-200 text-xs font-medium">
                                             Suggestions:
                                           </div>
                                           <ul className="text-red-200/80 text-xs space-y-0.5 ml-2">
@@ -1687,13 +1753,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                                 {/* Validation Attempt History */}
                                 {validation.validationAttempts &&
                                   validation.validationAttempts.length > 1 && (
-                                    <details className="text-xs">
-                                      <summary className="text-gray-400 cursor-pointer hover:text-gray-300 select-none">
+                                    <details className="text-xs group/details">
+                                      <summary className="text-gray-400 cursor-pointer hover:text-gray-300 select-none flex items-center">
+                                        <svg className="w-3 h-3 mr-1 transition-transform group-open/details:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
                                         View validation history (
                                         {validation.validationAttempts.length}{" "}
                                         attempts)
                                       </summary>
-                                      <div className="mt-2 space-y-1 bg-gray-900/50 rounded p-2 max-h-32 overflow-y-auto">
+                                      <div className="mt-2 space-y-1 bg-black/20 rounded-lg p-2 max-h-32 overflow-y-auto">
                                         {validation.validationAttempts.map(
                                           (attempt, idx) => (
                                             <div
@@ -1741,7 +1810,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                                 {/* Discovery Information */}
                                 {validation.discoveredFeeds &&
                                   validation.discoveredFeeds.length > 0 && (
-                                    <div className="bg-blue-900/20 border border-blue-500/30 rounded p-2 text-xs">
+                                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 text-xs">
                                       <div className="text-blue-300 font-medium mb-1">
                                         Feed discovered from website
                                       </div>
@@ -1777,17 +1846,21 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                         <>
                           <button
                             onClick={() => handleSaveEdit(feed.url)}
-                            className="text-green-400 hover:text-green-300 p-1 rounded"
-                            title="Salvar alterações"
+                            className="text-green-400 hover:text-green-300 p-2 rounded-lg hover:bg-green-400/10 transition-colors"
+                            title="Save changes"
                           >
-                            ✓
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
                           </button>
                           <button
                             onClick={handleCancelEdit}
-                            className="text-gray-400 hover:text-gray-300 p-1 rounded"
-                            title="Cancelar edição"
+                            className="text-gray-400 hover:text-gray-300 p-2 rounded-lg hover:bg-gray-700 transition-colors"
+                            title="Cancel edit"
                           >
-                            ✕
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         </>
                       ) : (
@@ -1796,16 +1869,24 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                           <button
                             onClick={() => handleRetryValidation(feed.url)}
                             disabled={isValidating}
-                            className="text-blue-400 hover:text-blue-300 p-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-blue-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={
                               validation?.status === "valid"
                                 ? "Revalidate this feed"
                                 : validation?.finalError?.retryable
-                                ? "Retry validation with fresh attempt"
-                                : "Revalidate this feed"
+                                  ? "Retry validation with fresh attempt"
+                                  : "Revalidate this feed"
                             }
                           >
-                            {isValidating ? "⏳" : "🔄"}
+                            {isValidating ? (
+                              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                            )}
                           </button>
 
                           {/* Force Discovery Button (for failed feeds) */}
@@ -1813,10 +1894,19 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                             <button
                               onClick={() => handleForceDiscovery(feed.url)}
                               disabled={discoveryInProgress.has(feed.url)}
-                              className="text-purple-400 hover:text-purple-300 p-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="text-purple-400 hover:text-purple-300 p-2 rounded-lg hover:bg-purple-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Try feed discovery on this URL"
                             >
-                              {discoveryInProgress.has(feed.url) ? "⏳" : "🔍"}
+                              {discoveryInProgress.has(feed.url) ? (
+                                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                              )}
                             </button>
                           )}
 
@@ -1824,26 +1914,32 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                           {validation && (
                             <button
                               onClick={() => handleClearCache(feed.url)}
-                              className="text-orange-400 hover:text-orange-300 p-1 rounded text-xs"
+                              className="text-orange-400 hover:text-orange-300 p-2 rounded-lg hover:bg-orange-400/10 transition-colors"
                               title="Clear cache and force fresh validation"
                             >
-                              🗑️
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
                             </button>
                           )}
 
                           <button
                             onClick={() => handleEditFeed(feed.url)}
-                            className="text-yellow-400 hover:text-yellow-300 p-1 rounded text-xs"
-                            title="Editar URL do feed"
+                            className="text-yellow-400 hover:text-yellow-300 p-2 rounded-lg hover:bg-yellow-400/10 transition-colors"
+                            title="Edit feed URL"
                           >
-                            ✏️
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
                           </button>
                           <button
                             onClick={() => handleRemoveFeed(feed.url)}
-                            className="text-red-400 hover:text-red-300 p-1 rounded text-xs"
-                            title="Remover feed"
+                            className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-400/10 transition-colors"
+                            title="Remove feed"
                           >
-                            🗑️
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
                         </>
                       )}
@@ -1853,38 +1949,58 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               );
             })
           ) : currentFeeds.length === 0 ? (
-            <p className="text-gray-400 text-center py-8" role="status">
-              Nenhum feed adicionado ainda.
-            </p>
+            <div className="text-center py-12 bg-gray-800/20 rounded-xl border border-white/5 border-dashed">
+              <div className="bg-gray-800/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">No feeds added yet</h3>
+              <p className="text-gray-400 max-w-sm mx-auto">
+                Add your first RSS feed above or import an OPML file to get started.
+              </p>
+            </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-400 mb-2" role="status">
-                Nenhum feed encontrado com os filtros aplicados.
+            <div className="text-center py-12 bg-gray-800/20 rounded-xl border border-white/5 border-dashed">
+              <div className="bg-gray-800/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">No feeds match your filters</h3>
+              <p className="text-gray-400 mb-4">
+                Try adjusting your search terms or filters.
               </p>
               <button
                 onClick={handleClearFilters}
-                className="text-[rgb(var(--color-accent))] hover:text-[rgb(var(--color-accent-dark))] text-sm transition-colors"
+                className="text-[rgb(var(--color-accent))] hover:text-[rgb(var(--color-accent-dark))] text-sm font-medium transition-colors flex items-center justify-center mx-auto"
               >
-                🗑️ Limpar filtros
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear Filters
               </button>
             </div>
           )}
         </div>
       </section>
 
-      <footer className="flex justify-between items-center mt-6 pt-6 border-t border-gray-700">
+      <footer className="flex justify-between items-center mt-6 pt-6 border-t border-white/10">
         <div className="flex items-center space-x-3">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-gray-600 text-white font-bold px-4 py-2 rounded-md hover:bg-gray-500 transition-colors"
+            className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-lg transition-all border border-white/10 hover:border-white/20 flex items-center"
             aria-label="Import feeds from OPML file"
           >
-            📥 Import OPML
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Import OPML
           </button>
           <button
             onClick={handleExportOPML}
             disabled={currentFeeds.length === 0}
-            className="bg-[rgb(var(--color-accent))] text-white font-bold px-4 py-2 rounded-md hover:bg-[rgb(var(--color-accent-dark))] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-white font-medium px-4 py-2 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20 hover:shadow-[rgb(var(--color-accent))]/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             aria-label="Export feeds to OPML file"
             title={
               currentFeeds.length === 0
@@ -1892,15 +2008,21 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 : `Export ${currentFeeds.length} feeds to OPML`
             }
           >
-            📤 Export OPML
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Export OPML
           </button>
           <button
             onClick={handleResetToDefaults}
-            className="bg-orange-600 text-white font-bold px-4 py-2 rounded-md hover:bg-orange-500 transition-colors"
+            className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 font-medium px-4 py-2 rounded-lg transition-all border border-orange-500/20 flex items-center"
             aria-label="Reset to default feeds"
             title="Reset to curated collection of 16 feeds organized by category"
           >
-            🔄 Reset to Defaults
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reset to Defaults
           </button>
         </div>
         <input
@@ -1911,131 +2033,20 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           className="hidden"
           aria-label="Select OPML file to import"
         />
-        <div className="text-gray-400 text-sm">
+        <div className="text-gray-400 text-sm flex items-center">
+          <svg className="w-4 h-4 mr-2 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           Switch to Categories tab to organize feeds
         </div>
       </footer>
 
-      {/* Feed Discovery Modal */}
-      {showDiscoveryModal && currentDiscoveryResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Select RSS Feed</h3>
-              <button
-                onClick={handleCancelDiscovery}
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Close discovery modal"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <p className="text-gray-300 text-sm">
-                Found {currentDiscoveryResult.discoveredFeeds.length} RSS feeds
-                on{" "}
-                <span className="font-mono text-blue-300">
-                  {currentDiscoveryResult.originalUrl}
-                </span>
-              </p>
-              <p className="text-gray-400 text-xs mt-1">
-                Select the feed you want to add to your collection:
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {currentDiscoveryResult.discoveredFeeds.map((feed) => (
-                <div
-                  key={feed.url}
-                  className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-gray-500 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span
-                          className="text-lg"
-                          title={`${feed.type.toUpperCase()} feed`}
-                        >
-                          {getFeedTypeIcon(feed.type)}
-                        </span>
-                        <h4 className="font-medium text-white truncate">
-                          {feed.title || "Untitled Feed"}
-                        </h4>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getFeedTypeColor(
-                            feed.type
-                          )} bg-opacity-20`}
-                        >
-                          {feed.type.toUpperCase()}
-                        </span>
-                      </div>
-
-                      <div
-                        className="text-sm text-gray-300 mb-2 truncate"
-                        title={feed.url}
-                      >
-                        {feed.url}
-                      </div>
-
-                      {feed.description && (
-                        <div className="text-xs text-gray-400 mb-2 line-clamp-2">
-                          {sanitizeArticleDescription(feed.description)}
-                        </div>
-                      )}
-
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <span>
-                          Method: {getDiscoveryMethodText(feed.discoveryMethod)}
-                        </span>
-                        <span className={getConfidenceColor(feed.confidence)}>
-                          Confidence: {getConfidenceText(feed.confidence)} (
-                          {Math.round(feed.confidence * 100)}%)
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleSelectDiscoveredFeed(feed)}
-                      className="ml-4 bg-[rgb(var(--color-accent))] text-white px-4 py-2 rounded-md hover:bg-[rgb(var(--color-accent-dark))] transition-colors text-sm font-medium"
-                    >
-                      Select
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-600">
-              <button
-                onClick={handleCancelDiscovery}
-                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Duplicate Feed Warning Modal */}
       {duplicateWarning?.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
-            <div className="flex items-center mb-4">
-              <div className="flex-shrink-0">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center mb-6">
+              <div className="flex-shrink-0 bg-yellow-500/10 p-3 rounded-full">
                 <svg
                   className="w-8 h-8 text-yellow-400"
                   fill="none"
@@ -2050,79 +2061,68 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   />
                 </svg>
               </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-medium text-white">
+              <div className="ml-4">
+                <h3 className="text-xl font-bold text-white">
                   Duplicate Feed Detected
                 </h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  This feed appears to be a duplicate of an existing one.
+                </p>
               </div>
             </div>
 
-            <div className="mb-4">
-              <p className="text-gray-300 mb-2">
-                This feed appears to be a duplicate of an existing feed:
-              </p>
-
-              <div className="bg-gray-700 rounded-md p-3 mb-3">
-                <div className="text-sm">
-                  <div className="text-gray-400">Existing feed:</div>
-                  <div className="text-white font-medium">
-                    {duplicateWarning.result.duplicateOf?.customTitle ||
-                      duplicateWarning.result.duplicateOf?.url}
-                  </div>
-                  <div className="text-gray-400 text-xs mt-1">
-                    {duplicateWarning.result.duplicateOf?.url}
-                  </div>
+            <div className="space-y-4 mb-6">
+              <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Existing feed</div>
+                <div className="text-white font-medium text-lg mb-1">
+                  {duplicateWarning.result.duplicateOf?.customTitle ||
+                    duplicateWarning.result.duplicateOf?.url}
+                </div>
+                <div className="text-[rgb(var(--color-accent))] text-sm font-mono truncate">
+                  {duplicateWarning.result.duplicateOf?.url}
                 </div>
               </div>
 
-              <div className="bg-gray-700 rounded-md p-3 mb-3">
-                <div className="text-sm">
-                  <div className="text-gray-400">New feed:</div>
-                  <div className="text-white font-medium">
-                    {duplicateWarning.newUrl}
-                  </div>
+              <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">New feed</div>
+                <div className="text-white font-medium text-lg mb-1">
+                  {duplicateWarning.newUrl}
                 </div>
               </div>
 
-              <div className="text-sm text-gray-400">
-                <div className="flex items-center justify-between">
-                  <span>Detection confidence:</span>
-                  <span
-                    className={`font-medium ${
-                      duplicateWarning.result.confidence > 0.9
-                        ? "text-red-400"
-                        : duplicateWarning.result.confidence > 0.7
-                        ? "text-yellow-400"
-                        : "text-green-400"
+              <div className="flex items-center justify-between text-sm text-gray-400 px-2">
+                <span>Detection confidence:</span>
+                <span
+                  className={`font-bold ${duplicateWarning.result.confidence > 0.9
+                    ? "text-red-400"
+                    : duplicateWarning.result.confidence > 0.7
+                      ? "text-yellow-400"
+                      : "text-green-400"
                     }`}
-                  >
-                    {Math.round(duplicateWarning.result.confidence * 100)}%
-                  </span>
-                </div>
-                <div className="mt-1 text-xs">
-                  Reason: {duplicateWarning.result.reason}
-                </div>
+                >
+                  {Math.round(duplicateWarning.result.confidence * 100)}%
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col space-y-3">
               <button
                 onClick={handleDuplicateWarningReject}
-                className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition-colors"
+                className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl transition-all font-medium"
               >
                 Cancel - Don't Add Feed
               </button>
 
               <button
                 onClick={handleDuplicateWarningReplace}
-                className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-500 transition-colors"
+                className="w-full bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-3 rounded-xl transition-all font-medium shadow-lg shadow-yellow-600/20"
               >
                 Replace Existing Feed
               </button>
 
               <button
                 onClick={handleDuplicateWarningAccept}
-                className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-500 transition-colors"
+                className="w-full bg-transparent border border-white/10 hover:bg-white/5 text-gray-300 hover:text-white px-4 py-3 rounded-xl transition-all font-medium"
               >
                 Add Anyway (Keep Both)
               </button>

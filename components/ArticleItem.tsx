@@ -99,18 +99,15 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             }
             alt={`Thumbnail image for article: ${article.title}`}
             className="w-full h-32 lg:h-40 object-cover rounded-lg"
-            srcSet={`${
-              article.imageUrl ||
+            srcSet={`${article.imageUrl ||
               `https://picsum.photos/seed/${article.link}/200/100`
-            } 200w,
-                                ${
-                                  article.imageUrl ||
-                                  `https://picsum.photos/seed/${article.link}/400/200`
-                                } 400w,
-                                ${
-                                  article.imageUrl ||
-                                  `https://picsum.photos/seed/${article.link}/600/300`
-                                } 600w`}
+              } 200w,
+                                ${article.imageUrl ||
+              `https://picsum.photos/seed/${article.link}/400/200`
+              } 400w,
+                                ${article.imageUrl ||
+              `https://picsum.photos/seed/${article.link}/600/300`
+              } 600w`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
 
@@ -122,11 +119,10 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
           {/* Favorite button overlay */}
           <button
             onClick={handleToggleFavorite}
-            className={`absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm transition-all duration-200 ${
-              isFavorited
+            className={`absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm transition-all duration-200 ${isFavorited
                 ? "text-red-500 hover:text-red-400"
                 : "text-white hover:text-red-500"
-            }`}
+              }`}
             style={{
               minWidth: "32px",
               minHeight: "32px",
@@ -151,9 +147,8 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex flex-col group"
-            aria-label={`Article: ${article.title} from ${
-              article.author || article.sourceTitle
-            }`}
+            aria-label={`Article: ${article.title} from ${article.author || article.sourceTitle
+              }`}
           >
             {/* Source badge */}
             <div className="mb-2">
@@ -179,7 +174,6 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
                     {article.author}
                   </span>
                 )}
-                {/* Comentários removidos conforme solicitado */}
               </div>
               <time
                 className="text-gray-500 text-xs block"
@@ -188,8 +182,8 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
               >
                 {layoutSettings.showPublicationTime
                   ? (timeFormat === "12h"
-                      ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: true })}`
-                      : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}`)
+                    ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                    : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}`)
                   : timeSince(article.pubDate)
                 }
               </time>

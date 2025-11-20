@@ -30,22 +30,32 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${isScrolled ? "bg-[rgb(var(--color-background))]/95 backdrop-blur-md shadow-lg" : "bg-[rgb(var(--color-background))]/80 backdrop-blur-sm"}`}>
+      <header
+        className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 border-b ${isScrolled
+          ? "bg-[rgba(10,10,12,0.8)] backdrop-blur-md border-[rgba(255,255,255,0.08)] shadow-lg"
+          : "bg-transparent border-transparent"
+          }`}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-16 lg:h-20 transition-all duration-300">
             {/* Logo e título */}
-            <div className="flex items-center space-x-4">
-              <Logo size="md" onClick={props.onOpenSettings} isClickable={true} />
+            <div className="flex items-center space-x-4 group">
+              <div className="relative">
+                <div className="absolute -inset-2 bg-gradient-to-r from-[rgb(var(--color-primary))] to-[rgb(var(--color-secondary))] rounded-full opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-500"></div>
+                <div className="relative z-10">
+                  <Logo size="md" isClickable={false} />
+                </div>
+              </div>
               <button
                 onClick={props.onGoHome}
-                className="text-lg font-semibold text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-accent))] transition-colors cursor-pointer"
+                className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:to-white transition-all duration-300"
                 title="Ir para a primeira página"
               >
                 Personal News
@@ -53,7 +63,7 @@ const Header: React.FC<HeaderProps> = (props) => {
             </div>
 
             {/* Categorias - Desktop */}
-            <div className="hidden lg:flex items-center space-x-2">
+            <div className="hidden lg:flex items-center space-x-1 bg-[rgba(255,255,255,0.03)] p-1 rounded-full border border-[rgba(255,255,255,0.05)] backdrop-blur-sm">
               {props.categories.map((category) => (
                 <FeedDropdown
                   key={category.id}
@@ -67,55 +77,78 @@ const Header: React.FC<HeaderProps> = (props) => {
             </div>
 
             {/* Ações do header */}
-            <div className="flex items-center space-x-2">
-              <HeaderWeatherWidget />
-              
-              {/* Botão Feeds - Sempre visível com dimensões consistentes */}
-              <button 
-                onClick={props.onManageFeedsClick} 
-                className="hidden sm:flex items-center space-x-2 bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] rounded-lg px-3 py-2 text-sm font-medium hover:bg-[rgb(var(--color-accent))]/30 transition-all duration-200 border border-[rgb(var(--color-accent))]/30 hover:border-[rgb(var(--color-accent))]/50"
+            <div className="flex items-center space-x-3">
+              <div className="hidden md:block">
+                <HeaderWeatherWidget />
+              </div>
+
+              <div className="h-6 w-px bg-[rgba(255,255,255,0.1)] mx-2 hidden md:block"></div>
+
+              {/* Botão Feeds */}
+              <button
+                onClick={props.onManageFeedsClick}
+                className="hidden sm:flex items-center space-x-2 bg-[rgba(139,92,246,0.1)] text-[rgb(var(--color-primary))] hover:bg-[rgba(139,92,246,0.2)] hover:text-white rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 border border-[rgba(139,92,246,0.2)] hover:border-[rgba(139,92,246,0.4)] hover:shadow-[0_0_15px_rgba(139,92,246,0.3)]"
                 title="Gerenciar Feeds"
               >
                 <HeaderIcons.Feeds showBackground={false} size="sm" />
-                <span className="truncate">Feeds</span>
+                <span>Feeds</span>
               </button>
 
-              {/* Paginação - Sempre visível quando há múltiplas páginas */}
+              {/* Paginação */}
               {props.onPageChange && props.totalPages && props.totalPages > 1 && (
                 <div className="hidden md:block">
-                  <PaginationControls 
-                    currentPage={props.currentPage || 0} 
-                    totalPages={props.totalPages} 
-                    onPageChange={props.onPageChange} 
-                    compact={true} 
+                  <PaginationControls
+                    currentPage={props.currentPage || 0}
+                    totalPages={props.totalPages}
+                    onPageChange={props.onPageChange}
+                    compact={true}
                   />
                 </div>
               )}
 
-              {/* Botão Refresh */}
-              <HeaderIcons.Refresh 
-                onClick={props.onRefreshClick}
-                title="Atualizar feeds"
-                size="md"
-              />
+              {/* Botões de Ação Rápida */}
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={props.onRefreshClick}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  title="Atualizar feeds"
+                >
+                  <HeaderIcons.Refresh showBackground={false} size="md" />
+                </button>
 
-              {/* Botão Favoritos */}
-              <HeaderIcons.Favorites 
-                onClick={props.onOpenFavorites}
-                title="Favoritos"
-                size="md"
-              />
+                <button
+                  onClick={props.onOpenFavorites}
+                  className="p-2 text-gray-400 hover:text-[rgb(var(--color-warning))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  title="Favoritos"
+                >
+                  <HeaderIcons.Favorites showBackground={false} size="md" />
+                </button>
 
+                <button
+                  onClick={props.onOpenSettings}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  title="Configurações"
+                >
+                  <HeaderIcons.Settings showBackground={false} size="md" />
+                </button>
+              </div>
 
-
-              {/* Menu mobile */}
-              <div className="lg:hidden">
-                <HeaderIcons.Menu 
+              {/* Menu mobile toggle */}
+              <div className="lg:hidden ml-2">
+                <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  title="Menu"
-                  size="md"
-                  isActive={mobileMenuOpen}
-                />
+                  className={`p-2 rounded-lg transition-colors ${mobileMenuOpen
+                    ? "bg-[rgba(255,255,255,0.1)] text-white"
+                    : "text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.05)]"
+                    }`}
+                  aria-label="Menu"
+                >
+                  <HeaderIcons.Menu
+                    showBackground={false}
+                    size="md"
+                    isActive={mobileMenuOpen}
+                  />
+                </button>
               </div>
             </div>
           </div>
@@ -123,34 +156,72 @@ const Header: React.FC<HeaderProps> = (props) => {
       </header>
 
       {/* Espaçamento para o header fixo */}
-      <div className="h-16"></div>
+      <div className="h-16 lg:h-20"></div>
 
-      {/* Menu mobile */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed top-16 left-0 right-0 bg-[rgb(var(--color-background))]/95 backdrop-blur-md border-b border-gray-700/20 z-20">
-          <div className="px-4 py-4 space-y-4">
+      {/* Menu mobile (Drawer) */}
+      <div
+        className={`fixed inset-0 z-20 lg:hidden transition-opacity duration-300 ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileMenuOpen(false)}
+        ></div>
+
+        {/* Drawer Content */}
+        <div
+          className={`absolute top-16 left-0 right-0 bg-[rgb(var(--color-surface))] border-b border-[rgba(255,255,255,0.08)] shadow-2xl transform transition-transform duration-300 ${mobileMenuOpen ? "translate-y-0" : "-translate-y-full"
+            }`}
+        >
+          <div className="px-4 py-6 space-y-6 max-h-[80vh] overflow-y-auto">
             {/* Barra de busca */}
-            <SearchBar 
-              articles={props.articles} 
-              onSearch={props.onSearch} 
-              onResultsChange={props.onSearchResultsChange} 
-              placeholder="Buscar artigos..." 
-              className="w-full" 
-            />
-            
-            {/* Ações principais */}
-            <div className="flex items-center justify-center space-x-3 py-2">
-              <button 
+            <div className="relative">
+              <SearchBar
+                articles={props.articles}
+                onSearch={props.onSearch}
+                onResultsChange={props.onSearchResultsChange}
+                placeholder="Buscar artigos..."
+                className="w-full"
+              />
+            </div>
+
+            {/* Categorias Grid */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-1">Navegação</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {props.categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => { props.onNavigation(category.id); setMobileMenuOpen(false); }}
+                    className={`p-3 rounded-xl flex items-center space-x-3 transition-all duration-200 border ${props.selectedCategory === category.id
+                      ? "bg-[rgba(var(--color-primary),0.1)] border-[rgba(var(--color-primary),0.2)] text-[rgb(var(--color-primary))]"
+                      : "bg-[rgba(255,255,255,0.03)] border-transparent text-gray-300 hover:bg-[rgba(255,255,255,0.08)] hover:text-white"
+                      }`}
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]"
+                      style={{ backgroundColor: category.color, color: category.color }}
+                    />
+                    <span className="font-medium">{category.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Ações Rápidas */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[rgba(255,255,255,0.08)]">
+              <button
                 onClick={() => { props.onManageFeedsClick(); setMobileMenuOpen(false); }}
-                className="flex items-center space-x-2 px-4 py-2 bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] rounded-lg text-sm font-medium"
+                className="flex items-center justify-center space-x-2 p-3 bg-[rgba(139,92,246,0.1)] text-[rgb(var(--color-primary))] rounded-xl font-medium border border-[rgba(139,92,246,0.2)]"
               >
                 <HeaderIcons.Feeds showBackground={false} size="sm" />
                 <span>Gerenciar Feeds</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => { props.onRefreshClick(); setMobileMenuOpen(false); }}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-700/50 text-gray-300 rounded-lg text-sm hover:bg-gray-700"
+                className="flex items-center justify-center space-x-2 p-3 bg-[rgba(255,255,255,0.05)] text-gray-300 rounded-xl font-medium hover:bg-[rgba(255,255,255,0.1)] hover:text-white transition-colors"
               >
                 <HeaderIcons.Refresh showBackground={false} size="sm" />
                 <span>Atualizar</span>
@@ -159,38 +230,20 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Paginação Mobile */}
             {props.onPageChange && props.totalPages && props.totalPages > 1 && (
-              <div className="md:hidden">
-                <h3 className="text-sm font-medium text-gray-400 mb-2">Navegação</h3>
+              <div className="pt-2 border-t border-[rgba(255,255,255,0.08)]">
                 <div className="flex justify-center">
-                  <PaginationControls 
-                    currentPage={props.currentPage || 0} 
-                    totalPages={props.totalPages} 
-                    onPageChange={props.onPageChange} 
-                    compact={false} 
+                  <PaginationControls
+                    currentPage={props.currentPage || 0}
+                    totalPages={props.totalPages}
+                    onPageChange={props.onPageChange}
+                    compact={false}
                   />
                 </div>
               </div>
             )}
-
-            {/* Categorias */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-2">Categorias</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {props.categories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => { props.onNavigation(category.id); setMobileMenuOpen(false); }}
-                    className={`p-3 text-sm rounded-lg flex items-center space-x-2 transition-colors ${props.selectedCategory === category.id ? "bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))]" : "text-gray-300 hover:text-white hover:bg-gray-800/50"}`}
-                  >
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
-                    <span>{category.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 };

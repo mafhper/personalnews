@@ -56,7 +56,7 @@ const App: React.FC = () => {
   // Initialize logging system
   React.useEffect(() => {
     initializeLogger();
-    
+
     // Load debug tools in development
     if (process.env.NODE_ENV === 'development') {
       import('./utils/debugMigration').then(({ debugMigration }) => {
@@ -74,22 +74,22 @@ const App: React.FC = () => {
     if (migrationResult.migrated) {
       console.log('Feed migration:', migrationResult.reason);
       setFeeds(migrationResult.feeds);
-      
+
       // Show notification to user about the migration
       if (migrationResult.reason.includes('Upgraded from legacy')) {
         showNotification(
           '🎉 Feeds atualizados! Agora você tem 16 feeds organizados por categoria.',
-          { 
-            type: 'success', 
-            duration: 8000 
+          {
+            type: 'success',
+            duration: 8000
           }
         );
       } else if (migrationResult.reason.includes('categorization')) {
         showNotification(
           '✨ Seus feeds foram organizados automaticamente por categoria.',
-          { 
-            type: 'info', 
-            duration: 6000 
+          {
+            type: 'info',
+            duration: 6000
           }
         );
       }
@@ -436,18 +436,17 @@ const App: React.FC = () => {
 
   return (
     <div
-      className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${
-        isThemeChanging ? "theme-change-animation" : ""
-      } ${backgroundImage ? "" : "bg-[rgb(var(--color-background))]"}`}
+      className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""
+        } ${backgroundImage ? "" : "bg-[rgb(var(--color-background))]"}`}
       style={
         backgroundImage
           ? {
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center top",
-              backgroundRepeat: "no-repeat",
-              backgroundAttachment: "fixed",
-            }
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center top",
+            backgroundRepeat: "no-repeat",
+            backgroundAttachment: "fixed",
+          }
           : {}
       }
     >
@@ -556,8 +555,8 @@ const App: React.FC = () => {
           <ArticleListSkeleton count={layoutSettings.articlesPerPage} />
         )}
 
-        {/* Show content when not loading or when we have articles */}
-        {!isLoading && paginatedArticles.length > 0 && (
+        {/* Show content when we have articles, even if still loading (progressive rendering) */}
+        {paginatedArticles.length > 0 && (
           <>
             <FeedContent articles={paginatedArticles} timeFormat={timeFormat} />
 
@@ -609,8 +608,9 @@ const App: React.FC = () => {
           </>
         )}
 
-        {/* No results messaging */}
+        {/* No results messaging - only show when strictly not loading and no articles */}
         {!isLoading &&
+          loadingState.status !== "loading" &&
           paginatedArticles.length === 0 &&
           displayArticles.length === 0 && (
             <>

@@ -55,10 +55,6 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
 
   const deleteCategory = useCallback((id: string) => {
     setCategories(prev => {
-      const category = prev.find(c => c.id === id);
-      if (category?.isDefault) {
-        throw new Error('Cannot delete default categories');
-      }
       return prev.filter(category => category.id !== id);
     });
   }, [setCategories]);

@@ -31,7 +31,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, initial
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 transition-all duration-300"
             onClick={handleClose}
             role="dialog"
             aria-modal="true"
@@ -40,16 +40,16 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, initial
         >
             <div
                 ref={containerRef}
-                className="bg-[#1e1e1e] rounded-lg shadow-xl p-4 sm:p-6 lg:p-8 m-4 max-w-sm sm:max-w-2xl lg:max-w-6xl xl:max-w-7xl w-full max-h-[90vh] overflow-y-auto transform transition-all relative"
+                className="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 m-4 max-w-sm sm:max-w-2xl lg:max-w-6xl xl:max-w-7xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-in fade-in zoom-in-95 relative"
                 onClick={(e) => e.stopPropagation()}
                 role="document"
             >
                 <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                    className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200"
                     aria-label="Close modal"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>

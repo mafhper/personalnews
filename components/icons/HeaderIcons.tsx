@@ -2,7 +2,7 @@ import React from 'react';
 
 interface HeaderIconProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   showBackground?: boolean;
   isActive?: boolean;
   onClick?: () => void;
@@ -19,23 +19,25 @@ const HeaderIcon: React.FC<HeaderIconProps & { children: React.ReactNode }> = ({
   children
 }) => {
   const sizeClasses = {
+    xs: 'w-4 h-4',
     sm: 'w-6 h-6',
     md: 'w-8 h-8',
     lg: 'w-10 h-10'
   };
 
   const iconSizes = {
+    xs: 'w-2 h-2',
     sm: 'w-3 h-3',
     md: 'w-4 h-4',
     lg: 'w-5 h-5'
   };
 
-  const baseClasses = onClick 
-    ? 'cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg' 
+  const baseClasses = onClick
+    ? 'cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg'
     : '';
 
   const backgroundClasses = onClick
-    ? isActive 
+    ? isActive
       ? 'bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600'
       : 'bg-gradient-to-br from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700'
     : isActive
@@ -44,7 +46,7 @@ const HeaderIcon: React.FC<HeaderIconProps & { children: React.ReactNode }> = ({
 
   if (!showBackground) {
     return (
-      <div 
+      <div
         className={`${iconSizes[size]} text-white ${className} ${baseClasses}`}
         onClick={onClick}
         title={title}
@@ -55,7 +57,7 @@ const HeaderIcon: React.FC<HeaderIconProps & { children: React.ReactNode }> = ({
   }
 
   return (
-    <div 
+    <div
       className={`${sizeClasses[size]} ${backgroundClasses} rounded-lg flex items-center justify-center ${className} ${baseClasses}`}
       onClick={onClick}
       title={title}
@@ -71,8 +73,8 @@ export const HeaderIcons = {
   Refresh: (props: HeaderIconProps) => (
     <HeaderIcon {...props}>
       <svg fill="currentColor" viewBox="0 0 24 24">
-        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-              stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </HeaderIcon>
   ),
@@ -80,8 +82,8 @@ export const HeaderIcons = {
   Favorites: (props: HeaderIconProps) => (
     <HeaderIcon {...props}>
       <svg fill="currentColor" viewBox="0 0 24 24">
-        <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-              stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </HeaderIcon>
   ),
@@ -89,8 +91,8 @@ export const HeaderIcons = {
   Menu: (props: HeaderIconProps) => (
     <HeaderIcon {...props}>
       <svg fill="currentColor" viewBox="0 0 24 24">
-        <path d="M4 6h16M4 12h16M4 18h16" 
-              stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 6h16M4 12h16M4 18h16"
+          stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </HeaderIcon>
   ),
@@ -98,16 +100,25 @@ export const HeaderIcons = {
   Feeds: (props: HeaderIconProps) => (
     <HeaderIcon {...props}>
       <svg fill="currentColor" viewBox="0 0 24 24">
-        <path d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" 
-              stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z"
+          stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </HeaderIcon>
   ),
 
   Settings: (props: HeaderIconProps) => (
     <HeaderIcon {...props}>
-      <svg fill="currentColor" viewBox="0 0 100 100">
-        <polygon points="50,75 25,35 75,35" />
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </HeaderIcon>
+  ),
+
+  ChevronDown: (props: HeaderIconProps) => (
+    <HeaderIcon {...props}>
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
       </svg>
     </HeaderIcon>
   )

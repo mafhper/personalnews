@@ -10,6 +10,7 @@ import { Tabs } from "./ui/Tabs";
 import { Badge } from "./ui/Badge";
 import { IconButton } from "./ui/IconButton";
 import { ActionIcons, StatusIcons } from "./icons";
+import { Modal } from "./Modal";
 
 interface ThemeCustomizerProps {
   isOpen: boolean;
@@ -59,12 +60,12 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
         setEditingTheme((prev) =>
           prev
             ? {
-                ...prev,
-                colors: {
-                  ...prev.colors,
-                  [colorKey]: rgbValue,
-                },
-              }
+              ...prev,
+              colors: {
+                ...prev.colors,
+                [colorKey]: rgbValue,
+              },
+            }
             : null
         );
       } catch (error) {
@@ -113,8 +114,6 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
     }
   }, [importText, setCurrentTheme, alertSuccess, alertError]);
 
-  if (!isOpen) return null;
-
   const tabs = [
     { id: "presets", label: "Theme Presets", icon: <StatusIcons.Theme /> },
     { id: "editor", label: "Color Editor", icon: <ActionIcons.Edit /> },
@@ -126,27 +125,21 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card
-        className="max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-        elevation="lg"
-      >
+    <Modal isOpen={isOpen} onClose={onClose} ariaLabel="Theme Customizer">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[rgb(var(--color-border))]">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center space-x-3">
-            <StatusIcons.Theme />
-            <h2 className="text-xl font-bold text-white">Theme Customizer</h2>
-            <Badge variant="secondary">
-              {defaultPresets.length + customThemes.length} themes
-            </Badge>
+            <div className="p-2 rounded-lg bg-[rgb(var(--color-accent))]/10">
+              <StatusIcons.Theme className="w-6 h-6 text-[rgb(var(--color-accent))]" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Theme Customizer</h2>
+              <p className="text-sm text-gray-400">
+                {defaultPresets.length + customThemes.length} themes available
+              </p>
+            </div>
           </div>
-          <IconButton
-            onClick={onClose}
-            variant="ghost"
-            size="sm"
-            icon={<ActionIcons.Close />}
-            aria-label="Close theme customizer"
-          />
         </div>
 
         {/* Tabs */}
@@ -154,129 +147,75 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
           tabs={tabs}
           activeTab={activeTab}
           onTabChange={(tabId) => setActiveTab(tabId as any)}
-          className="border-b border-[rgb(var(--color-border))]"
+          variant="glass"
+          className="mb-6"
         />
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="min-h-[400px]">
           {activeTab === "presets" && (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in fade-in duration-300">
               {/* Dark Themes Section */}
               <div>
-                <div className="flex items-center mb-6">
-                  <div className="w-8 h-8 rounded-full bg-gray-900 border-2 border-gray-600 mr-3 flex items-center justify-center">
-                    🌙
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">
+                <div className="flex items-center mb-4">
+                  <span className="text-xl mr-2">🌙</span>
+                  <h3 className="text-lg font-semibold text-white">
                     Dark Themes
                   </h3>
-                  <Badge variant="secondary" className="ml-3">
-                    {defaultPresets.filter((p) => p.category === "dark").length}{" "}
-                    themes
-                  </Badge>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {defaultPresets
                     .filter((preset) => preset.category === "dark")
                     .map((preset) => (
                       <Card
                         key={preset.id}
-                        className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
-                          currentTheme.id === preset.id
-                            ? "ring-2 ring-blue-500 bg-blue-500/10"
-                            : "hover:border-[rgb(var(--color-border))]"
-                        }`}
+                        variant={currentTheme.id === preset.id ? "glass" : "outline"}
+                        className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${currentTheme.id === preset.id
+                            ? "ring-1 ring-[rgb(var(--color-accent))]"
+                            : "hover:border-white/20"
+                          }`}
                         onClick={() => handlePresetSelect(preset)}
-                        elevation={currentTheme.id === preset.id ? "lg" : "sm"}
                       >
                         {/* Color Preview */}
-                        <div className="mb-4">
-                          <div className="flex space-x-2 mb-3">
-                            {[
-                              {
-                                color: preset.theme.colors.primary,
-                                label: "Primary",
-                              },
-                              {
-                                color: preset.theme.colors.accent,
-                                label: "Accent",
-                              },
-                              {
-                                color: preset.theme.colors.background,
-                                label: "Background",
-                              },
-                              {
-                                color: preset.theme.colors.surface,
-                                label: "Surface",
-                              },
-                            ].map((colorInfo, index) => (
-                              <div
-                                key={index}
-                                className="w-10 h-10 rounded-lg border border-[rgb(var(--color-border))] shadow-sm"
-                                style={{
-                                  backgroundColor: `rgb(${colorInfo.color})`,
-                                }}
-                                title={colorInfo.label}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex space-x-2">
-                            {[
-                              {
-                                color: preset.theme.colors.text,
-                                label: "Text",
-                              },
-                              {
-                                color: preset.theme.colors.textSecondary,
-                                label: "Secondary Text",
-                              },
-                            ].map((colorInfo, index) => (
-                              <div
-                                key={index}
-                                className="w-6 h-6 rounded border border-[rgb(var(--color-border))]"
-                                style={{
-                                  backgroundColor: `rgb(${colorInfo.color})`,
-                                }}
-                                title={colorInfo.label}
-                              />
-                            ))}
-                          </div>
+                        <div className="flex space-x-2 mb-3">
+                          {[
+                            preset.theme.colors.primary,
+                            preset.theme.colors.accent,
+                            preset.theme.colors.background,
+                          ].map((color, index) => (
+                            <div
+                              key={index}
+                              className="w-8 h-8 rounded-full border border-white/10 shadow-sm"
+                              style={{ backgroundColor: `rgb(${color})` }}
+                            />
+                          ))}
                         </div>
 
-                        {/* Theme Info */}
-                        <div className="mb-4">
-                          <h4 className="font-semibold text-white text-lg mb-2">
-                            {preset.name}
-                          </h4>
-                          <p className="text-sm text-[rgb(var(--color-text))] leading-relaxed">
-                            {preset.description}
-                          </p>
-                        </div>
+                        <h4 className="font-semibold text-white mb-1">
+                          {preset.name}
+                        </h4>
+                        <p className="text-xs text-gray-400 line-clamp-2 mb-3">
+                          {preset.description}
+                        </p>
 
-                        {/* Status and Actions */}
-                        <div className="flex items-center justify-between">
-                          <Badge variant="secondary">
-                            🌙 {preset.category}
-                          </Badge>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              icon={<ActionIcons.Edit />}
-                              onClick={(e) => {
-                                e?.stopPropagation();
-                                handleEditTheme(preset.theme);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            {currentTheme.id === preset.id && (
-                              <Badge variant="primary">
-                                <StatusIcons.Valid className="w-3 h-3 mr-1" />
-                                Active
-                              </Badge>
-                            )}
-                          </div>
+                        <div className="flex items-center justify-between mt-auto">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={<ActionIcons.Edit />}
+                            onClick={(e) => {
+                              e?.stopPropagation();
+                              handleEditTheme(preset.theme);
+                            }}
+                            className="text-xs"
+                          >
+                            Edit
+                          </Button>
+                          {currentTheme.id === preset.id && (
+                            <Badge variant="primary" className="text-xs">
+                              Active
+                            </Badge>
+                          )}
                         </div>
                       </Card>
                     ))}
@@ -285,123 +224,64 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
 
               {/* Light Themes Section */}
               <div>
-                <div className="flex items-center mb-6">
-                  <div className="w-8 h-8 rounded-full bg-white border-2 border-gray-300 mr-3 flex items-center justify-center">
-                    ☀️
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">
+                <div className="flex items-center mb-4">
+                  <span className="text-xl mr-2">☀️</span>
+                  <h3 className="text-lg font-semibold text-white">
                     Light Themes
                   </h3>
-                  <Badge variant="secondary" className="ml-3">
-                    {
-                      defaultPresets.filter((p) => p.category === "light")
-                        .length
-                    }{" "}
-                    themes
-                  </Badge>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {defaultPresets
                     .filter((preset) => preset.category === "light")
                     .map((preset) => (
                       <Card
                         key={preset.id}
-                        className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
-                          currentTheme.id === preset.id
-                            ? "ring-2 ring-blue-500 bg-blue-500/10"
-                            : "hover:border-[rgb(var(--color-border))]"
-                        }`}
+                        variant={currentTheme.id === preset.id ? "glass" : "outline"}
+                        className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${currentTheme.id === preset.id
+                            ? "ring-1 ring-[rgb(var(--color-accent))]"
+                            : "hover:border-white/20"
+                          }`}
                         onClick={() => handlePresetSelect(preset)}
-                        elevation={currentTheme.id === preset.id ? "lg" : "sm"}
                       >
-                        {/* Color Preview */}
-                        <div className="mb-4">
-                          <div className="flex space-x-2 mb-3">
-                            {[
-                              {
-                                color: preset.theme.colors.primary,
-                                label: "Primary",
-                              },
-                              {
-                                color: preset.theme.colors.accent,
-                                label: "Accent",
-                              },
-                              {
-                                color: preset.theme.colors.background,
-                                label: "Background",
-                              },
-                              {
-                                color: preset.theme.colors.surface,
-                                label: "Surface",
-                              },
-                            ].map((colorInfo, index) => (
-                              <div
-                                key={index}
-                                className="w-10 h-10 rounded-lg border border-[rgb(var(--color-border))] shadow-sm"
-                                style={{
-                                  backgroundColor: `rgb(${colorInfo.color})`,
-                                }}
-                                title={colorInfo.label}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex space-x-2">
-                            {[
-                              {
-                                color: preset.theme.colors.text,
-                                label: "Text",
-                              },
-                              {
-                                color: preset.theme.colors.textSecondary,
-                                label: "Secondary Text",
-                              },
-                            ].map((colorInfo, index) => (
-                              <div
-                                key={index}
-                                className="w-6 h-6 rounded border border-[rgb(var(--color-border))]"
-                                style={{
-                                  backgroundColor: `rgb(${colorInfo.color})`,
-                                }}
-                                title={colorInfo.label}
-                              />
-                            ))}
-                          </div>
+                        <div className="flex space-x-2 mb-3">
+                          {[
+                            preset.theme.colors.primary,
+                            preset.theme.colors.accent,
+                            preset.theme.colors.background,
+                          ].map((color, index) => (
+                            <div
+                              key={index}
+                              className="w-8 h-8 rounded-full border border-white/10 shadow-sm"
+                              style={{ backgroundColor: `rgb(${color})` }}
+                            />
+                          ))}
                         </div>
 
-                        {/* Theme Info */}
-                        <div className="mb-4">
-                          <h4 className="font-semibold text-white text-lg mb-2">
-                            {preset.name}
-                          </h4>
-                          <p className="text-sm text-[rgb(var(--color-text))] leading-relaxed">
-                            {preset.description}
-                          </p>
-                        </div>
+                        <h4 className="font-semibold text-white mb-1">
+                          {preset.name}
+                        </h4>
+                        <p className="text-xs text-gray-400 line-clamp-2 mb-3">
+                          {preset.description}
+                        </p>
 
-                        {/* Status and Actions */}
-                        <div className="flex items-center justify-between">
-                          <Badge variant="secondary">
-                            ☀️ {preset.category}
-                          </Badge>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              icon={<ActionIcons.Edit />}
-                              onClick={(e) => {
-                                e?.stopPropagation();
-                                handleEditTheme(preset.theme);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            {currentTheme.id === preset.id && (
-                              <Badge variant="primary">
-                                <StatusIcons.Valid className="w-3 h-3 mr-1" />
-                                Active
-                              </Badge>
-                            )}
-                          </div>
+                        <div className="flex items-center justify-between mt-auto">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={<ActionIcons.Edit />}
+                            onClick={(e) => {
+                              e?.stopPropagation();
+                              handleEditTheme(preset.theme);
+                            }}
+                            className="text-xs"
+                          >
+                            Edit
+                          </Button>
+                          {currentTheme.id === preset.id && (
+                            <Badge variant="primary" className="text-xs">
+                              Active
+                            </Badge>
+                          )}
                         </div>
                       </Card>
                     ))}
@@ -411,102 +291,63 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
               {/* Custom Themes Section */}
               {customThemes.length > 0 && (
                 <div>
-                  <div className="flex items-center mb-6">
-                    <div className="w-8 h-8 rounded-full bg-purple-600 border-2 border-purple-400 mr-3 flex items-center justify-center">
-                      🎨
-                    </div>
-                    <h3 className="text-xl font-semibold text-white">
+                  <div className="flex items-center mb-4">
+                    <span className="text-xl mr-2">🎨</span>
+                    <h3 className="text-lg font-semibold text-white">
                       Custom Themes
                     </h3>
-                    <Badge variant="secondary" className="ml-3">
-                      {customThemes.length} themes
-                    </Badge>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {customThemes.map((theme) => (
                       <Card
                         key={theme.id}
-                        className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
-                          currentTheme.id === theme.id
-                            ? "ring-2 ring-blue-500 bg-blue-500/10"
-                            : "hover:border-[rgb(var(--color-border))]"
-                        }`}
+                        variant={currentTheme.id === theme.id ? "glass" : "outline"}
+                        className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${currentTheme.id === theme.id
+                            ? "ring-1 ring-[rgb(var(--color-accent))]"
+                            : "hover:border-white/20"
+                          }`}
                         onClick={() => setCurrentTheme(theme)}
-                        elevation={currentTheme.id === theme.id ? "lg" : "sm"}
                       >
-                        {/* Color Preview */}
-                        <div className="mb-4">
-                          <div className="flex space-x-2 mb-3">
-                            {[
-                              { color: theme.colors.primary, label: "Primary" },
-                              { color: theme.colors.accent, label: "Accent" },
-                              {
-                                color: theme.colors.background,
-                                label: "Background",
-                              },
-                              { color: theme.colors.surface, label: "Surface" },
-                            ].map((colorInfo, index) => (
-                              <div
-                                key={index}
-                                className="w-10 h-10 rounded-lg border border-[rgb(var(--color-border))] shadow-sm"
-                                style={{
-                                  backgroundColor: `rgb(${colorInfo.color})`,
-                                }}
-                                title={colorInfo.label}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex space-x-2">
-                            {[
-                              { color: theme.colors.text, label: "Text" },
-                              {
-                                color: theme.colors.textSecondary,
-                                label: "Secondary Text",
-                              },
-                            ].map((colorInfo, index) => (
-                              <div
-                                key={index}
-                                className="w-6 h-6 rounded border border-[rgb(var(--color-border))]"
-                                style={{
-                                  backgroundColor: `rgb(${colorInfo.color})`,
-                                }}
-                                title={colorInfo.label}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Theme Info */}
-                        <div className="mb-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-white text-lg">
-                              {theme.name}
-                            </h4>
-                            <IconButton
-                              onClick={(e) => {
-                                e?.stopPropagation();
-                                removeCustomTheme(theme.id);
-                              }}
-                              variant="ghost"
-                              size="sm"
-                              icon={<ActionIcons.Delete />}
-                              className="text-red-400 hover:text-red-300"
-                              title="Delete theme"
+                        <div className="flex space-x-2 mb-3">
+                          {[
+                            theme.colors.primary,
+                            theme.colors.accent,
+                            theme.colors.background,
+                          ].map((color, index) => (
+                            <div
+                              key={index}
+                              className="w-8 h-8 rounded-full border border-white/10 shadow-sm"
+                              style={{ backgroundColor: `rgb(${color})` }}
                             />
-                          </div>
+                          ))}
                         </div>
 
-                        {/* Status */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-semibold text-white">
+                            {theme.name}
+                          </h4>
+                          <IconButton
+                            onClick={(e) => {
+                              e?.stopPropagation();
+                              removeCustomTheme(theme.id);
+                            }}
+                            variant="ghost"
+                            size="sm"
+                            icon={<ActionIcons.Delete />}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            title="Delete theme"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
                           <Badge
                             variant="secondary"
-                            className="bg-purple-600/20 text-purple-300 border-purple-500"
+                            className="bg-purple-500/10 text-purple-300 border-purple-500/20"
                           >
-                            🎨 custom
+                            Custom
                           </Badge>
                           {currentTheme.id === theme.id && (
-                            <Badge variant="primary">
-                              <StatusIcons.Valid className="w-3 h-3 mr-1" />
+                            <Badge variant="primary" className="text-xs">
                               Active
                             </Badge>
                           )}
@@ -520,28 +361,31 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
           )}
 
           {activeTab === "editor" && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in duration-300">
               {!editingTheme ? (
                 <div className="text-center py-12">
                   <div className="mb-8">
-                    <ActionIcons.Edit className="w-16 h-16 mx-auto text-[rgb(var(--color-textSecondary))] mb-4" />
+                    <div className="w-20 h-20 mx-auto bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
+                      <ActionIcons.Edit className="w-10 h-10 text-gray-400" />
+                    </div>
                     <h3 className="text-2xl font-semibold text-white mb-3">
                       Select a Theme to Edit
                     </h3>
-                    <p className="text-[rgb(var(--color-textSecondary))] max-w-md mx-auto">
+                    <p className="text-gray-400 max-w-md mx-auto">
                       Choose a theme below to start customizing colors and
                       create your own personalized version
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                    {defaultPresets.map((preset) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                    {defaultPresets.slice(0, 3).map((preset) => (
                       <Card
                         key={preset.id}
-                        className="cursor-pointer hover:border-blue-500 transition-all duration-200 hover:scale-[1.02]"
+                        variant="outline"
+                        className="cursor-pointer hover:border-[rgb(var(--color-accent))] transition-all hover:bg-white/5"
                         onClick={() => handleEditTheme(preset.theme)}
                       >
-                        <div className="flex space-x-2 mb-4 justify-center">
+                        <div className="flex space-x-2 mb-3 justify-center">
                           {[
                             preset.theme.colors.primary,
                             preset.theme.colors.accent,
@@ -549,79 +393,47 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                           ].map((color, index) => (
                             <div
                               key={index}
-                              className="w-8 h-8 rounded-lg border border-[rgb(var(--color-border))] shadow-sm"
+                              className="w-6 h-6 rounded-full border border-white/10"
                               style={{ backgroundColor: `rgb(${color})` }}
                             />
                           ))}
                         </div>
-                        <h4 className="text-white font-semibold text-lg mb-1">
+                        <h4 className="text-white font-medium">
                           {preset.name}
                         </h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {preset.category}
-                        </Badge>
-                      </Card>
-                    ))}
-                    {customThemes.map((theme) => (
-                      <Card
-                        key={theme.id}
-                        className="cursor-pointer hover:border-blue-500 transition-all duration-200 hover:scale-[1.02]"
-                        onClick={() => handleEditTheme(theme)}
-                      >
-                        <div className="flex space-x-2 mb-4 justify-center">
-                          {[
-                            theme.colors.primary,
-                            theme.colors.accent,
-                            theme.colors.background,
-                          ].map((color, index) => (
-                            <div
-                              key={index}
-                              className="w-8 h-8 rounded-lg border border-[rgb(var(--color-border))] shadow-sm"
-                              style={{ backgroundColor: `rgb(${color})` }}
-                            />
-                          ))}
-                        </div>
-                        <h4 className="text-white font-semibold text-lg mb-1">
-                          {theme.name}
-                        </h4>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-purple-600/20 text-purple-300 border-purple-500"
-                        >
-                          custom
-                        </Badge>
                       </Card>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="space-y-8">
-                  {/* Header */}
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="space-y-6">
+                  {/* Editor Header */}
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-gray-800/30 p-4 rounded-xl border border-white/5">
                     <div>
-                      <h3 className="text-2xl font-semibold text-white mb-2 flex items-center">
-                        <ActionIcons.Edit className="w-6 h-6 mr-3" />
+                      <h3 className="text-xl font-semibold text-white mb-1 flex items-center">
+                        <ActionIcons.Edit className="w-5 h-5 mr-2 text-[rgb(var(--color-accent))]" />
                         Editing: {editingTheme.name}
                       </h3>
-                      <p className="text-[rgb(var(--color-textSecondary))]">
-                        Adjust colors individually to create your personalized
-                        version
+                      <p className="text-sm text-gray-400">
+                        Adjust colors individually to create your personalized version
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         onClick={handleApplyLivePreview}
                         variant="secondary"
+                        size="sm"
                         icon={<StatusIcons.Preview />}
                       >
-                        Live Preview
+                        Preview
                       </Button>
                       <Button
                         onClick={handleSaveEditedTheme}
                         variant="primary"
+                        size="sm"
                         icon={<ActionIcons.Save />}
                       >
-                        Save as New
+                        Save New
                       </Button>
                       <Button
                         onClick={() => {
@@ -629,6 +441,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                           setActiveTab("presets");
                         }}
                         variant="ghost"
+                        size="sm"
                         icon={<ActionIcons.Close />}
                       >
                         Cancel
@@ -637,219 +450,119 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                   </div>
 
                   {/* Color Editor Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Primary Colors */}
-                    <Card className="p-6">
+                    <Card variant="glass" className="p-6">
                       <h4 className="text-lg font-semibold text-white mb-6 flex items-center">
-                        <StatusIcons.Theme className="w-5 h-5 mr-2" />
+                        <StatusIcons.Theme className="w-5 h-5 mr-2 text-blue-400" />
                         Primary Colors
                       </h4>
                       <div className="space-y-6">
-                        {/* Primary Color */}
-                        <div>
-                          <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
-                            Primary Color
-                          </label>
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="color"
-                              value={rgbToHex(editingTheme.colors.primary)}
-                              onChange={(e) =>
-                                handleColorChange("primary", e.target.value)
-                              }
-                              className="w-12 h-12 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer shadow-sm"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(editingTheme.colors.primary)}
-                              onChange={(e) =>
-                                handleColorChange("primary", e.target.value)
-                              }
-                              placeholder="#1976D2"
-                              className="flex-1"
-                            />
+                        {[
+                          { key: 'primary', label: 'Primary Color', placeholder: '#1976D2' },
+                          { key: 'accent', label: 'Accent Color', placeholder: '#F4511E' },
+                          { key: 'secondary', label: 'Secondary Color', placeholder: '#F5F5F5' }
+                        ].map((color) => (
+                          <div key={color.key}>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                              {color.label}
+                            </label>
+                            <div className="flex items-center space-x-3">
+                              <div className="relative group">
+                                <input
+                                  type="color"
+                                  value={rgbToHex(editingTheme.colors[color.key as keyof typeof editingTheme.colors] as string)}
+                                  onChange={(e) =>
+                                    handleColorChange(color.key, e.target.value)
+                                  }
+                                  className="w-10 h-10 rounded-lg border-0 p-0 cursor-pointer opacity-0 absolute inset-0"
+                                />
+                                <div
+                                  className="w-10 h-10 rounded-lg border border-white/20 shadow-sm"
+                                  style={{ backgroundColor: `rgb(${editingTheme.colors[color.key as keyof typeof editingTheme.colors]})` }}
+                                />
+                              </div>
+                              <Input
+                                type="text"
+                                value={rgbToHex(editingTheme.colors[color.key as keyof typeof editingTheme.colors] as string)}
+                                onChange={(e) =>
+                                  handleColorChange(color.key, e.target.value)
+                                }
+                                placeholder={color.placeholder}
+                                className="flex-1 font-mono text-sm"
+                              />
+                            </div>
                           </div>
-                          <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-2">
-                            RGB: {editingTheme.colors.primary}
-                          </p>
-                        </div>
-
-                        {/* Accent Color */}
-                        <div>
-                          <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
-                            Accent Color
-                          </label>
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="color"
-                              value={rgbToHex(editingTheme.colors.accent)}
-                              onChange={(e) =>
-                                handleColorChange("accent", e.target.value)
-                              }
-                              className="w-12 h-12 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer shadow-sm"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(editingTheme.colors.accent)}
-                              onChange={(e) =>
-                                handleColorChange("accent", e.target.value)
-                              }
-                              placeholder="#F4511E"
-                              className="flex-1"
-                            />
-                          </div>
-                          <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-2">
-                            RGB: {editingTheme.colors.accent}
-                          </p>
-                        </div>
-
-                        {/* Secondary Color */}
-                        <div>
-                          <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
-                            Secondary Color
-                          </label>
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="color"
-                              value={rgbToHex(editingTheme.colors.secondary)}
-                              onChange={(e) =>
-                                handleColorChange("secondary", e.target.value)
-                              }
-                              className="w-12 h-12 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer shadow-sm"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(editingTheme.colors.secondary)}
-                              onChange={(e) =>
-                                handleColorChange("secondary", e.target.value)
-                              }
-                              placeholder="#F5F5F5"
-                              className="flex-1"
-                            />
-                          </div>
-                          <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-2">
-                            RGB: {editingTheme.colors.secondary}
-                          </p>
-                        </div>
+                        ))}
                       </div>
                     </Card>
 
                     {/* Background Colors */}
-                    <Card className="p-6">
+                    <Card variant="glass" className="p-6">
                       <h4 className="text-lg font-semibold text-white mb-6 flex items-center">
-                        <StatusIcons.Theme className="w-5 h-5 mr-2" />
+                        <div className="w-5 h-5 mr-2 bg-gray-700 rounded border border-gray-500"></div>
                         Background Colors
                       </h4>
                       <div className="space-y-6">
-                        {/* Background Color */}
-                        <div>
-                          <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
-                            Background Color
-                          </label>
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="color"
-                              value={rgbToHex(editingTheme.colors.background)}
-                              onChange={(e) =>
-                                handleColorChange("background", e.target.value)
-                              }
-                              className="w-12 h-12 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer shadow-sm"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(editingTheme.colors.background)}
-                              onChange={(e) =>
-                                handleColorChange("background", e.target.value)
-                              }
-                              placeholder="#121212"
-                              className="flex-1"
-                            />
+                        {[
+                          { key: 'background', label: 'Background Color', placeholder: '#121212' },
+                          { key: 'surface', label: 'Surface Color', placeholder: '#1E1E1E' },
+                          { key: 'text', label: 'Text Color', placeholder: '#FFFFFF' }
+                        ].map((color) => (
+                          <div key={color.key}>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                              {color.label}
+                            </label>
+                            <div className="flex items-center space-x-3">
+                              <div className="relative group">
+                                <input
+                                  type="color"
+                                  value={rgbToHex(editingTheme.colors[color.key as keyof typeof editingTheme.colors] as string)}
+                                  onChange={(e) =>
+                                    handleColorChange(color.key, e.target.value)
+                                  }
+                                  className="w-10 h-10 rounded-lg border-0 p-0 cursor-pointer opacity-0 absolute inset-0"
+                                />
+                                <div
+                                  className="w-10 h-10 rounded-lg border border-white/20 shadow-sm"
+                                  style={{ backgroundColor: `rgb(${editingTheme.colors[color.key as keyof typeof editingTheme.colors]})` }}
+                                />
+                              </div>
+                              <Input
+                                type="text"
+                                value={rgbToHex(editingTheme.colors[color.key as keyof typeof editingTheme.colors] as string)}
+                                onChange={(e) =>
+                                  handleColorChange(color.key, e.target.value)
+                                }
+                                placeholder={color.placeholder}
+                                className="flex-1 font-mono text-sm"
+                              />
+                            </div>
                           </div>
-                          <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-2">
-                            RGB: {editingTheme.colors.background}
-                          </p>
-                        </div>
-
-                        {/* Surface Color */}
-                        <div>
-                          <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
-                            Surface Color
-                          </label>
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="color"
-                              value={rgbToHex(editingTheme.colors.surface)}
-                              onChange={(e) =>
-                                handleColorChange("surface", e.target.value)
-                              }
-                              className="w-12 h-12 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer shadow-sm"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(editingTheme.colors.surface)}
-                              onChange={(e) =>
-                                handleColorChange("surface", e.target.value)
-                              }
-                              placeholder="#1E1E1E"
-                              className="flex-1"
-                            />
-                          </div>
-                          <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-2">
-                            RGB: {editingTheme.colors.surface}
-                          </p>
-                        </div>
-
-                        {/* Text Color */}
-                        <div>
-                          <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
-                            Text Color
-                          </label>
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="color"
-                              value={rgbToHex(editingTheme.colors.text)}
-                              onChange={(e) =>
-                                handleColorChange("text", e.target.value)
-                              }
-                              className="w-12 h-12 rounded-lg border border-[rgb(var(--color-border))] cursor-pointer shadow-sm"
-                            />
-                            <Input
-                              type="text"
-                              value={rgbToHex(editingTheme.colors.text)}
-                              onChange={(e) =>
-                                handleColorChange("text", e.target.value)
-                              }
-                              placeholder="#FFFFFF"
-                              className="flex-1"
-                            />
-                          </div>
-                          <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-2">
-                            RGB: {editingTheme.colors.text}
-                          </p>
-                        </div>
+                        ))}
                       </div>
                     </Card>
                   </div>
 
                   {/* Preview Section */}
-                  <Card className="p-6">
-                    <h4 className="text-lg font-semibold text-white mb-6 flex items-center">
+                  <Card variant="outline" className="p-6 bg-black/20">
+                    <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
                       <StatusIcons.Preview className="w-5 h-5 mr-2" />
-                      Color Preview
+                      Color Palette Preview
                     </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                       {Object.entries(editingTheme.colors).map(
                         ([colorName, colorValue]) => (
-                          <div key={colorName} className="text-center">
+                          <div key={colorName} className="text-center group">
                             <div
-                              className="w-full h-16 rounded-lg border-2 border-[rgb(var(--color-border))] mb-2"
+                              className="w-full h-16 rounded-lg border border-white/10 mb-2 shadow-sm group-hover:scale-105 transition-transform"
                               style={{ backgroundColor: `rgb(${colorValue})` }}
                             />
-                            <p className="text-xs text-[rgb(var(--color-text))] font-medium capitalize">
+                            <p className="text-xs text-gray-300 font-medium capitalize">
                               {colorName.replace(/([A-Z])/g, " $1").trim()}
                             </p>
-                            <p className="text-xs text-[rgb(var(--color-textSecondary))] font-mono">
-                              {rgbToHex(colorValue)}
+                            <p className="text-[10px] text-gray-500 font-mono">
+                              {rgbToHex(colorValue as string)}
                             </p>
                           </div>
                         )
@@ -862,14 +575,14 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
           )}
 
           {activeTab === "import-export" && (
-            <div className="space-y-8">
+            <div className="space-y-6 animate-in fade-in duration-300">
               {/* Export Section */}
-              <Card className="p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <ActionIcons.Export className="w-5 h-5 mr-2" />
+              <Card variant="glass" className="p-6">
+                <h3 className="text-xl font-semibold text-white mb-2 flex items-center">
+                  <ActionIcons.Export className="w-5 h-5 mr-2 text-blue-400" />
                   Export Theme
                 </h3>
-                <p className="text-[rgb(var(--color-textSecondary))] mb-6">
+                <p className="text-gray-400 mb-6 text-sm">
                   Export your current theme to share with others or backup your
                   customizations.
                 </p>
@@ -878,19 +591,20 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                     onClick={handleExport}
                     variant="primary"
                     icon={<ActionIcons.Export />}
+                    className="w-full sm:w-auto"
                   >
-                    Export Current Theme
+                    Generate Export JSON
                   </Button>
                   {exportText && (
-                    <div>
-                      <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
+                    <div className="animate-in slide-in-from-top-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
                         Theme JSON (click to select all)
                       </label>
                       <textarea
                         value={exportText}
                         readOnly
-                        rows={12}
-                        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        rows={8}
+                        className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-lg text-gray-300 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] resize-none"
                         onClick={(e) => e.currentTarget.select()}
                       />
                     </div>
@@ -899,26 +613,26 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
               </Card>
 
               {/* Import Section */}
-              <Card className="p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <ActionIcons.Import className="w-5 h-5 mr-2" />
+              <Card variant="glass" className="p-6">
+                <h3 className="text-xl font-semibold text-white mb-2 flex items-center">
+                  <ActionIcons.Import className="w-5 h-5 mr-2 text-green-400" />
                   Import Theme
                 </h3>
-                <p className="text-[rgb(var(--color-textSecondary))] mb-6">
+                <p className="text-gray-400 mb-6 text-sm">
                   Import a theme from JSON data. This will apply the theme
                   immediately.
                 </p>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[rgb(var(--color-text))] mb-3">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Paste Theme JSON
                     </label>
                     <textarea
                       value={importText}
                       onChange={(e) => setImportText(e.target.value)}
                       placeholder="Paste theme JSON here..."
-                      rows={10}
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      rows={6}
+                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-lg text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] resize-none"
                     />
                   </div>
                   <Button
@@ -926,6 +640,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                     disabled={!importText.trim()}
                     variant="primary"
                     icon={<ActionIcons.Import />}
+                    className="w-full sm:w-auto"
                   >
                     Import Theme
                   </Button>
@@ -934,7 +649,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
             </div>
           )}
         </div>
-      </Card>
-    </div>
+      </div>
+    </Modal>
   );
 };
