@@ -36,7 +36,6 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
 
   // Generate fallback URLs
   const generateFallbackUrl = useCallback((level: number, originalSrc?: string): string => {
-    const encodedText = encodeURIComponent(fallbackText.substring(0, 3));
     const color1 = '374151'; // Gray-700
     const color2 = '9CA3AF'; // Gray-400
 
@@ -45,12 +44,26 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
         // Original image
         return originalSrc || '';
       case 1:
-        // Placeholder with text immediately (skip picsum for small images to avoid delays)
-        return `https://via.placeholder.com/${actualWidth}x${actualHeight}/${color1}/${color2}?text=${encodedText}`;
+        // SVG placeholder with text
+        return `data:image/svg+xml,${encodeURIComponent(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="${actualWidth}" height="${actualHeight}">
+            <rect width="100%" height="100%" fill="#${color1}"/>
+            <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="14" fill="#${color2}" text-anchor="middle" dominant-baseline="middle">
+              ${fallbackText.substring(0, 3)}
+            </text>
+          </svg>
+        `)}`;
       case 2:
       default:
-        // Final fallback - simple colored placeholder
-        return `https://via.placeholder.com/${actualWidth}x${actualHeight}/6B7280/F3F4F6?text=IMG`;
+        // Final fallback - simple colored SVG
+        return `data:image/svg+xml,${encodeURIComponent(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="${actualWidth}" height="${actualHeight}">
+            <rect width="100%" height="100%" fill="#6B7280"/>
+            <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="12" fill="#F3F4F6" text-anchor="middle" dominant-baseline="middle">
+              IMG
+            </text>
+          </svg>
+        `)}`;
     }
   }, [fallbackText, actualWidth, actualHeight]);
 
@@ -88,13 +101,11 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
   return (
     <div
       className={`relative overflow-hidden flex-shrink-0 ${className}`}
-      style={{ width: actualWidth, height: actualHeight }}
     >
       {/* Loading placeholder - prevents layout shift */}
       {imageState === 'loading' && (
         <div
           className="absolute inset-0 bg-gray-700 flex items-center justify-center"
-          style={{ width: actualWidth, height: actualHeight }}
         >
           <div className="text-gray-400 text-xs font-medium">
             {fallbackLevel === 0 ? '...' : fallbackText.substring(0, 3)}
@@ -112,14 +123,12 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
         onLoad={handleImageLoad}
         onError={handleImageError}
         loading="lazy"
-        style={{ width: actualWidth, height: actualHeight }}
       />
 
       {/* Error state */}
       {imageState === 'error' && (
         <div
           className="absolute inset-0 bg-gray-800 flex items-center justify-center"
-          style={{ width: actualWidth, height: actualHeight }}
         >
           <div className="text-gray-500 text-xs font-medium">
             ⚠️

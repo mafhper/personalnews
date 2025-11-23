@@ -50,12 +50,16 @@ const Header: React.FC<HeaderProps> = (props) => {
               <div className="relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-[rgb(var(--color-primary))] to-[rgb(var(--color-secondary))] rounded-full opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-500"></div>
                 <div className="relative z-10">
-                  <Logo size="md" isClickable={false} />
+                  <Logo 
+                    size="md" 
+                    isClickable={true} 
+                    onClick={props.onGoHome}
+                  />
                 </div>
               </div>
               <button
                 onClick={props.onGoHome}
-                className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:to-white transition-all duration-300"
+                className="hidden sm:block text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:to-white transition-all duration-300 whitespace-nowrap"
                 title="Ir para a primeira página"
               >
                 Personal News
@@ -64,7 +68,9 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Categorias - Desktop */}
             <div className="hidden lg:flex items-center space-x-1 bg-[rgba(255,255,255,0.03)] p-1 rounded-full border border-[rgba(255,255,255,0.05)] backdrop-blur-sm">
-              {props.categories.map((category) => (
+              {props.categories
+                .filter(category => category.isPinned || (props.categorizedFeeds[category.id] || []).length > 0)
+                .map((category) => (
                 <FeedDropdown
                   key={category.id}
                   category={category}
@@ -190,7 +196,9 @@ const Header: React.FC<HeaderProps> = (props) => {
             <div>
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-1">Navegação</h3>
               <div className="grid grid-cols-2 gap-3">
-                {props.categories.map((category) => (
+                {props.categories
+                  .filter(category => category.isPinned || (props.categorizedFeeds[category.id] || []).length > 0)
+                  .map((category) => (
                   <button
                     key={category.id}
                     onClick={() => { props.onNavigation(category.id); setMobileMenuOpen(false); }}

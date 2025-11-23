@@ -21,7 +21,6 @@ import { SmallOptimizedImage } from "./SmallOptimizedImage";
 interface FeedContentProps {
   articles: Article[];
   timeFormat: "12h" | "24h";
-  // Removed unused pagination props
 }
 
 // Component for recent articles
@@ -31,83 +30,79 @@ const RecentArticleItem: React.FC<{
   showTime: boolean;
 }> = ({ article, timeFormat, showTime }) => {
   return (
-    <article className="recent-news-item border-b border-gray-700/30 last:border-b-0 relative">
-      <div className="flex items-center h-full py-2">
-        {/* Accent dot indicator */}
-        <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-accent))] mr-3"></div>
-
-        {/* Image container with favorite button overlay */}
-        <div className="relative flex-shrink-0 mr-3">
+    <article className="relative w-full h-full min-h-0 overflow-hidden rounded-xl group cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+      <a
+        href={article.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block w-full h-full"
+        aria-label={`Read article: ${article.title}`}
+      >
+        {/* Background Image */}
+        <div className="absolute inset-0">
           <SmallOptimizedImage
             src={article.imageUrl}
             alt={`Thumbnail for ${article.title}`}
-            className="rounded-md hover:opacity-90 transition-opacity recent-news-image"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             fallbackText={article.sourceTitle}
-            size={64}
-            height={64}
-          />
-          {/* Favorite Button - positioned with adequate spacing inside image bounds */}
-          <FavoriteButton
-            article={article}
-            size="small"
-            position="overlay"
-            className="absolute top-1 right-1 z-10 hover:scale-110 transition-transform duration-200"
-            aria-label={`Toggle favorite for ${article.title}`}
+            size={400}
           />
         </div>
 
-        {/* Content area - takes remaining space */}
-        <a
-          href={article.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex-1 min-w-0 flex flex-col justify-center items-start"
-          aria-label={`Read article: ${article.title}`}
-        >
-          {/* Header - Primeira linha: Site e Data/Hora */}
-          <div className="flex items-center justify-start space-x-2 text-xs text-gray-400 mb-1 recent-news-meta w-full">
-            <span className="text-[rgb(var(--color-accent))] font-medium uppercase tracking-wide">
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-90 group-hover:opacity-80 transition-opacity duration-300 rounded-xl" />
+
+        {/* Content Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-2 z-10 flex flex-col justify-end h-full">
+          {/* Meta Info */}
+          <div className="flex items-center space-x-2 text-[10px] text-gray-300 mb-0.5">
+            <span className="text-[rgb(var(--color-accent))] font-bold uppercase tracking-wider text-[9px]">
               {article.sourceTitle}
             </span>
             {showTime && (
               <>
-                <span>•</span>
-                <time dateTime={article.pubDate.toISOString()}>
+                <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                <time dateTime={article.pubDate.toISOString()} className="opacity-80">
                   {timeFormat === "12h"
-                    ? `${article.pubDate.toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                      })} ${article.pubDate.toLocaleTimeString("pt-BR", {
+                    ? article.pubDate.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
                         hour12: true,
-                      })}`
-                    : `${article.pubDate.toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                      })} ${article.pubDate.toLocaleTimeString("pt-BR", {
+                      })
+                    : article.pubDate.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
                         hour12: false,
-                      })}`}
+                      })}
                 </time>
               </>
             )}
           </div>
 
-          {/* Header - Segunda linha: Autor */}
-          {article.author && article.author.trim() !== "" && (
-            <div className="text-xs text-gray-300 mb-2 recent-news-author w-full text-left">
-              <span className="font-medium">Por: {article.author}</span>
-            </div>
-          )}
-
-          {/* Título */}
-          <h3 className="text-base lg:text-lg font-medium text-gray-200 group-hover:text-white line-clamp-2 leading-tight recent-news-title w-full text-left">
+          {/* Title */}
+          <h3 className="text-xs md:text-sm font-bold text-white leading-snug line-clamp-2 mb-0.5 group-hover:text-[rgb(var(--color-primary))] transition-colors">
             {article.title}
           </h3>
-        </a>
-      </div>
+
+          {/* Author */}
+          {article.author && article.author.trim() !== "" && (
+            <div className="text-[9px] text-gray-400 font-medium truncate opacity-80">
+              Por: {article.author}
+            </div>
+          )}
+        </div>
+
+        {/* Favorite Button */}
+        <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <FavoriteButton
+            article={article}
+            size="small"
+            position="overlay"
+            className="bg-black/50 hover:bg-black/70 backdrop-blur-sm scale-75 origin-top-right"
+            aria-label={`Toggle favorite for ${article.title}`}
+          />
+        </div>
+      </a>
     </article>
   );
 };
@@ -123,18 +118,14 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   // Get layout settings
   const { settings: layoutSettings } = useArticleLayout();
 
-  if (articles.length === 0) {
-    return null;
-  }
-
   // Memoize the featured article and other articles to prevent unnecessary re-renders
   const featuredArticle = useMemo(() => articles[0], [articles]);
   const otherArticles = useMemo(() => articles.slice(1), [articles]);
 
   // Dynamic article distribution based on user settings
   const recentArticles = useMemo(() => {
-    // Always show exactly 5 recent articles if available
-    return otherArticles.slice(0, Math.min(5, otherArticles.length));
+    // Show 6 recent articles as requested
+    return otherArticles.slice(0, Math.min(6, otherArticles.length));
   }, [otherArticles]);
 
   const topStoriesArticles = useMemo(() => {
@@ -143,6 +134,10 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     const endIndex = startIndex + layoutSettings.topStoriesCount;
     return otherArticles.slice(startIndex, endIndex);
   }, [otherArticles, recentArticles.length, layoutSettings.topStoriesCount]);
+
+  if (articles.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -186,15 +181,17 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden recent-news-container">
-            {recentArticles.map((article, index) => (
-              <RecentArticleItem
-                key={article.link + index}
-                article={article}
-                timeFormat={timeFormat}
-                showTime={layoutSettings.showPublicationTime}
-              />
-            ))}
+          <div className="flex-1 overflow-hidden">
+            <div className="grid grid-cols-2 grid-rows-3 gap-2 h-full">
+              {recentArticles.map((article, index) => (
+                <RecentArticleItem
+                  key={`${article.link}-${index}`}
+                  article={article}
+                  timeFormat={timeFormat}
+                  showTime={layoutSettings.showPublicationTime}
+                />
+              ))}
+            </div>
           </div>
         </aside>
       </div>
@@ -364,8 +361,6 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
               ))}
             </div>
           )}
-
-          {/* Pagination controls removidos e movidos para o header */}
         </section>
       )}
     </div>

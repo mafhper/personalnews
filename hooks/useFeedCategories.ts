@@ -100,6 +100,15 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       }
     });
 
+    // Sort feeds in each category alphabetically
+    Object.keys(result).forEach(categoryId => {
+      result[categoryId].sort((a, b) => {
+        const titleA = (a.customTitle || a.url).toLowerCase();
+        const titleB = (b.customTitle || b.url).toLowerCase();
+        return titleA.localeCompare(titleB);
+      });
+    });
+
     return result;
   }, [categories]);
 

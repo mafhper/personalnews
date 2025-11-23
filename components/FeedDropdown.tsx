@@ -17,6 +17,24 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   onSelectCategory,
   selectedCategory,
 }) => {
+  const getFaviconUrl = (url: string) => {
+    try {
+      const domain = new URL(url).hostname;
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const getSiteName = (url: string) => {
+    try {
+      const hostname = new URL(url).hostname;
+      return hostname.replace(/^www\./, '');
+    } catch (e) {
+      return url;
+    }
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,10 +91,10 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
       {/* Dropdown Menu */}
       <div
         className={`
-          absolute top-full left-0 mt-4 w-72
+          absolute top-full left-0 mt-4 w-96
           bg-[#0a0a0c]/95 backdrop-blur-2xl border border-white/10
           rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden
-          transition-all duration-300 origin-top-left
+          transition-all duration-200 origin-top-left
           ${isOpen ? "opacity-100 scale-100 translate-y-0 visible" : "opacity-0 scale-95 -translate-y-4 invisible"}
         `}
       >
@@ -86,7 +104,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
             <span className="bg-white/5 px-1.5 py-0.5 rounded text-gray-400">{feeds.length}</span>
           </div>
 
-          <div className="max-h-[60vh] overflow-y-auto custom-scrollbar py-1">
+          <div className="max-h-[80vh] overflow-y-auto custom-scrollbar py-1">
             {feeds.map((feed) => (
               <button
                 key={feed.url}
@@ -94,11 +112,17 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                   onSelectFeed(feed.url);
                   setIsOpen(false);
                 }}
-                className="w-full text-left px-4 py-3 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 flex items-center space-x-3 group/item relative overflow-hidden"
+                className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors flex items-center space-x-3 group"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-[rgb(var(--color-primary))]/10 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300" />
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-600 group-hover/item:bg-[rgb(var(--color-primary))] group-hover/item:shadow-[0_0_8px_rgb(var(--color-primary))] transition-all duration-300 relative z-10"></span>
-                <span className="truncate font-medium relative z-10 group-hover/item:translate-x-1 transition-transform duration-300">{feed.customTitle || feed.url}</span>
+                <img 
+                  src={getFaviconUrl(feed.url)} 
+                  alt="" 
+                  className="w-4 h-4 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <span className="truncate flex-1">{feed.customTitle || getSiteName(feed.url)}</span>
               </button>
             ))}
 

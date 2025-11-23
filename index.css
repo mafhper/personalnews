@@ -438,7 +438,7 @@ a:focus {
 /* Smooth theme change animations */
 @media (prefers-reduced-motion: no-preference) {
   :root {
-    --theme-transition-duration: 0.3s;
+    --theme-transition-duration: 0.15s;
   }
 
   body,
@@ -898,59 +898,7 @@ a:focus {
   }
 }
 
-/* Otimizações específicas para telas muito pequenas (mobile) */
-@media (max-width: 768px) {
-  .recent-news-container {
-    gap: 0.25rem !important;
-    /* Maintain flexbox layout for vertical centering on mobile */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
 
-  .recent-news-item {
-    /* Maintain flex properties for equal spacing on mobile */
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-height: 0;
-    flex-basis: 0;
-    flex-grow: 1;
-  }
-
-  .recent-news-item:not(:last-child) {
-    border-bottom: 1px solid rgba(107, 114, 128, 0.3);
-  }
-
-  .recent-news-item:last-child {
-    border-bottom: none;
-  }
-
-  .recent-news-image {
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
-  }
-
-  .recent-news-title {
-    font-size: 0.75rem !important;
-    line-height: 1.1 !important;
-  }
-
-  .recent-news-meta {
-    font-size: 0.625rem !important;
-    line-height: 1.1 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .recent-news-item .inline-block {
-    font-size: 0.5625rem !important;
-    padding: 0.0625rem 0.25rem !important;
-  }
-}
 
 /* Recent News Layout - Vertical Centering */
 .recent-news-container {
@@ -1713,7 +1661,7 @@ a:focus {
   .mobile-menu-enter-active {
     opacity: 1;
     transform: translateY(0);
-    transition: opacity 300ms ease-out, transform 300ms ease-out;
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
   }
 
   .mobile-menu-exit {
@@ -1724,7 +1672,7 @@ a:focus {
   .mobile-menu-exit-active {
     opacity: 0;
     transform: translateY(-10px);
-    transition: opacity 200ms ease-in, transform 200ms ease-in;
+    transition: opacity 150ms ease-in, transform 150ms ease-in;
   }
 }
 
@@ -1789,4 +1737,22 @@ a:focus {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }

@@ -16,15 +16,9 @@ const Logo: React.FC<LogoProps> = ({
   isClickable = false
 }) => {
   const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8', 
-    lg: 'w-12 h-12'
-  };
-
-  const iconSizes = {
-    sm: 'w-3 h-3',
-    md: 'w-5 h-5',
-    lg: 'w-7 h-7'
+    sm: 'w-8 h-8', // Adjusted for new logo aspect ratio
+    md: 'w-10 h-10', 
+    lg: 'w-16 h-16'
   };
 
   const baseClasses = isClickable 
@@ -35,42 +29,41 @@ const Logo: React.FC<LogoProps> = ({
     ? 'bg-gradient-to-br from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700'
     : 'bg-gradient-to-br from-gray-600 to-gray-800';
 
-  if (!showBackground) {
-    const svgElement = (
-      <svg 
-        className={`${iconSizes[size]} text-white ${className} ${baseClasses}`} 
-        fill="currentColor" 
-        viewBox="0 0 100 100"
-        onClick={onClick}
-      >
-        <polygon points="50,75 25,35 75,35" />
-      </svg>
-    );
+  const LogoImage = () => (
+    <img 
+      src={`${import.meta.env.BASE_URL}assets/logo.svg`}
+      alt="Personal News Logo" 
+      className="w-full h-full object-contain"
+    />
+  );
 
+  if (!showBackground) {
     if (isClickable) {
       return (
-        <div title="Configurações">
-          {svgElement}
+        <div 
+          className={`${sizeClasses[size]} ${className} ${baseClasses}`}
+          onClick={onClick}
+          title="Ir para a página inicial"
+        >
+          <LogoImage />
         </div>
       );
     }
 
-    return svgElement;
+    return (
+      <div className={`${sizeClasses[size]} ${className}`}>
+        <LogoImage />
+      </div>
+    );
   }
 
   return (
     <div 
-      className={`${sizeClasses[size]} ${backgroundClasses} rounded-lg flex items-center justify-center ${className} ${baseClasses}`}
+      className={`${sizeClasses[size]} ${backgroundClasses} rounded-lg flex items-center justify-center p-1 ${className} ${baseClasses}`}
       onClick={onClick}
-      title={isClickable ? "Configurações" : undefined}
+      title={isClickable ? "Ir para a página inicial" : undefined}
     >
-      <svg 
-        className={`${iconSizes[size]} text-white`} 
-        fill="currentColor" 
-        viewBox="0 0 100 100"
-      >
-        <polygon points="50,75 25,35 75,35" />
-      </svg>
+      <LogoImage />
     </div>
   );
 };

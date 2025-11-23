@@ -618,6 +618,19 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 
               <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
+                  onClick={() => updateCategory(category.id, { isPinned: !category.isPinned })}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    category.isPinned
+                      ? "text-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 hover:bg-[rgb(var(--color-accent))]/20"
+                      : "text-gray-400 hover:text-white hover:bg-white/10"
+                  }`}
+                  title={category.isPinned ? `Unpin ${category.name}` : `Pin ${category.name}`}
+                >
+                  <svg className="w-4 h-4" fill={category.isPinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                </button>
+                <button
                   onClick={() => handleStartEditCategory(category)}
                   className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   title={`Edit ${category.name}`}

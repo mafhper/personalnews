@@ -12,6 +12,7 @@ export interface FeedCategory {
   description?: string;
   order: number;
   isDefault?: boolean;
+  isPinned?: boolean;
 }
 
 
