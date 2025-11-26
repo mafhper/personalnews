@@ -16,9 +16,9 @@ const Logo: React.FC<LogoProps> = ({
   isClickable = false
 }) => {
   const sizeClasses = {
-    sm: 'w-8 h-8', // Adjusted for new logo aspect ratio
-    md: 'w-10 h-10', 
-    lg: 'w-16 h-16'
+    sm: 'w-6 h-6', // 24px - small size
+    md: 'w-7 h-7', // 28px - matches title height (text-xl)
+    lg: 'w-16 h-16' // 64px - large size
   };
 
   const baseClasses = isClickable 
@@ -59,7 +59,7 @@ const Logo: React.FC<LogoProps> = ({
 
   return (
     <div 
-      className={`${sizeClasses[size]} ${backgroundClasses} rounded-lg flex items-center justify-center p-1 ${className} ${baseClasses}`}
+      className={`${sizeClasses[size]} ${backgroundClasses} flex items-center justify-center p-1 ${className} ${baseClasses}`}
       onClick={onClick}
       title={isClickable ? "Ir para a página inicial" : undefined}
     >

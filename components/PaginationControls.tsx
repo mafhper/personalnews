@@ -145,14 +145,14 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
     >
       {/* Compact version for header */}
       {compact ? (
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className="flex items-center space-x-0.5 sm:space-x-1">
           <button
             onClick={handlePrevPage}
             disabled={disabled || isNavigating || currentPage === 0}
-            className={`p-2 rounded-md touch-target text-gray-300 ${getButtonStyles(
+            className={`p-1.5 rounded-md touch-target text-gray-300 ${getButtonStyles(
               currentPage === 0 || disabled || isNavigating
             )}`}
-            style={{ minWidth: "44px", minHeight: "44px" }}
+            style={{ minWidth: "36px", minHeight: "36px" }}
             aria-label="Página anterior"
             title="Página anterior (←)"
           >
@@ -161,7 +161,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
             ) : (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
+                className="h-3.5 w-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -176,12 +176,12 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
             )}
           </button>
 
-          <div className="flex items-center space-x-1">
-            <span className="text-xs sm:text-sm text-gray-300 font-medium">
+          <div className="flex items-center space-x-0.5 px-1">
+            <span className="text-xs text-gray-300 font-medium min-w-[1.5ch] text-center">
               {currentPage + 1}
             </span>
             <span className="text-xs text-gray-500">/</span>
-            <span className="text-xs sm:text-sm text-gray-400">
+            <span className="text-xs text-gray-400 min-w-[1.5ch] text-center">
               {totalPages}
             </span>
           </div>
@@ -191,10 +191,10 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
             disabled={
               disabled || isNavigating || currentPage === totalPages - 1
             }
-            className={`p-2 rounded-md touch-target text-gray-300 ${getButtonStyles(
+            className={`p-1.5 rounded-md touch-target text-gray-300 ${getButtonStyles(
               currentPage === totalPages - 1 || disabled || isNavigating
             )}`}
-            style={{ minWidth: "44px", minHeight: "44px" }}
+            style={{ minWidth: "36px", minHeight: "36px" }}
             aria-label="Próxima página"
             title="Próxima página (→)"
           >
@@ -203,7 +203,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
             ) : (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
+                className="h-3.5 w-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

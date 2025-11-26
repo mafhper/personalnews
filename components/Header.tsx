@@ -90,15 +90,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
               <div className="h-6 w-px bg-[rgba(255,255,255,0.1)] mx-2 hidden md:block"></div>
 
-              {/* Botão Feeds */}
-              <button
-                onClick={props.onManageFeedsClick}
-                className="hidden sm:flex items-center space-x-2 bg-[rgba(139,92,246,0.1)] text-[rgb(var(--color-primary))] hover:bg-[rgba(139,92,246,0.2)] hover:text-white rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 border border-[rgba(139,92,246,0.2)] hover:border-[rgba(139,92,246,0.4)] hover:shadow-[0_0_15px_rgba(139,92,246,0.3)]"
-                title="Gerenciar Feeds"
-              >
-                <HeaderIcons.Feeds showBackground={false} size="sm" />
-                <span>Feeds</span>
-              </button>
+
 
               {/* Paginação */}
               {props.onPageChange && props.totalPages && props.totalPages > 1 && (
@@ -114,6 +106,14 @@ const Header: React.FC<HeaderProps> = (props) => {
 
               {/* Botões de Ação Rápida */}
               <div className="flex items-center space-x-1">
+                <button
+                  onClick={props.onManageFeedsClick}
+                  className="p-2 text-gray-400 hover:text-[rgb(var(--color-primary))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  title="Gerenciar Feeds"
+                >
+                  <HeaderIcons.Feeds showBackground={false} size="md" />
+                </button>
+
                 <button
                   onClick={props.onRefreshClick}
                   className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"

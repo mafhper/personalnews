@@ -145,7 +145,7 @@ export const HeaderWeatherWidget: React.FC = () => {
         setInputCity(city);
         setIsEditing(true);
       }}
-      className="bg-gray-800/50 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center space-x-2 border border-gray-700/30 hover:bg-gray-800/70 hover:border-gray-600/50 transition-all duration-200 group min-w-[120px] lg:min-w-[140px] h-[40px]"
+      className="hidden md:flex bg-gray-800/50 backdrop-blur-sm rounded-lg px-3 py-2 items-center space-x-2 border border-gray-700/30 hover:bg-gray-800/70 hover:border-gray-600/50 transition-all duration-200 group min-w-[120px] lg:min-w-[140px] h-[40px]"
       aria-label={`Weather in ${city}: ${Math.round(
         weather.temperature
       )}°C. Click to change city.`}
