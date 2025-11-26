@@ -3,7 +3,7 @@ import React from 'react';
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  showBackground?: boolean;
+
   onClick?: () => void;
   isClickable?: boolean;
 }
@@ -11,7 +11,7 @@ interface LogoProps {
 const Logo: React.FC<LogoProps> = ({ 
   size = 'md', 
   className = '', 
-  showBackground = true,
+
   onClick,
   isClickable = false
 }) => {
@@ -25,9 +25,7 @@ const Logo: React.FC<LogoProps> = ({
     ? 'cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg' 
     : '';
 
-  const backgroundClasses = isClickable
-    ? 'bg-gradient-to-br from-gray-600 to-gray-800 hover:from-gray-500 hover:to-gray-700'
-    : 'bg-gradient-to-br from-gray-600 to-gray-800';
+  const backgroundClasses = '';
 
   const LogoImage = () => (
     <img 
@@ -37,29 +35,9 @@ const Logo: React.FC<LogoProps> = ({
     />
   );
 
-  if (!showBackground) {
-    if (isClickable) {
-      return (
-        <div 
-          className={`${sizeClasses[size]} ${className} ${baseClasses}`}
-          onClick={onClick}
-          title="Ir para a página inicial"
-        >
-          <LogoImage />
-        </div>
-      );
-    }
-
-    return (
-      <div className={`${sizeClasses[size]} ${className}`}>
-        <LogoImage />
-      </div>
-    );
-  }
-
   return (
     <div 
-      className={`${sizeClasses[size]} ${backgroundClasses} flex items-center justify-center p-1 ${className} ${baseClasses}`}
+      className={`${sizeClasses[size]} ${backgroundClasses} flex items-center justify-center ${className} ${baseClasses}`}
       onClick={onClick}
       title={isClickable ? "Ir para a página inicial" : undefined}
     >
