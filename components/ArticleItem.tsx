@@ -4,6 +4,7 @@ import { LazyImage } from "./LazyImage";
 import { usePerformance } from "../hooks/usePerformance";
 import { useFavorites } from "../hooks/useFavorites";
 import { useArticleLayout } from "../hooks/useArticleLayout";
+import { useAppearance } from "../hooks/useAppearance";
 
 const ChatBubbleIcon: React.FC = memo(() => (
   <svg
@@ -39,18 +40,22 @@ HeartIcon.displayName = "HeartIcon";
 
 interface ArticleItemProps {
   article: Article;
-  index: number;
+  index?: number;
   timeFormat?: "12h" | "24h";
+  layoutMode?: string;
+  density?: string;
+  showImage?: boolean;
 }
 
 const ArticleItemComponent: React.FC<ArticleItemProps> = ({
   article,
-  index,
+  index = 0,
   timeFormat = "24h",
 }) => {
   const { startRenderTiming, endRenderTiming } = usePerformance();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: layoutSettings } = useArticleLayout();
+  const { contentConfig } = useAppearance();
 
   // Start performance measurement
   useEffect(() => {
@@ -98,7 +103,7 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
               `https://picsum.photos/seed/${article.link}/400/200`
             }
             alt={`Thumbnail image for article: ${article.title}`}
-            className="w-full h-32 lg:h-40 object-cover rounded-lg"
+            className="w-full h-40 sm:h-32 lg:h-40 object-cover rounded-lg"
             srcSet={`${article.imageUrl ||
               `https://picsum.photos/seed/${article.link}/200/100`
               } 200w,
@@ -151,21 +156,23 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
               }`}
           >
             {/* Source badge */}
-            <div className="mb-2">
-              <span className="inline-block bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide">
-                {article.sourceTitle}
-              </span>
-            </div>
+            {contentConfig.showTags && (
+              <div className="mb-2">
+                <span className="inline-block bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide">
+                  {article.sourceTitle}
+                </span>
+              </div>
+            )}
 
             {/* Title with better text wrapping */}
-            <h4 className="font-bold text-base lg:text-lg leading-tight group-hover:underline text-gray-100 mb-3 line-clamp-3">
+            <h4 className="font-bold text-base md:text-sm lg:text-lg leading-tight group-hover:underline text-gray-100 mb-3 line-clamp-3">
               {article.title}
             </h4>
 
             {/* Article metadata */}
             <div className="mt-auto space-y-2">
               <div className="flex items-center justify-between text-xs text-gray-400">
-                {article.author && (
+                {contentConfig.showAuthor && article.author && (
                   <span
                     className="truncate max-w-[120px]"
                     aria-label={`Author: ${article.author}`}
@@ -175,18 +182,20 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
                   </span>
                 )}
               </div>
-              <time
-                className="text-gray-500 text-xs block"
-                dateTime={article.pubDate.toISOString()}
-                aria-label={`Published ${timeSince(article.pubDate)}`}
-              >
-                {layoutSettings.showPublicationTime
-                  ? (timeFormat === "12h"
-                    ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: true })}`
-                    : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}`)
-                  : timeSince(article.pubDate)
-                }
-              </time>
+              {(contentConfig.showDate || contentConfig.showTime) && (
+                <time
+                  className="text-gray-500 text-xs block"
+                  dateTime={article.pubDate.toISOString()}
+                  aria-label={`Published ${timeSince(article.pubDate)}`}
+                >
+                  {layoutSettings.showPublicationTime || contentConfig.showTime
+                    ? (timeFormat === "12h"
+                      ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                      : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}`)
+                    : timeSince(article.pubDate)
+                  }
+                </time>
+              )}
             </div>
           </a>
         </div>

@@ -107,3 +107,60 @@ export interface ThemeSettings {
   systemThemeOverride: 'light' | 'dark' | null;
   themeTransitions: boolean;
 }
+
+export interface HeaderConfig {
+  style: 'default' | 'centered' | 'minimal';
+  position: 'static' | 'sticky' | 'floating';
+  height: 'compact' | 'normal' | 'spacious';
+  showTitle: boolean;
+  customTitle: string;
+  logoUrl: string | null;
+  logoSize: 'sm' | 'md' | 'lg';
+  customFavicon?: string | null;
+  useThemeColor?: boolean;
+  // New appearance controls
+  backgroundColor?: string;
+  backgroundOpacity?: number; // 0-100
+  blurIntensity?: 'none' | 'light' | 'medium' | 'heavy';
+  borderColor?: string;
+  borderOpacity?: number; // 0-100
+  categoryBackgroundColor?: string;
+  categoryBackgroundOpacity?: number; // 0-100
+}
+
+export interface ContentConfig {
+  showAuthor: boolean;
+  showDate: boolean;
+  showTime: boolean;
+  showTags: boolean;
+  layoutMode: 'grid' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento';
+  density: 'compact' | 'comfortable' | 'spacious';
+}
+
+export interface LayoutPreset {
+  id: string;
+  name: string;
+  description: string;
+  icon?: string;
+  header: Partial<HeaderConfig>;
+  content: Partial<ContentConfig>;
+}
+
+export interface BackgroundConfig {
+  type: 'solid' | 'gradient' | 'pattern' | 'image';
+  value: string;
+  patternSettings?: {
+    name: string;
+    colors: string[];
+    scale?: number;
+    opacity?: number;
+  };
+  customImage?: string | null;
+}
+
+export interface AppearanceSettings {
+  header: HeaderConfig;
+  content: ContentConfig;
+  theme: ThemeSettings;
+  background: BackgroundConfig;
+}

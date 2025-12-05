@@ -4,9 +4,12 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
-
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -15,20 +18,27 @@
     "noEmit": true,
     "allowJs": true,
     "jsx": "react-jsx",
-
     /* Suporte ao NodeJS */
-    "types": ["node"],
-
+    "types": [
+      "node"
+    ],
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-
     "paths": {
-      "@/*" :  ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
-  "exclude": ["__tests__/**/*", "__tests_unused/**/*", "myrssfeed/**/*", "dist/**/*", "node_modules/**/*"]
+  "exclude": [
+    "__tests__/**/*",
+    "__tests_unused/**/*",
+    "myrssfeed/**/*",
+    "dist/**/*",
+    "node_modules/**/*"
+  ]
 }

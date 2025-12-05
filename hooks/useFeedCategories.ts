@@ -1,14 +1,13 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { FeedCategory, FeedSource } from '../types';
 
 const DEFAULT_CATEGORIES: FeedCategory[] = [
   { id: 'all', name: 'All', color: '#6B7280', order: 0, isDefault: true },
-  { id: 'tech', name: 'Tech', color: '#3B82F6', order: 1, isDefault: true },
-  { id: 'reviews', name: 'Reviews', color: '#10B981', order: 2, isDefault: true },
-  { id: 'science', name: 'Science', color: '#8B5CF6', order: 3, isDefault: true },
-  { id: 'entertainment', name: 'Entertainment', color: '#F59E0B', order: 4, isDefault: true },
-  { id: 'ai', name: 'AI', color: '#EF4444', order: 5, isDefault: true },
+  { id: 'dev', name: 'Dev', color: '#3B82F6', order: 1, isDefault: true },
+  { id: 'design', name: 'Design', color: '#10B981', order: 2, isDefault: true },
+  { id: 'ciencia', name: 'Ciência', color: '#8B5CF6', order: 3, isDefault: true },
+  { id: 'mundo', name: 'Mundo', color: '#EC4899', order: 4, isDefault: true },
 ];
 
 export interface UseFeedCategoriesReturn {
@@ -27,6 +26,27 @@ export interface UseFeedCategoriesReturn {
 
 export const useFeedCategories = (): UseFeedCategoriesReturn => {
   const [categories, setCategories] = useLocalStorage<FeedCategory[]>('feed-categories', DEFAULT_CATEGORIES);
+
+  // Ensure all default categories exist (migration for existing users)
+  useEffect(() => {
+    setCategories(prev => {
+      const existingIds = new Set(prev.map(c => c.id));
+      const missingDefaults = DEFAULT_CATEGORIES.filter(d => !existingIds.has(d.id));
+      
+      if (missingDefaults.length > 0) {
+        // Add missing defaults while preserving existing order/customizations
+        return [...prev, ...missingDefaults].sort((a, b) => {
+          // Keep defaults at the top in their defined order, customs after
+          const orderA = a.isDefault ? (DEFAULT_CATEGORIES.find(d => d.id === a.id)?.order ?? 999) : 999;
+          const orderB = b.isDefault ? (DEFAULT_CATEGORIES.find(d => d.id === b.id)?.order ?? 999) : 999;
+          
+          if (orderA !== orderB) return orderA - orderB;
+          return a.order - b.order;
+        });
+      }
+      return prev;
+    });
+  }, []);
 
   const createCategory = useCallback((name: string, color: string, description?: string): FeedCategory => {
     const newCategory: FeedCategory = {

@@ -472,6 +472,8 @@ async function tryProvider(
   return result;
 }
 
+
+
 /**
  * Busca o feed tentando todos os provedores
  */
@@ -630,22 +632,56 @@ export async function parseRssUrl(
 }
 
 /**
- * Parse OPML file
+ * Parse OPML file extracting URLs and Categories
  */
-export function parseOpml(fileContent: string): string[] {
+export interface OpmlFeed {
+  url: string;
+  title?: string;
+  category?: string;
+}
+
+export function parseOpml(fileContent: string): OpmlFeed[] {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(fileContent, "text/xml");
+  const feeds: OpmlFeed[] = [];
 
-  const outlines = xmlDoc.getElementsByTagName("outline");
-  const urls: string[] = [];
-
-  for (let i = 0; i < outlines.length; i++) {
-    const outline = outlines[i];
+  // Function to recursively process outlines
+  const processOutline = (outline: Element, parentCategory?: string) => {
     const xmlUrl = outline.getAttribute("xmlUrl");
+    const text = outline.getAttribute("text") || outline.getAttribute("title");
+    
+    // If it has xmlUrl, it's a feed
     if (xmlUrl) {
-      urls.push(xmlUrl);
+      feeds.push({
+        url: xmlUrl,
+        title: text || undefined,
+        category: parentCategory
+      });
+    } 
+    // If it has no xmlUrl but has children, it might be a category container
+    else if (outline.children.length > 0) {
+      // Use the text attribute as the category name for children
+      const categoryName = text || parentCategory;
+      
+      for (let i = 0; i < outline.children.length; i++) {
+        const child = outline.children[i];
+        if (child.tagName.toLowerCase() === 'outline') {
+          processOutline(child, categoryName);
+        }
+      }
+    }
+  };
+
+  // Start processing from body
+  const body = xmlDoc.getElementsByTagName("body")[0];
+  if (body) {
+    for (let i = 0; i < body.children.length; i++) {
+      const child = body.children[i];
+      if (child.tagName.toLowerCase() === 'outline') {
+        processOutline(child);
+      }
     }
   }
 
-  return urls;
+  return feeds;
 }

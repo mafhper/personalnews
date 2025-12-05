@@ -31,7 +31,7 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useNotification } from "./contexts/NotificationContext";
 
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
-import { useExtendedTheme } from "./hooks/useExtendedTheme";
+import { useAppearance } from "./hooks/useAppearance";
 import { useReadStatus } from "./hooks/useReadStatus";
 import { useFeedCategories } from "./hooks/useFeedCategories";
 import { usePagination } from "./hooks/usePagination";
@@ -39,7 +39,6 @@ import { useProgressiveFeedLoading } from "./hooks/useProgressiveFeedLoading";
 import { useSwipeGestures } from "./hooks/useSwipeGestures";
 import { useArticleLayout } from "./hooks/useArticleLayout";
 import { withPerformanceTracking } from "./services/performanceUtils";
-import { initializeLogger } from "./services/logger";
 import { FeedLoadingProgress } from "./components/ProgressIndicator";
 import { ArticleListSkeleton } from "./components/SkeletonLoader";
 import { getDefaultFeeds, migrateFeeds } from "./utils/feedMigration";
@@ -55,7 +54,6 @@ const PerformanceDebugger = lazy(
 const App: React.FC = () => {
   // Initialize logging system
   React.useEffect(() => {
-    initializeLogger();
 
     // Load debug tools in development
     if (process.env.NODE_ENV === 'development') {
@@ -121,16 +119,12 @@ const App: React.FC = () => {
   }, []);
 
   // Extended theme system
-  const { currentTheme, themeSettings } = useExtendedTheme();
+  const { currentTheme, themeSettings, backgroundConfig } = useAppearance();
 
   // Read status functionality
   const { isArticleRead } = useReadStatus();
 
   // Legacy settings for backward compatibility
-  const [backgroundImage, setBackgroundImage] = useLocalStorage<string | null>(
-    "background-image",
-    null
-  );
   const [timeFormat, setTimeFormat] = useLocalStorage<"12h" | "24h">(
     "time-format",
     "24h"
@@ -437,24 +431,25 @@ const App: React.FC = () => {
   return (
     <div
       className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""
-        } ${backgroundImage ? "" : "bg-[rgb(var(--color-background))]"}`}
+        } ${backgroundConfig.type === 'solid' ? "bg-[rgb(var(--color-background))]" : ""}`}
       style={
-        backgroundImage
+        backgroundConfig.type !== 'solid'
           ? {
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: "cover",
+            backgroundImage: backgroundConfig.value,
+            backgroundSize: backgroundConfig.type === 'pattern' ? 'auto' : "cover",
             backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
+            backgroundRepeat: backgroundConfig.type === 'pattern' ? 'repeat' : "no-repeat",
             backgroundAttachment: "fixed",
+            backgroundColor: `rgb(${currentTheme.colors.background})`,
           }
-          : {}
+          : { backgroundColor: backgroundConfig.value }
       }
     >
       <SkipLinks />
-      {backgroundImage && (
+      {backgroundConfig.type !== 'solid' && (
         <>
           {/* Overlay escuro para melhorar a legibilidade */}
-          <div className="absolute inset-0 bg-black opacity-50 z-0"></div>
+          <div className="absolute inset-0 bg-black opacity-50 z-0 pointer-events-none"></div>
 
           {/* Gradiente de transição para o fundo */}
           <div
@@ -681,7 +676,6 @@ const App: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
-        setBackgroundImage={setBackgroundImage}
         timeFormat={timeFormat}
         setTimeFormat={setTimeFormat}
       />

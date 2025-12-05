@@ -8,6 +8,8 @@
  * @version 1.0.0
  */
 
+import { proxyManager } from "./proxyManager";
+
 export interface DiscoveredFeed {
   url: string;
   title?: string;
@@ -93,6 +95,16 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
     };
 
     try {
+      // Strategy 0: Platform specific handling (e.g. YouTube)
+      if (normalizedUrl.includes("youtube.com") || normalizedUrl.includes("youtu.be")) {
+        const youtubeFeed = await this.tryDiscoverYouTubeFeed(normalizedUrl);
+        if (youtubeFeed) {
+            result.discoveredFeeds.push(youtubeFeed);
+            result.successfulAttempts++;
+            // If we found a direct match, we might still want to scan HTML for more, but this is a good start
+        }
+      }
+
       // Strategy 1: Try common feed paths first (fastest)
       result.discoveryMethods.push("common-paths");
       const commonPathFeeds = await this.tryCommonFeedPaths(normalizedUrl);
@@ -355,76 +367,66 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
   }
 
   /**
-   * Fetch website content with timeout and error handling
+   * Fetch website content with timeout and error handling, using ProxyManager
    */
   private async fetchWebsiteContent(url: string): Promise<string> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      this.REQUEST_TIMEOUT
-    );
-
     try {
-      const response = await fetch(url, {
-        method: "GET",
-        signal: controller.signal,
-        headers: {
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "User-Agent": "Personal News Dashboard Feed Discovery/1.0",
-        },
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Try direct fetch first (might work for some CORS-enabled sites)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
+      
+      try {
+        const response = await fetch(url, {
+            method: "GET",
+            signal: controller.signal,
+            headers: {
+                Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "User-Agent": "Personal News Dashboard Feed Discovery/1.0",
+            },
+        });
+        clearTimeout(timeoutId);
+        if (response.ok) return await response.text();
+      } catch (e) {
+        // Direct fetch failed, proceed to proxy
       }
 
-      return await response.text();
+      // Use ProxyManager for robust fetching
+      const result = await proxyManager.tryProxiesWithFailover(url);
+      return result.content;
     } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error(`Request timed out after ${this.REQUEST_TIMEOUT}ms`);
-      }
-      throw error;
+      throw new Error(`Failed to fetch website content: ${error.message}`);
     }
   }
 
   /**
-   * Fetch feed content with timeout and error handling
+   * Fetch feed content with timeout and error handling, using ProxyManager
    */
   private async fetchFeedContent(url: string): Promise<string> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      this.REQUEST_TIMEOUT
-    );
-
     try {
-      const response = await fetch(url, {
-        method: "GET",
-        signal: controller.signal,
-        headers: {
-          Accept:
-            "application/rss+xml, application/atom+xml, application/xml, text/xml",
-          "User-Agent": "Personal News Dashboard Feed Discovery/1.0",
-        },
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+       // Try direct fetch first
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
+      
+      try {
+        const response = await fetch(url, {
+            method: "GET",
+            signal: controller.signal,
+            headers: {
+                Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+                "User-Agent": "Personal News Dashboard Feed Discovery/1.0",
+            },
+        });
+        clearTimeout(timeoutId);
+        if (response.ok) return await response.text();
+      } catch (e) {
+        // Direct fetch failed, proceed to proxy
       }
 
-      return await response.text();
+      // Use ProxyManager
+      const result = await proxyManager.tryProxiesWithFailover(url);
+      return result.content;
     } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === "AbortError") {
-        throw new Error(`Request timed out after ${this.REQUEST_TIMEOUT}ms`);
-      }
-      throw error;
+      throw new Error(`Failed to fetch feed content: ${error.message}`);
     }
   }
 
@@ -790,6 +792,52 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
     }
 
     return results;
+  }
+
+  /**
+   * Try to discover YouTube feed from URL
+   */
+  private async tryDiscoverYouTubeFeed(url: string): Promise<DiscoveredFeed | null> {
+    try {
+        let feedUrl: string | null = null;
+        
+        // Case 1: Channel ID (youtube.com/channel/UC...)
+        const channelMatch = url.match(/\/channel\/(UC[\w-]+)/);
+        if (channelMatch) {
+            feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelMatch[1]}`;
+        }
+
+        // Case 2: User (youtube.com/user/USERNAME)
+        const userMatch = url.match(/\/user\/([\w-]+)/);
+        if (userMatch) {
+            feedUrl = `https://www.youtube.com/feeds/videos.xml?user=${userMatch[1]}`;
+        }
+
+        // Case 3: Playlist (youtube.com/playlist?list=PL...)
+        const playlistMatch = url.match(/[?&]list=(PL[\w-]+)/);
+        if (playlistMatch) {
+            feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistMatch[1]}`;
+        }
+
+        if (feedUrl) {
+            // Verify if it works
+            const content = await this.fetchFeedContent(feedUrl);
+            const metadata = await this.extractFeedMetadata(content);
+            
+            return {
+                url: feedUrl,
+                title: metadata.title || "YouTube Feed",
+                description: metadata.description,
+                type: "atom", // YouTube uses Atom
+                discoveryMethod: "content-scan", // effectively a pattern match
+                confidence: 1.0,
+                lastValidated: Date.now()
+            };
+        }
+    } catch (e) {
+        console.warn("YouTube discovery failed:", e);
+    }
+    return null;
   }
 }
 

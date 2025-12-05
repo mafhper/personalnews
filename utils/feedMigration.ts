@@ -4,38 +4,14 @@
  * Handles migration of feed data when default feeds are updated
  */
 
-import type { FeedSource } from '../types';
-import { autoCategorizeFeeds } from './feedCategorization';
+import { FeedSource } from "../types";
+import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
+import { autoCategorizeFeeds } from "./feedCategorization";
 
-// Version of the default feeds - increment when updating default feeds
-const CURRENT_FEEDS_VERSION = '2.0.0';
-const FEEDS_VERSION_KEY = 'feeds-version';
+export const CURRENT_FEEDS_VERSION = '2.2.0';
+const FEEDS_VERSION_KEY = 'personal_news_feeds_version';
+const DEFAULT_FEEDS_V2 = DEFAULT_FEEDS;
 
-// Current default feeds
-const DEFAULT_FEEDS_V2: FeedSource[] = autoCategorizeFeeds([
-  // Tech
-  { url: "https://www.theverge.com/rss/index.xml" },
-  { url: "https://www.wired.com/feed/rss" },
-  { url: "https://techcrunch.com/feed/" },
-  { url: "https://www.cnet.com/rss/all/" },
-  { url: "https://tecnoblog.net/feed/" },
-  { url: "https://meiobit.com/feed/" },
-  { url: "https://www.xda-developers.com/feed/" },
-  { url: "https://itsfoss.com/rss/" },
-  { url: "https://arstechnica.com/feed/" },
-  { url: "https://www.omgubuntu.co.uk/feed" },
-  { url: "https://www.omglinux.com/feed/" },
-  { url: "https://diolinux.com.br/feed" },
-  // Entertainment
-  { url: "https://www.polygon.com/feed/" },
-  { url: "https://jogabilida.de/feed/" },
-  // Science
-  { url: "https://news.mit.edu/rss/feed" },
-  // Reviews
-  { url: "https://www.tomsguide.com/feeds.xml" },
-]);
-
-// Legacy default feeds (v1)
 const LEGACY_DEFAULT_FEEDS = [
   "https://www.theverge.com/rss/index.xml",
   "https://www.wired.com/feed/rss"
