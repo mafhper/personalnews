@@ -16,6 +16,7 @@ import { parseOpml } from "../services/rssParser";
 import DOMPurify from 'dompurify';
 import { FeedCategoryManager } from "./FeedCategoryManager";
 import { FeedItem } from "./FeedItem";
+import { FeedDiscoveryModal } from "./FeedDiscoveryModal";
 import { useLogger } from "../services/logger";
 import {
   feedValidator,
@@ -61,6 +62,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const logger = useLogger("FeedManager");
   const { categories, createCategory, resetToDefaults } = useFeedCategories();
   const [newFeedUrl, setNewFeedUrl] = useState("");
+  const [newFeedCategory, setNewFeedCategory] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"feeds" | "categories">(
     "feeds" as "feeds" | "categories"
   );
@@ -457,10 +459,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         const feedToAdd: FeedSource = {
           url: result.url, // Use the final URL (might be different if discovered)
           customTitle: result.title,
+          categoryId: newFeedCategory || undefined,
         };
 
         setFeeds((prev) => [...prev, feedToAdd]);
         setNewFeedUrl("");
+        setNewFeedCategory("");
 
         logger.info("Feed added successfully with discovery", {
           additionalData: {
@@ -503,10 +507,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           const feedToAdd: FeedSource = {
             url: url,
             customTitle: result.title || undefined,
+            categoryId: newFeedCategory || undefined,
           };
 
           setFeeds((prev) => [...prev, feedToAdd]);
           setNewFeedUrl("");
+          setNewFeedCategory("");
 
           logger.info("Feed added despite validation failure", {
             additionalData: {
@@ -544,10 +550,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       if (shouldAddAnyway) {
         const feedToAdd: FeedSource = {
           url: url,
+          categoryId: newFeedCategory || undefined,
         };
 
         setFeeds((prev) => [...prev, feedToAdd]);
         setNewFeedUrl("");
+        setNewFeedCategory("");
 
         logger.info("Feed added despite processing failure", {
           additionalData: {
@@ -595,9 +603,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         const feedToAdd: FeedSource = {
           url: discoveredFeed.url,
           customTitle: discoveredFeed.title || result.title,
+          categoryId: newFeedCategory || undefined,
         };
 
         setFeeds((prev) => [...prev, feedToAdd]);
+        setNewFeedCategory("");
         setShowDiscoveryModal(false);
         setCurrentDiscoveryResult(null);
 
@@ -814,10 +824,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     // Add feed directly without validation
     const feedToAdd: FeedSource = {
       url: url,
+      categoryId: newFeedCategory || undefined,
     };
 
     setFeeds((prev) => [...prev, feedToAdd]);
     setNewFeedUrl("");
+    setNewFeedCategory("");
 
     logger.info("Feed added directly without validation", {
       additionalData: {
@@ -1152,6 +1164,56 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       {/* Content based on active tab */}
       {activeTab === "feeds" ? (
         <>
+          {/* Add Feed Section */}
+          <div className="p-4 border-b border-white/10 bg-white/5">
+            <form onSubmit={handleAddFeed} className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={newFeedUrl}
+                  onChange={(e) => setNewFeedUrl(e.target.value)}
+                  placeholder="Digite a URL do site ou feed RSS..."
+                  className="w-full bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                />
+              </div>
+              
+              <div className="w-full sm:w-48">
+                <select
+                  value={newFeedCategory}
+                  onChange={(e) => setNewFeedCategory(e.target.value)}
+                  className="w-full bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                >
+                  <option value="">Sem categoria</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={discoveryInProgress.has(newFeedUrl)}
+                className="px-6 py-2 bg-[rgb(var(--color-accent))] text-white rounded-lg hover:bg-[rgb(var(--color-accent))]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                {discoveryInProgress.has(newFeedUrl) ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Buscando...</span>
+                    </>
+                ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Adicionar</span>
+                    </>
+                )}
+              </button>
+            </form>
+          </div>
+
           {/* Search and Filters */}
       <div className="p-4 bg-white/5 border-b border-white/5 flex gap-4">
         <div className="relative flex-1">
@@ -1302,6 +1364,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             onClose={() => setActiveTab("feeds")} 
           />
         </div>
+      )}
+
+      {/* Feed Discovery Modal */}
+      {showDiscoveryModal && currentDiscoveryResult && (
+        <FeedDiscoveryModal
+          isOpen={showDiscoveryModal}
+          onClose={handleCancelDiscovery}
+          originalUrl={currentDiscoveryResult.originalUrl}
+          discoveredFeeds={currentDiscoveryResult.discoveredFeeds}
+          onSelectFeed={handleSelectDiscoveredFeed}
+        />
       )}
 
       {/* Import Curated Lists Modal */}

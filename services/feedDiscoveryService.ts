@@ -800,6 +800,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
   private async tryDiscoverYouTubeFeed(url: string): Promise<DiscoveredFeed | null> {
     try {
         let feedUrl: string | null = null;
+        let discoveryMethod: DiscoveredFeed["discoveryMethod"] = "content-scan";
         
         // Case 1: Channel ID (youtube.com/channel/UC...)
         const channelMatch = url.match(/\/channel\/(UC[\w-]+)/);
@@ -819,6 +820,37 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
             feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistMatch[1]}`;
         }
 
+        // Case 4: Handle (@Username) or Custom URL (c/CustomName) - Requires Fetching
+        // Also covers the case mentioned by user: accessing root to find link tag
+        if (!feedUrl && (url.includes("/@") || url.includes("/c/") || (url.includes("youtube.com") && !url.includes("/watch")))) {
+             try {
+                 const content = await this.fetchWebsiteContent(url);
+                 
+                 // 1. Try to find the RSS link directly (User suggestion)
+                 // Look for: <link rel="alternate" type="application/rss+xml" title="RSS" href="...">
+                 // We use a flexible regex to capture the href
+                 const rssLinkMatch = content.match(/<link[^>]+type=["']application\/rss\+xml["'][^>]+href=["']([^"']+)["']/i) ||
+                                      content.match(/<link[^>]+href=["']([^"']+)["'][^>]+type=["']application\/rss\+xml["']/i);
+
+                 if (rssLinkMatch && rssLinkMatch[1]) {
+                     feedUrl = rssLinkMatch[1];
+                     discoveryMethod = "link-tag";
+                 }
+                 
+                 // 2. Fallback: Find channelId meta tag and construct URL
+                 if (!feedUrl) {
+                     const channelIdMatch = content.match(/itemprop=["']channelId["']\s+content=["'](UC[\w-]+)["']/i) ||
+                                            content.match(/content=["'](UC[\w-]+)["']\s+itemprop=["']channelId["']/i);
+                     
+                     if (channelIdMatch && channelIdMatch[1]) {
+                         feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelIdMatch[1]}`;
+                     }
+                 }
+             } catch (err) {
+                 console.warn("Failed to fetch YouTube channel page for discovery:", err);
+             }
+        }
+
         if (feedUrl) {
             // Verify if it works
             const content = await this.fetchFeedContent(feedUrl);
@@ -829,7 +861,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
                 title: metadata.title || "YouTube Feed",
                 description: metadata.description,
                 type: "atom", // YouTube uses Atom
-                discoveryMethod: "content-scan", // effectively a pattern match
+                discoveryMethod: discoveryMethod,
                 confidence: 1.0,
                 lastValidated: Date.now()
             };
