@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { SearchBar, SearchFilters } from "./SearchBar";
 import { PaginationControls } from "./PaginationControls";
 import { Article, FeedCategory, FeedSource } from "../types";
@@ -113,6 +113,39 @@ const Header: React.FC<HeaderProps> = (props) => {
   const catBgOpacity = headerConfig.categoryBackgroundOpacity ?? 3;
   const categoryBgStyle = hexToRgba(catBgColor, catBgOpacity / 100);
 
+  // Scroll Logic for Categories
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [activeCategories]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 200;
+      const newScrollLeft = direction === 'left' 
+        ? scrollContainerRef.current.scrollLeft - scrollAmount 
+        : scrollContainerRef.current.scrollLeft + scrollAmount;
+      
+      scrollContainerRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <>
       <header
@@ -153,27 +186,54 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Center Section: Categories (Desktop) */}
             {!isCentered && (
-              <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center max-w-2xl mx-auto px-4">
-                 <div 
-                    className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all ${!isMinimal ? 'border backdrop-blur-sm' : ''}`}
-                    style={!isMinimal ? { backgroundColor: categoryBgStyle, borderColor: hexToRgba('#ffffff', 0.05) } : {}}
-                 >
-                    {activeCategories.slice(0, 6).map((category) => (
-                      <FeedDropdown
-                        key={category.id}
-                        category={category}
-                        feeds={props.categorizedFeeds[category.id] || []}
-                        onSelectFeed={(feedUrl) => props.onNavigation(category.id, feedUrl)}
-                        onSelectCategory={() => props.onNavigation(category.id)}
-                        selectedCategory={props.selectedCategory}
-                      />
-                    ))}
-                    {activeCategories.length > 6 && (
-                        <button className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors">
-                            More...
-                        </button>
-                    )}
+              <div className="hidden lg:flex items-center flex-1 justify-center max-w-4xl mx-auto px-12 relative group/scroll">
+                 
+                 {/* Left Scroll Button */}
+                 <div className={`absolute left-0 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
+                    <button 
+                      onClick={() => scroll('left')}
+                      className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
+                      aria-label="Scroll left"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
                  </div>
+
+                 {/* Scroll Container */}
+                 <div 
+                    ref={scrollContainerRef}
+                    onScroll={checkScroll}
+                    className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all overflow-x-auto no-scrollbar max-w-full scroll-smooth ${!isMinimal ? 'border backdrop-blur-sm' : ''}`}
+                    style={{ ...(!isMinimal ? { backgroundColor: categoryBgStyle, borderColor: hexToRgba('#ffffff', 0.05) } : {}), scrollbarWidth: 'none' }}
+                 >
+                    {activeCategories.map((category) => (
+                      <div key={category.id} className="flex-shrink-0">
+                          <FeedDropdown
+                            category={category}
+                            feeds={props.categorizedFeeds[category.id] || []}
+                            onSelectFeed={(feedUrl) => props.onNavigation(category.id, feedUrl)}
+                            onSelectCategory={() => props.onNavigation(category.id)}
+                            selectedCategory={props.selectedCategory}
+                          />
+                      </div>
+                    ))}
+                 </div>
+
+                 {/* Right Scroll Button */}
+                 <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
+                    <button 
+                      onClick={() => scroll('right')}
+                      className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
+                      aria-label="Scroll right"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                 </div>
+
               </div>
             )}
 
@@ -280,30 +340,32 @@ const Header: React.FC<HeaderProps> = (props) => {
               </div>
             </div>
           </div>
+
+          {/* Mobile Categories Strip - Inside Container but full width behavior */}
+          <div className="lg:hidden w-full border-t border-white/5 pt-1 pb-2">
+             <div className="overflow-x-auto no-scrollbar mask-linear-fade w-full" style={{ scrollbarWidth: 'none' }}>
+                <div className="flex items-center justify-center min-w-full space-x-3 px-1">
+                    {activeCategories.map((category) => (
+                    <button
+                        key={category.id}
+                        onClick={() => props.onNavigation(category.id)}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
+                        props.selectedCategory === category.id
+                            ? "bg-[rgb(var(--color-primary))] text-white border-[rgb(var(--color-primary))]"
+                            : "bg-[rgba(255,255,255,0.05)] text-gray-300 border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
+                        }`}
+                    >
+                        {category.name}
+                    </button>
+                    ))}
+                </div>
+             </div>
+          </div>
+
         </div>
       </header>
 
-      {/* Mobile Categories Strip - Sticky below header */}
-      <div className={`lg:hidden fixed left-0 right-0 z-20 transition-all duration-300 ${blurClass} border-b ${isFloating ? 'top-[72px]' : 'top-16'}`} style={{ backgroundColor: headerBgStyle, borderBottomColor: headerBorderStyle }}>
-        <div className="overflow-x-auto py-2 px-4 flex items-center space-x-3 no-scrollbar mask-linear-fade">
-            {activeCategories.map((category) => (
-            <button
-                key={category.id}
-                onClick={() => props.onNavigation(category.id)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
-                props.selectedCategory === category.id
-                    ? "bg-[rgb(var(--color-primary))] text-white border-[rgb(var(--color-primary))]"
-                    : "bg-[rgba(255,255,255,0.05)] text-gray-300 border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
-                }`}
-            >
-                {category.name}
-            </button>
-            ))}
-        </div>
-      </div>
-
-      {/* Spacing for fixed header + secondary bar + mobile strip */}
-      {!isFloating && <div className="h-28 lg:h-24"></div>}
+      {/* Spacing for Floating Header only (Since Sticky/Static occupy space naturally now that strip is inside) */}
       {isFloating && <div className="h-32 lg:h-32"></div>}
 
       {/* Mobile Drawer */}

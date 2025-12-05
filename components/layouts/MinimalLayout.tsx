@@ -9,10 +9,10 @@ interface MinimalLayoutProps {
 
 export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
   return (
-    <div className="max-w-3xl mx-auto space-y-16 py-12 animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-20 py-12 animate-in fade-in duration-500">
       {articles.map((article, index) => (
-        <article key={`${article.link}-${index}`} className="group cursor-pointer">
-          <a href={article.link} target="_blank" rel="noopener noreferrer" className="block space-y-4">
+        <article key={`${article.link}-${index}`} className="group cursor-pointer flex flex-col h-full justify-between">
+          <a href={article.link} target="_blank" rel="noopener noreferrer" className="block space-y-4 flex-1">
             {/* Meta */}
             <div className="flex items-center space-x-3 text-xs tracking-widest uppercase text-gray-500">
               <span className="text-[rgb(var(--color-accent))] font-bold">{article.sourceTitle}</span>

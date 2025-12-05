@@ -15,9 +15,9 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles, time
     <div className="space-y-12">
       {/* Hero Section */}
       {featuredArticle && (
-        <div className="relative h-[70vh] rounded-3xl overflow-hidden group">
+        <div className="relative min-h-[85vh] md:h-[calc(100vh-6rem)] rounded-3xl overflow-hidden group">
           <div 
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
             style={{ 
               backgroundImage: `url(${featuredArticle.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070&auto=format&fit=crop'})` 
             }}
