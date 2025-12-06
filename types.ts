@@ -12,7 +12,7 @@ export interface ContentConfig {
 export interface HeaderConfig {
   style: 'default' | 'centered' | 'minimal';
   position: 'static' | 'sticky' | 'floating' | 'hidden';
-  height: 'compact' | 'normal' | 'spacious';
+  height: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious';
   showTitle: boolean;
   showLogo?: boolean;
   customTitle: string;
@@ -179,19 +179,57 @@ export interface GradientSettings {
   stops: GradientStop[];
 }
 
+// Aura Wall Interfaces
+export interface ColorStop {
+  offset: number;
+  color: string;
+}
+
+export type BlendMode =
+  | 'normal' | 'screen' | 'overlay' | 'multiply' | 'color-dodge'
+  | 'soft-light' | 'difference' | 'lighten' | 'darken' | 'color-burn';
+
+export interface Shape {
+  id: string;
+  type: 'circle';     // Geometric primitive
+  x: number;          // X position in % (0-100)
+  y: number;          // Y position in % (0-100)
+  size: number;       // Size relative to width (e.g., 80 = 80% of width)
+  color: string;      // Shape color (Hex/RGBA)
+  opacity: number;    // Transparency (0.0 - 1.0)
+  blur: number;       // Gaussian Blur (px)
+  blendMode: BlendMode; // Blend mode
+}
+
+export interface WallpaperConfig {
+  width: number;      // Export width (px)
+  height: number;     // Export height (px)
+  baseColor: string;  // Background color (Hex)
+  noise: number;      // Noise intensity (0-100)
+  noiseScale: number; // Noise size (1-20)
+  shapes: Shape[];    // Array of visual layers
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  category: 'Aura' | 'Neon' | 'Dark' | 'Soft' | 'Abstract';
+  thumbnail: string; // CSS Gradient string for UI
+  config: Partial<WallpaperConfig>;
+}
+
+export interface ExportSize {
+  name: string;
+  width: number;
+  height: number;
+}
+
 export interface BackgroundConfig {
-  type: 'solid' | 'gradient' | 'pattern' | 'image';
-  value: string;
-  gradientSettings?: GradientSettings;
-  patternSettings?: {
-    name: string;
-    colors: string[];
-    scale?: number;
-    opacity?: number;
-    hue?: number;
-    effect?: string;
-  };
-  customImage?: string | null;
+  type: 'solid' | 'gradient' | 'pattern' | 'image' | 'aura';
+  value: string; // The CSS value (e.g., color, gradient string, url("data:image/svg+xml,..."))
+  customImage?: string | null; // For type 'image'
+  auraSettings?: WallpaperConfig; // For type 'aura'
+  // patternSettings and gradientSettings are deprecated and will be removed in future versions
 }
 
 export interface AppearanceSettings {

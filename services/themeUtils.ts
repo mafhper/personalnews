@@ -36,13 +36,13 @@ export const hexToRgb = (hex: string): string => {
 export const defaultThemePresets: ThemePreset[] = [
   // Temas Escuros (3)
   {
-    id: 'noite-urbana',
-    name: 'Noite Urbana',
-    description: 'Tema escuro urbano com azul médio e acentos âmbar',
+    id: 'dark-blue',
+    name: 'Azul Escuro',
+    description: 'Tema escuro com tons de azul e contraste otimizado',
     category: 'dark',
     theme: {
-      id: 'noite-urbana',
-      name: 'Noite Urbana',
+      id: 'dark-blue',
+      name: 'Azul Escuro',
       colors: {
         primary: '18 102 204', // Darkened from #1E88E5 for better contrast
         secondary: hexToRgb('#1E1E1E'), // Derived from surface
@@ -64,13 +64,13 @@ export const defaultThemePresets: ThemePreset[] = [
     },
   },
   {
-    id: 'verde-noturno',
-    name: 'Verde Noturno',
-    description: 'Tema escuro com verde natural e acentos solares',
+    id: 'dark-green',
+    name: 'Verde Escuro',
+    description: 'Tema escuro com tons de verde natural',
     category: 'dark',
     theme: {
-      id: 'verde-noturno',
-      name: 'Verde Noturno',
+      id: 'dark-green',
+      name: 'Verde Escuro',
       colors: {
         primary: '52 125 54', // Further lightened for better contrast with surface
         secondary: hexToRgb('#1B1F1D'), // Derived from surface
@@ -92,13 +92,13 @@ export const defaultThemePresets: ThemePreset[] = [
     },
   },
   {
-    id: 'roxo-nebuloso',
-    name: 'Roxo Nebuloso',
-    description: 'Tema escuro místico com roxo vibrante e rosa neon',
+    id: 'dark-purple',
+    name: 'Roxo Escuro',
+    description: 'Tema escuro com tons de roxo e rosa',
     category: 'dark',
     theme: {
-      id: 'roxo-nebuloso',
-      name: 'Roxo Nebuloso',
+      id: 'dark-purple',
+      name: 'Roxo Escuro',
       colors: {
         primary: '173 46 207', // Final adjustment for better contrast with surface
         secondary: hexToRgb('#1A1A23'), // Derived from surface
@@ -122,13 +122,13 @@ export const defaultThemePresets: ThemePreset[] = [
 
   // Temas Claros (3)
   {
-    id: 'solar-clean',
-    name: 'Solar Clean',
-    description: 'Tema claro limpo com azul clássico e laranja queimado',
+    id: 'light-blue',
+    name: 'Azul Claro',
+    description: 'Tema claro com tons de azul e alto contraste',
     category: 'light',
     theme: {
-      id: 'solar-clean',
-      name: 'Solar Clean',
+      id: 'light-blue',
+      name: 'Azul Claro',
       colors: {
         primary: hexToRgb('#1976D2'), // #1976D2
         secondary: hexToRgb('#F5F5F5'), // Derived from surface
@@ -150,13 +150,13 @@ export const defaultThemePresets: ThemePreset[] = [
     },
   },
   {
-    id: 'verao-pastel',
-    name: 'Verão Pastel',
-    description: 'Tema claro pastel com rosa vibrante e lilás suave',
+    id: 'light-pink',
+    name: 'Rosa Claro',
+    description: 'Tema claro com tons de rosa e lilás',
     category: 'light',
     theme: {
-      id: 'verao-pastel',
-      name: 'Verão Pastel',
+      id: 'light-pink',
+      name: 'Rosa Claro',
       colors: {
         primary: '178 48 92', // Darkened from #EC407A for white text contrast
         secondary: hexToRgb('#FFFFFF'), // Derived from surface
@@ -178,13 +178,13 @@ export const defaultThemePresets: ThemePreset[] = [
     },
   },
   {
-    id: 'minimal-ice',
-    name: 'Minimal Ice',
-    description: 'Tema claro minimalista com ciano frio e coral quente',
+    id: 'light-cyan',
+    name: 'Ciano Claro',
+    description: 'Tema claro minimalista com tons frios',
     category: 'light',
     theme: {
-      id: 'minimal-ice',
-      name: 'Minimal Ice',
+      id: 'light-cyan',
+      name: 'Ciano Claro',
       colors: {
         primary: '0 129 145', // Darkened from #00ACC1 for better contrast
         secondary: hexToRgb('#FFFFFF'), // Derived from surface
@@ -209,7 +209,7 @@ export const defaultThemePresets: ThemePreset[] = [
 
 // Default theme settings
 export const defaultThemeSettings: ThemeSettings = {
-  currentTheme: defaultThemePresets.find(preset => preset.id === 'solar-clean')?.theme || defaultThemePresets[0].theme,
+  currentTheme: defaultThemePresets.find(preset => preset.id === 'light-blue')?.theme || defaultThemePresets[0].theme,
   customThemes: [],
   autoDetectSystemTheme: true,
   systemThemeOverride: null,

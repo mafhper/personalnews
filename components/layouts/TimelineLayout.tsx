@@ -60,12 +60,12 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
   return (
     <div className="max-w-3xl mx-auto relative animate-in fade-in duration-500">
       {/* Vertical Line */}
-      <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-[rgb(var(--color-border))]" />
+      <div className="absolute left-4 md:left-8 top-0 bottom-0 w-0.5 bg-[rgb(var(--color-border))]" />
 
       {Object.entries(groupedArticles).map(([date, dateArticles]) => (
         <div key={date} className="mb-12 relative">
           {/* Date Header */}
-          <div className="sticky top-20 z-10 mb-8 ml-16">
+          <div className="sticky top-20 z-10 mb-8 ml-10 md:ml-16">
             <span className="inline-block px-4 py-2 bg-[rgb(var(--color-surface))] border border-[rgb(var(--color-border))] rounded-full text-sm font-bold text-[rgb(var(--color-text))] shadow-sm capitalize">
               {date}
             </span>
@@ -73,11 +73,11 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
 
           <div className="space-y-8">
             {dateArticles.map((article) => (
-              <article key={article.link} className="relative pl-16 group">
+              <article key={article.link} className="relative pl-10 md:pl-16 group">
                 {/* Timeline Dot */}
-                <div className="absolute left-[30px] top-6 w-3 h-3 rounded-full bg-[rgb(var(--color-accent))] border-4 border-[rgb(var(--color-background))] shadow-sm group-hover:scale-125 transition-transform" />
+                <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-[rgb(var(--color-accent))] border-4 border-[rgb(var(--color-background))] shadow-sm group-hover:scale-125 transition-transform" />
 
-                <div className="bg-[rgb(var(--color-surface))] p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all shadow-sm hover:shadow-md relative overflow-hidden">
+                <div className="bg-[rgb(var(--color-surface))] p-4 md:p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all shadow-sm hover:shadow-md relative overflow-hidden">
                   <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))] mb-2">
                     <span className="font-medium text-[rgb(var(--color-accent))]">{article.sourceTitle}</span>
                     <span>•</span>

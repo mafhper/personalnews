@@ -55,10 +55,10 @@ export const FeaturedArticle: React.FC<{
             className="absolute top-3 right-3 z-20 hover:scale-110 active:scale-95 transition-transform duration-200 ease-in-out"
           />
 
-          <div className="absolute inset-x-0 bottom-0 p-6 lg:p-8 xl:p-10 text-white">
+          <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 lg:p-8 xl:p-10 text-white">
             <h3
               id="featured-article-title"
-              className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-tight drop-shadow-lg group-hover:underline transition-all duration-300"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-tight drop-shadow-lg group-hover:underline transition-all duration-300"
               style={{
                 lineHeight: "1.1",
                 textShadow: "0 4px 8px rgba(0,0,0,0.8)",
@@ -68,10 +68,10 @@ export const FeaturedArticle: React.FC<{
             >
               {article.title}
             </h3>
-            <p className="mt-4 lg:mt-6 text-base lg:text-lg xl:text-xl text-gray-200 drop-shadow-md hidden md:block leading-relaxed max-w-4xl">
+            <p className="mt-2 lg:mt-6 text-sm md:text-base lg:text-lg xl:text-xl text-gray-200 drop-shadow-md block leading-relaxed max-w-4xl line-clamp-2 md:line-clamp-none">
               {sanitizeArticleDescription(article.description || "")}
             </p>
-            <footer className="mt-4 lg:mt-6 flex items-center space-x-4 lg:space-x-6 text-xs lg:text-sm font-bold uppercase text-gray-300">
+            <footer className="mt-2 lg:mt-6 flex items-center space-x-4 lg:space-x-6 text-xs lg:text-sm font-bold uppercase text-gray-300">
               <span
                 aria-label={`Author: ${article.author || article.sourceTitle}`}
               >

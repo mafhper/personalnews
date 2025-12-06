@@ -165,7 +165,7 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             )}
 
             {/* Title with better text wrapping */}
-            <h4 className="font-bold text-base md:text-sm lg:text-lg leading-tight group-hover:underline text-gray-100 mb-3 line-clamp-3">
+            <h4 className="font-bold text-base lg:text-lg leading-tight group-hover:underline text-gray-100 mb-3 line-clamp-3">
               {article.title}
             </h4>
 

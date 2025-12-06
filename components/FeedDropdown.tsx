@@ -112,11 +112,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   };
 
   const handleLayoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      if (category.id === 'all') {
-        updateContentConfig({ layoutMode: e.target.value as any });
-      } else {
-        updateCategory(category.id, { layoutMode: e.target.value as any });
-      }
+      updateCategory(category.id, { layoutMode: e.target.value as any });
   };
 
   const isSelected = selectedCategory === category.id;

@@ -285,7 +285,7 @@ export const GalleryLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 p-1 bg-[rgb(var(--color-background))] min-h-screen">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 p-1 bg-[rgb(var(--color-background))] min-h-screen">
       {articles.map((article, i) => (
         <div 
           key={i} 

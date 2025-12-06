@@ -57,7 +57,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   let effectiveLayout = contentConfig.layoutMode;
   
   // First check if the selected category has a specific layout override
-  if (selectedCategory && selectedCategory !== 'all') {
+  if (selectedCategory) {
     const category = getCategoryById(selectedCategory);
     if (category?.layoutMode) {
       effectiveLayout = category.layoutMode;

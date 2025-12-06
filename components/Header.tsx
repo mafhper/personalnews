@@ -99,6 +99,8 @@ const Header: React.FC<HeaderProps> = (props) => {
   };
 
   const headerHeightClasses = {
+    'ultra-compact': 'h-8 lg:h-10', // Minimal height
+    tiny: 'h-10 lg:h-12',
     compact: 'h-12 lg:h-14',
     normal: 'h-14 lg:h-16',
     spacious: 'h-16 lg:h-20',
@@ -231,20 +233,20 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <h1 
                     className="font-bold tracking-tight cursor-pointer pb-1 text-xl truncate max-w-[150px] md:max-w-none"
                     onClick={props.onGoHome}
-                    style={
+                    style={{ color: headerConfig.titleGradient?.enabled ? undefined : (headerConfig.titleColor || 'rgb(var(--color-text))') }}
+                >
+                  <span style={
                         headerConfig.titleGradient?.enabled ? {
                             background: `linear-gradient(${headerConfig.titleGradient.direction}, ${headerConfig.titleGradient.from}, ${headerConfig.titleGradient.to})`,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                             backgroundClip: 'text',
                             color: 'transparent',
-                            display: 'inline-block' // Needed for background-clip sometimes
-                        } : {
-                            color: headerConfig.titleColor || 'rgb(var(--color-text))'
-                        }
-                    }
-                >
-                  {headerConfig.customTitle || t('app.title')}
+                            display: 'inline-block', // Ensure block formatting context for clip
+                        } : undefined
+                  }>
+                    {headerConfig.customTitle || t('app.title')}
+                  </span>
                 </h1>
               )}
             </div>

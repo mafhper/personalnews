@@ -326,6 +326,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             onChange={(e) => updateHeaderConfig({ height: e.target.value as any })}
                                             className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                                         >
+                                            <option value="ultra-compact">Mínima (Ultra)</option>
+                                            <option value="tiny">Extra Compacto</option>
                                             <option value="compact">Compacto</option>
                                             <option value="normal">Normal</option>
                                             <option value="spacious">Espaçoso</option>
