@@ -14,12 +14,14 @@ export interface ArticleLayoutSettings {
   topStoriesCount: 0 | 5 | 10 | 15 | 20;
   showPublicationTime: boolean;
   articlesPerPage: number;
+  autoRefreshInterval: number; // in minutes, 0 = disabled
 }
 
 const DEFAULT_SETTINGS: ArticleLayoutSettings = {
   topStoriesCount: 15,
   showPublicationTime: true,
   articlesPerPage: 21, // 1 featured + 5 recent + 15 top stories
+  autoRefreshInterval: 15,
 };
 
 export const useArticleLayout = () => {

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Article } from '../../types';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { SmallOptimizedImage } from '../SmallOptimizedImage';
+import { ArticleReaderModal } from '../ArticleReaderModal';
 
 interface PortalLayoutProps {
   articles: Article[];
@@ -9,6 +10,8 @@ interface PortalLayoutProps {
 }
 
 export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat }) => {
+  const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+
   const mainFeatured = articles[0];
   const subFeatured = articles.slice(1, 3);
   const sidebar = articles.slice(3, 8);
@@ -48,7 +51,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
         <div className="lg:col-span-8 space-y-4">
             <h3 className="text-xl font-bold text-[rgb(var(--color-accent))] uppercase tracking-wider mb-6 border-b border-[rgb(var(--color-accent))]/30 pb-2 inline-block">Últimas Notícias</h3>
             {feed.map((article, idx) => (
-                <article key={idx} className="flex gap-4 p-4 bg-gray-800/20 rounded-lg hover:bg-gray-800/40 transition-colors border border-white/5">
+                <article key={idx} className="flex gap-4 p-4 bg-gray-800/20 rounded-lg hover:bg-gray-800/40 transition-colors border border-white/5 relative group">
                     <div className="w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden">
                         <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" fallbackText={article.sourceTitle} size={200} />
                     </div>
@@ -62,6 +65,21 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                             <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
                         </h4>
                         <p className="text-sm text-gray-400 line-clamp-2">{article.author ? `Por ${article.author}` : ''}</p>
+                        
+                        {/* Preview Button (Only if content available) */}
+                        {(!!article.content || (article.description && article.description.length > 200)) && (
+                            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setReadingArticle(article);
+                                    }}
+                                    className="text-xs bg-[rgb(var(--color-accent))] text-white px-3 py-1 rounded hover:bg-[rgb(var(--color-accent))]/80 transition-colors shadow-lg font-bold uppercase tracking-wider"
+                                >
+                                    Preview
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </article>
             ))}
@@ -89,6 +107,23 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
             </div>
         </div>
       </div>
+
+      {readingArticle && (
+        <ArticleReaderModal 
+          article={readingArticle}
+          onClose={() => setReadingArticle(null)}
+          onNext={() => {
+            const idx = articles.findIndex(a => a.link === readingArticle.link);
+            if (idx < articles.length - 1) setReadingArticle(articles[idx + 1]);
+          }}
+          onPrev={() => {
+            const idx = articles.findIndex(a => a.link === readingArticle.link);
+            if (idx > 0) setReadingArticle(articles[idx - 1]);
+          }}
+          hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
+          hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
+        />
+      )}
     </div>
   );
 };

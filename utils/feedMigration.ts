@@ -1,152 +1,71 @@
-/**
- * Feed Migration Utilities
- * 
- * Handles migration of feed data when default feeds are updated
- */
-
-import { FeedSource } from "../types";
-import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
-import { autoCategorizeFeeds } from "./feedCategorization";
-
-export const CURRENT_FEEDS_VERSION = '2.2.0';
-const FEEDS_VERSION_KEY = 'personal_news_feeds_version';
-const DEFAULT_FEEDS_V2 = DEFAULT_FEEDS;
-
-const LEGACY_DEFAULT_FEEDS = [
-  "https://www.theverge.com/rss/index.xml",
-  "https://www.wired.com/feed/rss"
-];
+import { FeedSource } from '../types';
+import { DEFAULT_FEEDS } from '../constants/curatedFeeds';
 
 /**
- * Check if feeds need migration
+ * Returns the default list of feeds to start with
  */
-export function needsFeedMigration(): boolean {
-  const currentVersion = localStorage.getItem(FEEDS_VERSION_KEY);
-  return currentVersion !== CURRENT_FEEDS_VERSION;
-}
+export const getDefaultFeeds = (): FeedSource[] => {
+  return [...DEFAULT_FEEDS];
+};
 
 /**
- * Get the current feeds version
+ * Resets feeds to the default list
  */
-export function getCurrentFeedsVersion(): string | null {
-  return localStorage.getItem(FEEDS_VERSION_KEY);
-}
+export const resetToDefaultFeeds = (): FeedSource[] => {
+  return [...DEFAULT_FEEDS];
+};
 
 /**
- * Set the feeds version
+ * Adds new feeds to an existing collection, avoiding duplicates
  */
-export function setFeedsVersion(version: string): void {
-  localStorage.setItem(FEEDS_VERSION_KEY, version);
-}
+export const addFeedsToCollection = (
+  currentFeeds: FeedSource[],
+  newFeeds: FeedSource[]
+): FeedSource[] => {
+  const existingUrls = new Set(currentFeeds.map(f => f.url));
+  const uniqueNewFeeds = newFeeds.filter(f => !existingUrls.has(f.url));
+  return [...currentFeeds, ...uniqueNewFeeds];
+};
 
 /**
- * Check if current feeds are only the legacy defaults
+ * Checks if migration is needed and performs it
+ * This handles versioning or initial setup logic
  */
-export function hasOnlyLegacyFeeds(currentFeeds: FeedSource[]): boolean {
-  if (currentFeeds.length !== 2) {
-    return false;
-  }
-  
-  const currentUrls = currentFeeds.map(feed => feed.url).sort();
-  const legacyUrls = LEGACY_DEFAULT_FEEDS.sort();
-  
-  return JSON.stringify(currentUrls) === JSON.stringify(legacyUrls);
-}
-
-/**
- * Migrate feeds to the latest version
- */
-export function migrateFeeds(currentFeeds: FeedSource[]): {
-  feeds: FeedSource[];
-  migrated: boolean;
-  reason: string;
-} {
-  const currentVersion = getCurrentFeedsVersion();
-  
-  // If no version is set, this is a legacy installation
-  if (!currentVersion) {
-    // Check if user only has the legacy default feeds
-    if (hasOnlyLegacyFeeds(currentFeeds)) {
-      // User hasn't customized feeds, safe to upgrade to new defaults
-      setFeedsVersion(CURRENT_FEEDS_VERSION);
-      return {
-        feeds: DEFAULT_FEEDS_V2,
-        migrated: true,
-        reason: 'Upgraded from legacy default feeds to new curated collection'
-      };
-    } else {
-      // User has customized feeds, just set version and auto-categorize existing feeds
-      const categorizedFeeds = autoCategorizeFeeds(currentFeeds);
-      setFeedsVersion(CURRENT_FEEDS_VERSION);
-      return {
-        feeds: categorizedFeeds,
-        migrated: true,
-        reason: 'Applied automatic categorization to existing custom feeds'
-      };
-    }
-  }
-  
-  // If version is current, no migration needed
-  if (currentVersion === CURRENT_FEEDS_VERSION) {
+export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; feeds: FeedSource[]; reason?: string } => {
+  // If no feeds, initialize with defaults
+  if (!currentFeeds || currentFeeds.length === 0) {
     return {
-      feeds: currentFeeds,
-      migrated: false,
-      reason: 'Feeds are already up to date'
+      migrated: true,
+      feeds: getDefaultFeeds(),
+      reason: 'Initialized with default feeds'
     };
   }
-  
-  // Future version migrations would go here
-  // For now, just update version and auto-categorize
-  const categorizedFeeds = autoCategorizeFeeds(currentFeeds);
-  setFeedsVersion(CURRENT_FEEDS_VERSION);
-  
+
+  // Add auto-categorization logic here if needed for legacy feeds
+  // For now, we just return the current feeds if they exist
+  let hasChanges = false;
+  const migratedFeeds = currentFeeds.map(feed => {
+    // Example migration: ensure categoryId exists if it matches a known feed
+    if (!feed.categoryId) {
+      const knownFeed = DEFAULT_FEEDS.find(df => df.url === feed.url);
+      if (knownFeed && knownFeed.categoryId) {
+        hasChanges = true;
+        return { ...feed, categoryId: knownFeed.categoryId };
+      }
+    }
+    return feed;
+  });
+
+  if (hasChanges) {
+    return {
+      migrated: true,
+      feeds: migratedFeeds,
+      reason: 'Categorized legacy feeds'
+    };
+  }
+
   return {
-    feeds: categorizedFeeds,
-    migrated: true,
-    reason: 'Updated feeds version and applied categorization'
+    migrated: false,
+    feeds: currentFeeds
   };
-}
-
-/**
- * Get default feeds for new installations
- */
-export function getDefaultFeeds(): FeedSource[] {
-  return DEFAULT_FEEDS_V2;
-}
-
-/**
- * Reset feeds to defaults (for user-initiated reset)
- */
-export function resetToDefaultFeeds(): FeedSource[] {
-  setFeedsVersion(CURRENT_FEEDS_VERSION);
-  return DEFAULT_FEEDS_V2;
-}
-
-/**
- * Add new feeds to existing collection (avoiding duplicates)
- */
-export function addFeedsToCollection(
-  existingFeeds: FeedSource[], 
-  newFeeds: FeedSource[]
-): FeedSource[] {
-  const existingUrls = new Set(existingFeeds.map(feed => feed.url));
-  const feedsToAdd = newFeeds.filter(feed => !existingUrls.has(feed.url));
-  
-  return [...existingFeeds, ...feedsToAdd];
-}
-
-/**
- * Get migration status for debugging
- */
-export function getMigrationStatus(): {
-  currentVersion: string | null;
-  latestVersion: string;
-  needsMigration: boolean;
-} {
-  const currentVersion = getCurrentFeedsVersion();
-  return {
-    currentVersion,
-    latestVersion: CURRENT_FEEDS_VERSION,
-    needsMigration: needsFeedMigration()
-  };
-}
+};

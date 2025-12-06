@@ -26,6 +26,7 @@ export interface FeedLoadingState {
   totalFeeds: number;
   errors: FeedError[];
   isBackgroundRefresh: boolean;
+  currentAction?: string;
 }
 
 export interface FeedError {
@@ -63,6 +64,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     totalFeeds: feeds.length,
     errors: [],
     isBackgroundRefresh: false,
+    currentAction: '', // New field for granular status
   });
 
   const [articles, setArticles] = useState<Article[]>([]);
@@ -188,6 +190,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         totalFeeds: 0,
         errors: [],
         isBackgroundRefresh: false,
+        currentAction: 'No feeds configured',
       });
       return;
     }
@@ -215,6 +218,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             totalFeeds: currentFeeds.length,
             errors: [],
             isBackgroundRefresh: true,
+            currentAction: 'Updating feeds in background...',
           });
 
           logger.info(`Displaying ${cachedArticles.length} cached articles while refreshing`, {
@@ -233,6 +237,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         totalFeeds: currentFeeds.length,
         errors: [],
         isBackgroundRefresh: false,
+        currentAction: 'Initializing feed engine...',
       });
     }
 
@@ -257,10 +262,19 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const batch = feedBatches[batchIndex];
       
       logger.debug(`Processing batch ${batchIndex + 1}/${feedBatches.length} with ${batch.length} feeds`);
+      
+      // Update status for user
+      setLoadingState(prev => ({
+        ...prev,
+        currentAction: `Fetching batch ${batchIndex + 1} of ${feedBatches.length}...`
+      }));
 
       // Process feeds in current batch concurrently
       const batchPromises = batch.map(async (feed) => {
         try {
+          // Update granular status for single feed start (optional, might flicker too fast)
+          // setLoadingState(prev => ({ ...prev, currentAction: `Contacting ${new URL(feed.url).hostname}...` }));
+
           const result = await loadSingleFeedWithTimeout(feed, abortControllerRef.current?.signal);
 
           // Update progress immediately when each feed completes
@@ -271,6 +285,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             ...prev,
             loadedFeeds: loadedCount,
             progress,
+            // Show what we just finished or generic progress
+            currentAction: `Processed ${feed.customTitle || new URL(feed.url).hostname}`
           }));
 
           // Add result to map
@@ -305,6 +321,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             ...prev,
             loadedFeeds: loadedCount,
             progress,
+            currentAction: `Error processing ${feed.customTitle || 'feed'}`
           }));
 
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -354,6 +371,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         totalFeeds: currentFeeds.length,
         errors,
         isBackgroundRefresh: false,
+        currentAction: 'All feeds loaded',
       });
 
       const successfulFeeds = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
@@ -379,6 +397,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         totalFeeds: currentFeeds.length,
         errors,
         isBackgroundRefresh: false,
+        currentAction: 'Error during loading process',
       });
     }
   }, [getCachedArticlesFromSmartCache, loadSingleFeedWithTimeout, updateArticlesFromFeedResults, logger]);
@@ -399,6 +418,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       ...prev,
       errors: prev.errors.filter(error => !failedUrls.includes(error.url)),
       status: 'loading',
+      currentAction: 'Retrying failed feeds...',
     }));
 
     // Load failed feeds
@@ -434,6 +454,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     setLoadingState(prev => ({
       ...prev,
       status: 'success',
+      currentAction: 'Retry completed',
     }));
   }, [loadingState.errors, loadSingleFeedWithTimeout, updateArticlesFromFeedResults, logger]);
 
@@ -452,6 +473,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       ...prev,
       errors: prev.errors.filter(error => !urls.includes(error.url)),
       status: 'loading',
+      currentAction: 'Retrying selected feeds...',
     }));
 
     // Load selected feeds
@@ -487,6 +509,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     setLoadingState(prev => ({
       ...prev,
       status: 'success',
+      currentAction: 'Selected retry completed',
     }));
   }, [loadSingleFeedWithTimeout, updateArticlesFromFeedResults, logger]);
 
@@ -502,6 +525,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     setLoadingState(prev => ({
       ...prev,
       status: 'idle',
+      currentAction: 'Cancelled by user',
     }));
 
     logger.info('Feed loading cancelled');

@@ -18,6 +18,7 @@ import { getLogger } from "./logger";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
 import { parseSecureRssXml, secureXmlUtils } from "./secureXmlParser";
 import { getAlternativeUrls } from "./feedUrlMapper";
+import { sanitizeWithDomPurify } from "../utils/sanitization";
 
 // Configurações otimizadas
 const DEFAULT_TIMEOUT_MS = 8000; // Timeout mais generoso
@@ -185,11 +186,16 @@ function parseRss2JsonResponse(data: string, feedUrl: string): { title: string; 
       }
     }
 
+    const description = item.description ? cleanDescription(item.description).substring(0, 500) : "";
+    const content = item.content || item.description || "";
+    const sanitizedContent = sanitizeWithDomPurify(content);
+
     const article: Article = {
       title: item.title ? sanitizeTitle(item.title) : "No Title",
       link: item.link || feedUrl,
       pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
-      description: item.description ? cleanDescription(item.description).substring(0, 200) : "",
+      description: description,
+      content: sanitizedContent || undefined,
       sourceTitle: json.feed?.title ? sanitizeTitle(json.feed.title) : "RSS Feed",
       author: item.author ? sanitizeAuthor(item.author) : undefined,
       categories: item.categories || [],
@@ -279,19 +285,40 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         }
       }
 
-      let description = "";
+      // Handling Description and Content
+      // Priority for Description: description > summary > content (plain text for card)
+      // Priority for Content: content:encoded > content > description (html for modal)
+      
+      let descriptionRaw = "";
+      let contentRaw = "";
+
       const descElements = item.getElementsByTagName("description");
       const summaryElements = item.getElementsByTagName("summary");
       const contentElements = item.getElementsByTagName("content");
-      const descElement = descElements[0] || summaryElements[0] || contentElements[0];
-      if (descElement?.textContent) {
-        description = cleanDescription(descElement.textContent).substring(0, 200);
-      }
+      const encodedContentElements = item.getElementsByTagName("content:encoded");
+      const bodyElements = item.getElementsByTagName("body"); // sometimes appearing in weird feeds
+
+      // 1. Resolve raw strings
+      const descEl = descElements[0] || summaryElements[0];
+      if (descEl?.textContent) descriptionRaw = descEl.textContent;
+
+      const contentEl = encodedContentElements[0] || contentElements[0] || bodyElements[0] || descElements[0];
+      if (contentEl?.textContent) contentRaw = contentEl.textContent;
+
+      // Fallback if one is missing
+      if (!descriptionRaw && contentRaw) descriptionRaw = contentRaw;
+      if (!contentRaw && descriptionRaw) contentRaw = descriptionRaw;
+
+      // 2. Process
+      const description = cleanDescription(descriptionRaw).substring(0, 500); // Increased limit as requested
+      const content = sanitizeWithDomPurify(contentRaw);
 
       let author = "";
       const authorElements = item.getElementsByTagName("author");
-      const creatorElements = item.getElementsByTagName("creator");
-      const authorElement = authorElements[0] || creatorElements[0];
+      const creatorElements = item.getElementsByTagName("creator"); // dc:creator often appears as creator in simple parsing
+      const dcCreatorElements = item.getElementsByTagName("dc:creator"); // explicit namespaced
+      
+      const authorElement = authorElements[0] || dcCreatorElements[0] || creatorElements[0];
       if (authorElement?.textContent) {
         const rawAuthor = authorElement.textContent.trim();
         author = sanitizeAuthor(rawAuthor);
@@ -337,9 +364,10 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         }
       }
 
-      // Método 4: extrair da descrição
-      if (!imageUrl && descElement) {
-        const htmlContent = descElement.innerHTML || descElement.textContent || "";
+      // Método 4: extrair da descrição/content (raw html)
+      // Use full content to find image if not in description
+      if (!imageUrl) {
+        const htmlContent = contentRaw || descriptionRaw || "";
         const imgPatterns = [
           /<img[^>]+src=["']([^"']+)["'][^>]*>/i,
           /src=["']([^"']+\.(?:jpg|jpeg|png|gif|webp|svg))[^"']*/i,
@@ -383,6 +411,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           link,
           pubDate,
           description,
+          content: content || undefined,
           imageUrl: validImageUrl,
           author: author || undefined,
           categories,

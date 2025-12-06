@@ -29,6 +29,7 @@ import { PaginationControls } from "./components/PaginationControls";
 import { SearchFilters } from "./components/SearchBar";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useNotification } from "./contexts/NotificationContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
 import { useAppearance } from "./hooks/useAppearance";
@@ -74,7 +75,7 @@ const App: React.FC = () => {
       setFeeds(migrationResult.feeds);
 
       // Show notification to user about the migration
-      if (migrationResult.reason.includes('Upgraded from legacy')) {
+      if (migrationResult.reason?.includes('Upgraded from legacy')) {
         showNotification(
           '🎉 Feeds atualizados! Agora você tem 16 feeds organizados por categoria.',
           {
@@ -82,7 +83,7 @@ const App: React.FC = () => {
             duration: 8000
           }
         );
-      } else if (migrationResult.reason.includes('categorization')) {
+      } else if (migrationResult.reason?.includes('categorization')) {
         showNotification(
           '✨ Seus feeds foram organizados automaticamente por categoria.',
           {
@@ -116,6 +117,7 @@ const App: React.FC = () => {
     setSelectedCategory(category);
     setSelectedFeedUrl(feedUrl || null);
     pagination.resetPagination();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // Extended theme system
@@ -159,6 +161,21 @@ const App: React.FC = () => {
       loadFeeds();
     }
   }, [feeds]); // Only depend on feeds, loadFeeds is stable from the hook
+
+  // Auto-refresh logic
+  useEffect(() => {
+    if (layoutSettings.autoRefreshInterval > 0 && feeds.length > 0) {
+      const intervalMs = layoutSettings.autoRefreshInterval * 60 * 1000;
+      console.log(`Setting up auto-refresh every ${layoutSettings.autoRefreshInterval} minutes`);
+      
+      const id = setInterval(() => {
+        console.log('Triggering auto-refresh...');
+        loadFeeds(true); // true = isBackgroundRefresh
+      }, intervalMs);
+      
+      return () => clearInterval(id);
+    }
+  }, [layoutSettings.autoRefreshInterval, feeds.length, loadFeeds]);
 
   const handleRefresh = useCallback(() => {
     loadFeeds(true);
@@ -213,10 +230,28 @@ const App: React.FC = () => {
     let filteredArticles: Article[];
 
     if (selectedFeedUrl) {
-      filteredArticles = articles.filter(
-        (article) =>
-          article.link?.includes(new URL(selectedFeedUrl).hostname)
-      );
+      // Find the feed configuration to get its custom title
+      const selectedFeed = feeds.find(f => f.url === selectedFeedUrl);
+      const feedHostname = (() => {
+        try { return new URL(selectedFeedUrl).hostname.replace('www.', ''); } 
+        catch { return ''; }
+      })();
+      
+      filteredArticles = articles.filter((article) => {
+        // Match by custom title if available
+        if (selectedFeed?.customTitle && article.sourceTitle === selectedFeed.customTitle) {
+          return true;
+        }
+        // Match by hostname in article link
+        if (feedHostname && article.link?.includes(feedHostname)) {
+          return true;
+        }
+        // Match by hostname in sourceTitle (some feeds use domain as title)
+        if (feedHostname && article.sourceTitle?.toLowerCase().includes(feedHostname.replace(/\..+$/, ''))) {
+          return true;
+        }
+        return false;
+      });
     } else if (isSearchActive && searchResults.length >= 0) {
       // When search is active, show search results
       filteredArticles = searchResults;
@@ -429,6 +464,7 @@ const App: React.FC = () => {
   });
 
   return (
+    <LanguageProvider>
     <div
       className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""
         } ${backgroundConfig.type === 'solid' ? "bg-[rgb(var(--color-background))]" : ""}`}
@@ -487,21 +523,24 @@ const App: React.FC = () => {
       <main
         ref={swipeRef}
         id="main-content"
-        className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 lg:py-8 xl:py-10 relative z-10 flex-grow"
+        className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-2 pb-6 lg:pt-4 lg:pb-8 relative z-10 flex-grow"
         tabIndex={-1}
       >
         {/* Progressive loading indicators */}
         {loadingState.status === "loading" && (
-          <FeedLoadingProgress
-            loadedFeeds={loadingState.loadedFeeds}
-            totalFeeds={loadingState.totalFeeds}
-            progress={loadingState.progress}
-            isBackgroundRefresh={loadingState.isBackgroundRefresh}
-            errors={loadingState.errors}
-            onCancel={cancelLoading}
-            onRetryErrors={retryFailedFeeds}
-            className="mb-6"
-          />
+            <div className="flex flex-col items-center justify-center min-h-[40vh] w-full max-w-2xl mx-auto px-4">
+              <FeedLoadingProgress
+                loadedFeeds={loadingState.loadedFeeds}
+                totalFeeds={loadingState.totalFeeds}
+                progress={loadingState.progress}
+                isBackgroundRefresh={loadingState.isBackgroundRefresh}
+                errors={loadingState.errors}
+                currentAction={loadingState.currentAction}
+                onCancel={cancelLoading}
+                onRetryErrors={retryFailedFeeds}
+                className="w-full"
+              />
+            </div>
         )}
 
         {/* Search active indicator */}
@@ -553,7 +592,11 @@ const App: React.FC = () => {
         {/* Show content when we have articles, even if still loading (progressive rendering) */}
         {paginatedArticles.length > 0 && (
           <>
-            <FeedContent articles={paginatedArticles} timeFormat={timeFormat} />
+            <FeedContent 
+              articles={paginatedArticles} 
+              timeFormat={timeFormat} 
+              selectedCategory={selectedCategory}
+            />
 
             {/* Pagination at bottom using enhanced PaginationControls */}
             {pagination.totalPages > 1 && (
@@ -691,6 +734,7 @@ const App: React.FC = () => {
         <PerformanceDebugger />
       </Suspense>
     </div>
+    </LanguageProvider>
   );
 };
 

@@ -2,7 +2,7 @@
 
 A modern, high-performance RSS feed aggregator designed to serve as a browser homepage. Built with React 19, TypeScript, and optimized with Bun runtime for superior performance and developer experience.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)
 ![React](https://img.shields.io/badge/React-19.1.0-blue.svg)
@@ -14,7 +14,58 @@ This application provides a centralized interface for consuming RSS/Atom feeds w
 
 ![Preview: Dashboard](/public/assets/screen.png)
 
-## Installation
+## New Features
+
+### 🌍 Internationalization (i18n)
+- **Multi-language Support:** The entire interface is now fully translated into Portuguese (BR), English, Spanish, French, Italian, Chinese, and Japanese.
+- **Auto-Detection:** The app attempts to detect your system language automatically.
+- **Quick Switch:** Change languages instantly via the Settings > Appearance tab.
+
+### 🎥 YouTube Feed Discovery & Playback
+- **Add Channels Easily:** Paste any YouTube video URL to automatically find and subscribe to the channel's RSS feed.
+- **Inline Playback:** Watch videos directly within the dashboard using the **Brutalist** layout's specialized video player card.
+
+### 🎨 Enhanced Category Management
+- **Quick Actions:** Pin, Edit, Delete, and Change Layouts directly from the navigation bar dropdowns or the Manage Categories screen.
+- **Custom Layouts per Category:** Assign specific visual styles (e.g., Gallery for photos, List for news) to individual categories.
+- **Visual Feedback:** New progress indicators when adding feeds.
+
+### 💾 Backup & Restore
+- **Full Data Export:** Save your entire setup (feeds, categories, settings, favorites) to a JSON file.
+- **Seamless Migration:** Restore your environment on any device with a single click in Settings > Advanced.
+
+## Personalization Guide
+
+### 1. Organizing Feeds & Categories
+- **Feed Manager:** Use the "Manage Feeds" button to add new sources.
+- **Categories:** Drag and drop feeds between categories to organize them.
+- **Color Coding:** Assign colors to categories for quick visual identification.
+- **Layouts:** In the Category Manager (Edit/Create), select a **Default Layout** that best suits the content type.
+
+### 2. Appearance & Visuals
+Access the **Settings** (gear icon) -> **Appearance** tab to tweak:
+- **Theme:** Choose from presets (Light, Dark, Colorful) or create your own custom color scheme.
+- **Header:** Customize the header style (Sticky, Floating, Minimal), logo, and blur effects.
+- **Background:** Set a solid color, gradient (linear/radial), pattern, or custom image.
+
+### 3. Layout Modes
+Choose the best way to consume your content:
+- **Auto (Category Default):** The recommended setting. Changes layout dynamically as you navigate categories.
+- **Magazine Grid:** Classic 3-column layout with featured articles.
+- **Masonry:** Pinterest-style cards, perfect for visual inspiration.
+- **Portal/List:** High-density list with a sidebar, great for scanning headlines.
+- **Immersive:** Netflix-style, focused on large imagery.
+- **Minimal:** Text-focused, centered layout for distraction-free reading.
+- **Brutalist:** High-contrast, raw aesthetic with inline video support.
+- **New Layouts:** Newspaper, Focus, Gallery, Compact, Split, Cyberpunk, Terminal, Polaroid.
+
+### 4. Data Portability
+Don't lose your curated list!
+1. Go to **Settings** -> **Advanced**.
+2. Click **Export Backup** to download your data.
+3. Use **Restore Backup** on any other device to sync your setup.
+
+## Installation & Development
 
 ### Prerequisites
 - Bun 1.0+ (recommended) or Node.js 18+
@@ -41,229 +92,9 @@ bun run type-check
 # Production build
 bun run build
 
-# Preview production build
-bun run preview
-```
-
-### GitHub Pages Deployment
-This application is fully compatible with GitHub Pages and requires no server-side dependencies:
-
-```bash
-# Build for production
-bun run build
-
 # The build output in 'dist/' directory is ready for deployment
-# Simply push the repository and enable GitHub Pages pointing to the 'dist' folder
 ```
-
-**Note**: The application uses public CORS proxies to fetch RSS feeds, eliminating the need for any backend server. All data is processed and stored locally in the browser.
-
-## Development
-
-### Available Scripts
-```bash
-bun dev              # Start development server
-bun run build        # Production build
-bun run preview      # Preview production build
-bun run test         # Run core tests (133 tests, ~15s)
-bun run test:all     # Run comprehensive tests
-bun run test:watch   # Run tests in watch mode
-bun run test:coverage # Generate coverage report
-bun run type-check   # TypeScript type checking
-bun run clean        # Clean build artifacts
-```
-
-### Project Structure
-```
-├── components/             # React components
-│   ├── ui/                # Reusable UI components
-│   └── icons/             # Icon components
-├── contexts/              # React contexts
-├── hooks/                 # Custom React hooks
-├── services/              # Business logic and utilities
-│   ├── rssParser.ts       # RSS/Atom parsing
-│   ├── feedValidator.ts   # Feed validation
-│   ├── articleCache.ts    # Caching system
-│   └── performanceUtils.ts # Performance monitoring
-├── types/                 # TypeScript definitions
-├── utils/                 # Utility functions
-├── __tests__/             # Test files
-├── docs/                  # Documentation
-├── App.tsx                # Main application component
-├── index.tsx              # Application entry point
-└── vite.config.ts         # Build configuration
-```
-## Configuration
-
-### Environment Variables
-```bash
-# Development
-NODE_ENV=development
-
-# Production
-NODE_ENV=production
-```
-
-### Build Configuration
-The application uses Vite for building with the following optimizations:
-- ES2022 target for modern browsers
-- Code splitting for optimal loading
-- Asset optimization and compression
-- Source maps for debugging
-
-### Code Standards
-- TypeScript strict mode enabled
-- ESLint configuration for code quality
-- Prettier for code formatting
-- Conventional commit messages
-
-## Performance Metrics
-
-- **Bundle Size**: Optimized for minimal footprint
-- **Load Time**: Sub-second initial load
-- **Memory Usage**: Efficient memory management with automatic cleanup
-- **Test Coverage**: 100% success rate on core functionality
-
-## Browser Compatibility
-
-- Chrome/Chromium 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-
-## Technical Features
-
-### Core Functionality
-- **RSS/Atom Feed Processing**: Support for RSS 2.0, RSS 1.0 (RDF), and Atom 1.0 formats
-- **Progressive Feed Loading**: Optimized batch processing with configurable concurrency
-- **Intelligent Caching**: Multi-layer caching system with TTL and memory management
-- **Advanced Search**: Full-text search with filtering and categorization
-- **Offline Support**: Service worker implementation for offline functionality
-- **Performance Monitoring**: Built-in performance tracking and optimization
-
-### Security Features
-- **XML Security**: Protection against XXE attacks and malicious XML content
-- **Content Sanitization**: XSS prevention with secure content parsing
-- **Input Validation**: Comprehensive validation using Zod schemas
-- **CORS Handling**: Secure cross-origin request management
-
-### User Interface
-- **Responsive Design**: Mobile-first approach with adaptive layouts
-- **Theme System**: Extensible theming with dark/light mode support
-- **Accessibility**: WCAG 2.1 AA compliance with keyboard navigation
-- **Progressive Web App**: Installable with offline capabilities
-
-## Technology Stack
-
-### Runtime & Build Tools
-- **Bun 1.x**: JavaScript runtime and package manager
-- **Vite 7.0**: Build tool and development server
-- **TypeScript 5.8**: Static type checking
-- **PostCSS**: CSS processing with Autoprefixer
-
-### Frontend Framework
-- **React 19.1**: UI framework with concurrent features
-- **React DOM 19.1**: DOM rendering
-- **Material-UI 7.2**: Component library
-- **Emotion**: CSS-in-JS styling solution
-
-### Styling & UI
-- **Tailwind CSS 4.1**: Utility-first CSS framework
-- **Lucide React**: Icon library
-- **Responsive Design**: Mobile-first approach
-
-### Testing Framework
-- **Vitest 3.2**: Unit and integration testing
-- **Testing Library**: React component testing utilities
-- **JSDOM**: DOM environment for testing
-
-### Validation & Utilities
-- **Zod 4.0**: Runtime type validation
-- **Custom Hooks**: Reusable React logic
-- **Performance Utils**: Custom performance monitoring
-
-### Testing Strategy
-
-The project implements a tiered testing approach:
-
-**Core Tests** (`bun run test`)
-- 133 essential tests covering critical functionality
-- Execution time: ~15 seconds
-- Components: SearchBar, FavoriteButton, ProgressIndicator, SkeletonLoader
-- Hooks: useSearch, usePagination
-- Utilities: searchUtils
-
-**Comprehensive Tests** (`bun run test:all`)
-- Extended test suite including integration tests
-- Additional coverage for caching, validation, and performance
-
-### Performance Optimizations
-
-- **Bun Runtime**: 29% faster package installation and builds
-- **Code Splitting**: Lazy loading of non-critical components
-- **Bundle Optimization**: Tree shaking and minification
-- **Caching Strategy**: Multi-level caching with intelligent invalidation
-- **Memory Management**: Automatic cleanup and garbage collection
-
-## Default Feeds
-
-The application comes pre-configured with a curated selection of high-quality RSS feeds organized by category:
-
-### Technology (12 feeds)
-- **The Verge** - Technology, science, art and culture
-- **Wired** - How technology is transforming the world
-- **TechCrunch** - Startups, venture capital and emerging technology
-- **CNET** - Product reviews, tech news and buying guides
-- **Tecnoblog** - Brazil's largest technology blog (Portuguese)
-- **Meio Bit** - Technology with humor and irreverence (Portuguese)
-- **XDA Developers** - Android development and mobile customization
-- **It's FOSS** - Linux, open source and free software
-- **Ars Technica** - In-depth technical analysis and tech news
-- **OMG! Ubuntu!** - Ubuntu Linux news, tips and tutorials
-- **OMG! Linux** - Linux world news and updates
-- **Diolinux** - Linux, open source and technology in Portuguese
-
-### Entertainment (2 feeds)
-- **Polygon** - Games, entertainment and nerd culture
-- **Jogabilidade** - Brazil's largest gaming portal (Portuguese)
-
-### Science (1 feed)
-- **MIT News** - Research and discoveries from MIT
-
-### Reviews (1 feed)
-- **Tom's Guide** - Detailed tech product reviews and buying guides
-
-### Feed Management
-- All feeds are automatically categorized on first load
-- Users can add, remove, or recategorize feeds through the Feed Manager
-- Feed validation ensures all URLs are working and accessible
-- Automatic discovery helps find RSS feeds from website URLs
-- **Reset to Defaults**: Users can reset to the curated feed collection anytime
-- **Migration System**: Existing users are automatically upgraded to new feeds
-
-### Testing New Feeds
-To test the new default feeds on an existing installation:
-
-1. **Option 1 - Use Reset Button**: 
-   - Open Feed Manager → Click "Reset to Defaults" button
-   
-2. **Option 2 - Clear Browser Storage**:
-   - Open browser console (F12)
-   - Run: `localStorage.clear(); location.reload();`
-   
-3. **Option 3 - Incognito/Private Mode**:
-   - Open the app in incognito/private browsing mode
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Implement changes with appropriate tests
-4. Run test suite (`bun run test`)
-5. Ensure type safety (`bun run type-check`)
-6. Submit pull request
 
 ## License
 
 MIT License. See [LICENSE](LICENSE) file for details.
-

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Article } from '../../types';
+import { ArticleReaderModal } from '../ArticleReaderModal';
 
 interface BentoLayoutProps {
   articles: Article[];
@@ -7,6 +8,7 @@ interface BentoLayoutProps {
 }
 
 export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
+  const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   
   // Helper to determine size classes based on index
   // Pattern repeats every 10 items to ensure a nice mix without gaps
@@ -48,59 +50,72 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[220px] gap-4 p-4 grid-flow-dense">
-      {articles.map((article, index) => {
-        const spanClass = getSpanClasses(index);
-        const isLarge = spanClass.includes('col-span-2') && spanClass.includes('row-span-2');
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[220px] gap-4 p-4 grid-flow-dense">
+        {articles.map((article, index) => {
+          const spanClass = getSpanClasses(index);
+          const isLarge = spanClass.includes('col-span-2') && spanClass.includes('row-span-2');
 
-        return (
-          <article 
-            key={article.link} 
-            className={`
-              ${spanClass} 
-              group relative overflow-hidden rounded-3xl bg-[rgb(var(--color-surface))] border border-[rgb(var(--color-border))]
-              hover:shadow-xl transition-all duration-300
-            `}
-          >
-            {article.imageUrl ? (
-              <div className="absolute inset-0">
-                <img 
-                  src={article.imageUrl} 
-                  alt="" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
-              </div>
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))]" />
-            )}
-
-            <div className="absolute inset-0 p-5 flex flex-col justify-end">
-              <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                <div className="flex items-center space-x-2 text-xs text-gray-200 mb-2 opacity-0 group-hover:opacity-100 transition-opacity delay-75">
-                  <span className="bg-[rgb(var(--color-accent))] px-2 py-0.5 rounded-full text-white font-bold shadow-sm">
-                    {article.sourceTitle}
-                  </span>
-                  <span className="shadow-black drop-shadow-md">{new Date(article.pubDate).toLocaleDateString()}</span>
+          return (
+            <article 
+              key={article.link} 
+              onClick={() => setReadingArticle(article)}
+              className={`
+                ${spanClass} 
+                group relative overflow-hidden rounded-3xl bg-[rgb(var(--color-surface))] border border-[rgb(var(--color-border))]
+                hover:shadow-xl transition-all duration-300 cursor-pointer
+              `}
+            >
+              {article.imageUrl ? (
+                <div className="absolute inset-0">
+                  <img 
+                    src={article.imageUrl} 
+                    alt="" 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
                 </div>
-                
-                <h3 className={`font-bold text-white leading-tight mb-1 drop-shadow-md ${isLarge ? 'text-2xl md:text-3xl' : 'text-lg'}`}>
-                  <a href={article.link} target="_blank" rel="noopener noreferrer" className="hover:underline decoration-2 underline-offset-4">
-                    {article.title}
-                  </a>
-                </h3>
-                
-                {isLarge && (
-                  <p className="text-gray-200 text-sm line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity delay-100 drop-shadow-sm">
-                    {article.description}
-                  </p>
-                )}
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))]" />
+              )}
+
+              <div className="absolute inset-0 p-5 flex flex-col justify-end">
+                <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                  <div className="flex items-center space-x-2 text-xs text-gray-200 mb-2 opacity-0 group-hover:opacity-100 transition-opacity delay-75">
+                    <span className="bg-[rgb(var(--color-accent))] px-2 py-0.5 rounded-full text-white font-bold shadow-sm">
+                      {article.sourceTitle}
+                    </span>
+                    <span className="shadow-black drop-shadow-md">{new Date(article.pubDate).toLocaleDateString()}</span>
+                  </div>
+                  
+                  <h3 className={`font-bold text-white leading-tight mb-1 drop-shadow-md ${isLarge ? 'text-2xl md:text-3xl' : 'text-lg'}`}>
+                    <span className="hover:underline decoration-2 underline-offset-4">
+                      {article.title}
+                    </span>
+                  </h3>
+                  
+                  {isLarge && (
+                    <p className="text-gray-200 text-sm line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity delay-100 drop-shadow-sm">
+                      {article.description}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          </article>
-        );
-      })}
-    </div>
+            </article>
+          );
+        })}
+      </div>
+      {readingArticle && (
+        <ArticleReaderModal 
+          article={readingArticle}
+          onClose={() => setReadingArticle(null)}
+          onNext={() => {}}
+          onPrev={() => {}}
+          hasNext={false}
+          hasPrev={false}
+        />
+      )}
+    </>
   );
 };

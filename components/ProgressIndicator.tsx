@@ -79,6 +79,7 @@ interface FeedLoadingProgressProps {
   progress: number;
   isBackgroundRefresh?: boolean;
   errors?: Array<{ url: string; error: string; feedTitle?: string }>;
+  currentAction?: string;
   onCancel?: () => void;
   onRetryErrors?: () => void;
   className?: string;
@@ -93,6 +94,7 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   progress,
   isBackgroundRefresh = false,
   errors = [],
+  currentAction,
   onCancel,
   onRetryErrors,
   className = "",
@@ -100,160 +102,64 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   const hasErrors = errors.length > 0;
   const isComplete = loadedFeeds >= totalFeeds;
 
+  // Compact inline loading indicator
   return (
-    <div className={`${className}`}>
-      <div
-        className={`rounded-lg p-4 ${
-          isBackgroundRefresh
-            ? "bg-blue-50 border border-blue-200"
-            : hasErrors
-            ? "bg-yellow-50 border border-yellow-200"
-            : "bg-gray-800 border border-gray-700"
-        }`}
-      >
-        <div className="flex items-center space-x-3">
-          {/* Loading spinner */}
-          {!isComplete && (
-            <div
-              className={`animate-spin rounded-full border-t-2 border-b-2 ${
-                isBackgroundRefresh
-                  ? "h-5 w-5 border-blue-500"
-                  : hasErrors
-                  ? "h-5 w-5 border-yellow-500"
-                  : "h-5 w-5 border-[rgb(var(--color-accent))]"
-              }`}
-            />
-          )}
-
-          {/* Success icon when complete */}
-          {isComplete && !hasErrors && (
-            <div className="text-green-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-          )}
-
-          {/* Warning icon when there are errors */}
-          {hasErrors && (
-            <div className="text-yellow-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-          )}
-
-          <div className="flex-1">
-            {/* Status message */}
-            <p
-              className={`font-medium ${
-                isBackgroundRefresh
-                  ? "text-blue-800"
-                  : hasErrors
-                  ? "text-yellow-800"
-                  : "text-[rgb(var(--color-text))]"
-              }`}
-            >
-              {isBackgroundRefresh
-                ? "Refreshing feeds in background..."
-                : isComplete
-                ? hasErrors
-                  ? `Loading complete with ${errors.length} error${
-                      errors.length !== 1 ? "s" : ""
-                    }`
-                  : "All feeds loaded successfully"
-                : "Loading feeds..."}
-            </p>
-
-            {/* Progress bar */}
-            <ProgressBar
-              progress={progress}
-              className="mt-2"
-              color={hasErrors ? "warning" : "primary"}
-              size="md"
-            />
-
-            {/* Feed count */}
-            <p
-              className={`text-sm mt-1 ${
-                isBackgroundRefresh
-                  ? "text-blue-600"
-                  : hasErrors
-                  ? "text-yellow-600"
-                  : "text-[rgb(var(--color-textSecondary))]"
-              }`}
-            >
-              {loadedFeeds} of {totalFeeds} feeds loaded
-              {hasErrors && ` (${errors.length} failed)`}
-            </p>
-
-            {/* Error details */}
-            {hasErrors && (
-              <div className="mt-3 space-y-1">
-                <p className="text-yellow-700 text-sm font-medium">
-                  Failed feeds:
-                </p>
-                {errors.slice(0, 3).map((error, index) => (
-                  <div key={index} className="text-yellow-600 text-xs">
-                    • {error.feedTitle || new URL(error.url).hostname}
-                  </div>
-                ))}
-                {errors.length > 3 && (
-                  <div className="text-yellow-600 text-xs">
-                    • ...and {errors.length - 3} more
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex space-x-3 mt-3">
-              {hasErrors && onRetryErrors && (
-                <button
-                  onClick={onRetryErrors}
-                  className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded text-sm font-medium transition-colors"
-                >
-                  Retry failed feeds
-                </button>
-              )}
-              {!isComplete && onCancel && (
-                <button
-                  onClick={onCancel}
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    isBackgroundRefresh
-                      ? "bg-blue-100 hover:bg-blue-200 text-blue-800"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                  }`}
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </div>
+    <div className={`w-full max-w-md ${className}`}>
+      {/* Main compact bar */}
+      <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-900/70 border border-white/5">
+        {/* Spinner or status icon */}
+        {!isComplete ? (
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-transparent border-[rgb(var(--color-accent))]" />
+        ) : hasErrors ? (
+          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        )}
+        
+        {/* Status text */}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-gray-300 truncate">
+            {currentAction || (isBackgroundRefresh ? "Updating..." : "Loading...")}
+          </p>
         </div>
+        
+        {/* Stats */}
+        <div className="flex items-center gap-2 text-xs text-gray-500 font-mono shrink-0">
+          <span>{loadedFeeds}/{totalFeeds}</span>
+          <span className="text-[rgb(var(--color-accent))]">{Math.round(progress)}%</span>
+        </div>
+        
+        {/* Cancel button */}
+        {!isComplete && onCancel && (
+          <button onClick={onCancel} className="text-gray-500 hover:text-white text-xs transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
+      
+      {/* Slim progress bar */}
+      <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden mt-1">
+        <div 
+          className={`h-full rounded-full transition-all duration-200 ease-out ${hasErrors ? "bg-yellow-500" : "bg-[rgb(var(--color-accent))]"}`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      
+      {/* Error summary (only if errors) */}
+      {hasErrors && isComplete && (
+        <div className="flex items-center justify-between mt-2 text-xs text-yellow-400/80">
+          <span>{errors.length} feed(s) failed</span>
+          {onRetryErrors && (
+            <button onClick={onRetryErrors} className="underline hover:text-yellow-300">Retry</button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

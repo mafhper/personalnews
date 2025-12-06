@@ -12,7 +12,7 @@ const DEFAULT_CATEGORIES: FeedCategory[] = [
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
-  createCategory: (name: string, color: string, description?: string) => FeedCategory;
+  createCategory: (name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode']) => FeedCategory;
   updateCategory: (id: string, updates: Partial<FeedCategory>) => void;
   deleteCategory: (id: string) => void;
   reorderCategories: (categoryIds: string[]) => void;
@@ -22,6 +22,7 @@ export interface UseFeedCategoriesReturn {
   exportCategories: () => string;
   importCategories: (data: string) => boolean;
   resetToDefaults: () => void;
+  resetCategoryLayouts: () => void;
 }
 
 export const useFeedCategories = (): UseFeedCategoriesReturn => {
@@ -48,7 +49,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     });
   }, []);
 
-  const createCategory = useCallback((name: string, color: string, description?: string): FeedCategory => {
+  const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode']): FeedCategory => {
     const newCategory: FeedCategory = {
       id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
@@ -56,6 +57,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       description,
       order: 0, // Will be updated in the setter function
       isDefault: false,
+      layoutMode,
     };
 
     setCategories(prev => {
@@ -198,6 +200,14 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     setCategories(DEFAULT_CATEGORIES);
   }, [setCategories]);
 
+  // Clear all category-specific layout overrides
+  const resetCategoryLayouts = useCallback(() => {
+    setCategories(prev => prev.map(category => ({
+      ...category,
+      layoutMode: undefined // Remove the layout override
+    })));
+  }, [setCategories]);
+
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => a.order - b.order);
   }, [categories]);
@@ -214,5 +224,6 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     exportCategories,
     importCategories,
     resetToDefaults,
+    resetCategoryLayouts,
   };
 };

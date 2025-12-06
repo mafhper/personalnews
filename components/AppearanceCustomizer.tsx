@@ -493,6 +493,37 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
           {activeTab === "content" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <Card variant="glass" className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Layout Mode</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { value: 'default', label: 'Auto (Category Default)', desc: 'Uses the layout configured for the current category' },
+                    { value: 'grid', label: 'Magazine Grid', desc: 'Classic 3-column grid with featured article' },
+                    { value: 'masonry', label: 'Masonry', desc: 'Pinterest-style cascading grid' },
+                    { value: 'list', label: 'List / Portal', desc: 'Compact list with sidebar' },
+                    { value: 'minimal', label: 'Minimal', desc: 'Centered text-focused layout' },
+                    { value: 'immersive', label: 'Immersive', desc: 'Netflix-style visual experience' },
+                    { value: 'timeline', label: 'Timeline', desc: 'Vertical chronological feed' },
+                    { value: 'bento', label: 'Bento', desc: 'Asymmetric dashboard grid' },
+                    { value: 'brutalist', label: 'Brutalist', desc: 'High contrast, bold typography' },
+                  ].map((mode) => (
+                    <label key={mode.value} className={`flex flex-col p-3 border rounded-xl cursor-pointer transition-all ${contentConfig.layoutMode === mode.value ? 'border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10' : 'border-gray-700 hover:border-gray-500 bg-gray-800/50'}`}>
+                      <div className="flex items-center mb-1">
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          name="layoutMode"
+                          checked={contentConfig.layoutMode === mode.value}
+                          onChange={() => updateContentConfig({ layoutMode: mode.value as any })}
+                        />
+                        <span className="font-medium text-white">{mode.label}</span>
+                      </div>
+                      <span className="text-xs text-gray-400">{mode.desc}</span>
+                    </label>
+                  ))}
+                </div>
+              </Card>
+
+              <Card variant="glass" className="p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Article Metadata</h3>
                 <div className="space-y-3">
                   {[

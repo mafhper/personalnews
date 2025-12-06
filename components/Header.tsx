@@ -6,6 +6,7 @@ import Logo from "./Logo";
 import { HeaderIcons } from "./icons";
 import FeedDropdown from "./FeedDropdown";
 import { useAppearance } from "../hooks/useAppearance";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface HeaderProps {
   onManageFeedsClick: () => void;
@@ -30,12 +31,39 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { headerConfig } = useAppearance();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const { t } = useLanguage();
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > 10);
+      
+      // Hidden mode: show on scroll up, hide on scroll down after delay
+      if (headerConfig.position === 'hidden') {
+        if (currentScrollY < lastScrollY.current || currentScrollY < 50) {
+          // Scrolling up or near top - show header
+          setIsHeaderVisible(true);
+          if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+          // Auto-hide after 3 seconds of no scrolling
+          hideTimeoutRef.current = setTimeout(() => {
+            if (window.scrollY > 50) setIsHeaderVisible(false);
+          }, 3000);
+        } else if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+          // Scrolling down past threshold - hide header
+          setIsHeaderVisible(false);
+        }
+        lastScrollY.current = currentScrollY;
+      }
+    };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    };
+  }, [headerConfig.position]);
 
   // Update document title and favicon based on headerConfig
   useEffect(() => {
@@ -61,6 +89,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     static: "relative",
     sticky: "sticky top-0 z-50",
     floating: "fixed top-2 left-2 right-2 rounded-xl border-[rgba(255,255,255,0.08)] md:top-4 md:left-4 md:right-4 md:rounded-2xl md:max-w-7xl md:mx-auto z-50",
+    hidden: `relative z-50 transition-all duration-500 ease-in-out ${isHeaderVisible ? 'opacity-100 max-h-24' : 'opacity-0 max-h-0 overflow-hidden -mb-1'}`,
   };
 
   const headerStyleClasses = {
@@ -186,10 +215,10 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Center Section: Categories (Desktop) */}
             {!isCentered && (
-              <div className="hidden lg:flex items-center flex-1 justify-center max-w-4xl mx-auto px-12 relative group/scroll">
+              <div className="hidden lg:flex flex-1 items-center relative group/scroll px-2">
                  
                  {/* Left Scroll Button */}
-                 <div className={`absolute left-0 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
+                 <div className={`absolute -left-3 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
                     <button 
                       onClick={() => scroll('left')}
                       className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
@@ -205,7 +234,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                  <div 
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
-                    className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all overflow-x-auto no-scrollbar max-w-full scroll-smooth ${!isMinimal ? 'border backdrop-blur-sm' : ''}`}
+                    className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all overflow-x-auto no-scrollbar max-w-full scroll-smooth flex-grow justify-center ${!isMinimal ? 'border backdrop-blur-sm' : ''}`}
                     style={{ ...(!isMinimal ? { backgroundColor: categoryBgStyle, borderColor: hexToRgba('#ffffff', 0.05) } : {}), scrollbarWidth: 'none' }}
                  >
                     {activeCategories.map((category) => (
@@ -213,16 +242,17 @@ const Header: React.FC<HeaderProps> = (props) => {
                           <FeedDropdown
                             category={category}
                             feeds={props.categorizedFeeds[category.id] || []}
-                            onSelectFeed={(feedUrl) => props.onNavigation(category.id, feedUrl)}
+                            onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
                             onSelectCategory={() => props.onNavigation(category.id)}
                             selectedCategory={props.selectedCategory}
+                            onEditCategory={props.onManageFeedsClick}
                           />
                       </div>
                     ))}
                  </div>
 
                  {/* Right Scroll Button */}
-                 <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
+                 <div className={`absolute -right-3 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
                     <button 
                       onClick={() => scroll('right')}
                       className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
@@ -240,7 +270,7 @@ const Header: React.FC<HeaderProps> = (props) => {
             {/* Centered Navigation (if style is centered) */}
             {isCentered && (
                <div 
-                 className={`hidden lg:flex items-center space-x-1 p-1 rounded-full transition-all mx-40 ${!isMinimal ? 'border backdrop-blur-sm' : ''}`} 
+                 className={`hidden lg:flex items-center space-x-1 p-1 rounded-full transition-all flex-grow justify-center ${!isMinimal ? 'border backdrop-blur-sm' : ''}`} 
                  style={!isMinimal ? { backgroundColor: categoryBgStyle, borderColor: hexToRgba('#ffffff', 0.05) } : {}}
                >
                {activeCategories.map((category) => (
@@ -248,9 +278,10 @@ const Header: React.FC<HeaderProps> = (props) => {
                    key={category.id}
                    category={category}
                    feeds={props.categorizedFeeds[category.id] || []}
-                   onSelectFeed={(feedUrl) => props.onNavigation(category.id, feedUrl)}
+                   onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
                    onSelectCategory={() => props.onNavigation(category.id)}
                    selectedCategory={props.selectedCategory}
+                   onEditCategory={props.onManageFeedsClick}
                  />
                ))}
              </div>
@@ -259,9 +290,9 @@ const Header: React.FC<HeaderProps> = (props) => {
             {/* Right Section: Actions */}
             <div className={`flex items-center justify-end space-x-2 flex-shrink-0 ${isCentered ? 'lg:absolute lg:right-4' : ''}`}>
 
-              {/* Pagination - Hide on smaller screens */}
+              {/* Pagination - Always visible on md+ screens */}
               {props.onPageChange && props.totalPages && props.totalPages > 1 && (
-                <div className="hidden 2xl:block">
+                <div className="hidden md:block">
                   <PaginationControls
                     currentPage={props.currentPage || 0}
                     totalPages={props.totalPages}
@@ -276,7 +307,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <button
                   onClick={props.onManageFeedsClick}
                   className="p-2 text-gray-400 hover:text-[rgb(var(--color-primary))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
-                  title="Gerenciar Feeds"
+                  title={t('header.manage_feeds')}
                 >
                   <HeaderIcons.Feeds showBackground={false} size="md" />
                 </button>
@@ -284,7 +315,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <button
                   onClick={props.onRefreshClick}
                   className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
-                  title="Atualizar feeds"
+                  title={t('header.refresh')}
                 >
                   <HeaderIcons.Refresh showBackground={false} size="md" />
                 </button>
@@ -307,14 +338,14 @@ const Header: React.FC<HeaderProps> = (props) => {
                                 className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center space-x-2"
                             >
                                 <HeaderIcons.Favorites showBackground={false} size="sm" />
-                                <span>Favoritos</span>
+                                <span>{t('header.favorites')}</span>
                             </button>
                             <button
                                 onClick={() => { props.onOpenSettings(); setShowMoreMenu(false); }}
                                 className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center space-x-2"
                             >
                                 <HeaderIcons.Settings showBackground={false} size="sm" />
-                                <span>Configurações</span>
+                                <span>{t('header.settings')}</span>
                             </button>
                         </div>
                     )}
@@ -366,7 +397,7 @@ const Header: React.FC<HeaderProps> = (props) => {
       </header>
 
       {/* Spacing for Floating Header only (Since Sticky/Static occupy space naturally now that strip is inside) */}
-      {isFloating && <div className="h-32 lg:h-32"></div>}
+      {isFloating && <div className="h-20 lg:h-24"></div>}
 
       {/* Mobile Drawer */}
       <div
@@ -386,7 +417,7 @@ const Header: React.FC<HeaderProps> = (props) => {
         >
           <div className="flex flex-col h-full">
             <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white">Menu</h2>
+                <h2 className="text-lg font-bold text-white">{t('header.menu')}</h2>
                 <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -401,7 +432,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                     articles={props.articles}
                     onSearch={props.onSearch}
                     onResultsChange={props.onSearchResultsChange}
-                    placeholder="Buscar artigos..."
+                    placeholder={t('search.placeholder')}
                     className="w-full"
                 />
                 </div>
@@ -413,28 +444,28 @@ const Header: React.FC<HeaderProps> = (props) => {
                         className="flex flex-col items-center justify-center p-4 bg-[rgba(139,92,246,0.1)] text-[rgb(var(--color-primary))] rounded-xl font-medium border border-[rgba(139,92,246,0.2)]"
                     >
                         <HeaderIcons.Feeds showBackground={false} size="md" />
-                        <span className="mt-2 text-xs">Feeds</span>
+                        <span className="mt-2 text-xs">{t('feeds.tab.feeds')}</span>
                     </button>
                     <button
                         onClick={() => { props.onOpenFavorites(); setMobileMenuOpen(false); }}
                         className="flex flex-col items-center justify-center p-4 bg-[rgba(255,255,255,0.05)] text-gray-300 rounded-xl font-medium hover:bg-[rgba(255,255,255,0.1)]"
                     >
                         <HeaderIcons.Favorites showBackground={false} size="md" />
-                        <span className="mt-2 text-xs">Favoritos</span>
+                        <span className="mt-2 text-xs">{t('header.favorites')}</span>
                     </button>
                     <button
                         onClick={() => { props.onOpenSettings(); setMobileMenuOpen(false); }}
                         className="flex flex-col items-center justify-center p-4 bg-[rgba(255,255,255,0.05)] text-gray-300 rounded-xl font-medium hover:bg-[rgba(255,255,255,0.1)]"
                     >
                         <HeaderIcons.Settings showBackground={false} size="md" />
-                        <span className="mt-2 text-xs">Configurações</span>
+                        <span className="mt-2 text-xs">{t('settings.title')}</span>
                     </button>
                     <button
                         onClick={() => { props.onRefreshClick(); setMobileMenuOpen(false); }}
                         className="flex flex-col items-center justify-center p-4 bg-[rgba(255,255,255,0.05)] text-gray-300 rounded-xl font-medium hover:bg-[rgba(255,255,255,0.1)]"
                     >
                         <HeaderIcons.Refresh showBackground={false} size="md" />
-                        <span className="mt-2 text-xs">Atualizar</span>
+                        <span className="mt-2 text-xs">{t('action.refresh')}</span>
                     </button>
                 </div>
             </div>

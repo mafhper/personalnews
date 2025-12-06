@@ -820,7 +820,35 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
             feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistMatch[1]}`;
         }
 
-        // Case 4: Handle (@Username) or Custom URL (c/CustomName) - Requires Fetching
+        // Case 4: Video URL (youtube.com/watch?v=... or youtu.be/...)
+        if (!feedUrl && (url.includes("/watch") || url.includes("youtu.be"))) {
+            try {
+                const content = await this.fetchWebsiteContent(url);
+                
+                // 1. Try meta itemprop="channelId"
+                const channelIdMatch = content.match(/itemprop=["']channelId["']\s+content=["'](UC[\w-]+)["']/i) ||
+                                       content.match(/content=["'](UC[\w-]+)["']\s+itemprop=["']channelId["']/i);
+                
+                if (channelIdMatch && channelIdMatch[1]) {
+                    feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelIdMatch[1]}`;
+                }
+                
+                // 2. Try JSON config "channelId":"UC..."
+                if (!feedUrl) {
+                    const jsonChannelMatch = content.match(/"channelId"\s*:\s*"(UC[\w-]+)"/);
+                    if (jsonChannelMatch && jsonChannelMatch[1]) {
+                        feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${jsonChannelMatch[1]}`;
+                    }
+                }
+
+                // 3. If we found a handle link instead (e.g. /@Username), we might need to fetch that page
+                // But usually video pages have the channelId directly. 
+            } catch (err) {
+                console.warn("Failed to fetch YouTube video page for discovery:", err);
+            }
+        }
+
+        // Case 5: Handle (@Username) or Custom URL (c/CustomName) - Requires Fetching
         // Also covers the case mentioned by user: accessing root to find link tag
         if (!feedUrl && (url.includes("/@") || url.includes("/c/") || (url.includes("youtube.com") && !url.includes("/watch")))) {
              try {
@@ -845,6 +873,27 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
                      if (channelIdMatch && channelIdMatch[1]) {
                          feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelIdMatch[1]}`;
                      }
+                 }
+
+                 // 3. Fallback: Look for ytInitialData (robust method)
+                 if (!feedUrl) {
+                    try {
+                        const jsonMatch = content.match(/var ytInitialData\s*=\s*({.+?});/);
+                        if (jsonMatch && jsonMatch[1]) {
+                            const data = JSON.parse(jsonMatch[1]);
+                            // Try to find channelId in common locations
+                            const channelId = 
+                                data?.metadata?.channelMetadataRenderer?.externalId ||
+                                data?.header?.c4TabbedHeaderRenderer?.channelId ||
+                                data?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.endpoint?.browseEndpoint?.browseId;
+                            
+                            if (channelId && channelId.startsWith('UC')) {
+                                feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Failed to parse ytInitialData", e);
+                    }
                  }
              } catch (err) {
                  console.warn("Failed to fetch YouTube channel page for discovery:", err);

@@ -26,7 +26,7 @@ const defaultContentConfig: ContentConfig = {
   showDate: true,
   showTime: false,
   showTags: true,
-  layoutMode: 'grid',
+  layoutMode: 'default',
   density: 'comfortable',
 };
 

@@ -43,6 +43,8 @@ import { useFeedCategories } from "../hooks/useFeedCategories";
 import { sanitizeArticleDescription } from "../utils/sanitization";
 import { resetToDefaultFeeds, addFeedsToCollection } from "../utils/feedMigration";
 import { DEFAULT_FEEDS, CURATED_FEEDS_BR, CURATED_FEEDS_INTL } from "../constants/curatedFeeds";
+import { FeedAnalytics } from "./FeedAnalytics";
+import { useLanguage } from "../contexts/LanguageContext";
 
 type CuratedListType = 'default' | 'br' | 'intl';
 
@@ -61,10 +63,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 }) => {
   const logger = useLogger("FeedManager");
   const { categories, createCategory, resetToDefaults } = useFeedCategories();
+  const { t } = useLanguage();
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedCategory, setNewFeedCategory] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"feeds" | "categories">(
-    "feeds" as "feeds" | "categories"
+  const [processingUrl, setProcessingUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"feeds" | "categories" | "analytics">(
+    "feeds" as "feeds" | "categories" | "analytics"
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lastArticleCount, setLastArticleCount] = useState(0);
@@ -436,6 +440,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
 
     // Start discovery process
+    setProcessingUrl(url);
     setDiscoveryInProgress((prev) => new Set(prev.add(url)));
     setDiscoveryProgress(
       (prev) =>
@@ -577,6 +582,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         });
       }
     } finally {
+      setProcessingUrl(null);
       setDiscoveryInProgress((prev) => {
         const newSet = new Set(prev);
         newSet.delete(url);
@@ -1086,10 +1092,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11c3.866 0 7 3.134 7 7m-7-7v7" />
               </svg>
             </span>
-            Gerenciar Feeds
+            {t('feeds.title')}
           </h2>
           <p className="text-gray-400 text-sm mt-1 ml-11">
-            {currentFeeds.length} feeds monitorados
+            {currentFeeds.length} {t('feeds.stats.monitored')}
           </p>
         </div>
         
@@ -1101,13 +1107,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                Importar Listas
+                {t('feeds.import.lists')}
             </button>
             <label className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors cursor-pointer flex items-center gap-2 text-sm font-medium border border-white/10">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                Importar OPML
+                {t('feeds.import.opml')}
                 <input
                     type="file"
                     accept=".opml,.xml"
@@ -1118,7 +1124,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <button
                 onClick={handleResetToDefaults}
                 className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                title="Resetar para padrão"
+                title={t('action.reset')}
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1141,7 +1147,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11c3.866 0 7 3.134 7 7m-7-7v7" />
             </svg>
-            Feeds
+            {t('feeds.tab.feeds')}
           </span>
         </button>
         <button
@@ -1156,7 +1162,22 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
-            Categorias
+            {t('feeds.tab.categories')}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+            activeTab === "analytics"
+              ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            {t('feeds.tab.analytics')}
           </span>
         </button>
       </div>
@@ -1172,8 +1193,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   type="text"
                   value={newFeedUrl}
                   onChange={(e) => setNewFeedUrl(e.target.value)}
-                  placeholder="Digite a URL do site ou feed RSS..."
-                  className="w-full bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                  placeholder={t('feeds.add.placeholder')}
+                  disabled={!!processingUrl}
+                  className="w-full bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               
@@ -1181,9 +1203,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 <select
                   value={newFeedCategory}
                   onChange={(e) => setNewFeedCategory(e.target.value)}
-                  className="w-full bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                  disabled={!!processingUrl}
+                  className="w-full bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <option value="">Sem categoria</option>
+                  <option value="">{t('feeds.category.none')}</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -1194,24 +1217,49 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
               <button
                 type="submit"
-                disabled={discoveryInProgress.has(newFeedUrl)}
-                className="px-6 py-2 bg-[rgb(var(--color-accent))] text-white rounded-lg hover:bg-[rgb(var(--color-accent))]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+                disabled={!!processingUrl}
+                className="px-6 py-2 bg-[rgb(var(--color-accent))] text-white rounded-lg hover:bg-[rgb(var(--color-accent))]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[120px]"
               >
-                {discoveryInProgress.has(newFeedUrl) ? (
+                {processingUrl ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Buscando...</span>
+                      <span>{t('loading')}</span>
                     </>
                 ) : (
                     <>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      <span>Adicionar</span>
+                      <span>{t('action.add')}</span>
                     </>
                 )}
               </button>
             </form>
+
+            {/* Discovery Progress Indicator */}
+            {processingUrl && (
+              <div className="mt-4 bg-black/30 rounded-lg p-3 border border-white/10 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-blue-300 font-medium flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    {discoveryProgress.get(processingUrl)?.status || t('loading')}
+                  </span>
+                  <span className="text-xs text-gray-500">{Math.round(discoveryProgress.get(processingUrl)?.progress || 0)}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${discoveryProgress.get(processingUrl)?.progress || 5}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Isso pode levar alguns segundos dependendo da resposta do servidor.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Search and Filters */}
@@ -1222,7 +1270,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             </svg>
             <input
                 type="text"
-                placeholder="Buscar feeds..."
+                placeholder={t('search.placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-black/20 text-white pl-10 pr-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
@@ -1233,10 +1281,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             onChange={(e) => setStatusFilter(e.target.value as any)}
             className="bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
         >
-            <option value="all">Todos os Status</option>
-            <option value="valid">Válidos</option>
-            <option value="invalid">Com Erro</option>
-            <option value="unchecked">Não Verificados</option>
+            <option value="all">Todos</option>
+            <option value="valid">{t('analytics.valid')}</option>
+            <option value="invalid">{t('analytics.issues')}</option>
+            <option value="unchecked">{t('analytics.pending')}</option>
         </select>
       </div>
 
@@ -1256,7 +1304,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                <span className="font-medium">Feeds com Problemas ({issueFeeds.length})</span>
+                <span className="font-medium">{t('analytics.attention')} ({issueFeeds.length})</span>
               </div>
               <svg className={`w-5 h-5 text-red-400 transform transition-transform ${expandedSection === 'issues' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1293,7 +1341,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="font-medium">Feeds Válidos ({validFeeds.length})</span>
+                <span className="font-medium">{t('analytics.valid')} ({validFeeds.length})</span>
               </div>
               <svg className={`w-5 h-5 text-green-400 transform transition-transform ${expandedSection === 'valid' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1329,7 +1377,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="font-medium">Não Verificados ({uncheckedFeeds.length})</span>
+                <span className="font-medium">{t('analytics.pending')} ({uncheckedFeeds.length})</span>
               </div>
               <svg className={`w-5 h-5 text-gray-400 transform transition-transform ${expandedSection === 'unchecked' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1355,13 +1403,22 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         )}
       </div>
         </>
-      ) : (
+      ) : activeTab === "categories" ? (
         /* Categories Tab */
         <div className="flex-1 overflow-y-auto p-6">
           <FeedCategoryManager 
             feeds={currentFeeds} 
             setFeeds={setFeeds} 
             onClose={() => setActiveTab("feeds")} 
+          />
+        </div>
+      ) : (
+        /* Analytics Tab */
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+          <FeedAnalytics
+            feeds={currentFeeds}
+            articles={articles}
+            feedValidations={feedValidations}
           />
         </div>
       )}

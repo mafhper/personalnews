@@ -1,9 +1,42 @@
+import DOMPurify from 'dompurify';
+
 /**
  * Utilitários de sanitização para prevenir vazamento de HTML e XSS
  * 
  * Este módulo fornece funções para sanitizar conteúdo HTML que pode vir
  * de feeds RSS externos, prevenindo ataques XSS e vazamento de tags HTML.
  */
+
+// Configure DOMPurify
+const purify = DOMPurify(typeof window !== 'undefined' ? window : undefined);
+
+// Add hooks for target="_blank" on links
+purify.addHook('afterSanitizeAttributes', function(node) {
+  if ('target' in node && node.tagName === 'A') {
+    node.setAttribute('target', '_blank');
+    node.setAttribute('rel', 'noopener noreferrer');
+  }
+});
+
+/**
+ * Sanitiza conteúdo HTML permitindo tags seguras para exibição (imagens, formatação)
+ * mas removendo scripts e iframes perigosos.
+ * 
+ * @param content - Conteúdo HTML bruto
+ * @returns HTML sanitizado e seguro
+ */
+export function sanitizeWithDomPurify(content: string | null | undefined): string {
+  if (!content) return "";
+  
+  return purify.sanitize(content, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'b', 'i', 'em', 'strong', 'u', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+      'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'td', 'th'
+    ],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel', 'width', 'height'],
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+  });
+}
 
 /**
  * Sanitiza texto removendo todas as tags HTML e decodificando entidades HTML
@@ -14,6 +47,20 @@
 export function sanitizeHtmlContent(text: string | null | undefined): string {
   if (!text) return "";
   
+  // Use DOMPurify to strip all tags if available, as it's more robust
+  const clean = purify.sanitize(text, { 
+    ALLOWED_TAGS: [], // No tags allowed = plain text
+    KEEP_CONTENT: true
+  });
+
+  // Decode entities using a temporary element (more robust than regex)
+  if (typeof document !== 'undefined') {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = clean;
+    return txt.value;
+  }
+  
+  // Fallback to regex if needed (or if desired to keep original logic)
   let cleanText = text;
   
   // Múltiplas passadas para garantir que todas as entidades codificadas sejam tratadas
@@ -27,6 +74,7 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
     cleanText = cleanText
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
+      // ... keep original regex logic if preferred, but DOMPurify + textContent is better
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
       .replace(/&apos;/g, "'")

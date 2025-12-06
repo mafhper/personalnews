@@ -9,15 +9,32 @@ interface ModalProps {
     initialFocus?: string;
     ariaLabelledBy?: string;
     ariaLabel?: string;
+    size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | 'full';
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, initialFocus, ariaLabelledBy, ariaLabel }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, initialFocus, ariaLabelledBy, ariaLabel, size }) => {
     const { containerRef, restoreFocus } = useFocusManagement(isOpen, {
         trapFocus: true,
         restoreFocus: true,
         initialFocus: initialFocus || 'button',
         onEscape: onClose
     });
+
+    const sizeClasses = {
+        sm: 'max-w-sm',
+        md: 'max-w-md',
+        lg: 'max-w-lg',
+        xl: 'max-w-xl',
+        '2xl': 'sm:max-w-2xl',
+        '3xl': 'sm:max-w-3xl',
+        '4xl': 'sm:max-w-4xl',
+        '5xl': 'sm:max-w-5xl',
+        '6xl': 'lg:max-w-6xl',
+        '7xl': 'xl:max-w-7xl',
+        full: 'max-w-full',
+    };
+
+    const modalSizeClass = size ? sizeClasses[size] : 'max-w-sm sm:max-w-2xl lg:max-w-6xl xl:max-w-7xl'; // Default to existing responsive sizes if no size prop
 
     // Handle modal close with focus restoration
     const handleClose = () => {
@@ -40,7 +57,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, initial
         >
             <div
                 ref={containerRef}
-                className="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 m-4 max-w-sm sm:max-w-2xl lg:max-w-6xl xl:max-w-7xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-in fade-in zoom-in-95 relative"
+                className={`bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 m-4 w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-in fade-in zoom-in-95 relative ${modalSizeClass}`}
                 onClick={(e) => e.stopPropagation()}
                 role="document"
             >

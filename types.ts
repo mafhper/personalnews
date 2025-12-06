@@ -13,9 +13,17 @@ export interface FeedCategory {
   order: number;
   isDefault?: boolean;
   isPinned?: boolean;
+  layoutMode?: ContentConfig['layoutMode'];
 }
 
-
+export interface LayoutPreset {
+  id: string;
+  name: string;
+  description: string;
+  icon?: string;
+  header: Partial<HeaderConfig>;
+  content: Partial<ContentConfig>;
+}
 
 export interface Article {
   title: string;
@@ -24,6 +32,7 @@ export interface Article {
   sourceTitle: string;
   imageUrl?: string;
   description?: string;
+  content?: string;
   author?: string;
   categories?: string[];
 }
@@ -110,7 +119,7 @@ export interface ThemeSettings {
 
 export interface HeaderConfig {
   style: 'default' | 'centered' | 'minimal';
-  position: 'static' | 'sticky' | 'floating';
+  position: 'static' | 'sticky' | 'floating' | 'hidden';
   height: 'compact' | 'normal' | 'spacious';
   showTitle: boolean;
   customTitle: string;
@@ -133,22 +142,27 @@ export interface ContentConfig {
   showDate: boolean;
   showTime: boolean;
   showTags: boolean;
-  layoutMode: 'grid' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento';
+  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'polaroid';
   density: 'compact' | 'comfortable' | 'spacious';
 }
 
-export interface LayoutPreset {
+export interface GradientStop {
   id: string;
-  name: string;
-  description: string;
-  icon?: string;
-  header: Partial<HeaderConfig>;
-  content: Partial<ContentConfig>;
+  color: string;
+  opacity: number;
+  position: number;
+}
+
+export interface GradientSettings {
+  type: 'linear' | 'radial';
+  angle: number;
+  stops: GradientStop[];
 }
 
 export interface BackgroundConfig {
   type: 'solid' | 'gradient' | 'pattern' | 'image';
   value: string;
+  gradientSettings?: GradientSettings;
   patternSettings?: {
     name: string;
     colors: string[];
