@@ -71,16 +71,32 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
   const handleTypeChange = (type: BackgroundConfig['type']) => {
     setActiveTab(type);
-    let newValue = config.value;
-    if (type === 'solid' && config.value.includes('gradient')) newValue = '#121212';
-    if (type === 'gradient') {
-        // Apply current gradient state to generate initial value
-        newValue = generateGradientString(gradientType, gradientAngle, gradientStops);
-        onChange({ type, value: newValue, gradientSettings: { type: gradientType, angle: gradientAngle, stops: gradientStops } });
-        return;
+    
+    // Reset all options and set appropriate defaults for the selected type
+    const resetConfig: Partial<BackgroundConfig> = {
+      type,
+      customImage: null,
+      patternSettings: undefined,
+      gradientSettings: undefined,
+    };
+    
+    if (type === 'solid') {
+      resetConfig.value = '#121212';
+    } else if (type === 'gradient') {
+      resetConfig.value = generateGradientString(gradientType, gradientAngle, gradientStops);
+      resetConfig.gradientSettings = { type: gradientType, angle: gradientAngle, stops: gradientStops };
+    } else if (type === 'pattern') {
+      // Keep current pattern or set default
+      const patternName = config.patternSettings?.name || 'aurora';
+      resetConfig.value = generatePattern(patternName, baseColor, patternSize, opacity);
+      resetConfig.patternSettings = { name: patternName, colors: [baseColor], scale: PATTERN_SIZES.find(s => s.id === patternSize)?.scale || 1, opacity };
+    } else if (type === 'image') {
+      // Keep existing image if switching back, otherwise empty
+      resetConfig.value = config.customImage ? `url(${config.customImage})` : '';
+      resetConfig.customImage = config.customImage;
     }
     
-    onChange({ type, value: newValue });
+    onChange(resetConfig);
   };
 
   /* --- Gradient Logic --- */
@@ -343,6 +359,31 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
         {activeTab === 'gradient' && (
           <div className="space-y-4 animate-in fade-in">
+            {/* Gradient Presets */}
+            <div>
+              <label className="block text-[10px] text-gray-400 mb-2">Presets</label>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { name: 'Twilight', stops: [{ id: '1', color: '#667eea', opacity: 1, position: 0 }, { id: '2', color: '#764ba2', opacity: 1, position: 100 }], angle: 135 },
+                  { name: 'Sunset', stops: [{ id: '1', color: '#f093fb', opacity: 1, position: 0 }, { id: '2', color: '#f5576c', opacity: 1, position: 100 }], angle: 90 },
+                  { name: 'Ocean', stops: [{ id: '1', color: '#4facfe', opacity: 1, position: 0 }, { id: '2', color: '#00f2fe', opacity: 1, position: 100 }], angle: 45 },
+                  { name: 'Forest', stops: [{ id: '1', color: '#0f9b0f', opacity: 1, position: 0 }, { id: '2', color: '#000000', opacity: 1, position: 100 }], angle: 180 },
+                  { name: 'Midnight', stops: [{ id: '1', color: '#0c0c0c', opacity: 1, position: 0 }, { id: '2', color: '#1a1a2e', opacity: 1, position: 50 }, { id: '3', color: '#16213e', opacity: 1, position: 100 }], angle: 180 },
+                ].map((preset) => (
+                  <button
+                    key={preset.name}
+                    onClick={() => {
+                      setGradientStops(preset.stops);
+                      setGradientAngle(preset.angle);
+                    }}
+                    className="w-12 h-8 rounded-md border border-white/10 hover:border-white/30 transition-all shadow-sm"
+                    style={{ background: `linear-gradient(${preset.angle}deg, ${preset.stops.map(s => `${s.color} ${s.position}%`).join(', ')})` }}
+                    title={preset.name}
+                  />
+                ))}
+              </div>
+            </div>
+
             {/* Type & Angle */}
             <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -420,6 +461,24 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
         {activeTab === 'pattern' && (
           <div className="space-y-4">
+            {/* Pattern Preview */}
+            <div>
+              <label className="block text-[10px] text-gray-400 mb-1">Preview</label>
+              <div 
+                className="h-16 rounded-lg border border-white/10 shadow-inner"
+                style={{ 
+                  backgroundImage: config.value,
+                  backgroundSize: 'auto',
+                  backgroundRepeat: 'repeat',
+                  backgroundColor: 'rgb(var(--color-background))',
+                  filter: `hue-rotate(${config.patternSettings?.hue || 0}deg) ${
+                    config.patternSettings?.effect === 'invert' ? 'invert(1)' : 
+                    config.patternSettings?.effect === 'sepia' ? 'sepia(1)' : 
+                    config.patternSettings?.effect === 'saturate' ? 'saturate(2)' : ''
+                  }`
+                }}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
                 <div>
                     <label className="block text-[10px] text-gray-400 mb-1">Cor Base</label>
@@ -468,6 +527,38 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
               </div>
             </div>
 
+            {/* Hue Rotation & Effects */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] text-gray-400 mb-1">Rotação de Cor: {config.patternSettings?.hue || 0}°</label>
+                <input
+                  type="range" min="0" max="360" step="15"
+                  value={config.patternSettings?.hue || 0}
+                  onChange={(e) => onChange({ 
+                    ...config, 
+                    patternSettings: { ...config.patternSettings!, hue: parseInt(e.target.value) }
+                  })}
+                  className="w-full h-1 bg-gray-700 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-400 mb-1">Efeito</label>
+                <select
+                  value={config.patternSettings?.effect || 'none'}
+                  onChange={(e) => onChange({ 
+                    ...config, 
+                    patternSettings: { ...config.patternSettings!, effect: e.target.value }
+                  })}
+                  className="w-full bg-gray-800 border-gray-700 text-gray-300 text-[10px] rounded-lg h-7 px-2"
+                >
+                  <option value="none">Nenhum</option>
+                  <option value="invert">Invertido</option>
+                  <option value="sepia">Sépia</option>
+                  <option value="saturate">Saturado</option>
+                </select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-3 gap-2 pt-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
                 {PATTERN_TYPES.map((pattern) => (
                   <button
@@ -495,15 +586,20 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </label>
               {config.customImage && (
-                <span className="text-xs text-green-400 flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-green-400 flex items-center gap-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                    Carregada
-                </span>
+                    Imagem carregada
+                  </span>
+                  <button 
+                    onClick={() => onChange({ type: 'solid', value: '#121212', customImage: null })}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Remover
+                  </button>
+                </div>
               )}
             </div>
-            {config.customImage && (
-              <div className="mt-2 h-24 rounded-lg bg-cover bg-center border border-white/10 shadow-inner" style={{ backgroundImage: config.value }}></div>
-            )}
           </div>
         )}
       </Card>

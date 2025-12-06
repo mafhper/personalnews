@@ -1,4 +1,51 @@
 
+export interface ContentConfig {
+  showAuthor: boolean;
+  showDate: boolean;
+  showTime: boolean;
+  showTags: boolean;
+  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'polaroid';
+  density: 'compact' | 'comfortable' | 'spacious';
+  paginationType?: 'numbered' | 'loadMore' | 'infinite';
+}
+
+export interface HeaderConfig {
+  style: 'default' | 'centered' | 'minimal';
+  position: 'static' | 'sticky' | 'floating' | 'hidden';
+  height: 'compact' | 'normal' | 'spacious';
+  showTitle: boolean;
+  showLogo?: boolean;
+  customTitle: string;
+  logoUrl: string | null;
+  logoSize: 'sm' | 'md' | 'lg';
+  customFavicon?: string | null;
+  useThemeColor?: boolean;
+  // New appearance controls
+  backgroundColor?: string;
+  backgroundOpacity?: number; // 0-100
+  blurIntensity?: 'none' | 'light' | 'medium' | 'heavy';
+  borderColor?: string;
+  borderOpacity?: number; // 0-100
+  categoryBackgroundColor?: string;
+  categoryBackgroundOpacity?: number; // 0-100
+  // Simplified controls (new)
+  bgColor?: string;
+  bgOpacity?: number; // 0-1
+  blur?: number; // 0-30
+  // Advanced Customization
+  customLogoSvg?: string;
+  logoColor?: string;
+  logoColorMode?: 'custom' | 'theme' | 'original';
+  syncFavicon?: boolean;
+  titleColor?: string;
+  titleGradient?: {
+    enabled: boolean;
+    from: string;
+    to: string;
+    direction: string; // 'to right', 'to bottom', etc.
+  };
+}
+
 export interface FeedSource {
   url: string;
   categoryId?: string;
@@ -117,34 +164,7 @@ export interface ThemeSettings {
   themeTransitions: boolean;
 }
 
-export interface HeaderConfig {
-  style: 'default' | 'centered' | 'minimal';
-  position: 'static' | 'sticky' | 'floating' | 'hidden';
-  height: 'compact' | 'normal' | 'spacious';
-  showTitle: boolean;
-  customTitle: string;
-  logoUrl: string | null;
-  logoSize: 'sm' | 'md' | 'lg';
-  customFavicon?: string | null;
-  useThemeColor?: boolean;
-  // New appearance controls
-  backgroundColor?: string;
-  backgroundOpacity?: number; // 0-100
-  blurIntensity?: 'none' | 'light' | 'medium' | 'heavy';
-  borderColor?: string;
-  borderOpacity?: number; // 0-100
-  categoryBackgroundColor?: string;
-  categoryBackgroundOpacity?: number; // 0-100
-}
 
-export interface ContentConfig {
-  showAuthor: boolean;
-  showDate: boolean;
-  showTime: boolean;
-  showTags: boolean;
-  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'polaroid';
-  density: 'compact' | 'comfortable' | 'spacious';
-}
 
 export interface GradientStop {
   id: string;
@@ -168,6 +188,8 @@ export interface BackgroundConfig {
     colors: string[];
     scale?: number;
     opacity?: number;
+    hue?: number;
+    effect?: string;
   };
   customImage?: string | null;
 }

@@ -16,8 +16,14 @@ const PROXIES = [
   }
 ];
 
+const CACHE_PREFIX = 'article_cache_';
+
 export async function fetchFullContent(url: string): Promise<string | null> {
-    // 1. Try fetching via proxies
+    const cacheKey = CACHE_PREFIX + url;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        return cached;
+    }
     for (const proxy of PROXIES) {
         try {
             const res = await fetch(proxy.url(url));
@@ -39,7 +45,14 @@ export async function fetchFullContent(url: string): Promise<string | null> {
 
             if (article && article.content) {
                 // 5. Sanitize
-                return DOMPurify.sanitize(article.content);
+                const sanitized = DOMPurify.sanitize(article.content);
+                try {
+                    localStorage.setItem(cacheKey, sanitized);
+                } catch (e) {
+                    // Start cleaning up old cache if full? For now just ignore
+                    console.warn('Cache full, could not save article');
+                }
+                return sanitized;
             }
         } catch (e) {
             console.warn(`Failed to fetch via ${proxy.name}`, e);

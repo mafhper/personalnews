@@ -21,7 +21,7 @@ import Header from "./components/Header";
 import { FeedContent } from "./components/FeedContent";
 import { Modal } from "./components/Modal";
 import { FeedManager } from "./components/FeedManager";
-import { SettingsModal } from "./components/SettingsModal";
+import { SettingsSidebar } from "./components/SettingsSidebar";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { FavoritesModal } from "./components/FavoritesModal";
 import { SkipLinks } from "./components/SkipLinks";
@@ -113,15 +113,14 @@ const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedFeedUrl, setSelectedFeedUrl] = useState<string | null>(null);
 
-  const handleNavigation = useCallback((category: string, feedUrl?: string) => {
-    setSelectedCategory(category);
-    setSelectedFeedUrl(feedUrl || null);
-    pagination.resetPagination();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+
 
   // Extended theme system
-  const { currentTheme, themeSettings, backgroundConfig } = useAppearance();
+  const { currentTheme, themeSettings, backgroundConfig, applyLayoutPreset } = useAppearance();
+
+  // Feed categories system
+  const { categories, getCategorizedFeeds } = useFeedCategories();
+  const categorizedFeeds = getCategorizedFeeds(feeds);
 
   // Read status functionality
   const { isArticleRead } = useReadStatus();
@@ -202,9 +201,7 @@ const App: React.FC = () => {
     // Pagination will be reset automatically by resetTriggers
   }, []);
 
-  // Feed categories system
-  const { categories, getCategorizedFeeds } = useFeedCategories();
-  const categorizedFeeds = getCategorizedFeeds(feeds);
+
 
   const handleCategoryNavigation = useCallback(
     (categoryIndex: number) => {
@@ -315,6 +312,21 @@ const App: React.FC = () => {
       searchQuery,
     ],
   });
+
+  const handleNavigation = useCallback((category: string, feedUrl?: string) => {
+    setSelectedCategory(category);
+
+    // Apply layout preset if category has one
+    const categoryObj = categories.find(c => c.id === category);
+    if (categoryObj?.layoutMode) {
+      console.log(`Applying layout preset for category ${category}: ${categoryObj.layoutMode}`);
+      applyLayoutPreset(categoryObj.layoutMode);
+    }
+
+    setSelectedFeedUrl(feedUrl || null);
+    pagination.resetPagination();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [categories, pagination, applyLayoutPreset]);
 
   // Keyboard shortcuts configuration
   const keyboardShortcuts = useMemo(
@@ -469,23 +481,45 @@ const App: React.FC = () => {
       className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""
         } ${backgroundConfig.type === 'solid' ? "bg-[rgb(var(--color-background))]" : ""}`}
       style={
-        backgroundConfig.type !== 'solid'
+        backgroundConfig.type === 'gradient' || backgroundConfig.type === 'image'
           ? {
             backgroundImage: backgroundConfig.value,
-            backgroundSize: backgroundConfig.type === 'pattern' ? 'auto' : "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: backgroundConfig.type === 'pattern' ? 'repeat' : "no-repeat",
-            backgroundAttachment: "fixed",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center center',
+            backgroundRepeat: 'no-repeat',
+            backgroundAttachment: backgroundConfig.type === 'image' ? 'fixed' : 'scroll',
             backgroundColor: `rgb(${currentTheme.colors.background})`,
           }
-          : { backgroundColor: backgroundConfig.value }
+          : backgroundConfig.type === 'pattern'
+          ? { backgroundColor: 'transparent' }
+          : { backgroundColor: backgroundConfig.value || `rgb(${currentTheme.colors.background})` }
       }
     >
+      {/* Pattern Background Layer with filters */}
+      {backgroundConfig.type === 'pattern' && (
+        <div 
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            zIndex: -1,
+            backgroundColor: `rgb(${currentTheme.colors.background})`,
+            backgroundImage: backgroundConfig.value,
+            backgroundSize: 'auto',
+            backgroundRepeat: 'repeat',
+            filter: `hue-rotate(${backgroundConfig.patternSettings?.hue || 0}deg) ${
+              backgroundConfig.patternSettings?.effect === 'invert' ? 'invert(1)' : 
+              backgroundConfig.patternSettings?.effect === 'sepia' ? 'sepia(1)' : 
+              backgroundConfig.patternSettings?.effect === 'saturate' ? 'saturate(2)' : ''
+            }`
+          }}
+        />
+      )}
       <SkipLinks />
       {backgroundConfig.type !== 'solid' && (
         <>
-          {/* Overlay escuro para melhorar a legibilidade */}
-          <div className="absolute inset-0 bg-black opacity-50 z-0 pointer-events-none"></div>
+          {/* Overlay para melhorar a legibilidade - menos intenso para imagens */}
+          <div className={`absolute inset-0 z-0 pointer-events-none ${
+            backgroundConfig.type === 'image' ? 'bg-black/30' : 'bg-black/40'
+          }`}></div>
 
           {/* Gradiente de transição para o fundo */}
           <div
@@ -716,7 +750,7 @@ const App: React.FC = () => {
           closeModal={() => setIsModalOpen(false)}
         />
       </Modal>
-      <SettingsModal
+      <SettingsSidebar
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         timeFormat={timeFormat}

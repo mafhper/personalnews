@@ -4,10 +4,11 @@ import type { HeaderConfig, ContentConfig, LayoutPreset, BackgroundConfig } from
 import { useExtendedTheme } from './useExtendedTheme';
 
 const defaultHeaderConfig: HeaderConfig = {
-  style: 'minimal',
+  style: 'default',
   position: 'sticky',
   height: 'normal',
   showTitle: true,
+  showLogo: true,
   customTitle: 'Personal News',
   logoUrl: null,
   logoSize: 'md',
@@ -28,6 +29,7 @@ const defaultContentConfig: ContentConfig = {
   showTags: true,
   layoutMode: 'default',
   density: 'comfortable',
+  paginationType: 'numbered',
 };
 
 const defaultBackgroundConfig: BackgroundConfig = {
@@ -39,57 +41,140 @@ export const LAYOUT_PRESETS: LayoutPreset[] = [
   {
     id: 'magazine',
     name: 'Magazine',
-    description: 'Layout clássico com destaque visual e 3 colunas.',
-    header: { style: 'centered', position: 'static', height: 'spacious', showTitle: true },
-    content: { layoutMode: 'grid', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
+    description: 'Layout clássico com header sólido e navegação central.',
+    header: { 
+      style: 'centered', 
+      position: 'sticky', 
+      height: 'normal', 
+      showTitle: true, 
+      showLogo: true,
+      backgroundColor: '#1a1a1a', 
+      backgroundOpacity: 98,
+      blurIntensity: 'medium',
+      borderColor: '#ffffff',
+      borderOpacity: 10
+    },
+    content: { layoutMode: 'magazine', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
   },
   {
-    id: 'portal',
-    name: 'News Portal',
-    description: 'Alta densidade com sidebar lateral, ideal para muitas notícias.',
-    header: { style: 'default', position: 'sticky', height: 'compact', showTitle: true },
-    content: { layoutMode: 'list', density: 'compact', showAuthor: false, showDate: true, showTime: true, showTags: true }
+    id: 'newspaper',
+    name: 'Newspaper',
+    description: 'Estilo jornal clássico, denso e informativo.',
+    header: { 
+      style: 'default', 
+      position: 'static', 
+      height: 'spacious', 
+      showTitle: true, 
+      showLogo: true,
+      backgroundColor: '#111827',
+      backgroundOpacity: 100,
+      blurIntensity: 'none',
+      borderColor: '#374151',
+      borderOpacity: 25
+    },
+    content: { layoutMode: 'newspaper', density: 'compact', showAuthor: true, showDate: true, showTags: false }
   },
   {
     id: 'minimal',
-    name: 'Minimalista',
-    description: 'Foco total no texto. Uma coluna centralizada.',
-    header: { style: 'minimal', position: 'floating', height: 'normal', showTitle: false },
+    name: 'Minimal',
+    description: 'Foco no conteúdo. Header flutuante transparente.',
+    header: { 
+      style: 'minimal', 
+      position: 'floating', 
+      height: 'compact', 
+      showTitle: false, 
+      showLogo: true,
+      backgroundColor: '#000000',
+      backgroundOpacity: 40,
+      blurIntensity: 'heavy',
+      borderColor: 'transparent',
+      borderOpacity: 0
+    },
     content: { layoutMode: 'minimal', density: 'spacious', showAuthor: true, showDate: false, showTags: false }
   },
   {
-    id: 'modern',
-    name: 'Moderno',
-    description: 'Cards em estilo Masonry (Pinterest) com header flutuante.',
-    header: { style: 'default', position: 'floating', height: 'normal', showTitle: true },
-    content: { layoutMode: 'masonry', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
+    id: 'focus',
+    name: 'Focus',
+    description: 'Leitura sem distrações. Header oculto e layout de coluna única.',
+    header: { 
+      style: 'minimal', 
+      position: 'hidden', 
+      height: 'compact', 
+      showTitle: false, 
+      showLogo: false, // Hidden header usually hides everything anyway, but configured just in case
+      blurIntensity: 'none'
+    },
+    content: { layoutMode: 'focus', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
   },
   {
     id: 'immersive',
     name: 'Immersive',
-    description: 'Experiência cinematográfica estilo Netflix.',
-    header: { style: 'minimal', position: 'floating', height: 'normal', showTitle: false },
+    description: 'Experiência full-screen com header ultra-discreto.',
+    header: { 
+      style: 'minimal', 
+      position: 'floating', 
+      height: 'normal', 
+      showTitle: false, 
+      showLogo: true,
+      backgroundColor: '#000000',
+      backgroundOpacity: 0, // Fully transparent
+      blurIntensity: 'none',
+      borderColor: 'transparent'
+    },
     content: { layoutMode: 'immersive', density: 'spacious', showAuthor: true, showDate: true, showTags: false }
   },
   {
     id: 'brutalist',
     name: 'Brutalist',
-    description: 'Design cru, tipografia grande e alto contraste.',
-    header: { style: 'default', position: 'static', height: 'spacious', showTitle: true },
+    description: 'Bordas fortes, alto contraste e tipografia marcante.',
+    header: { 
+      style: 'default', 
+      position: 'static', 
+      height: 'spacious', 
+      showTitle: true, 
+      showLogo: false, // Only Title
+      backgroundColor: '#000000',
+      backgroundOpacity: 100,
+      blurIntensity: 'none',
+      borderColor: '#ffffff',
+      borderOpacity: 100 // Solid border
+    },
     content: { layoutMode: 'brutalist', density: 'spacious', showAuthor: true, showDate: true, showTags: true }
   },
   {
     id: 'timeline',
     name: 'Timeline',
-    description: 'Linha do tempo cronológica vertical.',
-    header: { style: 'centered', position: 'sticky', height: 'compact', showTitle: true },
+    description: 'Navegação por tempo. Header sticky compacto.',
+    header: { 
+      style: 'default', 
+      position: 'sticky', 
+      height: 'compact', 
+      showTitle: true, 
+      showLogo: true,
+      backgroundColor: '#1f2937', 
+      backgroundOpacity: 90, 
+      blurIntensity: 'light',
+      borderColor: '#374151',
+      borderOpacity: 50
+    },
     content: { layoutMode: 'timeline', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
   },
   {
     id: 'bento',
-    name: 'Bento',
-    description: 'Grid assimétrico estilo dashboard.',
-    header: { style: 'default', position: 'floating', height: 'normal', showTitle: true },
+    name: 'Bento Grid',
+    description: 'Layout modular moderno.',
+    header: { 
+      style: 'centered', 
+      position: 'floating', 
+      height: 'normal', 
+      showTitle: false, 
+      showLogo: true,
+      backgroundColor: '#1a1a1a', 
+      backgroundOpacity: 60, 
+      blurIntensity: 'heavy',
+      borderColor: '#ffffff',
+      borderOpacity: 5
+    },
     content: { layoutMode: 'bento', density: 'compact', showAuthor: false, showDate: true, showTags: false }
   }
 ];

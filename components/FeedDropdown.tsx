@@ -5,6 +5,7 @@ import { HeaderIcons } from "./icons";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useAppearance } from "../hooks/useAppearance";
 
 interface FeedDropdownProps {
   category: FeedCategory;
@@ -63,6 +64,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   onEditCategory,
 }) => {
   const { updateCategory, deleteCategory } = useFeedCategories();
+  const { updateContentConfig } = useAppearance();
   const { confirmDanger, alertSuccess } = useNotificationReplacements();
   const { t } = useLanguage();
 
@@ -110,7 +112,11 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   };
 
   const handleLayoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      updateCategory(category.id, { layoutMode: e.target.value as any });
+      if (category.id === 'all') {
+        updateContentConfig({ layoutMode: e.target.value as any });
+      } else {
+        updateCategory(category.id, { layoutMode: e.target.value as any });
+      }
   };
 
   const isSelected = selectedCategory === category.id;
@@ -175,7 +181,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     >
                         {layoutOptions.map((option) => (
                           <option key={option.labelKey} value={option.value}>
-                            {t(option.labelKey)}
+                            {t(option.labelKey)} {(category.layoutMode || '') === option.value ? ' ✓' : ''}
                           </option>
                         ))}
                     </select>

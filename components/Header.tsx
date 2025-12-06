@@ -112,19 +112,13 @@ const Header: React.FC<HeaderProps> = (props) => {
     category => category.isPinned || (props.categorizedFeeds[category.id] || []).length > 0
   );
 
-  // Dynamic appearance styles
-  const blurMap = {
-    none: 'backdrop-blur-none',
-    light: 'backdrop-blur-sm',
-    medium: 'backdrop-blur-md',
-    heavy: 'backdrop-blur-xl',
-  };
-  
-  const bgOpacity = headerConfig.backgroundOpacity ?? 95;
+  // Dynamic appearance styles  
+  const bgOpacity = headerConfig.bgOpacity ?? 0.9;
   const borderOpacity = headerConfig.borderOpacity ?? 8;
-  const bgColor = headerConfig.backgroundColor ?? '#0a0a0c';
+  const bgColor = headerConfig.bgColor || headerConfig.backgroundColor || '#0a0a0c';
   const borderColor = headerConfig.borderColor ?? '#ffffff';
-  const blurClass = blurMap[headerConfig.blurIntensity ?? 'medium'];
+  const blurValue = headerConfig.blur ?? 10;
+  const blurClass = `backdrop-blur-[${blurValue}px]`;
 
   // Convert hex to rgba
   const hexToRgba = (hex: string, alpha: number) => {
@@ -134,7 +128,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     return `rgba(${r},${g},${b},${alpha})`;
   };
 
-  const headerBgStyle = hexToRgba(bgColor, bgOpacity / 100);
+  const headerBgStyle = hexToRgba(bgColor, bgOpacity);
   const headerBorderStyle = hexToRgba(borderColor, borderOpacity / 100);
   
   // Category area styles
@@ -175,6 +169,17 @@ const Header: React.FC<HeaderProps> = (props) => {
     }
   };
 
+  const getLogoSizeClasses = (size: 'sm' | 'md' | 'lg' | undefined) => {
+    switch (size) {
+      case 'sm': return 'w-6 h-6';
+      case 'lg': return 'w-12 h-12';
+      case 'md':
+      default: return 'w-8 h-8';
+    }
+  };
+
+
+
   return (
     <>
       <header
@@ -191,31 +196,62 @@ const Header: React.FC<HeaderProps> = (props) => {
             
             {/* Left Section: Logo & Title */}
             <div className={`flex items-center space-x-4 group flex-shrink-0 ${isCentered ? 'lg:absolute lg:left-4' : ''}`}>
-              <div className="relative">
+              {headerConfig.showLogo !== false && (
+              <div 
+                  className="relative cursor-pointer" 
+                  onClick={props.onGoHome}
+              >
                 <div className="absolute -inset-2 bg-gradient-to-r from-[rgb(var(--color-primary))] to-[rgb(var(--color-secondary))] rounded-full opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-500"></div>
                 <div className="relative z-10">
-                  <Logo 
-                    size={headerConfig.logoSize} 
-                    isClickable={true} 
-                    onClick={props.onGoHome}
-                    customSrc={headerConfig.logoUrl}
-                    useThemeColor={headerConfig.useThemeColor}
-                  />
+                  {headerConfig.customLogoSvg ? (
+                    <div 
+                        key={headerConfig.logoColorMode} // Force re-render on mode change to clear styles
+                        className={`
+                            ${getLogoSizeClasses(headerConfig.logoSize)}
+                            ${headerConfig.logoColorMode === 'theme' ? 'text-[rgb(var(--color-accent))]' : ''}
+                            [&>svg]:w-full [&>svg]:h-full
+                            ${headerConfig.logoColorMode !== 'original' ? "[&_*:not([fill='none'])]:!fill-current [&_*:not([stroke='none'])]:!stroke-current" : ''}
+                        `}
+                        style={{ color: headerConfig.logoColorMode === 'custom' ? headerConfig.logoColor : undefined }}
+                        dangerouslySetInnerHTML={{ __html: headerConfig.customLogoSvg }}
+                    />
+                  ) : (
+                    <Logo 
+                      size={headerConfig.logoSize} 
+                      isClickable={true} 
+                      onClick={props.onGoHome}
+                      customSrc={headerConfig.logoUrl}
+                      useThemeColor={headerConfig.useThemeColor}
+                    />
+                  )}
                 </div>
               </div>
+              )}
               {headerConfig.showTitle && (
-                <button
-                  onClick={props.onGoHome}
-                  className="hidden sm:block text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:to-white transition-all duration-300 whitespace-nowrap"
+                <h1 
+                    className="font-bold tracking-tight cursor-pointer pb-1 text-xl truncate max-w-[150px] md:max-w-none"
+                    onClick={props.onGoHome}
+                    style={
+                        headerConfig.titleGradient?.enabled ? {
+                            background: `linear-gradient(${headerConfig.titleGradient.direction}, ${headerConfig.titleGradient.from}, ${headerConfig.titleGradient.to})`,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text',
+                            color: 'transparent',
+                            display: 'inline-block' // Needed for background-clip sometimes
+                        } : {
+                            color: headerConfig.titleColor || 'rgb(var(--color-text))'
+                        }
+                    }
                 >
-                  {headerConfig.customTitle}
-                </button>
+                  {headerConfig.customTitle || t('app.title')}
+                </h1>
               )}
             </div>
 
             {/* Center Section: Categories (Desktop) */}
             {!isCentered && (
-              <div className="hidden lg:flex flex-1 items-center relative group/scroll px-2">
+              <div className="hidden lg:flex flex-1 items-center justify-center relative group/scroll px-2">
                  
                  {/* Left Scroll Button */}
                  <div className={`absolute -left-3 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
@@ -234,7 +270,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                  <div 
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
-                    className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all overflow-x-auto no-scrollbar max-w-full scroll-smooth flex-grow justify-center ${!isMinimal ? 'border backdrop-blur-sm' : ''}`}
+                    className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all overflow-x-auto no-scrollbar max-w-full scroll-smooth ${!isMinimal ? 'border backdrop-blur-sm' : ''}`}
                     style={{ ...(!isMinimal ? { backgroundColor: categoryBgStyle, borderColor: hexToRgba('#ffffff', 0.05) } : {}), scrollbarWidth: 'none' }}
                  >
                     {activeCategories.map((category) => (
@@ -305,14 +341,6 @@ const Header: React.FC<HeaderProps> = (props) => {
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center space-x-1">
                 <button
-                  onClick={props.onManageFeedsClick}
-                  className="p-2 text-gray-400 hover:text-[rgb(var(--color-primary))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
-                  title={t('header.manage_feeds')}
-                >
-                  <HeaderIcons.Feeds showBackground={false} size="md" />
-                </button>
-
-                <button
                   onClick={props.onRefreshClick}
                   className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
                   title={t('header.refresh')}
@@ -320,36 +348,32 @@ const Header: React.FC<HeaderProps> = (props) => {
                   <HeaderIcons.Refresh showBackground={false} size="md" />
                 </button>
 
-                <div className="relative">
-                    <button
-                        onClick={() => setShowMoreMenu(!showMoreMenu)}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                        </svg>
-                    </button>
-                    
-                    {/* More Menu Dropdown */}
-                    {showMoreMenu && (
-                        <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-white/10 rounded-xl shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
-                            <button
-                                onClick={() => { props.onOpenFavorites(); setShowMoreMenu(false); }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center space-x-2"
-                            >
-                                <HeaderIcons.Favorites showBackground={false} size="sm" />
-                                <span>{t('header.favorites')}</span>
-                            </button>
-                            <button
-                                onClick={() => { props.onOpenSettings(); setShowMoreMenu(false); }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center space-x-2"
-                            >
-                                <HeaderIcons.Settings showBackground={false} size="sm" />
-                                <span>{t('header.settings')}</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
+                <button
+                  onClick={props.onOpenFavorites}
+                  className="p-2 text-gray-400 hover:text-[rgb(var(--color-accent))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  title={t('header.favorites')}
+                >
+                  <HeaderIcons.Favorites showBackground={false} size="md" />
+                </button>
+
+                <button
+                  onClick={props.onOpenSettings}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  title="Configurações"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={props.onManageFeedsClick}
+                  className="p-2 text-gray-400 hover:text-[rgb(var(--color-primary))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  title={t('header.manage_feeds')}
+                >
+                  <HeaderIcons.Feeds showBackground={false} size="md" />
+                </button>
               </div>
 
               {/* Mobile Menu Toggle */}
@@ -474,6 +498,22 @@ const Header: React.FC<HeaderProps> = (props) => {
       </div>
     </>
   );
+};
+
+// Helper to update favicon
+const FaviconUpdater: React.FC<{ svg: string }> = ({ svg }) => {
+  useEffect(() => {
+    const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
+    link.type = 'image/svg+xml';
+    link.rel = 'icon';
+    link.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    document.getElementsByTagName('head')[0].appendChild(link);
+    
+    return () => {
+       // Optional: restore default on unmount? Maybe not needed for this persistent setting
+    };
+  }, [svg]);
+  return null;
 };
 
 export default Header;

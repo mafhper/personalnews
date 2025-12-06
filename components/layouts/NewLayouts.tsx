@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Article } from '../../types';
 import { LazyImage } from '../LazyImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { useWeather } from '../../hooks/useWeather';
+import { useAppearance } from '../../hooks/useAppearance';
 
 interface NewLayoutProps {
   articles: Article[];
@@ -11,12 +13,35 @@ interface NewLayoutProps {
 /* 1. Newspaper Layout */
 export const NewspaperLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { data: weatherData, city, getWeatherIcon, isLoading: weatherLoading, changeCity } = useWeather();
+  
+  const handleCityChange = () => {
+    const newCity = prompt('Digite o nome da cidade para a previsão do tempo:', city);
+    if (newCity && newCity.trim() !== '') {
+      changeCity(newCity);
+    }
+  };
 
   return (
     <div className="bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] p-8 min-h-screen font-serif">
-      <div className="border-b-4 border-[rgb(var(--color-text))] mb-6 pb-2 text-center">
-        <h1 className="text-6xl font-black uppercase tracking-tighter">The Daily Feed</h1>
-        <p className="text-sm font-bold mt-2 uppercase tracking-widest border-t border-[rgb(var(--color-text))] pt-1 inline-block">Vol. {new Date().getFullYear()} • No. {new Date().getMonth() + 1}</p>
+      <div className="border-b-4 border-[rgb(var(--color-text))] mb-6 pb-2 flex flex-wrap justify-between items-center gap-2">
+        <p className="text-sm font-bold uppercase tracking-widest">Vol. {new Date().getFullYear()} • No. {new Date().getMonth() + 1} • {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        {/* Weather Widget */}
+        <div 
+          onClick={handleCityChange}
+          className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:text-[rgb(var(--color-accent))] transition-colors"
+          title="Clique para alterar a cidade"
+        >
+          {weatherLoading ? (
+            <span className="animate-pulse text-xs">...</span>
+          ) : weatherData ? (
+            <>
+              <span>{getWeatherIcon()}</span>
+              <span>{weatherData.temperature}°C</span>
+              <span className="text-[rgb(var(--color-textSecondary))]">• {city}</span>
+            </>
+          ) : null}
+        </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Main Headline */}
@@ -34,18 +59,33 @@ export const NewspaperLayout: React.FC<NewLayoutProps> = ({ articles }) => {
               <p className="first-letter:text-5xl first-letter:font-bold first-letter:float-left first-letter:mr-2 first-letter:mt-[-5px]">
                 {articles[0]?.description}
               </p>
-              <div className="mt-4 text-sm font-bold uppercase text-[rgb(var(--color-textSecondary))]">By {articles[0]?.sourceTitle}</div>
+              <div className="mt-4 text-sm font-bold uppercase text-[rgb(var(--color-textSecondary))]">Por {articles[0]?.sourceTitle}</div>
+              <button 
+                onClick={() => setReadingArticle(articles[0])}
+                className="mt-4 px-4 py-2 bg-[rgb(var(--color-accent))] text-white text-sm font-bold rounded hover:opacity-90 transition-opacity"
+              >
+                Preview
+              </button>
             </div>
           </div>
         </div>
         {/* Columns */}
         {articles.slice(1).map((article, i) => (
-          <article key={i} className="border-b border-[rgb(var(--color-border))] pb-4 mb-4 break-inside-avoid cursor-pointer" onClick={() => setReadingArticle(article)}>
+          <article key={i} className="border-b border-[rgb(var(--color-border))] pb-4 mb-4 break-inside-avoid">
             <span className="text-[10px] font-sans font-bold uppercase bg-[rgb(var(--color-accent))] text-white px-1 mb-2 inline-block rounded">{article.sourceTitle}</span>
-            <h3 className="text-xl font-bold leading-tight mb-2 hover:underline hover:text-[rgb(var(--color-accent))] transition-colors">
+            <h3 
+              className="text-xl font-bold leading-tight mb-2 hover:underline hover:text-[rgb(var(--color-accent))] transition-colors cursor-pointer"
+              onClick={() => setReadingArticle(article)}
+            >
               {article.title}
             </h3>
-            <p className="text-sm leading-snug text-[rgb(var(--color-textSecondary))] line-clamp-4">{article.description}</p>
+            <p className="text-sm leading-snug text-[rgb(var(--color-textSecondary))] line-clamp-3 mb-3">{article.description}</p>
+            <button 
+              onClick={() => setReadingArticle(article)}
+              className="text-xs font-bold text-[rgb(var(--color-accent))] hover:underline"
+            >
+              Preview →
+            </button>
           </article>
         ))}
       </div>
@@ -63,38 +103,169 @@ export const NewspaperLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   );
 };
 
-/* 2. Focus Layout - Snap Scroll Single View */
+/* 2. Focus Layout - No-Scroll Slider */
 export const FocusLayout: React.FC<NewLayoutProps> = ({ articles }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const { headerConfig } = useAppearance();
+
+  // Calculate header offset based on config
+  const getHeaderOffset = () => {
+    if (headerConfig.position === 'hidden' || headerConfig.position === 'floating') return 0;
+    switch (headerConfig.height) {
+        case 'compact': return 64; // h-16
+        case 'spacious': return 96; // h-24
+        default: return 80; // h-20 (normal)
+    }
+  };
+
+  const headerHeight = getHeaderOffset();
+  const screenHeightStyle = { 
+    height: headerConfig.position === 'sticky' || headerConfig.position === 'static' 
+            ? `calc(100vh - ${headerHeight}px)` 
+            : '100vh',
+    marginTop: headerConfig.position === 'static' ? 0 : 0 // If static, it flows naturally, if sticky/fixed we might need adjustment depending on parent layout. Usually parent handles static.
+  };
   
+  // For 'sticky' header, the header is overlaying or taking space? 
+  // In this app, sticky header usually sits at top. 
+  // New logic: Use padding-top if fixed/sticky to clear it, but force full window height minus header for the container if we want "no scroll".
+  
+  const containerStyle = {
+    height: '100vh',
+    paddingTop: headerConfig.position === 'sticky' ? `${headerHeight}px` : '0px'
+  };
+
+  // If static, the header takes space in DOM above us. We just need to fit remaining space.
+  // Actually, if static, the container should just be `h-[calc(100vh-headerHeight)]`.
+  
+  const finalStyle = headerConfig.position === 'static' 
+     ? { height: `calc(100vh - ${headerHeight}px)` }
+     : { height: '100vh', paddingTop: headerConfig.position !== 'hidden' && headerConfig.position !== 'floating' ? `${headerHeight}px` : 0 };
+
+
+  // Handle navigation
+  const navigate = useCallback((direction: 'next' | 'prev') => {
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    if (direction === 'next') {
+      setCurrentIndex(prev => (prev + 1) % articles.length);
+    } else {
+      setCurrentIndex(prev => (prev - 1 + articles.length) % articles.length);
+    }
+    
+    setTimeout(() => setIsAnimating(false), 500); // Match transition duration
+  }, [articles.length, isAnimating]);
+
+  useEffect(() => {
+    // Disable slider navigation if reading an article (modal is open)
+    if (readingArticle) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // Threshold to prevent accidental rapid scrolling
+      if (Math.abs(e.deltaY) > 50) {
+        navigate(e.deltaY > 0 ? 'next' : 'prev');
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') navigate('next');
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') navigate('prev');
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+    }
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      if (container) {
+        container.removeEventListener('wheel', handleWheel);
+      }
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [navigate, readingArticle]);
+
+  const currentArticle = articles[currentIndex];
+  if (!currentArticle) return null;
+
   return (
-    <div className="h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth bg-black text-white">
-      {articles.map((article, i) => (
-        <section key={i} className="h-screen w-full snap-start relative flex items-end pb-20 px-4 md:px-20">
-          <div className="absolute inset-0 z-0">
-            <LazyImage src={article.imageUrl || ''} className="w-full h-full object-cover opacity-40" alt="" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-          </div>
-          <div className="relative z-10 max-w-4xl animate-in fade-in slide-in-from-bottom-10 duration-700">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 rounded-full border border-white/30 text-xs uppercase tracking-widest">{article.sourceTitle}</span>
-              <span className="text-xs text-gray-400">{new Date(article.pubDate).toLocaleDateString()}</span>
+    <div ref={containerRef} className="overflow-hidden bg-black text-white relative isolate" style={finalStyle}>
+      {/* Fixed Background with Transition */}
+      <div className="absolute inset-0 z-0 transition-opacity duration-700 ease-in-out">
+         <LazyImage 
+            key={currentIndex} // Force re-render for animation
+            src={currentArticle.imageUrl || ''} 
+            className="w-full h-full object-cover opacity-50 animate-in fade-in zoom-in-105 duration-1000" 
+            alt="" 
+         />
+         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+      </div>
+
+      {/* Progress Indicator - Adjusted for header */}
+      <div className="absolute top-8 right-8 z-20 flex flex-col gap-2 items-end" style={{ top: headerConfig.position === 'hidden' ? '2rem' : '1rem' }}>
+        <span className="text-4xl font-bold font-mono text-white/20">
+            {String(currentIndex + 1).padStart(2, '0')}
+        </span>
+        <div className="h-32 w-1 bg-white/10 rounded-full relative overflow-hidden">
+            <div 
+                className="absolute top-0 left-0 w-full bg-white/50 transition-all duration-300"
+                style={{ height: `${((currentIndex + 1) / articles.length) * 100}%` }}
+            />
+        </div>
+        <span className="text-xs font-mono text-white/20">
+            {String(articles.length).padStart(2, '0')}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col justify-end pb-24 px-8 md:px-24 max-w-5xl">
+         <div key={currentIndex} className="animate-in slide-in-from-bottom-10 fade-in duration-500">
+            <div className="flex items-center gap-4 mb-6">
+                <span className="px-3 py-1 rounded border border-white/20 text-xs uppercase tracking-[0.2em] bg-black/40 backdrop-blur-md">
+                    {currentArticle.sourceTitle}
+                </span>
+                <span className="text-xs text-gray-400 font-mono tracking-widest">
+                    {new Date(currentArticle.pubDate).toLocaleDateString().split('/').join('.')}
+                </span>
             </div>
-            <h2 className="text-4xl md:text-7xl font-bold mb-6 leading-tight cursor-pointer hover:text-[rgb(var(--color-accent))] transition-colors" onClick={() => setReadingArticle(article)}>
-              {article.title}
-            </h2>
-            <p className="text-lg md:text-2xl text-gray-300 line-clamp-3 max-w-2xl mb-8 leading-relaxed">
-              {article.description}
-            </p>
-            <button 
-              onClick={() => setReadingArticle(article)}
-              className="inline-flex items-center text-lg font-medium hover:gap-4 gap-2 transition-all text-white"
+            
+            <h2 
+                onClick={() => setReadingArticle(currentArticle)}
+                className={`font-bold leading-[0.9] mb-8 cursor-pointer hover:text-[rgb(var(--color-accent))] transition-colors tracking-tight break-words
+                  ${currentArticle.title.length > 80 ? 'text-3xl md:text-5xl lg:text-6xl' : 'text-4xl md:text-6xl lg:text-7xl'}
+                `}
             >
-              Preview <span className="text-2xl">→</span>
+                {currentArticle.title}
+            </h2>
+            
+            <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-10 line-clamp-3">
+                {currentArticle.description}
+            </p>
+
+            <button 
+              onClick={() => setReadingArticle(currentArticle)}
+              className="group flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:text-[rgb(var(--color-accent))] transition-colors"
+            >
+              <span>Read Full Story</span>
+              <div className="w-12 h-[1px] bg-white/30 group-hover:bg-[rgb(var(--color-accent))] transition-colors relative overflow-hidden">
+                 <div className="absolute inset-0 bg-white w-full -translate-x-full group-hover:translate-x-0 transition-transform duration-300"/>
+              </div>
             </button>
-          </div>
-        </section>
-      ))}
+         </div>
+      </div>
+      
+      {/* Scroll Hint */}
+       <div className="absolute bottom-8 right-8 z-20 flex gap-4 text-white/30 text-xs uppercase tracking-widest animate-pulse">
+        <span>Scroll / Arrows to Navigate</span>
+      </div>
+
       {readingArticle && (
         <ArticleReaderModal 
           article={readingArticle}
@@ -171,7 +342,7 @@ export const CompactLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 
   return (
-    <div className="bg-[rgb(var(--color-background))] min-h-screen font-mono text-sm p-2 sm:p-4">
+    <div className="min-h-screen font-mono text-sm p-2 sm:p-4">
       <div className="max-w-5xl mx-auto bg-[rgb(var(--color-surface))] shadow-lg border border-[rgb(var(--color-border))] rounded-lg overflow-hidden">
         <div className="bg-[rgb(var(--color-accent))] p-2 px-4 flex items-center">
           <span className="font-bold text-white mr-4">FeedNews</span>
@@ -332,47 +503,73 @@ export const TerminalLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 
   return (
-    <div className="min-h-screen bg-black text-green-500 p-4 font-mono text-sm md:text-base">
-      <div className="mb-6 text-white">
-        <span className="text-blue-400">user@news-dashboard</span>:<span className="text-blue-200">~</span>$ ./fetch_feeds.sh --all
-        <br/>
-        <span className="text-gray-500">Fetching data... Done. {articles.length} packets received.</span>
-      </div>
+    <div className="min-h-screen text-green-500 pt-20 pb-12 px-4 md:px-8 font-mono text-sm md:text-base">
       
-      <div className="space-y-6 max-w-4xl">
-        {articles.map((article, i) => (
-          <div key={i} className="group">
-            <div className="flex items-start gap-2">
-              <span className="text-gray-600 select-none min-w-[20px]">{`>`}</span>
-              <div>
-                <div className="flex flex-wrap gap-x-3 text-xs text-gray-500 mb-1">
-                  <span className="text-yellow-500">[{new Date(article.pubDate).toISOString().split('T')[0]}]</span>
-                  <span className="text-blue-400">@{article.sourceTitle.toLowerCase().replace(/\s/g, '_')}</span>
-                  <span className="text-gray-600">id:{Math.random().toString(36).substr(2, 6)}</span>
-                </div>
-                <h2 
-                    className="font-bold text-white hover:bg-white hover:text-black inline-block px-1 -ml-1 transition-colors cursor-pointer mb-1"
-                    onClick={() => setReadingArticle(article)}
-                >
-                  {article.title}
-                </h2>
-                <p className="text-gray-400 pl-0 max-w-2xl border-l border-gray-800 ml-1 pl-2 mt-1">
-                  {article.description}
-                </p>
-                <button 
-                   onClick={() => setReadingArticle(article)}
-                   className="mt-2 text-xs text-green-700 hover:text-green-400 hover:underline"
-                >
-                    [PREVIEW]
-                </button>
-              </div>
+      {/* Terminal Window Frame */}
+      <div className="border border-white/10 rounded-lg bg-black/95 shadow-2xl overflow-hidden min-h-[70vh] flex flex-col relative max-w-6xl mx-auto backdrop-blur-sm">
+        
+        {/* Discrete Window Header */}
+        <div className="bg-white/5 border-b border-white/5 p-2 flex items-center gap-2 sticky top-0 z-10 backdrop-blur-md">
+            <div className="flex gap-1.5 ml-2">
+                <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50 hover:bg-red-500/80 transition-colors"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50 hover:bg-yellow-500/80 transition-colors"></div>
+                <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50 hover:bg-green-500/80 transition-colors"></div>
             </div>
-          </div>
-        ))}
-        <div className="animate-pulse">
-          <span className="text-blue-400">user@news-dashboard</span>:<span className="text-blue-200">~</span>$ <span className="w-2 h-4 bg-white inline-block align-middle"/>
+            <div className="flex-1 text-center text-gray-600 text-[10px] uppercase tracking-widest font-bold opacity-50 select-none">Create a new window instance</div>
+        </div>
+
+        {/* Content Area */}
+        <div className="p-6 md:p-8 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+            <div className="mb-8 text-white/90">
+                <span className="text-blue-400 font-bold">user@news-dashboard</span>:<span className="text-blue-300">~</span>$ ./fetch_feeds.sh --silent
+                <br/>
+                <div className="text-gray-500/80 mt-1 flex items-center gap-2">
+                    <span>&gt; Initializing connection...</span>
+                    <span className="text-green-500">Done</span>
+                </div>
+                <div className="text-gray-500/80">
+                    <span>&gt; {articles.length} packets received from aggregation layer.</span>
+                </div>
+            </div>
+            
+            <div className="space-y-8 max-w-4xl">
+                {articles.map((article, i) => (
+                <div key={i} className="group relative pl-4 border-l-2 border-transparent hover:border-green-500/50 transition-colors duration-300">
+                    <div className="flex items-start gap-4">
+                        <span className="text-gray-700 select-none font-bold opacity-50">{`>`}</span>
+                        <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-x-3 text-xs text-gray-500 mb-1 font-medium">
+                                <span className="text-yellow-600/80">[{new Date(article.pubDate).toISOString().split('T')[0]}]</span>
+                                <span className="text-blue-500/80 lowercase">@{article.sourceTitle.replace(/\s/g, '_')}</span>
+                                <span className="text-gray-700">pid:{Math.floor(Math.random() * 9000) + 1000}</span>
+                            </div>
+                            <h2 
+                                className="text-lg md:text-xl font-bold text-gray-200 hover:text-green-400 hover:underline decoration-green-500/50 underline-offset-4 transition-all cursor-pointer mb-2"
+                                onClick={() => setReadingArticle(article)}
+                            >
+                                {article.title}
+                            </h2>
+                            <p className="text-gray-500/80 max-w-3xl leading-relaxed text-sm">
+                                {article.description ? article.description.slice(0, 180) + (article.description.length > 180 ? '...' : '') : ''}
+                            </p>
+                            <button 
+                                onClick={() => setReadingArticle(article)}
+                                className="mt-3 text-[10px] uppercase tracking-widest text-[#00ff41]/60 hover:text-[#00ff41] border border-[#00ff41]/20 hover:border-[#00ff41]/60 px-2 py-1 rounded-sm transition-all"
+                            >
+                                Open_Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                ))}
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-white/5">
+                <span className="text-blue-400 font-bold">user@news-dashboard</span>:<span className="text-blue-300">~</span>$ <span className="w-2.5 h-5 bg-gray-500/50 inline-block align-middle animate-pulse"/>
+            </div>
         </div>
       </div>
+
       {readingArticle && (
         <ArticleReaderModal 
           article={readingArticle}

@@ -124,7 +124,7 @@ const translations: Record<Language, Record<string, string>> = {
     'layout.cyberpunk': 'Cyberpunk',
     'layout.terminal': 'Terminal',
     'layout.polaroid': 'Polaroid',
-    'layout.default': 'Auto (Categoria)',
+    'layout.default': 'Usar Padrão Global',
   },
   'en-US': {
     'app.title': 'Personal News',
@@ -221,7 +221,7 @@ const translations: Record<Language, Record<string, string>> = {
     'layout.cyberpunk': 'Cyberpunk',
     'layout.terminal': 'Terminal',
     'layout.polaroid': 'Polaroid',
-    'layout.default': 'Auto (Category)',
+    'layout.default': 'Use Global Default',
   },
   'es': {
     'app.title': 'Noticias Personales',

@@ -16,6 +16,7 @@ import type { FeedSource, FeedCategory } from "../types";
 import { sanitizeHtmlContent } from "../utils/sanitization";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useLanguage } from "../contexts/LanguageContext";
+import { OPMLExportService } from "../services/opmlExportService";
 
 interface FeedCategoryManagerProps {
   feeds: FeedSource[];
@@ -112,7 +113,6 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         draggedItem: { type, id, data },
       }));
       e.dataTransfer.effectAllowed = "move";
-      // Add a ghost image or styling if needed
     },
     []
   );
@@ -128,6 +128,20 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     },
     []
   );
+
+  const handleExportOPML = async () => {
+    // Generate OPML with category structure
+    const opml = await OPMLExportService.generateOPML(feeds, categories);
+    const blob = new Blob([opml], { type: "text/xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `personal_news_with_categories_${new Date().toISOString().split('T')[0]}.opml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const handleDragLeave = useCallback(() => {
     setDragState((prev) => ({
@@ -425,13 +439,13 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           {t('action.add')}
         </button>
         <button
-          onClick={handleExportCategories}
+          onClick={handleExportOPML}
           className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-lg transition-all border border-white/10 hover:border-white/20 flex items-center"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          {t('action.export')}
+          Export OPML
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
