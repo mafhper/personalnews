@@ -45,12 +45,14 @@ interface ArticleItemProps {
   layoutMode?: string;
   density?: string;
   showImage?: boolean;
+  onClick?: (article: Article) => void;
 }
 
 const ArticleItemComponent: React.FC<ArticleItemProps> = ({
   article,
   index = 0,
   timeFormat = "24h",
+  onClick,
 }) => {
   const { startRenderTiming, endRenderTiming } = usePerformance();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -152,6 +154,12 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex flex-col group"
+            onClick={(e) => {
+              if (onClick) {
+                e.preventDefault();
+                onClick(article);
+              }
+            }}
             aria-label={`Article: ${article.title} from ${article.author || article.sourceTitle
               }`}
           >

@@ -21,6 +21,7 @@ import { BrutalistLayout } from "./layouts/BrutalistLayout";
 import { TimelineLayout } from "./layouts/TimelineLayout";
 import { BentoLayout } from "./layouts/BentoLayout";
 import { MagazineLayout } from "./layouts/MagazineLayout";
+import { ModernPortalLayout } from "./layouts/ModernPortalLayout";
 import {  NewspaperLayout, 
   FocusLayout, 
   GalleryLayout, 
@@ -128,6 +129,10 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   if (effectiveLayout === 'polaroid') {
     return <PolaroidLayout articles={articles} timeFormat={timeFormat} />;
+  }
+
+  if (effectiveLayout === 'modern') {
+    return <ModernPortalLayout articles={articles} timeFormat={timeFormat} />;
   }
 
   if (effectiveLayout === 'magazine' || effectiveLayout === 'grid' || effectiveLayout === 'default') {

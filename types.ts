@@ -4,7 +4,7 @@ export interface ContentConfig {
   showDate: boolean;
   showTime: boolean;
   showTags: boolean;
-  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'polaroid';
+  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'polaroid' | 'modern';
   density: 'compact' | 'comfortable' | 'spacious';
   paginationType?: 'numbered' | 'loadMore' | 'infinite';
 }

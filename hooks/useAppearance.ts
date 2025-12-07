@@ -6,9 +6,9 @@ import { DEFAULT_CONFIG } from '../services/auraWallpaperService'; // Import DEF
 
 const defaultHeaderConfig: HeaderConfig = {
   style: 'default',
-  position: 'sticky',
-  height: 'normal',
-  showTitle: true,
+  position: 'floating',
+  height: 'compact',
+  showTitle: false,
   showLogo: true,
   customTitle: 'Personal News',
   logoUrl: null,
@@ -28,7 +28,7 @@ const defaultContentConfig: ContentConfig = {
   showDate: true,
   showTime: false,
   showTags: true,
-  layoutMode: 'default',
+  layoutMode: 'modern',
   density: 'comfortable',
   paginationType: 'numbered',
 };
@@ -40,6 +40,24 @@ const defaultBackgroundConfig: BackgroundConfig = {
 };
 
 export const LAYOUT_PRESETS: LayoutPreset[] = [
+  {
+    id: 'masonry',
+    name: 'Masonry Default',
+    description: 'Layout padrão com grade dinâmica e header flutuante.',
+    header: { 
+      style: 'default', 
+      position: 'floating', 
+      height: 'compact', 
+      showTitle: false, 
+      showLogo: true,
+      backgroundColor: '#0a0a0c',
+      backgroundOpacity: 95,
+      blurIntensity: 'medium',
+      borderColor: '#ffffff',
+      borderOpacity: 8
+    },
+    content: { layoutMode: 'masonry', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
+  },
   {
     id: 'magazine',
     name: 'Magazine',
@@ -57,6 +75,24 @@ export const LAYOUT_PRESETS: LayoutPreset[] = [
       borderOpacity: 10
     },
     content: { layoutMode: 'magazine', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
+  },
+  {
+    id: 'modern',
+    name: 'Modern Portal',
+    description: 'Layout editorial moderno com hero sections e destaques visuais.',
+    header: { 
+      style: 'default', 
+      position: 'floating', 
+      height: 'compact', 
+      showTitle: false, 
+      showLogo: true,
+      backgroundColor: '#0a0a0c',
+      backgroundOpacity: 95,
+      blurIntensity: 'medium',
+      borderColor: '#ffffff',
+      borderOpacity: 8
+    },
+    content: { layoutMode: 'modern', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
   },
   {
     id: 'newspaper',
@@ -201,7 +237,7 @@ export const useAppearance = () => {
 
   const [activeLayoutId, setActiveLayoutId] = useLocalStorage<string | null>(
     'appearance-active-layout',
-    null
+    'modern'
   );
 
   const updateHeaderConfig = useCallback((updates: Partial<HeaderConfig>) => {

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Article } from '../../types';
 import { ArticleItem } from '../ArticleItem';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ImmersiveLayoutProps {
   articles: Article[];
@@ -10,6 +11,7 @@ interface ImmersiveLayoutProps {
 
 export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const featuredArticle = articles[0];
   const otherArticles = articles.slice(1);
@@ -31,6 +33,14 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
     const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
     if (currentIndex > 0) {
       setReadingArticle(articles[currentIndex - 1]);
+    }
+  };
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const { current } = scrollContainerRef;
+      const scrollAmount = direction === 'left' ? -current.clientWidth / 2 : current.clientWidth / 2;
+      current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
   
@@ -91,33 +101,55 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
         <h2 className="text-lg md:text-xl font-bold text-[rgb(var(--color-text))] px-4 border-l-4 border-[rgb(var(--color-accent))] flex items-center gap-2">
           Trending Now
         </h2>
-        <div className="flex overflow-x-auto space-x-4 pb-4 px-4 snap-x snap-mandatory no-scrollbar mask-linear-fade">
-          {otherArticles.map((article) => (
-            <div key={article.link} className="flex-shrink-0 w-72 md:w-80 snap-center relative group">
-              <ArticleItem 
-                article={article} 
-                layoutMode="grid" 
-                density="compact"
-                showImage={true}
-              />
-               {/* Immersive Overlay Check */}
-               {hasContent(article) && (
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                       <button
-                          onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleOpenReader(article);
-                          }}
-                          className="bg-black/70 hover:bg-[rgb(var(--color-accent))] text-white p-2 rounded-full backdrop-blur transition-all transform hover:scale-110 shadow-lg border border-white/10"
-                          title="Open Cinema Mode"
-                       >
-                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                       </button>
-                  </div>
-               )}
+        
+        <div className="relative group/scroll-container">
+            <button 
+                onClick={() => scroll('left')}
+                className="absolute left-0 top-0 bottom-4 z-20 bg-black/50 hover:bg-black/70 text-white w-12 flex items-center justify-center opacity-0 group-hover/scroll-container:opacity-100 transition-opacity duration-300 backdrop-blur-sm hidden md:flex rounded-r-lg"
+                aria-label="Scroll left"
+            >
+                <ChevronLeft size={32} />
+            </button>
+
+            <div 
+                ref={scrollContainerRef}
+                className="flex overflow-x-auto space-x-4 pb-4 px-4 snap-x snap-mandatory no-scrollbar"
+            >
+              {otherArticles.map((article) => (
+                <div key={article.link} className="flex-shrink-0 w-72 md:w-80 snap-center relative group">
+                  <ArticleItem 
+                    article={article} 
+                    layoutMode="grid" 
+                    density="compact"
+                    showImage={true}
+                  />
+                   {/* Immersive Overlay Check */}
+                   {hasContent(article) && (
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                           <button
+                              onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleOpenReader(article);
+                              }}
+                              className="bg-black/70 hover:bg-[rgb(var(--color-accent))] text-white p-2 rounded-full backdrop-blur transition-all transform hover:scale-110 shadow-lg border border-white/10"
+                              title="Open Cinema Mode"
+                           >
+                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                           </button>
+                      </div>
+                   )}
+                </div>
+              ))}
             </div>
-          ))}
+
+            <button 
+                onClick={() => scroll('right')}
+                className="absolute right-0 top-0 bottom-4 z-20 bg-black/50 hover:bg-black/70 text-white w-12 flex items-center justify-center opacity-0 group-hover/scroll-container:opacity-100 transition-opacity duration-300 backdrop-blur-sm hidden md:flex rounded-l-lg"
+                aria-label="Scroll right"
+            >
+                <ChevronRight size={32} />
+            </button>
         </div>
       </div>
 

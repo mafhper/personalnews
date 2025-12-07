@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useLogger } from "../services/logger";
 import type { FeedSource, FeedCategory } from "../types";
@@ -88,22 +89,23 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   // Layout options for dropdown
   const layoutOptions: { value: FeedCategory['layoutMode'] | '', label: string }[] = [
     { value: '', label: 'Default (Use Global Setting)' },
-    { value: 'grid', label: 'Magazine Grid' },
-    { value: 'newspaper', label: 'Newspaper (Classic)' },
-    { value: 'masonry', label: 'Masonry Cards' },
-    { value: 'list', label: 'List / Portal' },
-    { value: 'compact', label: 'Compact (Data)' },
-    { value: 'minimal', label: 'Minimal Text' },
-    { value: 'focus', label: 'Focus (Single)' },
-    { value: 'immersive', label: 'Immersive / Netflix' },
-    { value: 'gallery', label: 'Gallery (Image)' },
-    { value: 'timeline', label: 'Timeline' },
     { value: 'bento', label: 'Bento Grid' },
-    { value: 'split', label: 'Split (ZigZag)' },
     { value: 'brutalist', label: 'Brutalist' },
+    { value: 'compact', label: 'Compact (Data)' },
     { value: 'cyberpunk', label: 'Cyberpunk' },
-    { value: 'terminal', label: 'Terminal' },
+    { value: 'focus', label: 'Focus (Single)' },
+    { value: 'gallery', label: 'Gallery (Image)' },
+    { value: 'immersive', label: 'Immersive / Netflix' },
+    { value: 'list', label: 'List / Portal' },
+    { value: 'grid', label: 'Magazine Grid' },
+    { value: 'masonry', label: 'Masonry Cards' },
+    { value: 'minimal', label: 'Minimal Text' },
+    { value: 'modern', label: 'Modern Portal' },
+    { value: 'newspaper', label: 'Newspaper (Classic)' },
     { value: 'polaroid', label: 'Polaroid' },
+    { value: 'split', label: 'Split (ZigZag)' },
+    { value: 'terminal', label: 'Terminal' },
+    { value: 'timeline', label: 'Timeline' },
   ];
 
   const handleDragStart = useCallback(
@@ -394,6 +396,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   };
 
   const [openLayoutDropdownFor, setOpenLayoutDropdownFor] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const layoutDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -774,8 +777,14 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 <div className="relative" key={category.id + '-layout-switcher'}>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent category drag on click
-                      setOpenLayoutDropdownFor(openLayoutDropdownFor === category.id ? null : category.id);
+                      e.stopPropagation();
+                      if (openLayoutDropdownFor === category.id) {
+                        setOpenLayoutDropdownFor(null);
+                      } else {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDropdownPos({ top: rect.bottom + 5, left: rect.left });
+                        setOpenLayoutDropdownFor(category.id);
+                      }
                     }}
                     className={`p-1.5 rounded-lg transition-colors ${
                       category.layoutMode
@@ -789,10 +798,11 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     </svg>
                   </button>
 
-                  {openLayoutDropdownFor === category.id && (
+                  {openLayoutDropdownFor === category.id && dropdownPos && createPortal(
                     <div
                       ref={(el) => { layoutDropdownRefs.current[category.id] = el; }}
-                      className="absolute left-0 top-full mt-2 w-48 bg-gray-900 border border-white/10 rounded-lg shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                      className="fixed w-48 bg-[#0a0a0c] border border-white/10 rounded-lg shadow-2xl py-1 z-[9999] animate-in fade-in zoom-in-95 duration-100 max-h-[300px] overflow-y-auto custom-scrollbar"
+                      style={{ top: dropdownPos.top, left: dropdownPos.left }}
                       onClick={(e) => e.stopPropagation()} 
                     >
                       {layoutOptions.map((option) => (
@@ -800,18 +810,19 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                           key={option.label}
                           onClick={() => {
                             updateCategory(category.id, { layoutMode: option.value as any });
-                            setOpenLayoutDropdownFor(null); // Close dropdown after selection
+                            setOpenLayoutDropdownFor(null);
                           }}
                           className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                             (category.layoutMode || '') === option.value
-                              ? 'text-[rgb(var(--color-accent))] bg-white/5'
-                              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                              ? 'text-[rgb(var(--color-accent))] bg-white/5 font-medium'
+                              : 'text-gray-300 hover:bg-white/10 hover:text-white'
                           }`}
                         >
                           {option.label}
                         </button>
                       ))}
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
 

@@ -9,22 +9,19 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   { url: "https://techcrunch.com/feed/", categoryId: "dev", customTitle: "TechCrunch" },
 
   // Design
-  { url: "https://www.smashingmagazine.com/feed/", categoryId: "design", customTitle: "Smashing Magazine" },
   { url: "https://uxdesign.cc/feed", categoryId: "design", customTitle: "UX Collective" },
-  { url: "https://www.figma.com/blog/feed/", categoryId: "design", customTitle: "Figma Blog" },
+
   { url: "https://designculture.com.br/feed", categoryId: "design", customTitle: "Design Culture" },
 
   // Ciência
   { url: "https://www.sciencenews.org/feed", categoryId: "ciencia", customTitle: "Science News" },
   { url: "https://www.nasa.gov/news-release/feed/", categoryId: "ciencia", customTitle: "NASA News" },
-  { url: "https://jornal.usp.br/feed/", categoryId: "ciencia", customTitle: "USP Notícias" },
-  { url: "https://www.scientificamerican.com/feed/", categoryId: "ciencia", customTitle: "Scientific American" },
+
 
   // Mundo
   { url: "http://feeds.bbci.co.uk/news/world/rss.xml", categoryId: "mundo", customTitle: "BBC World" },
   { url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", categoryId: "mundo", customTitle: "NY Times World" },
-  { url: "https://feeds.folha.uol.com.br/emtempo/rss091.xml", categoryId: "mundo", customTitle: "Folha de S.Paulo" },
-  { url: "https://g1.globo.com/rss/g1/", categoryId: "mundo", customTitle: "G1 Notícias" }
+
 ];
 
 export const CURATED_FEEDS_BR: FeedSource[] = [
@@ -47,8 +44,8 @@ export const CURATED_FEEDS_BR: FeedSource[] = [
   { url: "https://revistapesquisa.fapesp.br/feed/", categoryId: "ciencia", customTitle: "Revista Pesquisa FAPESP" },
   
   // Mundo / Notícias
-  { url: "https://feeds.folha.uol.com.br/emtempo/rss091.xml", categoryId: "mundo", customTitle: "Folha de S.Paulo" },
-  { url: "https://g1.globo.com/rss/g1/", categoryId: "mundo", customTitle: "G1" },
+
+
   { url: "https://www.estadao.com.br/rss/ultimas.xml", categoryId: "mundo", customTitle: "Estadão" },
   { url: "https://theintercept.com/brasil/feed/", categoryId: "mundo", customTitle: "The Intercept Brasil" }
 ];
@@ -65,7 +62,7 @@ export const CURATED_FEEDS_INTL: FeedSource[] = [
   { url: "https://news.ycombinator.com/rss", categoryId: "dev", customTitle: "Hacker News" },
   
   // Design
-  { url: "https://www.smashingmagazine.com/feed/", categoryId: "design", customTitle: "Smashing Magazine" },
+
   { url: "https://css-tricks.com/feed/", categoryId: "design", customTitle: "CSS-Tricks" },
   { url: "https://www.nngroup.com/feed/rss/", categoryId: "design", customTitle: "Nielsen Norman Group" },
   { url: "https://uxdesign.cc/feed", categoryId: "design", customTitle: "UX Collective" },
@@ -73,7 +70,7 @@ export const CURATED_FEEDS_INTL: FeedSource[] = [
   // Ciência
   { url: "https://www.sciencenews.org/feed", categoryId: "ciencia", customTitle: "Science News" },
   { url: "https://www.nasa.gov/news-release/feed/", categoryId: "ciencia", customTitle: "NASA News" },
-  { url: "https://www.scientificamerican.com/feed/", categoryId: "ciencia", customTitle: "Scientific American" },
+
   { url: "https://www.space.com/feeds/all", categoryId: "ciencia", customTitle: "Space.com" },
   { url: "https://phys.org/rss-feed/", categoryId: "ciencia", customTitle: "Phys.org" },
   
