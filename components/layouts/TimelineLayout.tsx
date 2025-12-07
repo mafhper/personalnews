@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface TimelineLayoutProps {
   articles: Article[];
@@ -9,12 +10,13 @@ interface TimelineLayoutProps {
 
 export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { t, language } = useLanguage();
 
   // Group articles by date
   // We use useMemo to avoid recalculating on every render
   const { groupedArticles, navigationList } = useMemo(() => {
     const groups = articles.reduce((acc, article) => {
-      const date = new Date(article.pubDate).toLocaleDateString(undefined, { 
+      const date = new Date(article.pubDate).toLocaleDateString(language, { 
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
@@ -30,7 +32,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
     const flatList = Object.entries(groups).flatMap(([_, groupArticles]) => groupArticles);
 
     return { groupedArticles: groups, navigationList: flatList };
-  }, [articles]);
+  }, [articles, language]);
 
   const handleOpenReader = (article: Article) => {
     setReadingArticle(article);
@@ -82,7 +84,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                     <span className="font-medium text-[rgb(var(--color-accent))]">{article.sourceTitle}</span>
                     <span>•</span>
                     <span>
-                      {new Date(article.pubDate).toLocaleTimeString(undefined, { 
+                      {new Date(article.pubDate).toLocaleTimeString(language, { 
                         hour: '2-digit', 
                         minute: '2-digit',
                         hour12: timeFormat === '12h'
@@ -122,7 +124,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                             onClick={(e) => { e.stopPropagation(); handleOpenReader(article); }}
                             className="pointer-events-auto bg-[rgb(var(--color-accent))] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg hover:scale-105 transition-transform"
                         >
-                            Preview
+                            {t('action.preview')}
                         </button>
                     </div>
                   </div>

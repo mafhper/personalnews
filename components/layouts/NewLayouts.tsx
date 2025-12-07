@@ -4,6 +4,7 @@ import { LazyImage } from '../LazyImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useWeather } from '../../hooks/useWeather';
 import { useAppearance } from '../../hooks/useAppearance';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface NewLayoutProps {
   articles: Article[];
@@ -14,6 +15,7 @@ interface NewLayoutProps {
 export const NewspaperLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { data: weatherData, city, getWeatherIcon, isLoading: weatherLoading, changeCity } = useWeather();
+  const { t } = useLanguage();
   
   const handleCityChange = () => {
     const newCity = prompt('Digite o nome da cidade para a previsão do tempo:', city);
@@ -64,7 +66,7 @@ export const NewspaperLayout: React.FC<NewLayoutProps> = ({ articles }) => {
                 onClick={() => setReadingArticle(articles[0])}
                 className="mt-4 px-4 py-2 bg-[rgb(var(--color-accent))] text-white text-sm font-bold rounded hover:opacity-90 transition-opacity"
               >
-                Preview
+                {t('action.preview')}
               </button>
             </div>
           </div>
@@ -84,7 +86,7 @@ export const NewspaperLayout: React.FC<NewLayoutProps> = ({ articles }) => {
               onClick={() => setReadingArticle(article)}
               className="text-xs font-bold text-[rgb(var(--color-accent))] hover:underline"
             >
-              Preview →
+              {t('action.preview')} →
             </button>
           </article>
         ))}
@@ -340,6 +342,7 @@ export const GalleryLayout: React.FC<NewLayoutProps> = ({ articles }) => {
 /* 4. Compact Layout - Data Density (Hacker News style) */
 export const CompactLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen font-mono text-sm p-2 sm:p-4">
@@ -360,7 +363,7 @@ export const CompactLayout: React.FC<NewLayoutProps> = ({ articles }) => {
                 </span>
                 <div className="text-[10px] text-[rgb(var(--color-textSecondary))] ml-6 leading-tight mt-0.5">
                   by {article.author || article.sourceTitle} <span className="mx-1 opacity-50">|</span> {new Date(article.pubDate).toLocaleDateString()} <span className="mx-1 opacity-50">|</span> 
-                  <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] mx-1 transition-colors">preview</span>
+                  <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] mx-1 transition-colors">{t('action.preview').toLowerCase()}</span>
                 </div>
               </li>
             ))}
@@ -384,6 +387,7 @@ export const CompactLayout: React.FC<NewLayoutProps> = ({ articles }) => {
 /* 5. Split Layout - Zig Zag */
 export const SplitLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { t } = useLanguage();
 
   return (
     <div className="flex flex-col min-h-screen bg-[rgb(var(--color-background))]">
@@ -414,7 +418,7 @@ export const SplitLayout: React.FC<NewLayoutProps> = ({ articles }) => {
                 onClick={() => setReadingArticle(article)}
                 className="mt-6 text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-accent))] self-start"
             >
-                Preview &rarr;
+                {t('action.preview')} &rarr;
             </button>
           </div>
         </article>
@@ -501,6 +505,7 @@ export const CyberpunkLayout: React.FC<NewLayoutProps> = ({ articles }) => {
 /* 7. Terminal Layout - CLI */
 export const TerminalLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen text-green-500 pt-20 pb-12 px-4 md:px-8 font-mono text-sm md:text-base">
@@ -556,7 +561,7 @@ export const TerminalLayout: React.FC<NewLayoutProps> = ({ articles }) => {
                                 onClick={() => setReadingArticle(article)}
                                 className="mt-3 text-[10px] uppercase tracking-widest text-[#00ff41]/60 hover:text-[#00ff41] border border-[#00ff41]/20 hover:border-[#00ff41]/60 px-2 py-1 rounded-sm transition-all"
                             >
-                                Open_Preview
+                                Open_{t('action.preview')}
                             </button>
                         </div>
                     </div>
@@ -587,6 +592,7 @@ export const TerminalLayout: React.FC<NewLayoutProps> = ({ articles }) => {
 /* 8. Polaroid Layout - Retro Cards */
 export const PolaroidLayout: React.FC<NewLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[rgb(var(--color-background))] p-8 overflow-hidden">
@@ -619,7 +625,7 @@ export const PolaroidLayout: React.FC<NewLayoutProps> = ({ articles }) => {
                       onClick={(e) => { e.stopPropagation(); setReadingArticle(article); }}
                       className="bg-[rgb(var(--color-text))] text-[rgb(var(--color-background))] px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[rgb(var(--color-accent))] hover:text-white transition-colors shadow-md"
                   >
-                      Preview
+                      {t('action.preview')}
                   </button>
               </div>
             </article>

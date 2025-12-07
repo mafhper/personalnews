@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MinimalLayoutProps {
   articles: Article[];
@@ -10,6 +11,7 @@ interface MinimalLayoutProps {
 
 export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
   const [readingIndex, setReadingIndex] = useState<number | null>(null);
+  const { t } = useLanguage();
 
   return (
     <>
@@ -68,7 +70,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                     className="text-xs font-bold tracking-widest uppercase text-[rgb(var(--color-textSecondary))] group-hover:text-[rgb(var(--color-text))] transition-colors hover:underline"
                     onClick={(e) => { e.stopPropagation(); setReadingIndex(index); }}
                  >
-                    PREVIEW
+                    {t('action.preview')}
                  </button>
                  <div className="w-12 h-px bg-[rgb(var(--color-border))] group-hover:w-24 group-hover:bg-[rgb(var(--color-accent))] transition-all duration-500" />
               </div>

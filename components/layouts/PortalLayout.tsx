@@ -3,6 +3,7 @@ import { Article } from '../../types';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface PortalLayoutProps {
   articles: Article[];
@@ -11,6 +12,7 @@ interface PortalLayoutProps {
 
 export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { t } = useLanguage();
 
   const mainFeatured = articles[0];
   const subFeatured = articles.slice(1, 3);
@@ -76,7 +78,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                                     }}
                                     className="text-xs bg-[rgb(var(--color-accent))] text-white px-3 py-1 rounded hover:bg-[rgb(var(--color-accent))]/80 transition-colors shadow-lg font-bold uppercase tracking-wider"
                                 >
-                                    Preview
+                                    {t('action.preview')}
                                 </button>
                             </div>
                         )}

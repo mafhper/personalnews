@@ -4,6 +4,7 @@ import App from "./App";
 import "./index.css";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { NotificationContainer } from "./components/NotificationToast";
+import { ModalProvider } from "./contexts/ModalContext"; // Import ModalProvider
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -13,9 +14,11 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <NotificationProvider>
-      <App />
-      <NotificationContainer />
-    </NotificationProvider>
+    <ModalProvider> {/* Wrap the entire app with ModalProvider */}
+      <NotificationProvider>
+        <App />
+        <NotificationContainer />
+      </NotificationProvider>
+    </ModalProvider>
   </React.StrictMode>
 );

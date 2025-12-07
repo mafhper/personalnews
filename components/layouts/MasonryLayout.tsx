@@ -3,6 +3,7 @@ import { Article } from '../../types';
 import { ArticleItem } from '../ArticleItem';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MasonryLayoutProps {
   articles: Article[];
@@ -11,6 +12,7 @@ interface MasonryLayoutProps {
 
 export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const { t } = useLanguage();
   const featured = articles[0];
   const rest = articles.slice(1);
 
@@ -45,7 +47,7 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
                 onClick={() => handleOpenReader(featured)}
                 className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg hover:scale-105 transition-all"
             >
-                Preview
+                {t('action.preview')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
             </button>
          </div>
@@ -66,7 +68,7 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
                           handleOpenReader(article);
                       }}
                       className="bg-black/60 hover:bg-[rgb(var(--color-accent))] text-white p-2 rounded-full backdrop-blur-sm shadow-lg transition-all transform hover:scale-110"
-                      title="Preview Article"
+                      title={t('action.preview')}
                   >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
                   </button>

@@ -509,7 +509,16 @@ a:focus {
 /* Mobile-first responsive breakpoints */
 @media (max-width: 480px) {
 
-  /* Extra small screens */
+  /* Extra small screens - Redefine global scale for better mobile fit */
+  :root {
+    --font-size-base: 0.9375rem;
+    --font-size-lg: 1.0625rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.75rem;
+    --font-size-4xl: 2rem;
+  }
+
   .container {
     padding-left: 12px;
     padding-right: 12px;

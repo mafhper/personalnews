@@ -30,6 +30,7 @@ import { SearchFilters } from "./components/SearchBar";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useNotification } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { ModalProvider, useModal } from "./contexts/ModalContext"; // Import ModalProvider and useModal
 
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
 import { useAppearance } from "./hooks/useAppearance";
@@ -110,6 +111,18 @@ const App: React.FC = () => {
   }, []);
 
   const { showNotification } = useNotification();
+
+  // State from ModalContext for global modal visibility
+  const { isModalOpen: isAnyModalOpenGlobally } = useModal();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Assuming 768px as mobile breakpoint
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Handle feed migration on app startup
   React.useEffect(() => {
@@ -524,29 +537,31 @@ const App: React.FC = () => {
     <BackgroundLayer backgroundConfig={backgroundConfig} currentTheme={currentTheme} />
     <div className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""}`}>
       <SkipLinks />
-      <Header
-        onManageFeedsClick={() => setIsModalOpen(true)}
-        onRefreshClick={handleRefresh}
-        selectedCategory={selectedCategory}
-        onNavigation={handleNavigation}
-        categorizedFeeds={categorizedFeeds}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-        onOpenFavorites={() => setIsFavoritesModalOpen(true)}
+      {!isAnyModalOpenGlobally && ( // Hide Header if any modal is open globally (Mobile, Tablet, Desktop)
+        <Header
+          onManageFeedsClick={() => setIsModalOpen(true)}
+          onRefreshClick={handleRefresh}
+          selectedCategory={selectedCategory}
+          onNavigation={handleNavigation}
+          categorizedFeeds={categorizedFeeds}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenFavorites={() => setIsFavoritesModalOpen(true)}
 
-        articles={articles}
-        onSearch={handleSearch}
-        onSearchResultsChange={handleSearchResultsChange}
+          articles={articles}
+          onSearch={handleSearch}
+          onSearchResultsChange={handleSearchResultsChange}
 
 
 
-        categories={categories}
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
-        onPageChange={pagination.setPage}
-        onGoHome={() => {
-          handleNavigation("all");
-        }}
-      />
+          categories={categories}
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={pagination.setPage}
+          onGoHome={() => {
+            handleNavigation("all");
+          }}
+        />
+      )}
       <main
         ref={swipeRef}
         id="main-content"

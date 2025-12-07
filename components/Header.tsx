@@ -36,6 +36,28 @@ const Header: React.FC<HeaderProps> = (props) => {
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastScrollY = useRef(0);
 
+  // Mobile Category Visibility Logic
+  const [isMobileCategoryVisible, setIsMobileCategoryVisible] = useState(false);
+  const categoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleActivity = () => {
+      setIsMobileCategoryVisible(true);
+      if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
+      categoryTimeoutRef.current = setTimeout(() => {
+        setIsMobileCategoryVisible(false);
+      }, 2500);
+    };
+
+    window.addEventListener("scroll", handleActivity);
+    window.addEventListener("touchmove", handleActivity);
+    return () => {
+      window.removeEventListener("scroll", handleActivity);
+      window.removeEventListener("touchmove", handleActivity);
+      if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -88,14 +110,14 @@ const Header: React.FC<HeaderProps> = (props) => {
   const headerPositionClasses = {
     static: "relative",
     sticky: "sticky top-0 z-50",
-    floating: "fixed top-2 left-2 right-2 rounded-xl border-[rgba(255,255,255,0.08)] md:top-4 md:left-4 md:right-4 md:rounded-2xl md:max-w-7xl md:mx-auto z-50",
+    floating: "fixed top-2 left-1/2 -translate-x-1/2 w-[95%] max-w-fit rounded-xl border-[rgba(255,255,255,0.08)] md:top-4 md:rounded-2xl z-50",
     hidden: `relative z-50 transition-all duration-500 ease-in-out ${isHeaderVisible ? 'opacity-100 max-h-24' : 'opacity-0 max-h-0 overflow-hidden -mb-1'}`,
   };
 
   const headerStyleClasses = {
-    default: "justify-between",
-    centered: "justify-between lg:justify-center lg:relative",
-    minimal: "justify-between",
+    default: "justify-between gap-4",
+    centered: "justify-between lg:justify-center lg:relative gap-4",
+    minimal: "justify-between gap-4",
   };
 
   const headerHeightClasses = {
@@ -193,7 +215,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           borderBottomColor: isScrolled || isFloating ? headerBorderStyle : 'transparent',
         }}
       >
-        <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${isFloating ? 'rounded-xl md:rounded-2xl' : ''}`}>
+        <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''}`}>
           <div className={`flex items-center ${headerHeightClasses[headerConfig.height]} transition-all duration-300 ${headerStyleClasses[headerConfig.style]}`}>
             
             {/* Left Section: Logo & Title */}
@@ -399,7 +421,13 @@ const Header: React.FC<HeaderProps> = (props) => {
           </div>
 
           {/* Mobile Categories Strip - Inside Container but full width behavior */}
-          <div className="lg:hidden w-full border-t border-white/5 pt-1 pb-2">
+          <div 
+            className={`lg:hidden w-full transition-all duration-500 ease-in-out overflow-hidden ${
+              isMobileCategoryVisible ? 'max-h-20 opacity-100 border-t border-white/5 pt-1 pb-2' : 'max-h-0 opacity-0 border-none'
+            }`}
+            onMouseEnter={() => setIsMobileCategoryVisible(true)}
+            onTouchStart={() => setIsMobileCategoryVisible(true)}
+          >
              <div className="overflow-x-auto no-scrollbar mask-linear-fade w-full" style={{ scrollbarWidth: 'none' }}>
                 <div className="flex items-center justify-center min-w-full space-x-3 px-1">
                     {activeCategories.map((category) => (
