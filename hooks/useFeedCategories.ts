@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import type { FeedCategory, FeedSource } from '../types';
+import type { FeedCategory, FeedSource, HeaderConfig } from '../types';
 
 const DEFAULT_CATEGORIES: FeedCategory[] = [
   { id: 'all', name: 'All', color: '#6B7280', order: 0, isDefault: true },
@@ -12,7 +12,7 @@ const DEFAULT_CATEGORIES: FeedCategory[] = [
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
-  createCategory: (name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode']) => FeedCategory;
+  createCategory: (name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position']) => FeedCategory;
   updateCategory: (id: string, updates: Partial<FeedCategory>) => void;
   deleteCategory: (id: string) => void;
   reorderCategories: (categoryIds: string[]) => void;
@@ -49,7 +49,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     });
   }, []);
 
-  const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode']): FeedCategory => {
+  const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position']): FeedCategory => {
     const newCategory: FeedCategory = {
       id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
@@ -58,6 +58,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       order: 0, // Will be updated in the setter function
       isDefault: false,
       layoutMode,
+      headerPosition,
     };
 
     setCategories(prev => {

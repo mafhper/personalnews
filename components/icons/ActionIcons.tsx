@@ -48,11 +48,11 @@ export const ActionIcons = {
   ),
 
   Export: ({ className = "w-4 h-4", size }: IconProps) => (
-    <Download className={className} size={size} />
+    <Upload className={className} size={size} />
   ),
 
   Import: ({ className = "w-4 h-4", size }: IconProps) => (
-    <Upload className={className} size={size} />
+    <Download className={className} size={size} />
   ),
 
   Save: ({ className = "w-4 h-4", size }: IconProps) => (

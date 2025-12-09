@@ -32,10 +32,18 @@ const layoutOptions: { value: FeedCategory['layoutMode'] | '', labelKey: string 
     { value: 'minimal', labelKey: 'layout.minimal' },
     { value: 'modern', labelKey: 'layout.modern' },
     { value: 'newspaper', labelKey: 'layout.newspaper' },
-    { value: 'polaroid', labelKey: 'layout.polaroid' },
+    { value: 'pocketfeeds', labelKey: 'layout.pocketfeeds' },
     { value: 'split', labelKey: 'layout.split' },
     { value: 'terminal', labelKey: 'layout.terminal' },
     { value: 'timeline', labelKey: 'layout.timeline' },
+];
+
+const headerOptions: { value: FeedCategory['headerPosition'] | '', label: string }[] = [
+    { value: '', label: 'Padrão (Global)' },
+    { value: 'static', label: 'Estático' },
+    { value: 'sticky', label: 'Fixo (Sticky)' },
+    { value: 'floating', label: 'Flutuante' },
+    { value: 'hidden', label: 'Oculto' },
 ];
 
 const getFaviconUrl = (url: string): string => {
@@ -116,6 +124,11 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
       updateCategory(category.id, { layoutMode: e.target.value as any });
   };
 
+  const handleHeaderPositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const val = e.target.value;
+      updateCategory(category.id, { headerPosition: val ? (val as any) : undefined });
+  };
+
   const isSelected = selectedCategory === category.id;
 
   return (
@@ -166,8 +179,9 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('feeds.tab.feeds')} de {category.name}</span>
               
               <div className="flex items-center space-x-1">
+                 {/* Layout Selector */}
                  <div className="relative group/layout">
-                    <button onClick={(e) => e.stopPropagation()} className={`p-1 rounded hover:bg-white/10 ${category.layoutMode ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title={t('settings.layout.preset')}>
+                    <button onClick={(e) => e.stopPropagation()} className={`p-1 rounded hover:bg-white/10 ${category.layoutMode ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title="Alterar Layout da Categoria">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
                     </button>
                     <select 
@@ -175,6 +189,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                         value={category.layoutMode || ''}
                         onChange={handleLayoutChange}
                         onClick={(e) => e.stopPropagation()}
+                        title="Alterar Layout da Categoria"
                     >
                         {layoutOptions.map((option) => (
                           <option key={option.labelKey} value={option.value}>
@@ -184,18 +199,38 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     </select>
                  </div>
 
-                 <button onClick={handlePin} className={`p-1 rounded hover:bg-white/10 ${category.isPinned ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title={category.isPinned ? t('feeds.category.unpin') : t('feeds.category.pin')}>
+                 {/* Header Position Selector */}
+                 <div className="relative group/header">
+                    <button onClick={(e) => e.stopPropagation()} className={`p-1 rounded hover:bg-white/10 ${category.headerPosition ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title="Posição do Cabeçalho">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                    </button>
+                    <select 
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        value={category.headerPosition || ''}
+                        onChange={handleHeaderPositionChange}
+                        onClick={(e) => e.stopPropagation()}
+                        title="Posição do Cabeçalho"
+                    >
+                        {headerOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                    </select>
+                 </div>
+
+                 <button onClick={handlePin} className={`p-1 rounded hover:bg-white/10 ${category.isPinned ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"}>
                     <svg className="w-3.5 h-3.5" fill={category.isPinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                  </button>
 
                  {onEditCategory && (
-                    <button onClick={(e) => { e.stopPropagation(); onEditCategory(category.id); setIsOpen(false); }} className="p-1 rounded hover:bg-white/10 text-gray-400" title={t('action.edit')}>
+                    <button onClick={(e) => { e.stopPropagation(); onEditCategory(category.id); setIsOpen(false); }} className="p-1 rounded hover:bg-white/10 text-gray-400" title="Editar Categoria">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </button>
                  )}
 
                  {!category.isDefault && (
-                    <button onClick={handleDelete} className="p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400" title={t('action.delete')}>
+                    <button onClick={handleDelete} className="p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400" title="Excluir Categoria">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                  )}

@@ -53,7 +53,7 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
     <div className="space-y-6 md:space-y-8 flex flex-col h-full">
       {/* Hero Section */}
       {featuredArticle && (
-        <div className="relative min-h-[50vh] md:h-[60vh] rounded-3xl overflow-hidden group shadow-2xl shrink-0">
+        <div className="relative min-h-[30vh] md:h-[40vh] rounded-3xl overflow-hidden group shadow-2xl shrink-0">
           <div 
             className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
             style={{ 

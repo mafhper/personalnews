@@ -83,10 +83,12 @@ interface FeedLoadingProgressProps {
   onCancel?: () => void;
   onRetryErrors?: () => void;
   className?: string;
+  priorityFeedsLoaded?: boolean; // When true, show a more subtle progress indicator
 }
 
 /**
  * Specialized progress indicator for feed loading
+ * Shows compact subtle version when priority feeds are loaded
  */
 export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   loadedFeeds,
@@ -98,11 +100,50 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   onCancel,
   onRetryErrors,
   className = "",
+  priorityFeedsLoaded = false,
 }) => {
   const hasErrors = errors.length > 0;
   const isComplete = loadedFeeds >= totalFeeds;
 
-  // Compact inline loading indicator
+  // Subtle compact version when priority feeds are loaded but still loading others
+  if (priorityFeedsLoaded && !isComplete) {
+    return (
+      <div className={`fixed bottom-4 right-4 z-40 ${className}`}>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900/80 border border-white/10 backdrop-blur-sm shadow-lg">
+          {/* Small spinner */}
+          <div className="animate-spin rounded-full h-3 w-3 border border-t-transparent border-[rgb(var(--color-accent))]/60" />
+          
+          {/* Compact text */}
+          <span className="text-xs text-gray-400">
+            {totalFeeds - loadedFeeds} remaining...
+          </span>
+          
+          {/* Tiny progress bar */}
+          <div className="w-12 h-1 bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-[rgb(var(--color-accent))]/60 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          
+          {/* Cancel button */}
+          {onCancel && (
+            <button 
+              onClick={onCancel} 
+              className="text-gray-500 hover:text-white text-xs transition-colors ml-1"
+              title="Cancel"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Full loading indicator (original design)
   return (
     <div className={`w-full max-w-md ${className}`}>
       {/* Main compact bar */}

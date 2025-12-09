@@ -22,15 +22,14 @@ import { TimelineLayout } from "./layouts/TimelineLayout";
 import { BentoLayout } from "./layouts/BentoLayout";
 import { MagazineLayout } from "./layouts/MagazineLayout";
 import { ModernPortalLayout } from "./layouts/ModernPortalLayout";
-import {  NewspaperLayout, 
-  FocusLayout, 
-  GalleryLayout, 
-  CompactLayout, 
-  SplitLayout, 
-  CyberpunkLayout, 
-  TerminalLayout, 
-  PolaroidLayout 
-} from "./layouts/NewLayouts";
+import { NewspaperLayout } from "./layouts/NewspaperLayout";
+import { FocusLayout } from "./layouts/FocusLayout";
+import { GalleryLayout } from "./layouts/GalleryLayout";
+import { CompactLayout } from "./layouts/CompactLayout";
+import { SplitLayout } from "./layouts/SplitLayout";
+import { CyberpunkLayout } from "./layouts/CyberpunkLayout";
+import { TerminalLayout } from "./layouts/TerminalLayout";
+import { PocketFeedsLayout } from "./layouts/PocketFeedsLayout";
 import { FeaturedArticle } from "./FeaturedArticle";
 import { ArticleItem } from "./ArticleItem";
 import { useArticleLayout } from "../hooks/useArticleLayout";
@@ -127,8 +126,8 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     return <TerminalLayout articles={articles} timeFormat={timeFormat} />;
   }
 
-  if (effectiveLayout === 'polaroid') {
-    return <PolaroidLayout articles={articles} timeFormat={timeFormat} />;
+  if (effectiveLayout === 'pocketfeeds') {
+    return <PocketFeedsLayout articles={articles} timeFormat={timeFormat} />;
   }
 
   if (effectiveLayout === 'modern') {

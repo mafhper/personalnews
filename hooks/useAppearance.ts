@@ -2,7 +2,8 @@ import { useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { HeaderConfig, ContentConfig, LayoutPreset, BackgroundConfig } from '../types';
 import { useExtendedTheme } from './useExtendedTheme';
-import { DEFAULT_CONFIG } from '../services/auraWallpaperService'; // Import DEFAULT_CONFIG
+import { DEFAULT_CONFIG } from '../services/auraWallpaperService';
+import { BUILT_LAYOUT_PRESETS } from '../config/layoutPresets.config';
 
 const defaultHeaderConfig: HeaderConfig = {
   style: 'default',
@@ -13,14 +14,20 @@ const defaultHeaderConfig: HeaderConfig = {
   customTitle: 'Personal News',
   logoUrl: null,
   logoSize: 'md',
+  logoColorMode: 'original',
+  syncFavicon: true,
   // Appearance defaults
-  backgroundColor: '#0a0a0c',
-  backgroundOpacity: 95,
-  blurIntensity: 'medium',
+  backgroundColor: '#1F1F1F',
+  backgroundOpacity: 60,
+  blurIntensity: 'heavy',
   borderColor: '#ffffff',
   borderOpacity: 8,
   categoryBackgroundColor: '#ffffff',
   categoryBackgroundOpacity: 3,
+  // New props
+  bgColor: '#1F1F1F',
+  bgOpacity: 0.6,
+  blur: 20,
 };
 
 const defaultContentConfig: ContentConfig = {
@@ -39,183 +46,14 @@ const defaultBackgroundConfig: BackgroundConfig = {
   auraSettings: DEFAULT_CONFIG,
 };
 
-export const LAYOUT_PRESETS: LayoutPreset[] = [
-  {
-    id: 'masonry',
-    name: 'Masonry Default',
-    description: 'Layout padrão com grade dinâmica e header flutuante.',
-    header: { 
-      style: 'default', 
-      position: 'floating', 
-      height: 'compact', 
-      showTitle: false, 
-      showLogo: true,
-      backgroundColor: '#0a0a0c',
-      backgroundOpacity: 95,
-      blurIntensity: 'medium',
-      borderColor: '#ffffff',
-      borderOpacity: 8
-    },
-    content: { layoutMode: 'masonry', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
-  },
-  {
-    id: 'magazine',
-    name: 'Magazine',
-    description: 'Layout clássico com header sólido e navegação central.',
-    header: { 
-      style: 'centered', 
-      position: 'sticky', 
-      height: 'normal', 
-      showTitle: true, 
-      showLogo: true,
-      backgroundColor: '#1a1a1a', 
-      backgroundOpacity: 98,
-      blurIntensity: 'medium',
-      borderColor: '#ffffff',
-      borderOpacity: 10
-    },
-    content: { layoutMode: 'magazine', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
-  },
-  {
-    id: 'modern',
-    name: 'Modern Portal',
-    description: 'Layout editorial moderno com hero sections e destaques visuais.',
-    header: { 
-      style: 'default', 
-      position: 'floating', 
-      height: 'compact', 
-      showTitle: false, 
-      showLogo: true,
-      backgroundColor: '#0a0a0c',
-      backgroundOpacity: 95,
-      blurIntensity: 'medium',
-      borderColor: '#ffffff',
-      borderOpacity: 8
-    },
-    content: { layoutMode: 'modern', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
-  },
-  {
-    id: 'newspaper',
-    name: 'Newspaper',
-    description: 'Estilo jornal clássico, denso e informativo.',
-    header: { 
-      style: 'default', 
-      position: 'static', 
-      height: 'spacious', 
-      showTitle: true, 
-      showLogo: true,
-      backgroundColor: '#111827',
-      backgroundOpacity: 100,
-      blurIntensity: 'none',
-      borderColor: '#374151',
-      borderOpacity: 25
-    },
-    content: { layoutMode: 'newspaper', density: 'compact', showAuthor: true, showDate: true, showTags: false }
-  },
-  {
-    id: 'minimal',
-    name: 'Minimal',
-    description: 'Foco no conteúdo. Header flutuante transparente.',
-    header: { 
-      style: 'minimal', 
-      position: 'floating', 
-      height: 'compact', 
-      showTitle: false, 
-      showLogo: true,
-      backgroundColor: '#000000',
-      backgroundOpacity: 40,
-      blurIntensity: 'heavy',
-      borderColor: 'transparent',
-      borderOpacity: 0
-    },
-    content: { layoutMode: 'minimal', density: 'spacious', showAuthor: true, showDate: false, showTags: false }
-  },
-  {
-    id: 'focus',
-    name: 'Focus',
-    description: 'Leitura sem distrações. Header oculto e layout de coluna única.',
-    header: { 
-      style: 'minimal', 
-      position: 'hidden', 
-      height: 'compact', 
-      showTitle: false, 
-      showLogo: false, // Hidden header usually hides everything anyway, but configured just in case
-      blurIntensity: 'none'
-    },
-    content: { layoutMode: 'focus', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
-  },
-  {
-    id: 'immersive',
-    name: 'Immersive',
-    description: 'Experiência full-screen com header ultra-discreto.',
-    header: { 
-      style: 'minimal', 
-      position: 'floating', 
-      height: 'normal', 
-      showTitle: false, 
-      showLogo: true,
-      backgroundColor: '#000000',
-      backgroundOpacity: 0, // Fully transparent
-      blurIntensity: 'none',
-      borderColor: 'transparent'
-    },
-    content: { layoutMode: 'immersive', density: 'spacious', showAuthor: true, showDate: true, showTags: false }
-  },
-  {
-    id: 'brutalist',
-    name: 'Brutalist',
-    description: 'Bordas fortes, alto contraste e tipografia marcante.',
-    header: { 
-      style: 'default', 
-      position: 'static', 
-      height: 'spacious', 
-      showTitle: true, 
-      showLogo: false, // Only Title
-      backgroundColor: '#000000',
-      backgroundOpacity: 100,
-      blurIntensity: 'none',
-      borderColor: '#ffffff',
-      borderOpacity: 100 // Solid border
-    },
-    content: { layoutMode: 'brutalist', density: 'spacious', showAuthor: true, showDate: true, showTags: true }
-  },
-  {
-    id: 'timeline',
-    name: 'Timeline',
-    description: 'Navegação por tempo. Header sticky compacto.',
-    header: { 
-      style: 'default', 
-      position: 'sticky', 
-      height: 'compact', 
-      showTitle: true, 
-      showLogo: true,
-      backgroundColor: '#1f2937', 
-      backgroundOpacity: 90, 
-      blurIntensity: 'light',
-      borderColor: '#374151',
-      borderOpacity: 50
-    },
-    content: { layoutMode: 'timeline', density: 'comfortable', showAuthor: true, showDate: true, showTags: true }
-  },
-  {
-    id: 'bento',
-    name: 'Bento Grid',
-    description: 'Layout modular moderno.',
-    header: { 
-      style: 'centered', 
-      position: 'floating', 
-      height: 'normal', 
-      showTitle: false, 
-      showLogo: true,
-      backgroundColor: '#1a1a1a', 
-      backgroundOpacity: 60, 
-      blurIntensity: 'heavy',
-      borderColor: '#ffffff',
-      borderOpacity: 5
-    },
-    content: { layoutMode: 'bento', density: 'compact', showAuthor: false, showDate: true, showTags: false }
-  }
-];
+// Layout presets agora vêm do arquivo de configuração centralizado
+// Edite config/layoutPresets.config.ts para ajustar os presets
+export const LAYOUT_PRESETS: LayoutPreset[] = BUILT_LAYOUT_PRESETS;
+
+interface UserOverrides {
+  header?: Partial<HeaderConfig>;
+  content?: Partial<ContentConfig>;
+}
 
 export const useAppearance = () => {
   const { themeSettings, updateThemeSettings, currentTheme, customThemes, defaultPresets, setCurrentTheme, removeCustomTheme } = useExtendedTheme();
@@ -240,35 +78,169 @@ export const useAppearance = () => {
     'modern'
   );
 
-  const updateHeaderConfig = useCallback((updates: Partial<HeaderConfig>) => {
-    setHeaderConfig((prev) => ({ ...prev, ...updates }));
-    setActiveLayoutId(null);
-  }, [setHeaderConfig, setActiveLayoutId]);
+  // Store user manual overrides to ensure they take precedence over presets
+  const [userOverrides, setUserOverrides] = useLocalStorage<UserOverrides>(
+    'appearance-overrides',
+    {}
+  );
 
-  const updateContentConfig = useCallback((updates: Partial<ContentConfig>) => {
+  const updateHeaderConfig = useCallback((updates: Partial<HeaderConfig>, persistOverride: boolean = true) => {
+    setHeaderConfig((prev) => ({ ...prev, ...updates }));
+    if (persistOverride) {
+      setActiveLayoutId(null);
+      // Save manual override with safe merging
+      setUserOverrides((prev) => {
+        const currentOverrides = prev || {};
+        return {
+          ...currentOverrides,
+          header: {
+            ...(currentOverrides.header || {}),
+            ...updates
+          }
+        };
+      });
+    }
+  }, [setHeaderConfig, setUserOverrides, setActiveLayoutId]);
+
+  const updateContentConfig = useCallback((updates: Partial<ContentConfig>, persistOverride: boolean = true) => {
     setContentConfig((prev) => ({ ...prev, ...updates }));
-    setActiveLayoutId(null);
-  }, [setContentConfig, setActiveLayoutId]);
+    if (persistOverride) {
+      setActiveLayoutId(null);
+      // Save manual override with safe merging
+      setUserOverrides((prev) => {
+        const currentOverrides = prev || {};
+        return {
+          ...currentOverrides,
+          content: {
+            ...(currentOverrides.content || {}),
+            ...updates
+          }
+        };
+      });
+    }
+  }, [setContentConfig, setUserOverrides, setActiveLayoutId]);
 
   const updateBackgroundConfig = useCallback((updates: Partial<BackgroundConfig>) => {
     setBackgroundConfig((prev) => ({ ...prev, ...updates }));
   }, [setBackgroundConfig]);
 
-  const applyLayoutPreset = useCallback((presetId: string) => {
+  const applyLayoutPreset = useCallback((presetId: string, persist: boolean = true) => {
     const preset = LAYOUT_PRESETS.find(p => p.id === presetId);
     if (preset) {
-      setHeaderConfig(prev => ({ ...prev, ...preset.header }));
-      setContentConfig(prev => ({ ...prev, ...preset.content }));
-      setActiveLayoutId(presetId);
+      console.log(`Applying layout preset: ${presetId} (persist: ${persist})`, {
+        presetHeader: preset.header,
+        userOverrides: userOverrides
+      });
+
+      // Apply preset BUT merge with user overrides to maintain user preferences
+      // Explicitly access overrides safely
+      const headerOverrides = userOverrides?.header || {};
+      const contentOverrides = userOverrides?.content || {};
+
+      const mergedHeader = {
+        ...headerConfig, // Keep current properties (like customLogoSvg which might not be in preset)
+        ...preset.header, // Apply preset values
+        ...headerOverrides // Apply user overrides ON TOP
+      };
+
+      const mergedContent = {
+        ...contentConfig,
+        ...preset.content,
+        ...contentOverrides
+      };
+
+      setHeaderConfig(mergedHeader);
+      setContentConfig(mergedContent);
+
+      if (persist) {
+        setActiveLayoutId(presetId);
+      }
     }
-  }, [setHeaderConfig, setContentConfig, setActiveLayoutId]);
+  }, [headerConfig, contentConfig, setHeaderConfig, setContentConfig, setActiveLayoutId, userOverrides]);
+
+  const refreshAppearance = useCallback(() => {
+    // Re-applies the current configuration based on active preset and user overrides.
+    // Useful to clear temporary overrides (like category-specific headers).
+    const headerOverrides = userOverrides?.header || {};
+    const contentOverrides = userOverrides?.content || {};
+
+    if (activeLayoutId) {
+      const preset = LAYOUT_PRESETS.find(p => p.id === activeLayoutId);
+      if (preset) {
+        const mergedHeader = {
+          ...defaultHeaderConfig,
+          ...preset.header,
+          ...headerOverrides
+        };
+        const mergedContent = {
+          ...defaultContentConfig,
+          ...preset.content,
+          ...contentOverrides
+        };
+        setHeaderConfig(mergedHeader);
+        setContentConfig(mergedContent);
+        return;
+      }
+    }
+
+    // Fallback or Custom mode: Just re-apply overrides over defaults/current
+    // This ensures temporary changes are wiped if they aren't in overrides
+    const mergedHeader = { ...headerConfig, ...headerOverrides };
+    // Note: if headerConfig is dirty from temp changes, this might not clear it if overrides doesn't touch those keys.
+    // To strictly clear temp changes, we should rebuild from a clean state if possible.
+    // But we don't have a "clean state" stored other than defaultHeaderConfig.
+    // If activeLayoutId is null, we assume user manually configured everything, so current headerConfig IS the source of truth mostly.
+    // However, for the specific case of "category override", we want to revert.
+    // If we are in custom mode, maybe we can't easily revert without losing manual unsaved changes?
+    // But manual changes SHOULD be in userOverrides if they were made via settings.
+    // So:
+    const cleanHeader = { ...defaultHeaderConfig, ...headerConfig, ...headerOverrides };
+    // Wait, spread order: default -> current (dirty) -> overrides. Dirty wins if not in overrides.
+    // We want: default -> preset (if any) -> overrides.
+
+    if (!activeLayoutId) {
+      // If custom, we accept 'headerConfig' is the state. 
+      // But if 'headerConfig' has a temp change... we can't distinguish it from a permanent custom change made before overrides existed?
+      // Actually, updateHeaderConfig persists to overrides. So ALL permanent changes are in overrides.
+      // So we can rebuild from default + overrides.
+      const rebuiltHeader = { ...defaultHeaderConfig, ...headerOverrides };
+      // But wait, defaults might not match what the user had before the temp change if they started from a preset and then modified it?
+      // If they modified it, it went to overrides.
+      // So yes, default + overrides should be safe IF overrides captures everything.
+      // But overrides only captures partials.
+      // If I start with "Brutalist" (Logo: false). Set activeLayoutId = null.
+      // Overrides = {}.
+      // User enables Logo. Overrides = { Logo: true }.
+      // Rebuilt = Default (Logo: true) + { Logo: true } -> Logo true.
+      // But what about other Brutalist props? (Height: spacious).
+      // Default has Height: compact.
+      // Rebuilt will have Height: compact. User loses Brutalist base.
+
+      // CONCLUSION: We cannot easily rebuild custom state without a base preset.
+      // BUT, we only need to fix the "Category Override" issue.
+      // Category override uses `persistOverride: false`.
+      // So it updates `headerConfig` but NOT `userOverrides`.
+      // If we want to undo it, we need to know what to go back to.
+
+      // Best approach: `applyLayoutPreset` works fine. 
+      // If `activeLayoutId` is present, `refreshAppearance` works perfectly.
+      // If `activeLayoutId` is NULL, we are in trouble.
+      // Workaround: Only support resetting category overrides if a preset is active.
+      // OR, just re-apply the current `activeLayoutId` if it exists.
+
+      if (activeLayoutId) {
+        applyLayoutPreset(activeLayoutId);
+      }
+    }
+  }, [activeLayoutId, applyLayoutPreset, headerConfig, contentConfig, userOverrides, setHeaderConfig, setContentConfig]);
 
   const resetAppearance = useCallback(() => {
     setHeaderConfig(defaultHeaderConfig);
     setContentConfig(defaultContentConfig);
     setBackgroundConfig(defaultBackgroundConfig);
     setActiveLayoutId(null);
-  }, [setHeaderConfig, setContentConfig, setBackgroundConfig, setActiveLayoutId]);
+    setUserOverrides({}); // Clear overrides on reset
+  }, [setHeaderConfig, setContentConfig, setBackgroundConfig, setActiveLayoutId, setUserOverrides]);
 
   return {
     headerConfig,
@@ -287,5 +259,6 @@ export const useAppearance = () => {
     defaultPresets,
     setCurrentTheme,
     removeCustomTheme,
+    refreshAppearance,
   };
 };

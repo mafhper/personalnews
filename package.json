@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "dev": "bun vite",
-    "build": "bunx tsc --noEmit && bun vite build",
+    "build": "npm run promo:changelog && bunx tsc --noEmit && bun vite build",
     "preview": "bun vite preview",
     "test": "bun vitest run --config config/vitest.config.core.ts",
     "test:all": "bun vitest run --config config/vitest.config.minimal.ts",
@@ -27,7 +27,9 @@
     "test:feeds": "bun run scripts/testFeeds.ts",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "clean": "bun rimraf dist node_modules/.vite",
-    "deploy": "bun run build && git add dist/ && git commit -m \"Deploy: Update build\" && git push origin main"
+    "deploy": "bun run build && git add dist/ && git commit -m \"Deploy: Update build\" && git push origin main",
+    "promo": "bunx serve _desenvolvimento/ideas/promo-site -p 3030",
+    "promo:changelog": "node _desenvolvimento/ideas/promo-site/scripts/generate-changelog.cjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
@@ -39,6 +41,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.21",
+    "fast-check": "^4.4.0",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",

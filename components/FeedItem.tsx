@@ -14,6 +14,7 @@ interface FeedItemProps {
   onRemove: (url: string) => void;
   onRetry: (url: string) => void;
   onEdit: (url: string) => void;
+  onShowError?: (url: string) => void;
   categories: FeedCategory[];
   onMoveCategory: (categoryId: string) => void;
 }
@@ -24,6 +25,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
   onRemove,
   onRetry,
   onEdit,
+  onShowError,
   categories,
   onMoveCategory,
 }) => {
@@ -53,9 +55,19 @@ export const FeedItem: React.FC<FeedItemProps> = ({
             {feed.url}
           </p>
           {validation?.error && (
-            <p className="text-red-400 text-xs mt-1">
-              {validation.error}
-            </p>
+            <div className="mt-1 flex items-center gap-2">
+                <p className="text-red-400 text-xs truncate max-w-[200px] sm:max-w-xs">
+                {validation.error}
+                </p>
+                {onShowError && (
+                    <button 
+                        onClick={() => onShowError(feed.url)}
+                        className="text-[10px] uppercase font-bold text-red-300 hover:text-white bg-red-500/10 hover:bg-red-500/30 px-2 py-0.5 rounded transition-colors"
+                    >
+                        Ver Detalhes
+                    </button>
+                )}
+            </div>
           )}
         </div>
 
@@ -73,6 +85,17 @@ export const FeedItem: React.FC<FeedItemProps> = ({
               </option>
             ))}
           </select>
+
+          {/* Info/Error Button (only if invalid) */}
+          {validation && !validation.isValid && onShowError && (
+             <button
+                onClick={() => onShowError(feed.url)}
+                className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                title="Ver Detalhes do Erro"
+             >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+             </button>
+          )}
 
           {/* Retry button */}
           <button

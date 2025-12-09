@@ -173,7 +173,7 @@ const App: React.FC = () => {
 
 
   // Extended theme system
-  const { currentTheme, themeSettings, backgroundConfig, applyLayoutPreset } = useAppearance();
+  const { currentTheme, themeSettings, backgroundConfig, applyLayoutPreset, updateHeaderConfig, refreshAppearance } = useAppearance();
 
   // Feed categories system
   const { categories, getCategorizedFeeds } = useFeedCategories();
@@ -233,9 +233,10 @@ const App: React.FC = () => {
     }
   }, [layoutSettings.autoRefreshInterval, feeds.length, loadFeeds]);
 
+  // Pass selectedCategory to prioritize feeds from the current category
   const handleRefresh = useCallback(() => {
-    loadFeeds(true);
-  }, [loadFeeds]);
+    loadFeeds(true, selectedCategory);
+  }, [loadFeeds, selectedCategory]);
 
   // Search handlers
   const handleSearch = useCallback((query: string, filters: SearchFilters) => {
@@ -371,19 +372,30 @@ const App: React.FC = () => {
   });
 
   const handleNavigation = useCallback((category: string, feedUrl?: string) => {
+    // First, refresh appearance to clear any temporary overrides from previous category
+    refreshAppearance();
+    
     setSelectedCategory(category);
 
     // Apply layout preset if category has one
     const categoryObj = categories.find(c => c.id === category);
-    if (categoryObj?.layoutMode) {
-      console.log(`Applying layout preset for category ${category}: ${categoryObj.layoutMode}`);
-      applyLayoutPreset(categoryObj.layoutMode);
+    
+    if (categoryObj) {
+        if (categoryObj.layoutMode) {
+            console.log(`Applying layout preset for category ${category}: ${categoryObj.layoutMode}`);
+            applyLayoutPreset(categoryObj.layoutMode, false); // false = temporary override
+        }
+        
+        if (categoryObj.headerPosition) {
+            console.log(`Applying header position override for category ${category}: ${categoryObj.headerPosition}`);
+            updateHeaderConfig({ position: categoryObj.headerPosition }, false); // false = temporary override
+        }
     }
 
     setSelectedFeedUrl(feedUrl || null);
     pagination.resetPagination();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [categories, pagination, applyLayoutPreset]);
+  }, [categories, pagination, applyLayoutPreset, updateHeaderConfig, refreshAppearance]);
 
   // Keyboard shortcuts configuration
   const keyboardShortcuts = useMemo(
@@ -570,6 +582,21 @@ const App: React.FC = () => {
       >
         {/* Progressive loading indicators */}
         {loadingState.status === "loading" && (
+          loadingState.priorityFeedsLoaded ? (
+            // Subtle indicator when priority feeds are loaded - positioned fixed by the component
+            <FeedLoadingProgress
+              loadedFeeds={loadingState.loadedFeeds}
+              totalFeeds={loadingState.totalFeeds}
+              progress={loadingState.progress}
+              isBackgroundRefresh={loadingState.isBackgroundRefresh}
+              errors={loadingState.errors}
+              currentAction={loadingState.currentAction}
+              onCancel={cancelLoading}
+              onRetryErrors={retryFailedFeeds}
+              priorityFeedsLoaded={true}
+            />
+          ) : (
+            // Full loading indicator when still loading priority feeds
             <div className="flex flex-col items-center justify-center min-h-[40vh] w-full max-w-2xl mx-auto px-4">
               <FeedLoadingProgress
                 loadedFeeds={loadingState.loadedFeeds}
@@ -583,6 +610,7 @@ const App: React.FC = () => {
                 className="w-full"
               />
             </div>
+          )
         )}
 
         {/* Search active indicator */}
@@ -719,7 +747,7 @@ const App: React.FC = () => {
                     No articles match your search for "{searchQuery}"
                   </p>
                   <button
-                    onClick={clearSearch}
+                    onClick={() => setIsModalOpen(true)}
                     className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent-dark))] text-white font-bold py-2 px-4 rounded-lg transition-colors"
                   >
                     Clear Search
@@ -756,6 +784,7 @@ const App: React.FC = () => {
           currentFeeds={feeds}
           setFeeds={setFeeds}
           closeModal={() => setIsModalOpen(false)}
+          onRefreshFeeds={() => loadFeeds(true)}
         />
       </Modal>
       <SettingsSidebar

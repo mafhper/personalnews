@@ -22,6 +22,8 @@ build/
 
 # IDE and editor files
 .vscode/
+.kiro
+.vs
 .idea/
 *.swp
 *.swo
@@ -105,5 +107,5 @@ __tests_unused/
 
 # Documentation (local development only)
 docs/
-#samples/
-docs/
+samples/
+_desenvolvimento/

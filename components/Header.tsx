@@ -207,12 +207,14 @@ const Header: React.FC<HeaderProps> = (props) => {
   return (
     <>
       <header
-        className={`${headerPositionClasses[headerConfig.position]} z-30 transition-all duration-300 border-b ${blurClass} ${
+        className={`${headerPositionClasses[headerConfig.position]} z-30 transition-all duration-300 ${blurClass} ${
           isScrolled || isFloating ? 'shadow-lg' : ''
-        }`}
+        }
+        ${isScrolled && !isFloating ? 'border-b' : ''} 
+        `}
         style={{
           backgroundColor: headerBgStyle,
-          borderBottomColor: isScrolled || isFloating ? headerBorderStyle : 'transparent',
+          borderBottomColor: isScrolled && !isFloating ? headerBorderStyle : 'transparent',
         }}
       >
         <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''}`}>
@@ -275,7 +277,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Center Section: Categories (Desktop) */}
             {!isCentered && (
-              <div className="hidden lg:flex flex-1 items-center justify-center relative group/scroll px-2">
+              <div className="hidden md:flex flex-1 items-center justify-start relative group/scroll px-2 ml-4">
                  
                  {/* Left Scroll Button */}
                  <div className={`absolute -left-3 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>

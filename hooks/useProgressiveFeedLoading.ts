@@ -27,6 +27,7 @@ export interface FeedLoadingState {
   errors: FeedError[];
   isBackgroundRefresh: boolean;
   currentAction?: string;
+  priorityFeedsLoaded?: boolean;  // True when priority feeds (category + healthy) are loaded
 }
 
 export interface FeedError {
@@ -178,8 +179,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
   /**
    * Load feeds progressively with immediate cache display
+   * @param forceRefresh - If true, bypass cache checks
+   * @param priorityCategoryId - If provided, feeds from this category will be loaded first
    */
-  const loadFeedsProgressively = useCallback(async (forceRefresh = false) => {
+  const loadFeedsProgressively = useCallback(async (forceRefresh = false, priorityCategoryId?: string) => {
     const currentFeeds = feedsRef.current;
     if (currentFeeds.length === 0) {
       setArticles([]);
@@ -245,10 +248,82 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     const errors: FeedError[] = [];
     let loadedCount = 0;
 
+    // Get problematic feeds from localStorage (feeds that failed in previous sessions)
+    const problematicFeedsKey = 'feed-error-history';
+    let problematicUrls: Set<string> = new Set();
+    let errorHistory: Map<string, { failures: number; lastError: number; lastErrorType: string }> = new Map();
+
+    try {
+      const stored = localStorage.getItem(problematicFeedsKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+
+        // Handle migration from old format array of objects to new format
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item: any) => {
+            // New format check: has failures property
+            if (item.failures !== undefined) {
+              errorHistory.set(item.url, {
+                failures: item.failures,
+                lastError: item.lastError,
+                lastErrorType: item.lastErrorType || 'unknown'
+              });
+            } else {
+              // Old format fallback: treat as 1 failure
+              errorHistory.set(item.url, {
+                failures: 1,
+                lastError: item.lastError,
+                lastErrorType: 'unknown'
+              });
+            }
+          });
+        }
+
+        // Consider feeds problematic if they failed recently (last 7 days) to keep history
+        // But for ordering, we can prioritize those with multiple failures
+        const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+        errorHistory.forEach((data, url) => {
+          if (data.lastError > cutoff) {
+            problematicUrls.add(url);
+          }
+        });
+      }
+    } catch {
+      // Ignore parse errors
+    }
+
+    // Reorder feeds: priority category first, then healthy feeds, then problematic feeds
+    const isHealthy = (feed: FeedSource) => !problematicUrls.has(feed.url);
+    const isPriority = (feed: FeedSource) =>
+      priorityCategoryId && priorityCategoryId !== 'all' && feed.categoryId === priorityCategoryId;
+
+    // Sort feeds into 4 groups:
+    // 1. Priority category + healthy
+    // 2. Other healthy feeds
+    // 3. Priority category + problematic
+    // 4. Other problematic feeds
+    const priorityHealthy = currentFeeds.filter(f => isPriority(f) && isHealthy(f));
+    const otherHealthy = currentFeeds.filter(f => !isPriority(f) && isHealthy(f));
+    const priorityProblematic = currentFeeds.filter(f => isPriority(f) && !isHealthy(f));
+    const otherProblematic = currentFeeds.filter(f => !isPriority(f) && !isHealthy(f));
+
+    const orderedFeeds = [...priorityHealthy, ...otherHealthy, ...priorityProblematic, ...otherProblematic];
+    const priorityFeedCount = priorityHealthy.length + otherHealthy.length;
+
+    if (problematicUrls.size > 0) {
+      logger.info(`Feed ordering: ${priorityHealthy.length} priority+healthy, ${otherHealthy.length} other healthy, ${priorityProblematic.length + otherProblematic.length} problematic`, {
+        additionalData: {
+          priorityCategory: priorityCategoryId,
+          problematicCount: problematicUrls.size
+        }
+      });
+    }
+
     // Load feeds in batches to avoid overwhelming proxies
     const feedBatches: FeedSource[][] = [];
-    for (let i = 0; i < currentFeeds.length; i += BATCH_SIZE) {
-      feedBatches.push(currentFeeds.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < orderedFeeds.length; i += BATCH_SIZE) {
+      feedBatches.push(orderedFeeds.slice(i, i + BATCH_SIZE));
     }
 
     logger.info(`Loading ${currentFeeds.length} feeds in ${feedBatches.length} batches of ${BATCH_SIZE}`, {
@@ -260,13 +335,13 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     // Process batches sequentially with delay
     for (let batchIndex = 0; batchIndex < feedBatches.length; batchIndex++) {
       const batch = feedBatches[batchIndex];
-      
+
       logger.debug(`Processing batch ${batchIndex + 1}/${feedBatches.length} with ${batch.length} feeds`);
-      
+
       // Update status for user
       setLoadingState(prev => ({
         ...prev,
-        currentAction: `Fetching batch ${batchIndex + 1} of ${feedBatches.length}...`
+        currentAction: `Carregando lote ${batchIndex + 1} de ${feedBatches.length}...`
       }));
 
       // Process feeds in current batch concurrently
@@ -281,12 +356,18 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           loadedCount++;
           const progress = (loadedCount / currentFeeds.length) * 100;
 
+          // Check if all priority (healthy) feeds have been loaded
+          const priorityComplete = loadedCount >= priorityFeedCount;
+
           setLoadingState(prev => ({
             ...prev,
             loadedFeeds: loadedCount,
             progress,
+            priorityFeedsLoaded: priorityComplete,
             // Show what we just finished or generic progress
-            currentAction: `Processed ${feed.customTitle || new URL(feed.url).hostname}`
+            currentAction: priorityComplete && loadedCount < currentFeeds.length
+              ? `Carregando feeds restantes... (${currentFeeds.length - loadedCount} faltam)`
+              : `Processado ${feed.customTitle || new URL(feed.url).hostname}`
           }));
 
           // Add result to map
@@ -303,12 +384,13 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           } else if (!result.success) {
             // Track error with categorization
             const errorMessage = result.error || 'Unknown error';
+            const errorType = categorizeError(errorMessage);
             errors.push({
               url: feed.url,
               error: errorMessage,
               timestamp: Date.now(),
               feedTitle: result.title,
-              errorType: categorizeError(errorMessage),
+              errorType: errorType,
             });
           }
 
@@ -372,9 +454,43 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         errors,
         isBackgroundRefresh: false,
         currentAction: 'All feeds loaded',
+        priorityFeedsLoaded: true,
       });
 
       const successfulFeeds = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+
+      // Persist error history to localStorage for future prioritization
+      // Persist error history to localStorage for future prioritization
+      // We update the errorHistory map based on this run's results
+      try {
+        // 1. Process successes: Remove from error history (reset count)
+        results.forEach(r => {
+          if (r.status === 'fulfilled' && r.value.success) {
+            errorHistory.delete(r.value.url);
+          }
+        });
+
+        // 2. Process failures: Increment or add to error history
+        errors.forEach(e => {
+          const existing = errorHistory.get(e.url);
+          errorHistory.set(e.url, {
+            failures: (existing?.failures || 0) + 1,
+            lastError: Date.now(),
+            lastErrorType: e.errorType || 'unknown'
+          });
+        });
+
+        // 3. Serialize and save map to array
+        const historyArray = Array.from(errorHistory.entries()).map(([url, data]) => ({
+          url,
+          ...data
+        }));
+
+        localStorage.setItem(problematicFeedsKey, JSON.stringify(historyArray));
+        logger.debug(`Persisted error history for ${historyArray.length} feeds`);
+      } catch (err) {
+        logger.warn('Failed to save feed error history', err as Error);
+      }
 
       logger.info(`Feed loading completed`, {
         additionalData: {

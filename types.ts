@@ -4,7 +4,7 @@ export interface ContentConfig {
   showDate: boolean;
   showTime: boolean;
   showTags: boolean;
-  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'polaroid' | 'modern';
+  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'pocketfeeds' | 'modern';
   density: 'compact' | 'comfortable' | 'spacious';
   paginationType?: 'numbered' | 'loadMore' | 'infinite';
 }
@@ -61,6 +61,7 @@ export interface FeedCategory {
   isDefault?: boolean;
   isPinned?: boolean;
   layoutMode?: ContentConfig['layoutMode'];
+  headerPosition?: HeaderConfig['position'];
 }
 
 export interface LayoutPreset {
@@ -82,6 +83,9 @@ export interface Article {
   content?: string;
   author?: string;
   categories?: string[];
+  // Podcast/audio support
+  audioUrl?: string;
+  audioDuration?: string; // Duration in format "HH:MM:SS" or seconds
 }
 
 export interface WeatherData {

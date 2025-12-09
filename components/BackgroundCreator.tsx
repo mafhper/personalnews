@@ -20,6 +20,19 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
   const [auraConfig, setAuraConfig] = useState<WallpaperConfig>(config.auraSettings || DEFAULT_CONFIG);
   const [variations, setVariations] = useState<WallpaperConfig[]>([]);
 
+  // Download State
+  const [downloadFormat, setDownloadFormat] = useState<'svg' | 'jpeg'>('svg');
+  const [downloadSize, setDownloadSize] = useState<'s' | 'm' | 'x' | 'xg'>('m');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Download Size Options
+  const DOWNLOAD_SIZES = {
+    s: { label: 'S (1280×720)', width: 1280, height: 720 },
+    m: { label: 'M (1920×1080)', width: 1920, height: 1080 },
+    x: { label: 'X (2560×1440)', width: 2560, height: 1440 },
+    xg: { label: 'XG (3840×2160)', width: 3840, height: 2160 },
+  };
+
 
 
 
@@ -157,8 +170,102 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
     }
   };
 
+  // Download Aura Wallpaper
+  const handleDownloadAura = async () => {
+    setIsDownloading(true);
+    try {
+      const size = DOWNLOAD_SIZES[downloadSize];
+      const downloadConfig = { ...auraConfig, width: size.width, height: size.height };
+      
+      // Generate clean SVG (without url() wrapper)
+      const { width, height, shapes, baseColor, noise, noiseScale } = downloadConfig;
+      
+      const defs = `
+        <defs>
+          <filter id="noiseFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="${noiseScale / 1000}" numOctaves="3" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/>
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="${noise / 100}"/>
+            </feComponentTransfer>
+          </filter>
+          ${shapes.map(shape => `
+            <filter id="blur-${shape.id}" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="${shape.blur}" result="coloredBlur"/>
+            </filter>
+          `).join('')}
+        </defs>
+      `;
 
+      const shapesSvg = shapes.map(shape => `
+        <circle cx="${shape.x}%" cy="${shape.y}%" r="${shape.size / 2}%" 
+          fill="${shape.color}" opacity="${shape.opacity}" 
+          filter="url(#blur-${shape.id})" style="mix-blend-mode: ${shape.blendMode}"/>
+      `).join('');
 
+      const svgString = `<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" 
+  xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  ${defs}
+  <rect width="100%" height="100%" fill="${baseColor}"/>
+  <g>${shapesSvg}</g>
+  <rect width="100%" height="100%" filter="url(#noiseFilter)" opacity="1" style="mix-blend-mode: overlay;"/>
+</svg>`;
+
+      if (downloadFormat === 'svg') {
+        // Download as SVG
+        const blob = new Blob([svgString], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aura-wallpaper-${size.width}x${size.height}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // Convert to JPEG via Canvas
+        const img = new Image();
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `aura-wallpaper-${size.width}x${size.height}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }
+              setIsDownloading(false);
+            }, 'image/jpeg', 0.95);
+          }
+          URL.revokeObjectURL(svgUrl);
+        };
+        
+        img.onerror = () => {
+          console.error('Failed to load SVG for JPEG conversion');
+          setIsDownloading(false);
+        };
+        
+        img.src = svgUrl;
+        return; // Exit early, setIsDownloading(false) is called in callbacks
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+    setIsDownloading(false);
+  };
 
 
 
@@ -262,6 +369,53 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
             }} className="w-full">
                 Randomize Aura
             </Button>
+
+            {/* Download Section */}
+            <div className="pt-3 border-t border-white/10">
+              <label className="block text-[10px] text-gray-400 mb-2">Baixar Wallpaper</label>
+              <div className="flex gap-2 mb-2">
+                <select
+                  value={downloadFormat}
+                  onChange={(e) => setDownloadFormat(e.target.value as 'svg' | 'jpeg')}
+                  className="flex-1 bg-gray-800/50 text-white text-xs px-2 py-1.5 rounded-md border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                >
+                  <option value="svg">SVG (Vetorial)</option>
+                  <option value="jpeg">JPEG (Imagem)</option>
+                </select>
+                <select
+                  value={downloadSize}
+                  onChange={(e) => setDownloadSize(e.target.value as 's' | 'm' | 'x' | 'xg')}
+                  className="flex-1 bg-gray-800/50 text-white text-xs px-2 py-1.5 rounded-md border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                >
+                  <option value="s">S (1280×720)</option>
+                  <option value="m">M (1920×1080)</option>
+                  <option value="x">X (2560×1440)</option>
+                  <option value="xg">XG (3840×2160)</option>
+                </select>
+              </div>
+              <Button 
+                onClick={handleDownloadAura} 
+                disabled={isDownloading}
+                className="w-full"
+              >
+                {isDownloading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Gerando...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Baixar {downloadFormat.toUpperCase()}
+                  </span>
+                )}
+              </Button>
+            </div>
 
             {/* Presets */}
             <div>

@@ -150,12 +150,12 @@ async function fetchWithTimeout(
  */
 function parseRss2JsonResponse(data: string, feedUrl: string): { title: string; articles: Article[] } {
   const json = JSON.parse(data);
-  
+
   // RSS2JSON retorna status 'ok' quando bem-sucedido
   if (json.status === 'error') {
     throw new Error(`RSS2JSON error: ${json.message || 'Unknown error'}`);
   }
-  
+
   if (json.status !== 'ok' || !json.items) {
     throw new Error("Invalid RSS2JSON response format");
   }
@@ -163,7 +163,7 @@ function parseRss2JsonResponse(data: string, feedUrl: string): { title: string; 
   const articles: Article[] = json.items.map((item: any) => {
     // Validar e limpar imageUrl
     let imageUrl = item.thumbnail || item.enclosure?.link;
-    
+
     // Filtrar URLs inválidas ou placeholders malformados
     if (imageUrl) {
       try {
@@ -174,7 +174,7 @@ function parseRss2JsonResponse(data: string, feedUrl: string): { title: string; 
         }
         // Verificar se não é um placeholder comum que causa erro
         if (imageUrl && (
-          imageUrl.includes('?text=') || 
+          imageUrl.includes('?text=') ||
           imageUrl.match(/^[A-Z0-9]{6}\?text=/i) ||
           !imageUrl.includes('.')
         )) {
@@ -199,7 +199,9 @@ function parseRss2JsonResponse(data: string, feedUrl: string): { title: string; 
       sourceTitle: json.feed?.title ? sanitizeTitle(json.feed.title) : "RSS Feed",
       author: item.author ? sanitizeAuthor(item.author) : undefined,
       categories: item.categories || [],
-      imageUrl: imageUrl || undefined
+      imageUrl: imageUrl || undefined,
+      audioUrl: item.enclosure?.link && item.enclosure?.type?.startsWith('audio/') ? item.enclosure.link : undefined,
+      audioDuration: undefined // RSS2JSON geralmente não fornece duração fácil, mas podemos tentar item.enclosure.duration se existir
     };
     return article;
   });
@@ -288,7 +290,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       // Handling Description and Content
       // Priority for Description: description > summary > content (plain text for card)
       // Priority for Content: content:encoded > content > description (html for modal)
-      
+
       let descriptionRaw = "";
       let contentRaw = "";
 
@@ -317,7 +319,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       const authorElements = item.getElementsByTagName("author");
       const creatorElements = item.getElementsByTagName("creator"); // dc:creator often appears as creator in simple parsing
       const dcCreatorElements = item.getElementsByTagName("dc:creator"); // explicit namespaced
-      
+
       const authorElement = authorElements[0] || dcCreatorElements[0] || creatorElements[0];
       if (authorElement?.textContent) {
         const rawAuthor = authorElement.textContent.trim();
@@ -332,14 +334,39 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       }
 
       let imageUrl = "";
-      // Método 1: enclosure
+      let audioUrl = "";
+      let audioDuration = "";
+
+      // Método 1: enclosure (image and audio)
       const enclosureElements = item.getElementsByTagName("enclosure");
       for (let j = 0; j < enclosureElements.length; j++) {
         const enclosure = enclosureElements[j];
         const type = enclosure.getAttribute("type");
-        if (type && type.startsWith("image/")) {
-          imageUrl = enclosure.getAttribute("url") || "";
-          break;
+        const url = enclosure.getAttribute("url") || "";
+
+        // Extract image enclosure
+        if (type && type.startsWith("image/") && !imageUrl) {
+          imageUrl = url;
+        }
+
+        // Extract audio enclosure (for podcasts)
+        if (type && type.startsWith("audio/") && !audioUrl) {
+          audioUrl = url;
+          // Try to get duration from itunes:duration or length
+          const length = enclosure.getAttribute("length");
+          if (length) {
+            // length is in bytes, not duration - we'll try itunes:duration below
+          }
+        }
+      }
+
+      // Get podcast duration from itunes:duration
+      if (audioUrl && !audioDuration) {
+        const itunesDurationElements = item.getElementsByTagName("itunes:duration");
+        const durationElements = item.getElementsByTagName("duration");
+        const durationEl = itunesDurationElements[0] || durationElements[0];
+        if (durationEl?.textContent) {
+          audioDuration = durationEl.textContent.trim();
         }
       }
 
@@ -391,9 +418,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           // Verificar protocolo válido
           if (url.protocol === 'http:' || url.protocol === 'https:') {
             // Filtrar placeholders comuns que causam erro
-            if (!imageUrl.includes('?text=') && 
-                !imageUrl.match(/^[A-Z0-9]{6}\?text=/i) &&
-                imageUrl.includes('.')) {
+            if (!imageUrl.includes('?text=') &&
+              !imageUrl.match(/^[A-Z0-9]{6}\?text=/i) &&
+              imageUrl.includes('.')) {
               validImageUrl = imageUrl;
             }
           }
@@ -416,6 +443,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           author: author || undefined,
           categories,
           sourceTitle: channelTitle,
+          audioUrl: audioUrl || undefined,
+          audioDuration: audioDuration || undefined,
         });
       }
     } catch (error) {
@@ -436,7 +465,7 @@ function validateResponse(content: string): boolean {
   if (!content || content.trim().length === 0) return false;
 
   const trimmed = content.trim();
-  
+
   // Verifica se é HTML em vez de XML/JSON
   if (trimmed.toLowerCase().includes('<!doctype html') || trimmed.toLowerCase().startsWith('<html')) {
     return false;
@@ -459,7 +488,7 @@ async function tryProvider(
   }
 
   const proxyUrl = provider.format(url);
-  
+
   logger.debug(`Trying provider: ${provider.name}`, {
     component: "rssParser",
     additionalData: { feedUrl: url, proxyUrl },
@@ -491,10 +520,10 @@ async function tryProvider(
 
   logger.info(`Successfully fetched via ${provider.name}`, {
     component: "rssParser",
-    additionalData: { 
-      feedUrl: url, 
+    additionalData: {
+      feedUrl: url,
       provider: provider.name,
-      articlesCount: result.articles.length 
+      articlesCount: result.articles.length
     },
   });
 
@@ -521,7 +550,7 @@ async function fetchRssFeed(
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         circuitBreaker.recordFailure(provider.name);
-        
+
         logger.debug(`Provider ${provider.name} failed for ${currentUrl}`, {
           component: "rssParser",
           additionalData: { error: lastError.message },
@@ -639,9 +668,9 @@ export async function parseRssUrl(
   } catch (error) {
     logger.warn(`Creating placeholder for failed feed`, {
       component: "rssParser",
-      additionalData: { 
-        url, 
-        error: error instanceof Error ? error.message : String(error) 
+      additionalData: {
+        url,
+        error: error instanceof Error ? error.message : String(error)
       },
     });
 
@@ -678,7 +707,7 @@ export function parseOpml(fileContent: string): OpmlFeed[] {
   const processOutline = (outline: Element, parentCategory?: string) => {
     const xmlUrl = outline.getAttribute("xmlUrl");
     const text = outline.getAttribute("text") || outline.getAttribute("title");
-    
+
     // If it has xmlUrl, it's a feed
     if (xmlUrl) {
       feeds.push({
@@ -686,12 +715,12 @@ export function parseOpml(fileContent: string): OpmlFeed[] {
         title: text || undefined,
         category: parentCategory
       });
-    } 
+    }
     // If it has no xmlUrl but has children, it might be a category container
     else if (outline.children.length > 0) {
       // Use the text attribute as the category name for children
       const categoryName = text || parentCategory;
-      
+
       for (let i = 0; i < outline.children.length; i++) {
         const child = outline.children[i];
         if (child.tagName.toLowerCase() === 'outline') {

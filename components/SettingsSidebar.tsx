@@ -58,11 +58,57 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     }
   };
 
-  const handleReset = async () => {
-    const confirmed = await confirmDanger('Isso vai resetar todas as configurações. Continuar?');
+  // Reset apenas configurações visuais/aparência
+  const handleResetStyles = async () => {
+    const confirmed = await confirmDanger('Isso vai resetar apenas as personalizações de estilo (tema, layout, cores, header). Feeds e categorias serão mantidos. Continuar?');
     if (confirmed) {
       resetAppearance();
-      alertSuccess('Configurações resetadas!');
+      resetCategoryLayouts();
+      alertSuccess('Estilos resetados!');
+    }
+  };
+
+  // Reset categorias para padrão
+  const handleResetCategories = async () => {
+    const confirmed = await confirmDanger('Isso vai remover todas as categorias personalizadas e restaurar as categorias padrão. Os feeds serão movidos para "Sem categoria". Continuar?');
+    if (confirmed) {
+      localStorage.removeItem('feed-categories');
+      window.location.reload();
+    }
+  };
+
+  // Reset COMPLETO (tudo)
+  const handleResetComplete = async () => {
+    const confirmed = await confirmDanger(
+      '⚠️ ATENÇÃO: Isso vai apagar TODOS os dados:\n\n' +
+      '• Todos os feeds cadastrados\n' +
+      '• Todas as categorias\n' +
+      '• Todas as personalizações de estilo\n' +
+      '• Histórico de leitura\n' +
+      '• Favoritos\n\n' +
+      'Esta ação NÃO pode ser desfeita. Deseja continuar?'
+    );
+    if (confirmed) {
+      // Limpar todos os dados do localStorage relacionados ao app
+      const keysToRemove = [
+        'rss-feeds',           // IMPORTANT: This is the actual key used by App.tsx
+        'feed-sources',        // Legacy key, keep for backwards compatibility
+        'feed-categories', 
+        'appearance-header',
+        'appearance-content',
+        'appearance-background',
+        'appearance-active-layout',
+        'appearance-overrides',
+        'extended-theme-settings',
+        'article-layout-settings',
+        'article-read-status',
+        'favorites-data',
+        'personalnews_weather_city',
+        'feed-error-history',  // Clear problematic feeds history too
+      ];
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      alertSuccess('Reset completo realizado! A página será recarregada.');
+      setTimeout(() => window.location.reload(), 1500);
     }
   };
 
@@ -178,25 +224,26 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               {/* Layout Mode */}
               <div>
                 <label className="block text-xs text-gray-400 mb-2">Estilo de Leitura</label>
-                <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-3 gap-2 pr-1">
                   {[
-                    { id: 'grid', label: 'Grade' },
-                    { id: 'magazine', label: 'Magazine' },
-                    { id: 'newspaper', label: 'Jornal' },
-                    { id: 'masonry', label: 'Masonry' },
-                    { id: 'list', label: 'Lista' },
-                    { id: 'compact', label: 'Compacto' },
-                    { id: 'minimal', label: 'Minimalista' },
-                    { id: 'focus', label: 'Foco' },
-                    { id: 'immersive', label: 'Imersivo' },
-                    { id: 'gallery', label: 'Galeria' },
-                    { id: 'timeline', label: 'Timeline' },
                     { id: 'bento', label: 'Bento' },
-                    { id: 'split', label: 'Split' },
-                    { id: 'brutalist', label: 'Brutalist' },
+                    { id: 'brutalist', label: 'Brutalista' },
+                    { id: 'compact', label: 'Compacto' },
                     { id: 'cyberpunk', label: 'Cyberpunk' },
-                    { id: 'terminal', label: 'Terminal' },
+                    { id: 'split', label: 'Divisões' },
+                    { id: 'focus', label: 'Foco' },
+                    { id: 'gallery', label: 'Galeria' },
+                    { id: 'grid', label: 'Grade' },
+                    { id: 'immersive', label: 'Imersivo' },
+                    { id: 'newspaper', label: 'Jornal' },
+                    { id: 'timeline', label: 'Linha do Tempo' },
+                    { id: 'list', label: 'Lista' },
+                    { id: 'minimal', label: 'Mínimo' },
+                    { id: 'modern', label: 'Moderno' },
+                    { id: 'masonry', label: 'Mosaico' },
                     { id: 'polaroid', label: 'Polaroid' },
+                    { id: 'magazine', label: 'Revista' },
+                    { id: 'terminal', label: 'Terminal' },
                   ].map(mode => (
                     <button
                       key={mode.id}
@@ -209,12 +256,13 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                         }
                         resetCategoryLayouts(); 
                       }}
-                      className={`py-2 px-2 rounded-lg text-[10px] font-medium transition-all ${
+                      className={`py-2 px-2 rounded-lg text-[10px] font-medium transition-all flex items-center justify-center gap-1 ${
                         contentConfig.layoutMode === mode.id
-                          ? 'bg-[rgb(var(--color-accent))] text-white'
+                          ? 'bg-[rgb(var(--color-accent))] text-white shadow-lg ring-1 ring-white/20'
                           : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                       }`}
                     >
+                      {contentConfig.layoutMode === mode.id && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>}
                       {mode.label}
                     </button>
                   ))}
@@ -229,9 +277,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                   onChange={(e) => updateHeaderConfig({ position: e.target.value as any })}
                   className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
                 >
-                  <option value="sticky">Sticky</option>
-                  <option value="static">Static</option>
-                  <option value="floating">Floating</option>
+                  <option value="sticky">Fixo no Topo (Sticky)</option>
+                  <option value="static">Estático</option>
+                  <option value="floating">Flutuante</option>
                   <option value="hidden">Oculto (Auto-hide)</option>
                 </select>
               </div>
@@ -244,6 +292,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                   onChange={(e) => updateHeaderConfig({ height: e.target.value as any })}
                   className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
                 >
+                  <option value="ultra-compact">Mínima (Ultra)</option>
+                  <option value="tiny">Extra Compacto</option>
                   <option value="compact">Compacto</option>
                   <option value="normal">Normal</option>
                   <option value="spacious">Espaçoso</option>
@@ -301,7 +351,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                                 onClick={() => document.getElementById('logo-upload')?.click()}
                                 className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 px-3 rounded-lg text-xs font-medium transition-colors border border-gray-700 flex items-center justify-center gap-2"
                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
                                 {headerConfig.customLogoSvg ? 'Alterar Logo SVG' : 'Carregar Logo SVG'}
                              </button>
                              {headerConfig.customLogoSvg && (
@@ -562,13 +612,34 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 </label>
               </div>
 
-              {/* Reset */}
-              <button
-                onClick={handleReset}
-                className="w-full py-2 px-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs rounded-lg transition-colors border border-red-800/50"
-              >
-                Resetar Configurações
-              </button>
+              {/* Reset Options */}
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-400 mb-2">Opções de Reset</label>
+                
+                <button
+                  onClick={handleResetStyles}
+                  className="w-full py-2 px-3 bg-yellow-900/20 hover:bg-yellow-900/40 text-yellow-400 text-xs rounded-lg transition-colors border border-yellow-800/30 text-left"
+                >
+                  🎨 Resetar Estilos
+                  <span className="block text-[10px] text-yellow-600 mt-0.5">Tema, layout, cores e header</span>
+                </button>
+
+                <button
+                  onClick={handleResetCategories}
+                  className="w-full py-2 px-3 bg-orange-900/20 hover:bg-orange-900/40 text-orange-400 text-xs rounded-lg transition-colors border border-orange-800/30 text-left"
+                >
+                  📂 Resetar Categorias
+                  <span className="block text-[10px] text-orange-600 mt-0.5">Remove categorias personalizadas</span>
+                </button>
+
+                <button
+                  onClick={handleResetComplete}
+                  className="w-full py-2 px-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs rounded-lg transition-colors border border-red-800/50 text-left"
+                >
+                  ⚠️ Reset Completo
+                  <span className="block text-[10px] text-red-600 mt-0.5">Apaga TUDO: feeds, categorias, estilos</span>
+                </button>
+              </div>
             </div>
           </AccordionSection>
 

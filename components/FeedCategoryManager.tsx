@@ -17,7 +17,9 @@ import type { FeedSource, FeedCategory } from "../types";
 import { sanitizeHtmlContent } from "../utils/sanitization";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useAppearance } from "../hooks/useAppearance";
 import { OPMLExportService } from "../services/opmlExportService";
+import { parseOpml } from "../services/rssParser";
 
 interface FeedCategoryManagerProps {
   feeds: FeedSource[];
@@ -36,6 +38,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 }) => {
   const logger = useLogger("FeedCategoryManager");
   const { t } = useLanguage();
+  const { refreshAppearance } = useAppearance();
   const {
     categories,
     createCategory,
@@ -63,11 +66,13 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     color: string;
     description: string;
     layoutMode?: FeedCategory['layoutMode'];
+    headerPosition?: FeedCategory['headerPosition'];
   }>({
     name: "",
     color: "#3B82F6",
     description: "",
     layoutMode: undefined,
+    headerPosition: undefined,
   });
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [newCategoryForm, setNewCategoryForm] = useState<{
@@ -75,16 +80,28 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     color: string;
     description: string;
     layoutMode?: FeedCategory['layoutMode'];
+    headerPosition?: FeedCategory['headerPosition'];
   }>({
     name: "",
     color: "#3B82F6",
     description: "",
     layoutMode: undefined,
+    headerPosition: undefined,
   });
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false); // Show only first 2 categories by default
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({}); // Track collapsed state per category
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const opmlFileInputRef = useRef<HTMLInputElement>(null);
+  const [importTargetCategory, setImportTargetCategory] = useState<string | null>(null);
 
   const categorizedFeeds = getCategorizedFeeds(feeds);
+  
+  // Filter categories to show (first 2 if not showAllCategories)
+  const visibleCategories = showAllCategories 
+    ? categories 
+    : categories.slice(0, 2);
+  const hiddenCategoriesCount = categories.length - visibleCategories.length;
 
   // Layout options for dropdown
   const layoutOptions: { value: FeedCategory['layoutMode'] | '', label: string }[] = [
@@ -102,7 +119,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     { value: 'minimal', label: 'Minimal Text' },
     { value: 'modern', label: 'Modern Portal' },
     { value: 'newspaper', label: 'Newspaper (Classic)' },
-    { value: 'polaroid', label: 'Polaroid' },
+    { value: 'pocketfeeds', label: 'PocketFeeds' },
     { value: 'split', label: 'Split (ZigZag)' },
     { value: 'terminal', label: 'Terminal' },
     { value: 'timeline', label: 'Timeline' },
@@ -199,6 +216,18 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     ]
   );
 
+  // Header Position options
+  const headerPositionOptions: { value: any, label: string }[] = [
+    { value: '', label: 'Padrão (Global)' },
+    { value: 'static', label: 'Estático' },
+    { value: 'sticky', label: 'Fixo (Sticky)' },
+    { value: 'floating', label: 'Flutuante' },
+    { value: 'hidden', label: 'Oculto' },
+  ];
+
+  // ... (handlers)
+
+  // Update handleCreateCategory to include headerPosition
   const handleCreateCategory = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
@@ -207,9 +236,10 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           newCategoryForm.name.trim(),
           newCategoryForm.color,
           newCategoryForm.description.trim() || undefined,
-          newCategoryForm.layoutMode
+          newCategoryForm.layoutMode,
+          newCategoryForm.headerPosition
         );
-        setNewCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined });
+        setNewCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined });
         setShowNewCategoryForm(false);
       }
     },
@@ -223,6 +253,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       color: category.color,
       description: category.description || "",
       layoutMode: category.layoutMode,
+      headerPosition: category.headerPosition,
     });
   }, []);
 
@@ -235,9 +266,10 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           color: editingCategoryForm.color,
           description: editingCategoryForm.description.trim() || undefined,
           layoutMode: editingCategoryForm.layoutMode,
+          headerPosition: editingCategoryForm.headerPosition,
         });
         setEditingCategory(null);
-        setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined });
+        setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined });
       }
     },
     [editingCategory, editingCategoryForm, updateCategory]
@@ -245,7 +277,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 
   const handleCancelEditCategory = useCallback(() => {
     setEditingCategory(null);
-    setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined });
+    setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined });
   }, []);
 
   const handleDeleteCategory = useCallback(
@@ -343,8 +375,84 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           );
         }
       }
+      // Reset the input
+      if (e.target) {
+        e.target.value = '';
+      }
     },
     [importCategories]
+  );
+
+  // Handler para importar feeds OPML para uma categoria específica
+  const handleImportOPML = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const content = await file.text();
+        // Note: We don't sanitize OPML with DOMPurify as it removes xmlUrl attributes
+        // parseOpml safely extracts only URL strings from the XML structure
+        const opmlFeeds = parseOpml(content);
+        
+        if (opmlFeeds.length === 0) {
+          await alertError("No feeds found in this OPML file.");
+          return;
+        }
+
+        // Process feeds and add to the target category
+        const newFeeds: FeedSource[] = [];
+        const existingUrls = new Set(feeds.map(f => f.url.toLowerCase()));
+        const targetCategoryId = importTargetCategory || undefined;
+
+        opmlFeeds.forEach((opmlFeed) => {
+          const normalizedUrl = opmlFeed.url.toLowerCase().trim();
+          if (!existingUrls.has(normalizedUrl)) {
+            existingUrls.add(normalizedUrl);
+            newFeeds.push({
+              url: opmlFeed.url,
+              customTitle: opmlFeed.title,
+              categoryId: targetCategoryId,
+            });
+          }
+        });
+
+        if (newFeeds.length > 0) {
+          setFeeds((prev) => [...prev, ...newFeeds]);
+          const categoryName = targetCategoryId
+            ? categories.find(c => c.id === targetCategoryId)?.name || 'selected category'
+            : 'Uncategorized';
+          await alertSuccess(
+            `${newFeeds.length} feeds imported successfully to ${categoryName}!`
+          );
+        } else {
+          await alertSuccess("All feeds from this file are already in your collection.");
+        }
+
+        logger.info("OPML feeds imported", {
+          additionalData: {
+            totalInFile: opmlFeeds.length,
+            newFeedsAdded: newFeeds.length,
+            targetCategory: targetCategoryId,
+          },
+        });
+      } catch (error) {
+        await alertError("Failed to parse OPML file. Please check the file format.");
+        logger.error("Failed to import OPML feeds", error as Error, {
+          additionalData: {
+            fileName: file.name,
+            fileSize: file.size,
+          },
+        });
+      }
+
+      // Reset input and state
+      if (e.target) {
+        e.target.value = '';
+      }
+      setImportTargetCategory(null);
+    },
+    [feeds, setFeeds, importTargetCategory, categories, alertSuccess, alertError, logger]
   );
 
   const handleResetToDefaults = useCallback(async () => {
@@ -354,6 +462,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       )
     ) {
       resetToDefaults();
+      refreshAppearance(); // Reset appearance overrides
       // Reset all feed categories
       const resetFeeds = feeds.map((feed) => ({
         ...feed,
@@ -420,15 +529,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       role="dialog"
       aria-labelledby="category-manager-title"
     >
-      <div className="flex justify-between items-center mb-6">
-        <h2
-          id="category-manager-title"
-          className="text-3xl font-bold text-white tracking-tight"
-        >
-          Manage Categories
-        </h2>
-        {/* Close button handled by parent Modal */}
-      </div>
+      {/* Title handled by parent Modal - this component is embedded */}
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3 mb-8">
@@ -448,16 +549,19 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          Export OPML
+          {t('action.export')} OPML
         </button>
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            setImportTargetCategory(null);
+            opmlFileInputRef.current?.click();
+          }}
           className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-lg transition-all border border-white/10 hover:border-white/20 flex items-center"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          {t('action.import')}
+          {t('action.import')} OPML
         </button>
         <button
           onClick={handleResetToDefaults}
@@ -475,6 +579,13 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         ref={fileInputRef}
         onChange={handleImportCategories}
         accept=".json"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={opmlFileInputRef}
+        onChange={handleImportOPML}
+        accept=".opml,.xml"
         className="hidden"
       />
 
@@ -563,6 +674,31 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               >
                 {layoutOptions.map((option) => (
                   <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="category-header-position"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Posição do Cabeçalho
+              </label>
+              <select
+                id="category-header-position"
+                value={newCategoryForm.headerPosition || ''}
+                onChange={(e) =>
+                  setNewCategoryForm((prev) => ({
+                    ...prev,
+                    headerPosition: e.target.value ? (e.target.value as any) : undefined,
+                  }))
+                }
+                className="w-full bg-black/30 text-white rounded-lg px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all"
+              >
+                {headerPositionOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
@@ -698,6 +834,31 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
             </div>
             <div>
               <label
+                htmlFor="edit-category-header-position"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Posição do Cabeçalho
+              </label>
+              <select
+                id="edit-category-header-position"
+                value={editingCategoryForm.headerPosition || ''}
+                onChange={(e) =>
+                  setEditingCategoryForm((prev) => ({
+                    ...prev,
+                    headerPosition: e.target.value ? (e.target.value as any) : undefined,
+                  }))
+                }
+                className="w-full bg-black/30 text-white rounded-lg px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all"
+              >
+                {headerPositionOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
                 htmlFor="edit-category-description"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
@@ -738,7 +899,11 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 
       {/* Categories and feeds */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar pr-2 pb-6 flex-grow">
-        {categories.map((category) => (
+        {visibleCategories.map((category) => {
+          const feedCount = categorizedFeeds[category.id]?.length || 0;
+          const isCollapsed = feedCount === 0 ? (collapsedCategories[category.id] ?? true) : collapsedCategories[category.id];
+          
+          return (
           <div
             key={category.id}
             className={`bg-gray-800/40 backdrop-blur-sm border rounded-xl p-4 transition-all duration-300 flex flex-col h-full ${dragState.dragOverCategory === category.id
@@ -840,6 +1005,18 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                   </svg>
                 </button>
                 <button
+                  onClick={() => {
+                    setImportTargetCategory(category.id);
+                    opmlFileInputRef.current?.click();
+                  }}
+                  className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
+                  title={`Import OPML to ${category.name}`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+                <button
                   onClick={() => handleStartEditCategory(category)}
                   className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   title={`Edit ${category.name}`}
@@ -877,12 +1054,12 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                     </svg>
-                    Drag to reorder
+                    Arraste para reordenar
                   </span>
                 )}
               </div>
 
-              {(expandedCategories[category.id] ? (categorizedFeeds[category.id] || []) : (categorizedFeeds[category.id] || []).slice(0, 5)).map((feed) => (
+              {(expandedCategories[category.id] ? (categorizedFeeds[category.id] || []) : (categorizedFeeds[category.id] || []).slice(0, 2)).map((feed) => (
                 <div
                   key={feed.url}
                   className={`bg-gray-800/50 p-3 rounded-lg cursor-move transition-all duration-200 border border-white/5 group ${
@@ -965,7 +1142,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               ))}
               
               {/* Show More / Show Less Button */}
-              {(categorizedFeeds[category.id]?.length || 0) > 5 && (
+              {(categorizedFeeds[category.id]?.length || 0) > 2 && (
                 <button
                   onClick={() => setExpandedCategories(prev => ({ ...prev, [category.id]: !prev[category.id] }))}
                   className="w-full py-2 text-xs text-center text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors mt-2 flex items-center justify-center gap-1"
@@ -973,12 +1150,12 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     {expandedCategories[category.id] ? (
                         <>
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                            Show Less
+                            Mostrar Menos
                         </>
                     ) : (
                         <>
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            Show { (categorizedFeeds[category.id]?.length || 0) - 5 } More
+                            Mostrar mais { (categorizedFeeds[category.id]?.length || 0) - 2 }
                         </>
                     )}
                 </button>
@@ -986,13 +1163,40 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 
               {(categorizedFeeds[category.id] || []).length === 0 && (
                 <div className="h-full flex flex-col items-center justify-center text-gray-600 text-xs py-8 border-2 border-dashed border-white/5 rounded-lg">
-                  <span className="mb-1">Empty Category</span>
-                  <span>Drop feeds here</span>
+                  <span className="mb-1">Categoria Vazia</span>
+                  <span>Arraste feeds aqui</span>
                 </div>
               )}
             </div>
           </div>
-        ))}
+        );
+        })}
+
+        {/* Show more categories button */}
+        {hiddenCategoriesCount > 0 && !showAllCategories && (
+          <button
+            onClick={() => setShowAllCategories(true)}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-white/10 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            Ver mais {hiddenCategoriesCount} categorias
+          </button>
+        )}
+        
+        {/* Show less categories button */}
+        {showAllCategories && categories.length > 2 && (
+          <button
+            onClick={() => setShowAllCategories(false)}
+            className="flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-white/10 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+            Mostrar menos
+          </button>
+        )}
 
         {/* Uncategorized feeds */}
         {(categorizedFeeds.uncategorized || []).length > 0 && (
@@ -1008,10 +1212,10 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]" />
               <h3 className="font-bold text-white text-lg tracking-tight">
-                Uncategorized
+                Sem Categoria
               </h3>
               <span className="text-[10px] uppercase tracking-wider font-semibold bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full border border-yellow-500/20">
-                Needs Organization
+                Organizar
               </span>
             </div>
 

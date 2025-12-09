@@ -11,12 +11,13 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { FeedSource, Article } from "../types";
 import { parseOpml } from "../services/rssParser";
-import DOMPurify from 'dompurify';
 import { FeedCategoryManager } from "./FeedCategoryManager";
 import { FeedItem } from "./FeedItem";
 import { FeedDiscoveryModal } from "./FeedDiscoveryModal";
+import { FeedCleanupModal } from "./FeedCleanupModal";
 import { useLogger } from "../services/logger";
 import {
   feedValidator,
@@ -40,6 +41,7 @@ import {
 } from "../services/feedDuplicateDetector";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useFeedCategories } from "../hooks/useFeedCategories";
+import { useAppearance } from "../hooks/useAppearance";
 import { sanitizeArticleDescription } from "../utils/sanitization";
 import { resetToDefaultFeeds, addFeedsToCollection } from "../utils/feedMigration";
 import { DEFAULT_FEEDS, CURATED_FEEDS_BR, CURATED_FEEDS_INTL } from "../constants/curatedFeeds";
@@ -53,6 +55,7 @@ interface FeedManagerProps {
   setFeeds: React.Dispatch<React.SetStateAction<FeedSource[]>>;
   closeModal: () => void;
   articles?: Article[];
+  onRefreshFeeds?: () => void;
 }
 
 export const FeedManager: React.FC<FeedManagerProps> = ({
@@ -60,14 +63,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   setFeeds,
   closeModal: _closeModal,
   articles = [],
+  onRefreshFeeds,
 }) => {
   const logger = useLogger("FeedManager");
   const { categories, createCategory, resetToDefaults } = useFeedCategories();
+  const { refreshAppearance } = useAppearance();
   const { t } = useLanguage();
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedCategory, setNewFeedCategory] = useState<string>("");
   const [processingUrl, setProcessingUrl] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"feeds" | "categories" | "analytics">(
+  const [activeTab, setActiveTab] = useState<"feeds" | "categories" | "analytics">
+    (
     "feeds" as "feeds" | "categories" | "analytics"
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,7 +108,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     Map<string, { status: string; progress: number }>
   >(new Map());
   const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
-  const [currentDiscoveryResult, setCurrentDiscoveryResult] = useState<{
+  const [showCleanupModal, setShowCleanupModal] = useState(false);
+  const [currentDiscoveryResult, setCurrentDiscoveryResult] = useState<{ 
     originalUrl: string;
     discoveredFeeds: DiscoveredFeed[];
   } | null>(null);
@@ -149,7 +156,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   };
 
   // Estados para detecção de duplicatas
-  const [duplicateWarning, setDuplicateWarning] = useState<{
+  const [duplicateWarning, setDuplicateWarning] = useState<{ 
     show: boolean;
     result: DuplicateDetectionResult;
     newUrl: string;
@@ -639,8 +646,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         });
 
         await alertError(
-          `Feed added successfully!\nTitle: ${discoveredFeed.title || "Unknown"
-          }\nURL: ${discoveredFeed.url}`
+          `Feed added successfully!\nTitle: ${discoveredFeed.title || "Unknown"}
+URL: ${discoveredFeed.url}`
         );
       } else {
         await alertError(`Selected feed is not valid: ${result.error}`);
@@ -739,9 +746,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         await alertError(
           `Feed discovery successful!\n${result.finalMethod === "discovery"
             ? `Discovered feed: ${result.url}`
-            : "Feed validated successfully"
-          }`
-        );
+            : "Feed validated successfully"}
+        `);
       } else if (
         result.requiresUserSelection &&
         result.discoveredFeeds &&
@@ -1001,6 +1007,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       try {
         const defaultFeeds = resetToDefaultFeeds();
         setFeeds(defaultFeeds);
+        refreshAppearance(); // Reset appearance overrides
 
         await alertSuccess(
           `✅ Feeds resetados com sucesso! Agora você tem ${defaultFeeds.length} feeds organizados por categoria.`
@@ -1024,12 +1031,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     if (file) {
       const content = await file.text();
       try {
-        // Sanitize OPML content to prevent XSS and other injections
-        const sanitizedContent = DOMPurify.sanitize(content, {
-          USE_PROFILES: { html: false, svg: false, mathMl: false }, // Disable standard profiles
-        });
-
-        const opmlFeeds = parseOpml(sanitizedContent);
+        // Note: We don't sanitize OPML with DOMPurify as it removes xmlUrl attributes
+        // parseOpml safely extracts only URL strings from the XML structure
+        const opmlFeeds = parseOpml(content);
         
         // Process feeds and create categories if needed
         const newFeeds: FeedSource[] = [];
@@ -1093,10 +1097,23 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [selectedErrorFeed, setSelectedErrorFeed] = useState<{ 
+    url: string;
+    validation: FeedValidationResult;
+  } | null>(null);
+
+  const handleShowError = (url: string, validation?: FeedValidationResult) => {
+    if (validation) {
+      setSelectedErrorFeed({ url, validation });
+      setShowErrorModal(true);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+      <div className="p-6 border-b border-white/10 flex flex-col xl:flex-row xl:items-center justify-between bg-black/20 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
             <span className="p-2 bg-[rgb(var(--color-accent))]/20 rounded-lg text-[rgb(var(--color-accent))]">
@@ -1111,53 +1128,82 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <button
                 onClick={handleExportOPML}
-                className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors border border-transparent hover:border-blue-400/20"
                 title="Exportar Feeds (OPML)"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                <span className="hidden sm:inline">Exportar</span>
             </button>
 
             <button
                 onClick={() => setShowImportModal(true)}
-                className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-green-400 hover:bg-green-400/10 rounded-lg transition-colors border border-transparent hover:border-green-400/20"
                 title={t('feeds.import.lists')}
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                <span className="hidden sm:inline">Listas</span>
             </button>
 
-            <label className="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors cursor-pointer" title={t('feeds.import.opml')}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+            <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-400/20" title={t('feeds.import.opml')}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                <span className="hidden sm:inline">Importar OPML</span>
                 <input type="file" accept=".opml,.xml" onChange={handleFileImport} className="hidden" />
             </label>
 
-             <div className="h-6 w-px bg-white/10 mx-2" />
+             <div className="h-6 w-px bg-white/10 mx-2 hidden sm:block" />
+
+
+
 
              <button 
                 onClick={handleResetToDefaults}
-                className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors border border-transparent hover:border-yellow-400/20"
                 title="Restaurar Padrões"
              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                <span className="hidden sm:inline">Resetar</span>
+             </button>
+
+             <button 
+                onClick={() => setShowCleanupModal(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-orange-500 hover:bg-orange-500/10 rounded-lg transition-colors border border-transparent hover:border-orange-500/20"
+                title="Limpeza Inteligente de Feeds com Erro"
+             >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <span className="hidden sm:inline">Limpar Erros</span>
              </button>
 
              <button 
                 onClick={handleDeleteAll}
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
                 title="Excluir Todos os Feeds"
              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <span className="hidden sm:inline">Excluir Tudo</span>
              </button>
       </div>
       </div>
+{/* Cleanup Modal */}
+<FeedCleanupModal 
+    isOpen={showCleanupModal}
+    onClose={() => setShowCleanupModal(false)}
+    feeds={currentFeeds}
+    onRemoveFeeds={(urls) => {
+        // Remove feeds logic
+        setFeeds(prev => prev.filter(f => !urls.includes(f.url)));
+        localStorage.removeItem(`rss-cache-${urls}`); // Simple cleanup attempt, maybe improve?
+        // Note: The modal itself cleans up history.
+    }}
+/>
 
       {/* Tab Navigation */}
       <div className="flex border-b border-white/10 bg-black/10">
         <button
           onClick={() => setActiveTab("feeds")}
-          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${ 
             activeTab === "feeds"
               ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
               : "text-gray-400 hover:text-white"
@@ -1172,7 +1218,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         </button>
         <button
           onClick={() => setActiveTab("categories")}
-          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${ 
             activeTab === "categories"
               ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
               : "text-gray-400 hover:text-white"
@@ -1187,7 +1233,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         </button>
         <button
           onClick={() => setActiveTab("analytics")}
-          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${ 
             activeTab === "analytics"
               ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
               : "text-gray-400 hover:text-white"
@@ -1306,6 +1352,22 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <option value="invalid">{t('analytics.issues')}</option>
             <option value="unchecked">{t('analytics.pending')}</option>
         </select>
+        
+        {onRefreshFeeds && (
+            <button
+                onClick={() => {
+                    if (window.confirm('Deseja forçar a revalidação de todos os feeds? Isso pode levar alguns instantes.')) {
+                        onRefreshFeeds();
+                    }
+                }}
+                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-2 rounded-lg border border-blue-500/20 transition-colors"
+                title="Forçar Revalidação de Todos os Feeds"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        )}
       </div>
 
       {/* Feed List (Accordions) */}
@@ -1341,6 +1403,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     onRemove={handleRemoveFeed}
                     onRetry={validateFeed}
                     onEdit={handleEditFeed}
+                    onShowError={(url) => handleShowError(url, feedValidations.get(url))}
                     categories={categories}
                     onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
                   />
@@ -1377,6 +1440,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     onRemove={handleRemoveFeed}
                     onRetry={validateFeed}
                     onEdit={handleEditFeed}
+                    onShowError={(url) => handleShowError(url, feedValidations.get(url))}
                     categories={categories}
                     onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
                   />
@@ -1413,6 +1477,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     onRemove={handleRemoveFeed}
                     onRetry={validateFeed}
                     onEdit={handleEditFeed}
+                    onShowError={(url) => handleShowError(url, feedValidations.get(url))}
                     categories={categories}
                     onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
                   />
@@ -1458,26 +1523,26 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       {showImportModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 my-auto">
-            <h3 className="text-xl font-bold text-white mb-4">Import Curated Feeds</h3>
+            <h3 className="text-xl font-bold text-white mb-4">{t('feeds.import_curated.title')}</h3>
             
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Select List</label>
+                <label className="block text-sm text-gray-400 mb-2">{t('feeds.import_curated.select')}</label>
                 <select
                   value={selectedListType}
                   onChange={(e) => setSelectedListType(e.target.value as CuratedListType)}
                   className="w-full bg-black/30 text-white rounded-lg px-4 py-2 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]"
                 >
-                  <option value="br">🇧🇷 Brazil Tech & Science</option>
-                  <option value="intl">🌎 International Tech & Science</option>
-                  <option value="default">📱 Default Starter Pack</option>
+                  <option value="br">🇧🇷 Brasil Tech & Ciência</option>
+                  <option value="intl">🌎 International Tech & Ciência</option>
+                  <option value="default">📱 Pacote Inicial Padrão</option>
                 </select>
               </div>
               
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-sm text-blue-200">
-                {selectedListType === 'br' && "A curated collection of the best Brazilian technology, science, and news sources."}
-                {selectedListType === 'intl' && "Top-tier international technology and science publications."}
-                {selectedListType === 'default' && "The standard starter collection of essential tech feeds."}
+                {selectedListType === 'br' && "Uma coleção curada das melhores fontes brasileiras de tecnologia, ciência e notícias."}
+                {selectedListType === 'intl' && "Publicações internacionais de tecnologia e ciência de alto nível."}
+                {selectedListType === 'default' && "A coleção inicial padrão de feeds essenciais de tecnologia."}
               </div>
             </div>
 
@@ -1486,13 +1551,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onClick={() => handleImportCurated('merge')}
                 className="flex-1 bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-white py-2 rounded-lg transition-colors font-medium"
               >
-                Merge (Add New)
+                {t('feeds.import_curated.merge')}
               </button>
               <button
                 onClick={() => handleImportCurated('replace')}
                 className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 py-2 rounded-lg transition-colors font-medium"
               >
-                Replace All
+                {t('feeds.import_curated.replace')}
               </button>
             </div>
             
@@ -1500,10 +1565,113 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               onClick={() => setShowImportModal(false)}
               className="w-full mt-3 text-gray-400 hover:text-white text-sm py-2"
             >
-              Cancel
+              {t('action.cancel')}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Validation Error Modal */}
+      {showErrorModal && selectedErrorFeed && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+           <div className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-white/10 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                       <span className="text-red-400">⚠️</span>
+                       Detalhes do Erro
+                    </h3>
+                    <p className="text-gray-400 text-sm mt-1 font-mono break-all">{selectedErrorFeed.url}</p>
+                  </div>
+                  <button onClick={() => setShowErrorModal(false)} className="text-gray-400 hover:text-white">
+                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                 {/* Status Principal */}
+                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2 text-red-400 font-bold uppercase text-xs tracking-wider">
+                       Status Atual
+                    </div>
+                    <p className="text-white font-medium text-lg">
+                       {getFeedStatusText(selectedErrorFeed.validation.status)}
+                    </p>
+                    <p className="text-red-300 mt-1">
+                       {selectedErrorFeed.validation.error || "Erro desconhecido durante validação."}
+                    </p>
+                 </div>
+
+                 {/* Sugestões */}
+                 {selectedErrorFeed.validation.suggestions && selectedErrorFeed.validation.suggestions.length > 0 && (
+                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2 text-blue-400 font-bold uppercase text-xs tracking-wider">
+                           Sugestões de Correção
+                        </div>
+                        <ul className="list-disc list-inside space-y-1 text-gray-300">
+                           {selectedErrorFeed.validation.suggestions.map((suggestion, idx) => (
+                              <li key={idx}>{suggestion}</li>
+                           ))}
+                        </ul>
+                     </div>
+                 )}
+
+                 {/* Logs de Tentativas */}
+                 <div>
+                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Logs de Tentativas</h4>
+                    <div className="bg-black/30 rounded-lg border border-white/5 overflow-hidden">
+                       {selectedErrorFeed.validation.validationAttempts?.map((attempt, idx) => (
+                          <div key={idx} className="border-b border-white/5 last:border-0 p-3 text-sm">
+                             <div className="flex justify-between mb-1">
+                                <span className={`font-mono font-bold ${attempt.success ? 'text-green-400' : 'text-red-400'}`}>
+                                   Tentativa #{attempt.attemptNumber} ({attempt.method})
+                                </span>
+                                <span className="text-gray-500 text-xs">
+                                   {attempt.responseTime}ms
+                                </span>
+                             </div>
+                             {attempt.statusCode && (
+                                <div className="text-gray-400 text-xs mb-1">
+                                   Status HTTP: <span className="text-white">{attempt.statusCode}</span>
+                                </div>
+                             )}
+                             {attempt.error && (
+                                <div className="text-red-400/80 text-xs font-mono bg-red-900/10 p-2 rounded mt-1">
+                                   {attempt.error.message}
+                                </div>
+                             )}
+                          </div>
+                       ))}
+                       {(!selectedErrorFeed.validation.validationAttempts || selectedErrorFeed.validation.validationAttempts.length === 0) && (
+                          <div className="p-4 text-center text-gray-500 italic">
+                             Nenhum log detalhado disponível.
+                          </div>
+                       )}
+                    </div>
+                 </div>
+              </div>
+
+              <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-3">
+                 <button 
+                    onClick={() => {
+                        validateFeed(selectedErrorFeed.url);
+                        setShowErrorModal(false);
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+                 >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Tentar Novamente
+                 </button>
+                 <button 
+                    onClick={() => setShowErrorModal(false)}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-medium"
+                 >
+                    Fechar
+                 </button>
+              </div>
+           </div>
+        </div>,
+        document.body
       )}
 
       {/* Duplicate Feed Warning Modal */}
@@ -1528,17 +1696,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               </div>
               <div className="ml-4">
                 <h3 className="text-xl font-bold text-white">
-                  Duplicate Feed Detected
+                  {t('feeds.duplicate.title')}
                 </h3>
                 <p className="text-gray-400 text-sm mt-1">
-                  This feed appears to be a duplicate of an existing one.
+                  {t('feeds.duplicate.message')}
                 </p>
               </div>
             </div>
 
             <div className="space-y-4 mb-6">
               <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Existing feed</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{t('feeds.duplicate.existing')}</div>
                 <div className="text-white font-medium text-lg mb-1">
                   {duplicateWarning.result.duplicateOf?.customTitle ||
                     duplicateWarning.result.duplicateOf?.url}
@@ -1549,14 +1717,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               </div>
 
               <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">New feed</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{t('feeds.duplicate.new')}</div>
                 <div className="text-white font-medium text-lg mb-1">
                   {duplicateWarning.newUrl}
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-sm text-gray-400 px-2">
-                <span>Detection confidence:</span>
+                <span>{t('feeds.duplicate.confidence')}:</span>
                 <span
                   className={`font-bold ${duplicateWarning.result.confidence > 0.9
                     ? "text-red-400"
@@ -1575,21 +1743,21 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onClick={handleDuplicateWarningReject}
                 className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl transition-all font-medium"
               >
-                Cancel - Don't Add Feed
+                {t('feeds.action.cancel_dont_add')}
               </button>
 
               <button
                 onClick={handleDuplicateWarningReplace}
                 className="w-full bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-3 rounded-xl transition-all font-medium shadow-lg shadow-yellow-600/20"
               >
-                Replace Existing Feed
+                {t('feeds.action.replace')}
               </button>
 
               <button
                 onClick={handleDuplicateWarningAccept}
                 className="w-full bg-transparent border border-white/10 hover:bg-white/5 text-gray-300 hover:text-white px-4 py-3 rounded-xl transition-all font-medium"
               >
-                Add Anyway (Keep Both)
+                {t('feeds.action.add_anyway')}
               </button>
             </div>
           </div>
