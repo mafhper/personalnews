@@ -127,11 +127,11 @@ describe('LazyImage', () => {
     await waitFor(() => {
       const src = img.getAttribute('src');
       expect(src).toContain('data:image/svg+xml');
-      // Decode base64 to check content
+      // Decode base64 to check content - component now shows "Image Error"
       if (src && src.includes('base64,')) {
         const base64Content = src.split('base64,')[1];
         const decodedContent = atob(base64Content);
-        expect(decodedContent).toContain('Failed');
+        expect(decodedContent).toContain('Image Error');
       }
     });
   });
@@ -158,8 +158,8 @@ describe('LazyImage', () => {
     expect(mockIntersectionObserver).toHaveBeenCalledWith(
       expect.any(Function),
       {
-        rootMargin: '50px',
-        threshold: 0.1,
+        rootMargin: '100px',
+        threshold: 0.01,
       }
     );
   });

@@ -1,0 +1,420 @@
+{
+  "generated": "2025-12-11T04:13:47.692Z",
+  "totalCommits": 36,
+  "months": [
+    {
+      "key": "2025-12",
+      "label": "Dezembro de 2025",
+      "commits": [
+        {
+          "hash": "b0990d9",
+          "date": "2025-12-09T07:34:24.000Z",
+          "type": "other",
+          "message": "Add layout presets and improve feed category navigation",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "87d6624",
+          "date": "2025-12-07T05:10:21.000Z",
+          "type": "other",
+          "message": "Add Modern Portal layout and improve UI controls",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "f3a2f36",
+          "date": "2025-12-07T01:27:18.000Z",
+          "type": "other",
+          "message": "Add ModalContext and improve modal/global modal handling",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "28edb4d",
+          "date": "2025-12-06T22:38:58.000Z",
+          "type": "other",
+          "message": "Add Aura generative wallpaper and refactor backgrounds",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "e9015e8",
+          "date": "2025-12-06T16:59:33.000Z",
+          "type": "other",
+          "message": "Delete prompt-1240.md",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "14ea0cb",
+          "date": "2025-12-06T16:59:11.000Z",
+          "type": "other",
+          "message": "Delete print-1252.jpg",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "2e37f23",
+          "date": "2025-12-06T16:55:24.000Z",
+          "type": "other",
+          "message": "Add SettingsSidebar and enhance appearance controls",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "584b1e0",
+          "date": "2025-12-06T05:45:56.000Z",
+          "type": "other",
+          "message": "Add article reader modal, i18n, and new layouts",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "4c4f182",
+          "date": "2025-12-05T22:39:01.000Z",
+          "type": "other",
+          "message": "Add category selection when adding new feed",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "a0c1556",
+          "date": "2025-12-05T21:17:04.000Z",
+          "type": "other",
+          "message": "Improve layouts and header UI for better UX",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "b74e895",
+          "date": "2025-12-05T04:15:24.000Z",
+          "type": "other",
+          "message": "Add advanced appearance customization system",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        }
+      ]
+    },
+    {
+      "key": "2025-11",
+      "label": "Novembro de 2025",
+      "commits": [
+        {
+          "hash": "1b21460",
+          "date": "2025-11-26T03:49:01.000Z",
+          "type": "other",
+          "message": "Update: logo",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "a92cfe0",
+          "date": "2025-11-26T03:20:58.000Z",
+          "type": "other",
+          "message": "Update: logo",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "17d19cb",
+          "date": "2025-11-24T00:00:47.000Z",
+          "type": "other",
+          "message": "Update image path in README.md",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "9ede37c",
+          "date": "2025-11-23T23:56:56.000Z",
+          "type": "other",
+          "message": "Update: Ultimas notícias e categorias preferenciais",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "a079176",
+          "date": "2025-11-20T01:31:09.000Z",
+          "type": "other",
+          "message": "UI Update",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "3565dd0",
+          "date": "2025-11-08T01:51:37.000Z",
+          "type": "other",
+          "message": "Feat (dropdown-feeds):",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        }
+      ]
+    },
+    {
+      "key": "2025-10",
+      "label": "Outubro de 2025",
+      "commits": [
+        {
+          "hash": "fadc43c",
+          "date": "2025-11-01T02:41:47.000Z",
+          "type": "feat",
+          "message": "Reorganize project structure and improve sanitization",
+          "typeInfo": {
+            "label": "Novo",
+            "icon": "plus",
+            "color": "#10b981"
+          }
+        },
+        {
+          "hash": "584f9b5",
+          "date": "2025-10-31T17:12:31.000Z",
+          "type": "other",
+          "message": "Atualização do README",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "4da4712",
+          "date": "2025-10-31T17:00:21.000Z",
+          "type": "other",
+          "message": "Novos feeds pré-configurados",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "961bbc7",
+          "date": "2025-10-31T16:38:43.000Z",
+          "type": "other",
+          "message": "Sanitizando os feeds",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "671678c",
+          "date": "2025-10-31T15:54:42.000Z",
+          "type": "other",
+          "message": "Cores de destaque",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "80b9422",
+          "date": "2025-10-31T15:43:21.000Z",
+          "type": "other",
+          "message": "New logo and favicon",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "40fb42d",
+          "date": "2025-10-31T13:59:26.000Z",
+          "type": "other",
+          "message": "Change base path in Vite config to lowercase",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "8e3e364",
+          "date": "2025-10-31T02:59:33.000Z",
+          "type": "other",
+          "message": "Add preview image to README",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "0f041b8",
+          "date": "2025-10-31T02:59:14.000Z",
+          "type": "other",
+          "message": "Add files via upload",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "cc03567",
+          "date": "2025-10-31T02:55:32.000Z",
+          "type": "other",
+          "message": "Screenshot",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "a7117f7",
+          "date": "2025-10-31T02:43:36.000Z",
+          "type": "other",
+          "message": "Ajustando o workflow",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "8460cae",
+          "date": "2025-10-31T02:36:43.000Z",
+          "type": "other",
+          "message": "Ajustando os caminhos relativos no Vite.config",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "0d52981",
+          "date": "2025-10-31T02:27:46.000Z",
+          "type": "other",
+          "message": "Ajustando o Workflow para as builds",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "1fc67ab",
+          "date": "2025-10-31T02:19:46.000Z",
+          "type": "other",
+          "message": "Refactor GitHub Actions workflow for deployment",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "37add65",
+          "date": "2025-10-31T02:19:07.000Z",
+          "type": "other",
+          "message": "Refactor deploy.yml for GitHub Pages deployment",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "ae3e1ea",
+          "date": "2025-10-31T02:18:11.000Z",
+          "type": "other",
+          "message": "Add permissions for GitHub Pages deployment",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "f39ba53",
+          "date": "2025-10-31T02:17:29.000Z",
+          "type": "other",
+          "message": "Change publish directory from './myrssfeed' to './dist'",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "4db63e3",
+          "date": "2025-10-31T02:14:29.000Z",
+          "type": "other",
+          "message": "Ajustando o type-check para funcionar com o github pages",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        },
+        {
+          "hash": "e3c622e",
+          "date": "2025-10-31T02:06:25.000Z",
+          "type": "other",
+          "message": "Corrige tipos NodeJS e build do projeto",
+          "typeInfo": {
+            "label": "Outro",
+            "icon": "circle",
+            "color": "#6b7280"
+          }
+        }
+      ]
+    }
+  ]
+}
