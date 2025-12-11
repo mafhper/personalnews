@@ -39,7 +39,6 @@
     "__tests_unused/**/*",
     "myrssfeed/**/*",
     "dist/**/*",
-    "node_modules/**/*",
-    "_desenvolvimento/**/*"
+    "node_modules/**/*"
   ]
 }

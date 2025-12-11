@@ -22,29 +22,20 @@ jobs:
         with:
           bun-version: 1.2.23
 
-      - name: Install dependencies (root)
+      - name: Install dependencies
         run: bun install --no-cache
 
       - name: Ensure Node types
         run: bun add -d @types/node
 
-      - name: Install website dependencies
-        run: cd website && npm install
-
-      - name: Build promo site
-        run: cd website && npm run build
-
-      - name: Type check app
+      - name: Type check
         run: bun tsc --noEmit -p tsconfig.json
 
-      - name: Build app
-        run: bun vite build
+      - name: Clean dist
+        run: rm -rf dist
 
-      - name: Merge builds
-        run: |
-          # Copy promo site to final dist
-          cp -r website/dist/* dist/ 2>/dev/null || true
-          # App is already in dist/app/ due to base path config
+      - name: Build project
+        run: bun vite build
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
@@ -60,4 +51,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
-

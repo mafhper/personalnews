@@ -17,29 +17,19 @@
     "vite"
   ],
   "scripts": {
-    "// === DESENVOLVIMENTO ===": "",
     "dev": "bun vite",
-    "dev:site": "bun vite --config website/vite.config.ts",
-    "dev:all": "npx concurrently -n app,site -c blue,green \"bun vite\" \"npm run dev:site\"",
-    "// === BUILD ===": "",
-    "build": "bunx tsc --noEmit && bun vite build",
-    "build:site": "bunx tsc --noEmit --project website/tsconfig.json && bun vite build --config website/vite.config.ts",
-    "build:all": "npm run icons && npm run changelog && npm run build:site && npm run build && npm run merge",
-    "merge": "node scripts/merge-builds.cjs",
+    "build": "npm run promo:changelog && bunx tsc --noEmit && bun vite build",
     "preview": "bun vite preview",
-    "// === TESTES ===": "",
     "test": "bun vitest run --config config/vitest.config.core.ts",
     "test:all": "bun vitest run --config config/vitest.config.minimal.ts",
     "test:watch": "bun vitest --config config/vitest.config.core.ts",
     "test:coverage": "bun vitest run --coverage",
     "test:feeds": "bun run scripts/testFeeds.ts",
-    "// === UTILITÁRIOS ===": "",
     "type-check": "tsc --noEmit -p tsconfig.json",
-    "clean": "bun rimraf dist website/dist node_modules/.vite",
-    "changelog": "node website/scripts/generate-changelog.cjs || true",
-    "icons": "node scripts/distribute-icons.cjs",
-    "// === DEPLOY ===": "",
-    "deploy": "npm run build:all && git add dist/ && git commit -m \"Deploy: Update build\" && git push origin main"
+    "clean": "bun rimraf dist node_modules/.vite",
+    "deploy": "bun run build && git add dist/ && git commit -m \"Deploy: Update build\" && git push origin main",
+    "promo": "bunx serve _desenvolvimento/ideas/promo-site -p 3030",
+    "promo:changelog": "node _desenvolvimento/ideas/promo-site/scripts/generate-changelog.cjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
@@ -66,14 +56,9 @@
     "@mui/material": "^7.2.0",
     "@types/dompurify": "^3.2.0",
     "dompurify": "^3.3.0",
-    "framer-motion": "^12.23.26",
-    "i18next": "^24.2.0",
-    "i18next-browser-languagedetector": "^8.0.2",
     "lucide-react": "^0.536.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-i18next": "^15.4.0",
-    "react-router-dom": "^7.0.2",
     "zod": "^4.0.10"
   }
 }
