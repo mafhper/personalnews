@@ -17,13 +17,15 @@ import React, {
   Suspense,
   lazy,
 } from "react";
-import Header from "./components/Header";
-import { FeedContent } from "./components/FeedContent";
-import { Modal } from "./components/Modal";
-import { FeedManager } from "./components/FeedManager";
-import { SettingsSidebar } from "./components/SettingsSidebar";
-import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
-import { FavoritesModal } from "./components/FavoritesModal";
+// Lazy load components
+const Header = lazy(() => import("./components/Header"));
+const FeedContent = lazy(() => import("./components/FeedContent").then(module => ({ default: module.FeedContent })));
+const Modal = lazy(() => import("./components/Modal").then(module => ({ default: module.Modal })));
+const FeedManager = lazy(() => import("./components/FeedManager").then(module => ({ default: module.FeedManager })));
+const SettingsSidebar = lazy(() => import("./components/SettingsSidebar").then(module => ({ default: module.SettingsSidebar })));
+const KeyboardShortcutsModal = lazy(() => import("./components/KeyboardShortcutsModal").then(module => ({ default: module.KeyboardShortcutsModal })));
+const FavoritesModal = lazy(() => import("./components/FavoritesModal").then(module => ({ default: module.FavoritesModal })));
+const AuraWallpaperRenderer = lazy(() => import("./components/AuraWallpaperRenderer")); // Lazy load Aura
 import { SkipLinks } from "./components/SkipLinks";
 import { PaginationControls } from "./components/PaginationControls";
 import { SearchFilters } from "./components/SearchBar";
@@ -45,7 +47,6 @@ import { FeedLoadingProgress } from "./components/ProgressIndicator";
 import { ArticleListSkeleton } from "./components/SkeletonLoader";
 import { getDefaultFeeds, migrateFeeds } from "./utils/feedMigration";
 import type { Article, FeedSource } from "./types";
-import AuraWallpaperRenderer from "./components/AuraWallpaperRenderer"; // Import AuraWallpaperRenderer
 
 // Lazy load non-critical components
 const PerformanceDebugger = lazy(
@@ -73,11 +74,13 @@ const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgr
     {/* Aura Wallpaper Background Layer */}
     {backgroundConfig.type === 'aura' && backgroundConfig.auraSettings && (
       <div className="absolute inset-0">
-        <AuraWallpaperRenderer
-          config={{ ...backgroundConfig.auraSettings, width: window.innerWidth, height: window.innerHeight }}
-          className="w-full h-full"
-          lowQuality={false} // Always render high quality for main background
-        />
+          <Suspense fallback={null}>
+            <AuraWallpaperRenderer
+            config={{ ...backgroundConfig.auraSettings, width: window.innerWidth, height: window.innerHeight }}
+            className="w-full h-full"
+            lowQuality={false} // Always render high quality for main background
+            />
+          </Suspense>
       </div>
     )}
     {/* Overlay para melhorar a legibilidade - menos intenso para imagens */}
@@ -552,29 +555,29 @@ const App: React.FC = () => {
     <div className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""}`}>
       <SkipLinks />
       {!isAnyModalOpenGlobally && ( // Hide Header if any modal is open globally (Mobile, Tablet, Desktop)
-        <Header
-          onManageFeedsClick={() => setIsModalOpen(true)}
-          onRefreshClick={handleRefresh}
-          selectedCategory={selectedCategory}
-          onNavigation={handleNavigation}
-          categorizedFeeds={categorizedFeeds}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onOpenFavorites={() => setIsFavoritesModalOpen(true)}
+        <Suspense fallback={<div className="h-16 w-full bg-black/10 animate-pulse" />}>
+          <Header
+            onManageFeedsClick={() => setIsModalOpen(true)}
+            onRefreshClick={handleRefresh}
+            selectedCategory={selectedCategory}
+            onNavigation={handleNavigation}
+            categorizedFeeds={categorizedFeeds}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onOpenFavorites={() => setIsFavoritesModalOpen(true)}
 
-          articles={articles}
-          onSearch={handleSearch}
-          onSearchResultsChange={handleSearchResultsChange}
+            articles={articles}
+            onSearch={handleSearch}
+            onSearchResultsChange={handleSearchResultsChange}
 
-
-
-          categories={categories}
-          currentPage={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          onPageChange={pagination.setPage}
-          onGoHome={() => {
-            handleNavigation("all");
-          }}
-        />
+            categories={categories}
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.setPage}
+            onGoHome={() => {
+              handleNavigation("all");
+            }}
+          />
+        </Suspense>
       )}
       <main
         ref={swipeRef}
@@ -664,11 +667,13 @@ const App: React.FC = () => {
         {/* Show content when we have articles, even if still loading (progressive rendering) */}
         {paginatedArticles.length > 0 && (
           <>
-            <FeedContent 
-              articles={paginatedArticles} 
-              timeFormat={timeFormat} 
-              selectedCategory={selectedCategory}
-            />
+            <Suspense fallback={<ArticleListSkeleton count={3} />}>
+                <FeedContent 
+                articles={paginatedArticles} 
+                timeFormat={timeFormat} 
+                selectedCategory={selectedCategory}
+                />
+            </Suspense>
 
             {/* Pagination at bottom using enhanced PaginationControls */}
             {pagination.totalPages > 1 && (
@@ -781,28 +786,30 @@ const App: React.FC = () => {
             </>
           )}
       </main>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <FeedManager
-          currentFeeds={feeds}
-          setFeeds={setFeeds}
-          closeModal={() => setIsModalOpen(false)}
-          onRefreshFeeds={() => loadFeeds(true)}
+      <Suspense fallback={null}>
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+            <FeedManager
+            currentFeeds={feeds}
+            setFeeds={setFeeds}
+            closeModal={() => setIsModalOpen(false)}
+            onRefreshFeeds={() => loadFeeds(true)}
+            />
+        </Modal>
+        <SettingsSidebar
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+            timeFormat={timeFormat}
+            setTimeFormat={setTimeFormat}
         />
-      </Modal>
-      <SettingsSidebar
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        timeFormat={timeFormat}
-        setTimeFormat={setTimeFormat}
-      />
-      <FavoritesModal
-        isOpen={isFavoritesModalOpen}
-        onClose={() => setIsFavoritesModalOpen(false)}
-      />
-      <KeyboardShortcutsModal
-        isOpen={isKeyboardShortcutsOpen}
-        onClose={() => setIsKeyboardShortcutsOpen(false)}
-      />
+        <FavoritesModal
+            isOpen={isFavoritesModalOpen}
+            onClose={() => setIsFavoritesModalOpen(false)}
+        />
+        <KeyboardShortcutsModal
+            isOpen={isKeyboardShortcutsOpen}
+            onClose={() => setIsKeyboardShortcutsOpen(false)}
+        />
+      </Suspense>
       <Suspense fallback={null}>
         <PerformanceDebugger />
       </Suspense>

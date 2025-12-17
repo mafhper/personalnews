@@ -140,8 +140,10 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
     >
       <button
         onClick={onSelectCategory}
+        aria-label={`Select category ${category.name}`}
+        aria-expanded={isOpen}
         className={`
-          flex items-center space-x-2 px-5 py-2.5 rounded-full transition-all duration-300 ease-out
+          flex items-center space-x-2 px-5 py-2.5 rounded-full transition-all duration-300 ease-out min-h-[44px]
           ${isSelected
             ? "bg-white/10 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.4)] border border-white/20 backdrop-blur-md"
             : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
@@ -181,7 +183,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
               <div className="flex items-center space-x-1">
                  {/* Layout Selector */}
                  <div className="relative group/layout">
-                    <button onClick={(e) => e.stopPropagation()} className={`p-1 rounded hover:bg-white/10 ${category.layoutMode ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title="Alterar Layout da Categoria">
+                    <button onClick={(e) => e.stopPropagation()} className={`p-2 rounded hover:bg-white/10 min-w-[32px] min-h-[32px] ${category.layoutMode ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title="Alterar Layout da Categoria" aria-label="Alterar Layout da Categoria">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
                     </button>
                     <select 
@@ -201,7 +203,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
 
                  {/* Header Position Selector */}
                  <div className="relative group/header">
-                    <button onClick={(e) => e.stopPropagation()} className={`p-1 rounded hover:bg-white/10 ${category.headerPosition ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title="Posição do Cabeçalho">
+                    <button onClick={(e) => e.stopPropagation()} className={`p-2 rounded hover:bg-white/10 min-w-[32px] min-h-[32px] ${category.headerPosition ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title="Posição do Cabeçalho" aria-label="Posição do Cabeçalho">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
                     </button>
                     <select 
@@ -219,18 +221,18 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     </select>
                  </div>
 
-                 <button onClick={handlePin} className={`p-1 rounded hover:bg-white/10 ${category.isPinned ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"}>
+                 <button onClick={handlePin} className={`p-2 rounded hover:bg-white/10 min-w-[32px] min-h-[32px] ${category.isPinned ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400'}`} title={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"} aria-label={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"}>
                     <svg className="w-3.5 h-3.5" fill={category.isPinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                  </button>
 
                  {onEditCategory && (
-                    <button onClick={(e) => { e.stopPropagation(); onEditCategory(category.id); setIsOpen(false); }} className="p-1 rounded hover:bg-white/10 text-gray-400" title="Editar Categoria">
+                    <button onClick={(e) => { e.stopPropagation(); onEditCategory(category.id); setIsOpen(false); }} className="p-2 rounded hover:bg-white/10 text-gray-400 min-w-[32px] min-h-[32px]" title="Editar Categoria" aria-label="Editar Categoria">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </button>
                  )}
 
                  {!category.isDefault && (
-                    <button onClick={handleDelete} className="p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400" title="Excluir Categoria">
+                    <button onClick={handleDelete} className="p-2 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400 min-w-[32px] min-h-[32px]" title="Excluir Categoria" aria-label="Excluir Categoria">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                  )}
@@ -245,7 +247,8 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     onSelectFeed(feed.url);
                     setIsOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors flex items-center space-x-3 group"
+                  className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors flex items-center space-x-3 group min-h-[44px]"
+                  aria-label={`Select feed ${feed.customTitle || getSiteName(feed.url)}`}
                 >
                   <img 
                     src={getFaviconUrl(feed.url)} 

@@ -1,0 +1,7 @@
+{
+    "target": "spa-static",
+    "basePath": "/personalnews/",
+    "routing": "history-fallback",
+    "network": "slow-4g",
+    "device": "mobile"
+}

@@ -1,0 +1,75 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": [
+        "meta",
+        "status",
+        "scores",
+        "violations"
+    ],
+    "properties": {
+        "meta": {
+            "type": "object",
+            "required": [
+                "timestamp",
+                "preset"
+            ],
+            "properties": {
+                "project": {
+                    "type": "string"
+                },
+                "commit": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "number"
+                },
+                "preset": {
+                    "type": "string"
+                }
+            }
+        },
+        "status": {
+            "enum": [
+                "pass",
+                "fail"
+            ]
+        },
+        "scores": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "number"
+            }
+        },
+        "violations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "area",
+                    "metric",
+                    "severity"
+                ],
+                "properties": {
+                    "area": {
+                        "type": "string"
+                    },
+                    "metric": {
+                        "type": "string"
+                    },
+                    "value": {},
+                    "threshold": {},
+                    "severity": {
+                        "enum": [
+                            "warn",
+                            "error"
+                        ]
+                    }
+                }
+            }
+        },
+        "raw": {
+            "type": "object"
+        }
+    }
+}

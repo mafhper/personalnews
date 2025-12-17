@@ -149,10 +149,10 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
           <button
             onClick={handlePrevPage}
             disabled={disabled || isNavigating || currentPage === 0}
-            className={`p-1.5 rounded-md touch-target text-gray-300 ${getButtonStyles(
+            className={`p-2 rounded-md touch-target text-gray-300 ${getButtonStyles(
               currentPage === 0 || disabled || isNavigating
             )}`}
-            style={{ minWidth: "36px", minHeight: "36px" }}
+            style={{ minWidth: "44px", minHeight: "44px" }}
             aria-label="Página anterior"
             title="Página anterior (←)"
           >
@@ -191,10 +191,10 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
             disabled={
               disabled || isNavigating || currentPage === totalPages - 1
             }
-            className={`p-1.5 rounded-md touch-target text-gray-300 ${getButtonStyles(
+            className={`p-2 rounded-md touch-target text-gray-300 ${getButtonStyles(
               currentPage === totalPages - 1 || disabled || isNavigating
             )}`}
-            style={{ minWidth: "36px", minHeight: "36px" }}
+            style={{ minWidth: "44px", minHeight: "44px" }}
             aria-label="Próxima página"
             title="Próxima página (→)"
           >

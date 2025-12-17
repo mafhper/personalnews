@@ -257,7 +257,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                   <button
                     key={category.id}
                     onClick={() => props.onNavigation(category.id)}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium border transition-all whitespace-nowrap min-h-[32px] ${
                       props.selectedCategory === category.id
                         ? "bg-[rgb(var(--color-primary))] text-white border-[rgb(var(--color-primary))] shadow-lg"
                         : "bg-[rgba(255,255,255,0.05)] text-gray-300 border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
@@ -312,7 +312,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 </div>
               </div>
               )}
-              {headerConfig.showTitle && (
+              {headerConfig.showTitle ? (
                 <h1 
                     className="font-bold tracking-tight cursor-pointer pb-1 text-xl truncate max-w-[150px] md:max-w-none"
                     onClick={props.onGoHome}
@@ -331,6 +331,8 @@ const Header: React.FC<HeaderProps> = (props) => {
                     <span>{headerConfig.customTitle || t('app.title')}</span>
                   )}
                 </h1>
+              ) : (
+                  <h1 className="sr-only">{t('app.title')}</h1>
               )}
             </div>
 
@@ -427,24 +429,27 @@ const Header: React.FC<HeaderProps> = (props) => {
               <div className="hidden md:flex items-center space-x-1">
                 <button
                   onClick={props.onRefreshClick}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="p-3 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
                   title={t('header.refresh')}
+                  aria-label={t('header.refresh')}
                 >
                   <HeaderIcons.Refresh showBackground={false} size="md" />
                 </button>
 
                 <button
                   onClick={props.onOpenFavorites}
-                  className="p-2 text-gray-400 hover:text-[rgb(var(--color-accent))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="p-3 text-gray-400 hover:text-[rgb(var(--color-accent))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
                   title={t('header.favorites')}
+                  aria-label={t('header.favorites')}
                 >
                   <HeaderIcons.Favorites showBackground={false} size="md" />
                 </button>
 
                 <button
                   onClick={props.onOpenSettings}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="p-3 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
                   title="Configurações"
+                  aria-label="Configurações"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -454,8 +459,9 @@ const Header: React.FC<HeaderProps> = (props) => {
 
                 <button
                   onClick={props.onManageFeedsClick}
-                  className="p-2 text-gray-400 hover:text-[rgb(var(--color-primary))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="p-3 text-gray-400 hover:text-[rgb(var(--color-primary))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
                   title={t('header.manage_feeds')}
+                  aria-label={t('header.manage_feeds')}
                 >
                   <HeaderIcons.Feeds showBackground={false} size="md" />
                 </button>

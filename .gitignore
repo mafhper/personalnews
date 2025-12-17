@@ -39,8 +39,8 @@ ehthumbs.db
 Thumbs.db
 
 # Logs
-logs
-*.log
+#logs
+#*.log
 
 # Runtime data
 pids
@@ -101,12 +101,12 @@ temp/
 .bun
 
 # Tests
-test-results/
+#test-results/
 playwright-report/
 __tests_unused/
 
 # Documentation (local development only)
-docs/
-samples/
+#docs/
+#samples/
 _dev/
 performance-reports/

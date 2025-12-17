@@ -44,17 +44,21 @@ export const SkipLinks: React.FC<SkipLinksProps> = ({ links = defaultLinks }) =>
   };
 
   return (
-    <div className="skip-links">
-      {links.map((link, index) => (
-        <a
-          key={index}
-          href={link.href}
-          onClick={(e) => handleSkipClick(e, link.href)}
-          className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[rgb(var(--color-accent))] focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:font-medium focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-accent))]"
-        >
-          {link.label}
-        </a>
-      ))}
-    </div>
+    <>
+      {/* Visually hidden H1 for SEO - ensures H1 is present on initial render before lazy Header loads */}
+      <h1 className="sr-only">Personal News Dashboard</h1>
+      <div className="skip-links">
+        {links.map((link, index) => (
+          <a
+            key={index}
+            href={link.href}
+            onClick={(e) => handleSkipClick(e, link.href)}
+            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[rgb(var(--color-accent))] focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:font-medium focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-accent))]"
+          >
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </>
   );
 };
