@@ -124,39 +124,56 @@ export const useAppearance = () => {
     setBackgroundConfig((prev) => ({ ...prev, ...updates }));
   }, [setBackgroundConfig]);
 
-  const applyLayoutPreset = useCallback((presetId: string, persist: boolean = true) => {
+  // Clear user overrides - useful for resetting to pure preset state
+  const clearUserOverrides = useCallback(() => {
+    setUserOverrides({});
+  }, [setUserOverrides]);
+
+  /**
+   * Apply a layout preset.
+   * 
+   * IMPORTANT: As per user requirement, switching layouts should ONLY affect
+   * the page content (below navigation), NOT the header configuration.
+   * Header settings are managed separately in Settings.
+   * 
+   * @param presetId - ID of the layout preset to apply
+   * @param persist - Whether to persist this as the active layout
+   * @param clearContentOverrides - Whether to clear content overrides (default: true)
+   */
+  const applyLayoutPreset = useCallback((presetId: string, persist: boolean = true, clearContentOverrides: boolean = true) => {
     const preset = LAYOUT_PRESETS.find(p => p.id === presetId);
     if (preset) {
       console.log(`Applying layout preset: ${presetId} (persist: ${persist})`, {
-        presetHeader: preset.header,
-        userOverrides: userOverrides
+        presetContent: preset.content
       });
 
-      // Apply preset BUT merge with user overrides to maintain user preferences
-      // Explicitly access overrides safely
-      const headerOverrides = userOverrides?.header || {};
-      const contentOverrides = userOverrides?.content || {};
+      // IMPORTANT: Preserve header overrides! User configured these in Settings.
+      // Only clear content overrides to prevent layout settings from bleeding.
+      if (clearContentOverrides) {
+        setUserOverrides((prev) => ({
+          ...prev,
+          content: {} // Clear only content overrides, preserve header
+        }));
+      }
 
-      const mergedHeader = {
-        ...headerConfig, // Keep current properties (like customLogoSvg which might not be in preset)
-        ...preset.header, // Apply preset values
-        ...headerOverrides // Apply user overrides ON TOP
-      };
+      // Apply content preset values
+      // Content is the only thing that changes when switching layouts
+      const contentOverrides = clearContentOverrides ? {} : (userOverrides?.content || {});
 
       const mergedContent = {
-        ...contentConfig,
+        ...defaultContentConfig,
         ...preset.content,
         ...contentOverrides
       };
 
-      setHeaderConfig(mergedHeader);
+      // Only update content, NOT header
       setContentConfig(mergedContent);
 
       if (persist) {
         setActiveLayoutId(presetId);
       }
     }
-  }, [headerConfig, contentConfig, setHeaderConfig, setContentConfig, setActiveLayoutId, userOverrides]);
+  }, [setContentConfig, setActiveLayoutId, userOverrides, setUserOverrides]);
 
   const refreshAppearance = useCallback(() => {
     // Re-applies the current configuration based on active preset and user overrides.
@@ -252,6 +269,7 @@ export const useAppearance = () => {
     updateBackgroundConfig,
     applyLayoutPreset,
     resetAppearance,
+    clearUserOverrides,
     themeSettings,
     updateThemeSettings,
     currentTheme,

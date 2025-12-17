@@ -108,10 +108,10 @@ const Header: React.FC<HeaderProps> = (props) => {
   }, [headerConfig.customTitle, headerConfig.logoUrl]);
 
   const headerPositionClasses = {
-    static: "relative",
-    sticky: "sticky top-0 z-50",
-    floating: "fixed top-2 left-1/2 -translate-x-1/2 w-[95%] max-w-fit rounded-xl border-[rgba(255,255,255,0.08)] md:top-4 md:rounded-2xl z-50",
-    hidden: `relative z-50 transition-all duration-500 ease-in-out ${isHeaderVisible ? 'opacity-100 max-h-24' : 'opacity-0 max-h-0 overflow-hidden -mb-1'}`,
+    static: "relative w-full",
+    sticky: "sticky top-0 z-50 w-full",
+    floating: "fixed top-2 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl rounded-xl border-[rgba(255,255,255,0.08)] md:top-4 md:rounded-2xl z-50",
+    hidden: `fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isHeaderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`,
   };
 
   const headerStyleClasses = {
@@ -203,9 +203,24 @@ const Header: React.FC<HeaderProps> = (props) => {
   };
 
 
+  // Spacer height based on header height setting
+  const spacerHeightClasses = {
+    'ultra-compact': 'h-8 lg:h-10',
+    tiny: 'h-10 lg:h-12',
+    compact: 'h-12 lg:h-14',
+    normal: 'h-14 lg:h-16',
+    spacious: 'h-16 lg:h-20',
+  };
+
+  // Need spacer for fixed position modes (hidden, floating)
+  const needsSpacer = headerConfig.position === 'hidden' || headerConfig.position === 'floating';
 
   return (
     <>
+      {/* Spacer for fixed position headers */}
+      {needsSpacer && (
+        <div className={`${spacerHeightClasses[headerConfig.height]} ${headerConfig.position === 'floating' ? 'mt-4' : ''}`} />
+      )}
       <header
         className={`${headerPositionClasses[headerConfig.position]} z-30 transition-all duration-300 ${blurClass} ${
           isScrolled || isFloating ? 'shadow-lg' : ''
@@ -259,25 +274,25 @@ const Header: React.FC<HeaderProps> = (props) => {
                     onClick={props.onGoHome}
                     style={{ color: headerConfig.titleGradient?.enabled ? undefined : (headerConfig.titleColor || 'rgb(var(--color-text))') }}
                 >
-                  <span style={
-                        headerConfig.titleGradient?.enabled ? {
-                            background: `linear-gradient(${headerConfig.titleGradient.direction}, ${headerConfig.titleGradient.from}, ${headerConfig.titleGradient.to})`,
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text',
-                            color: 'transparent',
-                            display: 'inline-block', // Ensure block formatting context for clip
-                        } : undefined
-                  }>
-                    {headerConfig.customTitle || t('app.title')}
-                  </span>
+                  {headerConfig.titleGradient?.enabled ? (
+                    <span 
+                      className="bg-clip-text text-transparent"
+                      style={{
+                        backgroundImage: `linear-gradient(${headerConfig.titleGradient.direction || 'to right'}, ${headerConfig.titleGradient.from}, ${headerConfig.titleGradient.to})`,
+                      }}
+                    >
+                      {headerConfig.customTitle || t('app.title')}
+                    </span>
+                  ) : (
+                    <span>{headerConfig.customTitle || t('app.title')}</span>
+                  )}
                 </h1>
               )}
             </div>
 
-            {/* Center Section: Categories (Desktop) */}
+            {/* Center Section: Categories (Desktop) - Centralized between logo and actions */}
             {!isCentered && (
-              <div className="hidden md:flex flex-1 items-center justify-start relative group/scroll px-2 ml-4">
+              <div className="hidden md:flex flex-1 items-center justify-center relative group/scroll px-2">
                  
                  {/* Left Scroll Button */}
                  <div className={`absolute -left-3 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>

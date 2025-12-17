@@ -527,21 +527,23 @@ const App: React.FC = () => {
     pagination.endIndex
   );
 
-  // Swipe gestures for mobile navigation
+  // Swipe gestures for mobile category navigation
   const swipeRef = useSwipeGestures({
     onSwipeLeft: () => {
-      // Swipe left = next page
-      if (pagination.currentPage < pagination.totalPages - 1) {
-        pagination.setPage(pagination.currentPage + 1);
+      // Swipe left = next category
+      const currentCategoryIndex = categories.findIndex(c => c.id === selectedCategory);
+      if (currentCategoryIndex < categories.length - 1) {
+        handleNavigation(categories[currentCategoryIndex + 1].id);
       }
     },
     onSwipeRight: () => {
-      // Swipe right = previous page
-      if (pagination.currentPage > 0) {
-        pagination.setPage(pagination.currentPage - 1);
+      // Swipe right = previous category
+      const currentCategoryIndex = categories.findIndex(c => c.id === selectedCategory);
+      if (currentCategoryIndex > 0) {
+        handleNavigation(categories[currentCategoryIndex - 1].id);
       }
     },
-    threshold: 50, // Minimum swipe distance
+    threshold: 75, // Slightly higher threshold to prevent accidental swipes
   });
 
   return (
@@ -695,7 +697,7 @@ const App: React.FC = () => {
                         d="M7 16l-4-4m0 0l4-4m-4 4h18"
                       />
                     </svg>
-                    <span>Swipe to navigate</span>
+                    <span>Swipe to change category</span>
                     <svg
                       className="h-4 w-4"
                       fill="none"

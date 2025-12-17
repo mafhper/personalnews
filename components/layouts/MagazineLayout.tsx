@@ -3,6 +3,7 @@ import { Article } from '../../types';
 import { MagazineReaderModal } from '../MagazineReaderModal';
 import { LazyImage } from '../LazyImage';
 import { useAppearance } from '../../hooks/useAppearance';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MagazineLayoutProps {
   articles: Article[];
@@ -12,6 +13,7 @@ interface MagazineLayoutProps {
 export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { contentConfig } = useAppearance();
+  const { t } = useLanguage();
 
   // Pagination State for Load More
   const [displayLimit, setDisplayLimit] = useState(20);
@@ -21,20 +23,19 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
   let visibleArticles: Article[] = [];
   if (paginationType === 'loadMore') {
-      visibleArticles = articles.slice(0, displayLimit);
+    visibleArticles = articles.slice(0, displayLimit);
   } else {
-      // Numbered: Parent (App.tsx) handles slicing. We just render what we receive.
-      visibleArticles = articles;
+    visibleArticles = articles;
   }
-  
+
   const handleLoadMore = () => {
-      setDisplayLimit(prev => Math.min(prev + 20, articles.length));
+    setDisplayLimit(prev => Math.min(prev + 20, articles.length));
   }
 
   const handleOpenReader = (article: Article) => {
     setReadingArticle(article);
   };
-  
+
   const handleNextArticle = () => {
     if (!readingArticle) return;
     const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
@@ -57,188 +58,220 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     if (diffMs < 0 || isNaN(diffMs)) return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    
+
     const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return 'agora';
-    if (diffMins < 60) return `há ${diffMins}min`;
+    if (diffMins < 1) return t('time.now') || 'agora';
+    if (diffMins < 60) return `${diffMins}min`;
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `há ${diffHours}h`;
+    if (diffHours < 24) return `${diffHours}h`;
     const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `há ${diffDays}d`;
+    if (diffDays < 7) return `${diffDays}d`;
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   };
 
-  // Layout Slices
+  // Layout Slices - Magazine style with clear sections
   const heroArticle = visibleArticles[0];
-  const secondaryArticles = visibleArticles.slice(1, 4);
-  const gridArticles = visibleArticles.slice(4, 12); // Next 8
-  const listArticles = visibleArticles.slice(12); // The rest of the page/limit
+  const featuredArticles = visibleArticles.slice(1, 4); // 3 featured below hero
+  const gridArticles = visibleArticles.slice(4, 10); // 6 in grid
+  const listArticles = visibleArticles.slice(10); // Rest in list
 
-  if (!heroArticle) return <div className="p-10 text-center opacity-50">Nenhuma notícia para exibir.</div>;
+  if (!heroArticle) return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <p className="text-[rgb(var(--color-textSecondary))] text-lg">{t('feeds.empty') || 'Nenhuma notícia para exibir.'}</p>
+    </div>
+  );
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-300 min-h-screen font-sans pb-12">
+    <div className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in duration-300 min-h-screen">
 
-      {/* Main Hero Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-[rgb(var(--color-surface))]">
-        
-        {/* Featured Article - Large */}
-        {heroArticle && (
-          <div 
-            className="lg:col-span-8 relative group cursor-pointer overflow-hidden" 
-            onClick={() => handleOpenReader(heroArticle)}
-          >
-            <div className="relative aspect-[16/9] lg:aspect-[16/10]">
-              <LazyImage 
-                src={heroArticle.imageUrl || `https://picsum.photos/seed/${heroArticle.link}/1200/800`} 
+      {/* Hero Section - Full Width */}
+      <section className="mb-12">
+        <article
+          className="relative group cursor-pointer overflow-hidden rounded-2xl bg-[rgb(var(--color-surface))]"
+          onClick={() => handleOpenReader(heroArticle)}
+        >
+          <div className="grid md:grid-cols-2 gap-0">
+            {/* Hero Image */}
+            <div className="relative aspect-[4/3] md:aspect-auto md:h-[400px] overflow-hidden">
+              <LazyImage
+                src={heroArticle.imageUrl || `https://picsum.photos/seed/${heroArticle.link}/1200/800`}
                 alt={heroArticle.title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="bg-[#cc0000] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1">
-                    {heroArticle.sourceTitle}
-                  </span>
-                  <span className="text-white/70 text-xs">
-                    {formatTimeAgo(heroArticle.pubDate)}
-                  </span>
-                </div>
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white leading-tight mb-3 group-hover:text-[rgb(var(--color-accent))] transition-colors">
-                  {heroArticle.title}
-                </h1>
-                <p className="text-white/80 text-sm md:text-base line-clamp-2 max-w-3xl">
-                  {heroArticle.description}
-                </p>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent md:hidden" />
+            </div>
+
+            {/* Hero Content */}
+            <div className="flex flex-col justify-center p-6 md:p-10 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))]">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[rgb(var(--color-accent))] text-white">
+                  {heroArticle.sourceTitle}
+                </span>
+                <span className="text-sm text-[rgb(var(--color-textSecondary))]">
+                  {formatTimeAgo(heroArticle.pubDate)}
+                </span>
               </div>
+
+              <h1 className="text-2xl md:text-4xl font-bold text-[rgb(var(--color-text))] leading-tight mb-4 group-hover:text-[rgb(var(--color-accent))] transition-colors">
+                {heroArticle.title}
+              </h1>
+
+              <p className="text-[rgb(var(--color-textSecondary))] text-base md:text-lg leading-relaxed line-clamp-3 mb-6">
+                {heroArticle.description}
+              </p>
+
+              {heroArticle.author && (
+                <p className="text-sm text-[rgb(var(--color-textSecondary))] italic">
+                  {t('article.by') || 'Por'} {heroArticle.author}
+                </p>
+              )}
+
+              <button className="mt-6 self-start px-6 py-2.5 bg-[rgb(var(--color-primary))] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity">
+                {t('action.read') || 'Ler artigo'}
+              </button>
             </div>
           </div>
-        )}
+        </article>
+      </section>
 
-        {/* Secondary Articles - Sidebar Stack */}
-        <div className="lg:col-span-4 flex flex-col divide-y divide-[rgb(var(--color-border))]">
-          {secondaryArticles.map((article, i) => (
-            <div 
-              key={i} 
-              className="p-4 group cursor-pointer hover:bg-[rgb(var(--color-background))] transition-colors flex gap-4"
-              onClick={() => handleOpenReader(article)}
-            >
-              <div className="w-24 h-20 flex-shrink-0 overflow-hidden rounded bg-[rgb(var(--color-background))]">
-                <LazyImage 
-                  src={article.imageUrl || `https://picsum.photos/seed/${article.link}/200/150`} 
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-bold uppercase text-[#cc0000]">
+      {/* Featured Section - 3 Cards */}
+      {featuredArticles.length > 0 && (
+        <section className="mb-12">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
+              {t('layout.featured') || 'Destaques'}
+            </h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {featuredArticles.map((article, i) => (
+              <article
+                key={i}
+                className="group cursor-pointer"
+                onClick={() => handleOpenReader(article)}
+              >
+                <div className="relative aspect-[16/10] overflow-hidden rounded-xl mb-4 bg-[rgb(var(--color-surface))]">
+                  <LazyImage
+                    src={article.imageUrl || `https://picsum.photos/seed/${article.link}/600/400`}
+                    alt={article.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))]">
                     {article.sourceTitle}
                   </span>
-                  <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
+                  <span className="text-xs text-[rgb(var(--color-textSecondary))]">•</span>
+                  <span className="text-xs text-[rgb(var(--color-textSecondary))]">
                     {formatTimeAgo(article.pubDate)}
                   </span>
                 </div>
-                <h3 className="font-bold text-sm leading-tight text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-3">
+
+                <h3 className="font-bold text-lg text-[rgb(var(--color-text))] leading-snug group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2">
                   {article.title}
                 </h3>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Section Divider */}
-      {gridArticles.length > 0 && (
-          <div className="bg-[rgb(var(--color-background))] px-4 py-3 border-b border-[rgb(var(--color-border))]">
-            <h2 className="text-lg font-black uppercase text-[rgb(var(--color-text))] tracking-tight flex items-center gap-3">
-              <span className="w-1 h-5 bg-[#cc0000]"></span>
-              Mais Notícias
-            </h2>
-          </div>
-      )}
-
-      {/* Grid of Articles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 bg-[rgb(var(--color-surface))]">
-        {gridArticles.map((article, i) => (
-          <div 
-            key={i} 
-            className="border-b border-r border-[rgb(var(--color-border))] p-4 group cursor-pointer hover:bg-[rgb(var(--color-background))] transition-colors"
-            onClick={() => handleOpenReader(article)}
-          >
-            {article.imageUrl && (
-              <div className="aspect-video overflow-hidden rounded mb-3 bg-[rgb(var(--color-background))]">
-                <LazyImage 
-                  src={article.imageUrl} 
-                  alt={article.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-            )}
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase text-[#cc0000]">
-                {article.sourceTitle}
-              </span>
-              <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
-                {formatTimeAgo(article.pubDate)}
-              </span>
-            </div>
-            <h3 className="font-bold text-sm leading-tight text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors mb-2 line-clamp-3">
-              {article.title}
-            </h3>
-            <p className="text-xs text-[rgb(var(--color-textSecondary))] line-clamp-2">
-              {article.description}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Additional Articles - Compact List */}
-      {listArticles.length > 0 && (
-        <>
-          <div className="bg-[rgb(var(--color-background))] px-4 py-3 border-b border-[rgb(var(--color-border))]">
-            <h2 className="text-lg font-black uppercase text-[rgb(var(--color-text))] tracking-tight flex items-center gap-3">
-              <span className="w-1 h-5 bg-[rgb(var(--color-accent))]"></span>
-              Últimas
-            </h2>
-          </div>
-          <div className="bg-[rgb(var(--color-surface))] divide-y divide-[rgb(var(--color-border))]">
-            {listArticles.map((article, i) => (
-              <div 
-                key={i} 
-                className="px-4 py-3 flex items-center gap-4 group cursor-pointer hover:bg-[rgb(var(--color-background))] transition-colors"
-                onClick={() => handleOpenReader(article)}
-              >
-                <span className="text-[10px] font-bold uppercase text-[#cc0000] w-20 flex-shrink-0">
-                  {article.sourceTitle}
-                </span>
-                <h4 className="flex-1 font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-1">
-                  {article.title}
-                </h4>
-                <span className="text-[10px] text-[rgb(var(--color-textSecondary))] flex-shrink-0">
-                  {formatTimeAgo(article.pubDate)}
-                </span>
-              </div>
+              </article>
             ))}
           </div>
-        </>
+        </section>
       )}
 
-      {/* Pagination Controls - Only show Load More here. Numbered is handled by App shell. */}
+      {/* Grid Section - 6 Cards */}
+      {gridArticles.length > 0 && (
+        <section className="mb-12">
+          <div className="flex items-center gap-4 mb-6">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
+              {t('layout.more_news') || 'Mais Notícias'}
+            </h2>
+            <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {gridArticles.map((article, i) => (
+              <article
+                key={i}
+                className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all"
+                onClick={() => handleOpenReader(article)}
+              >
+                {article.imageUrl && (
+                  <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
+                    <LazyImage
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))]">
+                      {article.sourceTitle}
+                    </span>
+                    <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
+                      {formatTimeAgo(article.pubDate)}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2 leading-snug">
+                    {article.title}
+                  </h3>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* List Section - Compact */}
+      {listArticles.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
+              {t('layout.latest') || 'Últimas'}
+            </h2>
+            <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
+          </div>
+
+          <div className="space-y-3">
+            {listArticles.map((article, i) => (
+              <article
+                key={i}
+                className="group cursor-pointer flex items-center gap-4 p-3 rounded-lg hover:bg-[rgb(var(--color-surface))] transition-colors border-b border-[rgb(var(--color-border))] last:border-0"
+                onClick={() => handleOpenReader(article)}
+              >
+                <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))] w-24 flex-shrink-0 truncate">
+                  {article.sourceTitle}
+                </span>
+                <h4 className="flex-1 font-medium text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-1">
+                  {article.title}
+                </h4>
+                <span className="text-xs text-[rgb(var(--color-textSecondary))] flex-shrink-0">
+                  {formatTimeAgo(article.pubDate)}
+                </span>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Load More Button */}
       {paginationType === 'loadMore' && displayLimit < articles.length && (
-         <div className="mt-8 flex justify-center p-4">
-             <button 
-                onClick={handleLoadMore}
-                className="px-6 py-3 bg-[rgb(var(--color-accent))] text-white text-xs font-bold uppercase tracking-widest hover:brightness-110 transition-all rounded shadow-lg"
-             >
-                Carregar Mais Notícias
-             </button>
-         </div>
+        <div className="flex justify-center py-8">
+          <button
+            onClick={handleLoadMore}
+            className="px-8 py-3 bg-[rgb(var(--color-primary))] text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
+          >
+            {t('action.load_more') || 'Carregar Mais'}
+          </button>
+        </div>
       )}
 
       {/* Reader Modal */}
       {readingArticle && (
-        <MagazineReaderModal 
+        <MagazineReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
           onNext={handleNextArticle}
