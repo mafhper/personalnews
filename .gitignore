@@ -108,4 +108,5 @@ __tests_unused/
 # Documentation (local development only)
 docs/
 samples/
-_desenvolvimento/
+_dev/
+performance-reports/

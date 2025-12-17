@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quality Gate Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: {
+            background: '#0a0a0f',
+            surface: '#12121a',
+            surfaceHighlight: '#1a1a25',
+            primary: '#22d3ee',
+            primaryGlow: 'rgba(34, 211, 238, 0.15)',
+            success: '#10b981',
+            warning: '#f59e0b',
+            error: '#ef4444',
+            text: '#fafafa',
+            muted: '#71717a'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0a0a0f; color: #fafafa; }
+    .glass-card {
+      background: rgba(18, 18, 26, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: border-color 0.2s;
+    }
+    .glass-card:hover { border-color: rgba(34, 211, 238, 0.2); }
+    .sidebar-link { transition: all 0.2s; border-left: 2px solid transparent; }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(34, 211, 238, 0.05); color: #22d3ee; border-left-color: #22d3ee; }
+    
+    /* Markdown Styles */
+    .prose h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; }
+    .prose h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #e4e4e7; }
+    .prose h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #d4d4d8; }
+    .prose p { margin-bottom: 1rem; color: #a1a1aa; line-height: 1.6; }
+    .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose code { background: rgba(255,255,255,0.1); padding: 0.2em 0.4em; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+    .prose pre { background: #1a1a20; padding: 1rem; border-radius: 8px; overflow-x: auto; margin-bottom: 1rem; }
+    .prose pre code { background: transparent; padding: 0; }
+    .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .prose th, .prose td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .prose th { color: #fff; font-weight: 600; background: rgba(255,255,255,0.05); }
+    .prose a { color: #22d3ee; text-decoration: none; }
+    .prose a:hover { text-decoration: underline; }
+    .prose blockquote { border-left: 4px solid #22d3ee; padding-left: 1rem; color: #71717a; font-style: italic; }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden selection:bg-primary selection:text-black">
+  
+  <!-- Sidebar -->
+  <aside class="w-64 bg-surface border-r border-white/5 flex flex-col z-20 shrink-0">
+    <div class="p-6">
+      <div class="flex items-center gap-3 text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500">
+        <span class="text-3xl">⚡</span>
+        Quality Gate
+      </div>
+      <p class="text-xs text-muted mt-2 uppercase tracking-wider">Project Audit</p>
+    </div>
+
+    <nav class="flex-1 px-4 space-y-2 mt-4" id="nav-links">
+      <button onclick="switchTab('dashboard')" class="w-full sidebar-link active flex items-center gap-3 px-4 py-3 text-sm font-medium text-muted rounded-r-lg">
+        <span>📊</span> Dashboard
+      </button>
+      <button onclick="switchTab('reports')" class="w-full sidebar-link flex items-center gap-3 px-4 py-3 text-sm font-medium text-muted rounded-r-lg">
+        <span>🔦</span> Lighthouse Reports
+      </button>
+      <button onclick="switchTab('logs')" class="w-full sidebar-link flex items-center gap-3 px-4 py-3 text-sm font-medium text-muted rounded-r-lg">
+        <span>📝</span> System Logs
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-white/5">
+      <div class="glass-card p-4 rounded-xl">
+        <h4 class="text-xs font-bold text-muted uppercase mb-3">Quick Actions</h4>
+        <div class="space-y-2">
+          <button onclick="runCommand('quality')" class="w-full text-left px-3 py-2 text-xs font-medium bg-primary/10 text-primary rounded hover:bg-primary/20 transition flex items-center gap-2">
+            <span>🚀</span> Run Quality Gate
+          </button>
+          <button onclick="runCommand('lighthouse')" class="w-full text-left px-3 py-2 text-xs font-medium bg-surfaceHighlight text-muted rounded hover:bg-white/5 transition flex items-center gap-2">
+            <span>🔦</span> Run Performance
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-auto relative bg-background">
+    <!-- Noise Overlay -->
+    <div class="fixed inset-0 pointer-events-none opacity-[0.03] z-0" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.7\' numOctaves=\'3\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E')"></div>
+
+    <div class="max-w-7xl mx-auto p-8 relative z-10" id="content-area">
+      <!-- Content injected via JS -->
+    </div>
+  </main>
+
+  <!-- Terminal Modal -->
+  <div id="terminal-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-surface border border-white/10 rounded-2xl w-full max-w-4xl h-[600px] flex flex-col shadow-2xl relative overflow-hidden">
+      <div class="p-4 border-b border-white/10 flex justify-between items-center bg-surfaceHighlight">
+        <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+            <span class="w-3 h-3 rounded-full bg-green-500"></span>
+            <span class="ml-2 font-mono text-xs text-muted" id="terminal-title">Terminal</span>
+        </div>
+        <button onclick="closeTerminal()" class="text-muted hover:text-white transition">✕</button>
+      </div>
+      <div class="flex-1 p-4 overflow-auto bg-[#0c0c0c] font-mono text-xs text-gray-300 leading-relaxed custom-scrollbar" id="terminal-content">
+        <!-- Output stream -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- State & Config ---
+    let currentTab = 'dashboard';
+    const API_BASE = '/api';
+
+    // --- Init ---
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+    });
+
+    // --- Navigation ---
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      // Update Navigation State
+      document.querySelectorAll('#nav-links button').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.querySelector(`button[onclick="switchTab('${tab}')"]`);
+      if(activeBtn) activeBtn.classList.add('active');
+
+      // Load Content
+      if (tab === 'dashboard') loadDashboard();
+      if (tab === 'reports') loadReportsView();
+      if (tab === 'logs') loadLogsView();
+    }
+
+    // --- Views ---
+
+    async function loadDashboard() {
+      const container = document.getElementById('content-area');
+      container.innerHTML = '<div class="text-muted animate-pulse">Loading overview...</div>';
+
+      try {
+        // Fetch Lighthouse reports to calculate latest scores
+        const lhRes = await fetch(`${API_BASE}/reports/lighthouse`);
+        const lhData = await lhRes.json();
+        const latestReport = lhData.data && lhData.data.length > 0 ? lhData.data[0].data : null;
+        
+        // Default Scores
+        const scores = { per: 0, a11y: 0, bp: 0, seo: 0 };
+        
+        if (latestReport && latestReport.categories) {
+            scores.per = Math.round((latestReport.categories.performance?.score || 0) * 100);
+            scores.a11y = Math.round((latestReport.categories.accessibility?.score || 0) * 100);
+            scores.bp = Math.round((latestReport.categories['best-practices']?.score || 0) * 100);
+            scores.seo = Math.round((latestReport.categories.seo?.score || 0) * 100);
+        }
+
+        const getColor = (s) => s >= 90 ? 'text-success bg-success/10' : (s >= 50 ? 'text-warning bg-warning/10' : 'text-error bg-error/10');
+        const getBg = (s) => s >= 90 ? 'bg-success' : (s >= 50 ? 'bg-warning' : 'bg-error');
+
+        container.innerHTML = `
+          <header class="flex justify-between items-end mb-8">
+            <div>
+              <h1 class="text-3xl font-bold text-white mb-2">Overview</h1>
+              <p class="text-muted text-sm">Real-time performance and quality metrics.</p>
+            </div>
+          </header>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Metric Cards -->
+            ${renderMetricCard('Performance', scores.per, '⚡', getColor(scores.per), getBg(scores.per))}
+            ${renderMetricCard('Accessibility', scores.a11y, '♿', getColor(scores.a11y), getBg(scores.a11y))}
+            ${renderMetricCard('Best Practices', scores.bp, '🛡️', getColor(scores.bp), getBg(scores.bp))}
+            ${renderMetricCard('SEO', scores.seo, '🔍', getColor(scores.seo), getBg(scores.seo))}
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-card rounded-2xl p-6">
+              <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">🔦 Recent Reports</h3>
+              <div class="space-y-2">
+                ${renderRecentReportsList(lhData.data || [])}
+              </div>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">📝 Recent Logs</h3>
+                <div id="mini-logs-list" class="space-y-2">
+                    <div class="text-xs text-muted">Loading logs...</div>
+                </div>
+            </div>
+          </div>
+        `;
+
+        // Load mini logs async
+        fetch(`${API_BASE}/logs`).then(r => r.json()).then(logs => {
+            const list = document.getElementById('mini-logs-list');
+            if(logs.data && logs.data.length > 0) {
+                list.innerHTML = logs.data.slice(0, 5).map(log => `
+                    <div class="flex items-center justify-between p-2 hover:bg-white/5 rounded transition cursor-pointer" onclick="viewLog('${log.filename}')">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-primary">📄</span>
+                            <span class="text-sm text-gray-300">${log.filename}</span>
+                        </div>
+                        <span class="text-xs text-muted">${new Date(log.timestamp).toLocaleDateString()}</span>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = '<div class="text-xs text-muted p-2">No logs found.</div>';
+            }
+        });
+
+      } catch (err) {
+        container.innerHTML = `<div class="p-4 bg-error/10 text-error rounded">Failed to load dashboard: ${err.message}</div>`;
+      }
+    }
+
+    function renderMetricCard(title, score, icon, colorClass, bgClass) {
+        return `
+        <div class="glass-card rounded-2xl p-6 relative group overflow-hidden">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition text-6xl pointer-events-none">${icon}</div>
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-sm font-medium text-muted uppercase tracking-wider">${title}</h3>
+            <span class="${colorClass} px-2 py-0.5 rounded text-xs font-bold">${score}%</span>
+          </div>
+          <div class="text-4xl font-bold font-mono text-white mb-2">${score}</div>
+          <div class="w-full bg-white/5 h-1.5 mt-4 rounded-full overflow-hidden">
+            <div class="h-full ${bgClass} transition-all duration-1000" style="width: ${score}%"></div>
+          </div>
+        </div>`;
+    }
+
+    function renderRecentReportsList(reports) {
+        if (!reports || reports.length === 0) return '<div class="text-muted text-sm italic">No reports found. Run a test!</div>';
+        return reports.slice(0, 5).map(r => `
+            <div class="flex items-center justify-between p-3 bg-surfaceHighlight/50 rounded-lg hover:bg-surfaceHighlight transition cursor-pointer" onclick="viewReport('${r.filename}')">
+                <div class="flex flex-col">
+                    <span class="text-sm font-medium text-white">${r.filename}</span>
+                    <span class="text-xs text-muted">${new Date(r.timestamp).toLocaleString()}</span>
+                </div>
+                <div class="flex gap-2">
+                    ${renderMiniScore(r.data.categories?.performance?.score)}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderMiniScore(score) {
+        const s = Math.round((score || 0) * 100);
+        const color = s >= 90 ? 'bg-success' : (s >= 50 ? 'bg-warning' : 'bg-error');
+        return `<div class="w-2 h-2 rounded-full ${color}"></div>`;
+    }
+
+    async function loadReportsView() {
+        const container = document.getElementById('content-area');
+        container.innerHTML = `
+            <h1 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <span>🔦</span> Lighthouse Reports 
+                <button onclick="runCommand('lighthouse')" class="text-xs bg-primary/10 text-primary px-3 py-1 rounded hover:bg-primary/20 transition">New Scan</button>
+            </h1>
+            <div class="grid grid-cols-1 gap-4" id="reports-grid">
+                <div class="text-muted animate-pulse">Loading reports...</div>
+            </div>
+        `;
+        
+        const res = await fetch(`${API_BASE}/reports/lighthouse`);
+        const json = await res.json();
+        
+        const grid = document.getElementById('reports-grid');
+        if(!json.data || json.data.length === 0) {
+            grid.innerHTML = '<div class="p-8 text-center text-muted border border-dashed border-white/10 rounded-xl">No reports found.</div>';
+            return;
+        }
+
+        grid.innerHTML = json.data.map(r => {
+            const cats = r.data.categories;
+            return `
+            <div class="glass-card p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4 hover:border-primary/30 transition cursor-pointer" onclick="viewReport('${r.filename}')">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-surfaceHighlight rounded-lg text-2xl">📱</div>
+                    <div>
+                        <div class="font-mono text-sm text-white mb-1">${r.filename}</div>
+                        <div class="text-xs text-muted">${new Date(r.timestamp).toLocaleString()}</div>
+                    </div>
+                </div>
+                <div class="flex gap-6">
+                    ${renderScoreBadge('Perf', cats.performance?.score)}
+                    ${renderScoreBadge('A11y', cats.accessibility?.score)}
+                    ${renderScoreBadge('SEO', cats.seo?.score)}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderScoreBadge(label, value) {
+        const s = Math.round((value || 0) * 100);
+        const color = s >= 90 ? 'text-success' : (s >= 50 ? 'text-warning' : 'text-error');
+        return `
+            <div class="text-center">
+                <div class="text-xs text-muted mb-1">${label}</div>
+                <div class="font-mono font-bold ${color}">${s}</div>
+            </div>
+        `;
+    }
+
+    async function loadLogsView() {
+        const container = document.getElementById('content-area');
+        container.innerHTML = `<h1 class="text-2xl font-bold text-white mb-6">Logs</h1><div id="logs-list" class="space-y-2">Loading...</div>`;
+        
+        const res = await fetch(`${API_BASE}/logs`);
+        const json = await res.json();
+        
+        const list = document.getElementById('logs-list');
+        list.innerHTML = json.data.map(log => `
+            <div class="glass-card p-4 rounded-xl cursor-pointer hover:bg-white/5 transition" onclick="viewLog('${log.filename}')">
+                <div class="flex justify-between items-center">
+                    <span class="font-mono text-sm text-primary">${log.filename}</span>
+                    <span class="text-xs text-muted">${new Date(log.timestamp).toLocaleDateString()}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- Details Views ---
+
+    async function viewReport(filename) {
+        // Simple JSON view for now, effectively we could implement a full report viewer
+        const res = await fetch(`${API_BASE}/report/lighthouse/${filename}`);
+        const json = await res.json();
+        const container = document.getElementById('content-area');
+        
+        container.innerHTML = `
+            <button onclick="switchTab('reports')" class="mb-4 text-sm text-muted hover:text-white flex items-center gap-2">← Back to Reports</button>
+            <div class="glass-card p-6 rounded-xl overflow-auto">
+                <pre class="text-xs text-muted font-mono">${JSON.stringify(json.data, null, 2)}</pre>
+            </div>
+        `;
+    }
+
+    async function viewLog(filename) {
+        // Here we request the specific log again if needed, or find it in the list (but list doesn't have HTML)
+        // Correct approach: The API /api/logs returns all, but maybe too heavy. 
+        // Let's assume we can filter client side from the logs list response if we cache it, 
+        // OR we just use the list response if it contains the HTML.
+        // Wait, the API definition in Suggestion B returns { success: true, data: [{ filename, markdown, html }] }
+        // So we might already have it.
+        
+        // Let's re-fetch to be safe/simple
+        const res = await fetch(`${API_BASE}/logs`);
+        const json = await res.json();
+        const log = json.data.find(l => l.filename === filename);
+
+        const container = document.getElementById('content-area');
+        if(log) {
+             container.innerHTML = `
+                <button onclick="switchTab('logs')" class="mb-4 text-sm text-muted hover:text-white flex items-center gap-2">← Back to Logs</button>
+                <div class="glass-card p-8 rounded-xl prose max-w-none">
+                    ${log.html}
+                </div>
+            `;
+        }
+    }
+
+    // --- Terminal execution ---
+
+    function runCommand(commandKey) {
+        const modal = document.getElementById('terminal-modal');
+        const content = document.getElementById('terminal-content');
+        const title = document.getElementById('terminal-title');
+        
+        modal.classList.remove('hidden');
+        content.innerHTML = ''; // Clear previous
+        title.innerText = `Executing: ${commandKey}...`;
+
+        const eventSource = new EventSource(`${API_BASE}/run/${commandKey}`);
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'stdout' || data.type === 'stderr') {
+                // Simple ANSI color stripping or rendering could go here
+                // For now, simple text text
+                 const line = document.createElement('div');
+                 line.textContent = data.output;
+                 if (data.type === 'stderr') line.classList.add('text-red-400');
+                 content.appendChild(line);
+                 content.scrollTop = content.scrollHeight;
+            } else if (data.type === 'close') {
+                const line = document.createElement('div');
+                line.textContent = `\nProcess exited with code ${data.code}`;
+                line.classList.add(data.code === 0 ? 'text-success' : 'text-error', 'font-bold', 'mt-2');
+                content.appendChild(line);
+                eventSource.close();
+                
+                // Refresh data if success
+                if(data.code === 0 && commandKey === 'lighthouse') {
+                    // Slight delay to allow FS to write
+                    setTimeout(() => {
+                        if(currentTab === 'dashboard') loadDashboard();
+                        if(currentTab === 'reports') loadReportsView();
+                    }, 1000);
+                }
+            } else if (data.type === 'error') {
+                 const line = document.createElement('div');
+                 line.textContent = `Error: ${data.error}`;
+                 line.classList.add('text-error');
+                 content.appendChild(line);
+                 eventSource.close();
+            }
+        };
+
+        eventSource.onerror = () => {
+             const line = document.createElement('div');
+             line.textContent = `\nConnection lost.`;
+             line.classList.add('text-error');
+             content.appendChild(line);
+             eventSource.close();
+        };
+    }
+
+    function closeTerminal() {
+        document.getElementById('terminal-modal').classList.add('hidden');
+    }
+
+  </script>
+</body>
+</html>

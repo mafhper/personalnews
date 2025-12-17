@@ -53,9 +53,9 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                 className={`group cursor-pointer ${isFullWidth ? '' : 'md:grid md:grid-cols-2 md:gap-12 md:items-center'}`}
                 onClick={() => setReadingIndex(index)}
               >
-                {/* Image */}
-                {article.imageUrl && (
-                  <div className={`relative overflow-hidden mb-6 ${isFullWidth ? 'aspect-[21/9] rounded-2xl' : 'aspect-[4/3] rounded-xl md:mb-0'} bg-[rgb(var(--color-surface))]`}>
+                {/* Image - Always show a visual area */}
+                <div className={`relative overflow-hidden mb-6 ${isFullWidth ? 'aspect-[21/9] rounded-2xl' : 'aspect-[4/3] rounded-xl md:mb-0'} bg-[rgb(var(--color-surface))]`}>
+                  {article.imageUrl ? (
                     <SmallOptimizedImage
                       src={article.imageUrl}
                       alt={article.title}
@@ -63,9 +63,23 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       fallbackText={article.sourceTitle}
                       size={isFullWidth ? 1200 : 800}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  </div>
-                )}
+                  ) : (
+                    // Fallback when no image - elegant gradient placeholder
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-border))]">
+                      <div className="text-center p-6">
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[rgb(var(--color-primary))]/10 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-[rgb(var(--color-primary))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-medium uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
+                          {article.sourceTitle}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </div>
 
                 {/* Content */}
                 <div className={isFullWidth ? 'max-w-2xl mx-auto text-center' : ''}>

@@ -39,6 +39,19 @@ const translations: Record<Language, Record<string, string>> = {
     'action.next': 'Próximo',
     'action.prev': 'Anterior',
     'action.focus_mode': 'Modo Foco',
+    'action.read': 'Ler',
+    'action.read_article': 'Ler artigo',
+    
+    // Time
+    'time.now': 'agora',
+    
+    // Feeds extended
+    'feeds.live': 'AO VIVO',
+    'feeds.articles': 'artigos',
+    
+    // Article extended
+    'article.by': 'por',
+    'article.end': 'Fim da edição',
     
     // Header
     'header.manage_feeds': 'Gerenciar Feeds',
@@ -193,6 +206,19 @@ const translations: Record<Language, Record<string, string>> = {
     'action.next': 'Next',
     'action.prev': 'Prev',
     'action.focus_mode': 'Focus Mode',
+    'action.read': 'Read',
+    'action.read_article': 'Read article',
+    
+    // Time
+    'time.now': 'now',
+    
+    // Feeds extended
+    'feeds.live': 'LIVE',
+    'feeds.articles': 'articles',
+    
+    // Article extended
+    'article.by': 'by',
+    'article.end': 'End of edition',
     
     // Header
     'header.refresh': 'Refresh Feeds',
@@ -332,6 +358,13 @@ const translations: Record<Language, Record<string, string>> = {
     'action.next': 'Siguiente',
     'action.prev': 'Anterior',
     'action.focus_mode': 'Modo Enfoque',
+    'action.read': 'Leer',
+    'action.read_article': 'Leer artículo',
+    'time.now': 'ahora',
+    'feeds.live': 'EN VIVO',
+    'feeds.articles': 'artículos',
+    'article.by': 'por',
+    'article.end': 'Fin de edición',
     
     // Header
     'header.manage_feeds': 'Gestionar Feeds',

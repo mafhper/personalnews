@@ -36,27 +36,42 @@ const Header: React.FC<HeaderProps> = (props) => {
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastScrollY = useRef(0);
 
-  // Mobile Category Visibility Logic
-  const [isMobileCategoryVisible, setIsMobileCategoryVisible] = useState(false);
-  const categoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Mobile: Header visibility (logo, icons) - hidden by default, shows on interaction
+  // Categories stay always visible for easy navigation
+  const [isMobileHeaderVisible, setIsMobileHeaderVisible] = useState(true);
+  const mobileHeaderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleActivity = () => {
-      setIsMobileCategoryVisible(true);
-      if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
-      categoryTimeoutRef.current = setTimeout(() => {
-        setIsMobileCategoryVisible(false);
-      }, 2500);
+      setIsMobileHeaderVisible(true);
+      if (mobileHeaderTimeoutRef.current) clearTimeout(mobileHeaderTimeoutRef.current);
+      mobileHeaderTimeoutRef.current = setTimeout(() => {
+        // Only hide if scrolled down
+        if (window.scrollY > 100) {
+          setIsMobileHeaderVisible(false);
+        }
+      }, 3000);
     };
+
+    // Show header initially, then hide after delay if scrolled
+    const initialTimeout = setTimeout(() => {
+      if (window.scrollY > 100) {
+        setIsMobileHeaderVisible(false);
+      }
+    }, 3000);
 
     window.addEventListener("scroll", handleActivity);
     window.addEventListener("touchmove", handleActivity);
+    window.addEventListener("touchstart", handleActivity);
     return () => {
       window.removeEventListener("scroll", handleActivity);
       window.removeEventListener("touchmove", handleActivity);
-      if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
+      window.removeEventListener("touchstart", handleActivity);
+      if (mobileHeaderTimeoutRef.current) clearTimeout(mobileHeaderTimeoutRef.current);
+      clearTimeout(initialTimeout);
     };
   }, []);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -203,23 +218,23 @@ const Header: React.FC<HeaderProps> = (props) => {
   };
 
 
-  // Spacer height based on header height setting
+  // Spacer height for fixed position headers (matches actual header height)
   const spacerHeightClasses = {
-    'ultra-compact': 'h-8 lg:h-10',
-    tiny: 'h-10 lg:h-12',
-    compact: 'h-12 lg:h-14',
-    normal: 'h-14 lg:h-16',
-    spacious: 'h-16 lg:h-20',
+    'ultra-compact': 'h-12 lg:h-14',
+    tiny: 'h-14 lg:h-16',
+    compact: 'h-16 lg:h-18',
+    normal: 'h-18 lg:h-20',
+    spacious: 'h-20 lg:h-24',
   };
 
-  // Need spacer for fixed position modes (hidden, floating)
+  // Need spacer for fixed position modes (hidden, floating) - sticky doesn't need because it's in flow
   const needsSpacer = headerConfig.position === 'hidden' || headerConfig.position === 'floating';
 
   return (
     <>
-      {/* Spacer for fixed position headers */}
+      {/* Spacer for fixed position headers - reserves space for the fixed header */}
       {needsSpacer && (
-        <div className={`${spacerHeightClasses[headerConfig.height]} ${headerConfig.position === 'floating' ? 'mt-4' : ''}`} />
+        <div className={`${spacerHeightClasses[headerConfig.height]}`} />
       )}
       <header
         className={`${headerPositionClasses[headerConfig.position]} z-30 transition-all duration-300 ${blurClass} ${
@@ -232,8 +247,37 @@ const Header: React.FC<HeaderProps> = (props) => {
           borderBottomColor: isScrolled && !isFloating ? headerBorderStyle : 'transparent',
         }}
       >
-        <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''}`}>
-          <div className={`flex items-center ${headerHeightClasses[headerConfig.height]} transition-all duration-300 ${headerStyleClasses[headerConfig.style]}`}>
+        <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''} overflow-hidden`}>
+          
+          {/* MOBILE/TABLET: Categories FIRST - always visible, centered (hidden on md+ screens) */}
+          <div className="md:hidden w-full py-2">
+            <div className="overflow-x-auto no-scrollbar w-full" style={{ scrollbarWidth: 'none' }}>
+              <div className="flex items-center justify-center min-w-full space-x-2">
+                {activeCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => props.onNavigation(category.id)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
+                      props.selectedCategory === category.id
+                        ? "bg-[rgb(var(--color-primary))] text-white border-[rgb(var(--color-primary))] shadow-lg"
+                        : "bg-[rgba(255,255,255,0.05)] text-gray-300 border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Main header row - on mobile, hidden when scrolled. On desktop, always visible */}
+          {/* Auto height when logo and title are both hidden */}
+          <div className={`
+            flex items-center transition-all duration-300 
+            ${(headerConfig.showLogo !== false || headerConfig.showTitle) ? headerHeightClasses[headerConfig.height] : 'h-auto py-2'}
+            ${headerStyleClasses[headerConfig.style]}
+            ${!isMobileHeaderVisible ? 'hidden md:flex' : 'flex'}
+          `}>
             
             {/* Left Section: Logo & Title */}
             <div className={`flex items-center space-x-4 group flex-shrink-0 ${isCentered ? 'lg:absolute lg:left-4' : ''}`}>
@@ -292,10 +336,10 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Center Section: Categories (Desktop) - Centralized between logo and actions */}
             {!isCentered && (
-              <div className="hidden md:flex flex-1 items-center justify-center relative group/scroll px-2">
+              <div className="hidden md:flex flex-1 items-center justify-center relative group/scroll px-2 overflow-hidden">
                  
                  {/* Left Scroll Button */}
-                 <div className={`absolute -left-3 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
+                 <div className={`absolute left-0 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
                     <button 
                       onClick={() => scroll('left')}
                       className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
@@ -329,7 +373,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                  </div>
 
                  {/* Right Scroll Button */}
-                 <div className={`absolute -right-3 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
+                 <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
                     <button 
                       onClick={() => scroll('right')}
                       className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
@@ -437,38 +481,8 @@ const Header: React.FC<HeaderProps> = (props) => {
             </div>
           </div>
 
-          {/* Mobile Categories Strip - Inside Container but full width behavior */}
-          <div 
-            className={`lg:hidden w-full transition-all duration-500 ease-in-out overflow-hidden ${
-              isMobileCategoryVisible ? 'max-h-20 opacity-100 border-t border-white/5 pt-1 pb-2' : 'max-h-0 opacity-0 border-none'
-            }`}
-            onMouseEnter={() => setIsMobileCategoryVisible(true)}
-            onTouchStart={() => setIsMobileCategoryVisible(true)}
-          >
-             <div className="overflow-x-auto no-scrollbar mask-linear-fade w-full" style={{ scrollbarWidth: 'none' }}>
-                <div className="flex items-center justify-center min-w-full space-x-3 px-1">
-                    {activeCategories.map((category) => (
-                    <button
-                        key={category.id}
-                        onClick={() => props.onNavigation(category.id)}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
-                        props.selectedCategory === category.id
-                            ? "bg-[rgb(var(--color-primary))] text-white border-[rgb(var(--color-primary))]"
-                            : "bg-[rgba(255,255,255,0.05)] text-gray-300 border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
-                        }`}
-                    >
-                        {category.name}
-                    </button>
-                    ))}
-                </div>
-             </div>
-          </div>
-
         </div>
       </header>
-
-      {/* Spacing for Floating Header only (Since Sticky/Static occupy space naturally now that strip is inside) */}
-      {isFloating && <div className="h-20 lg:h-24"></div>}
 
       {/* Mobile Drawer */}
       <div
