@@ -69,9 +69,9 @@ Formato: `- [id] Nome | Cor: #HEX | Layout: modo | Header: pos | Pinned: true - 
 
 - [design] Design | Cor: #f0eee9| Layout: modern| Header: floating | Pinned: false - Inspiração visual, UX/UI e tendências de design.
 - [games] Games | Cor: #F59E0B | Layout: masonry | Header: floating| Pinned: false - Lançamentos, reviews e cultura gamer.
-- [tech] Tecnologia | Cor: #3B82F6 | Layout: bento | Header: floating| Pinned: true - Notícias sobre desenvolvimento, gadgets e o mundo tech.
+- [tech] Tecnologia | Cor: #3B82F6 | Layout: modern | Header: floating| Pinned: true - Notícias sobre desenvolvimento, gadgets e o mundo tech.
 - [politics] Política | Cor: #EF4444 | Layout: list | Header: floating| Pinned: false - Cobertura política nacional e internacional.
-- [youtube] Vídeos| Cor: #c4302b| Layout: brutalist| Header: floating| Pinned: false - Canais preferidos do Youtube.
+- [youtube] Vídeos| Cor: #c4302b| Layout: brutalist | Header: floating| Pinned: false - Canais preferidos do Youtube.
 
 ## Feeds Iniciais
 

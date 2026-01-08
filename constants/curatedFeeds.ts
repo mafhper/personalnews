@@ -50,7 +50,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "order": 3,
     "isDefault": true,
     "color": "#3B82F6",
-    "layoutMode": "bento",
+    "layoutMode": "modern",
     "headerPosition": "floating",
     "isPinned": true
   },
