@@ -14,7 +14,9 @@ interface BackgroundCreatorProps {
 
 
 export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, onChange }) => {
-  const [activeTab, setActiveTab] = useState<'solid' | 'aura' | 'image'>('solid');
+  const [activeTab, setActiveTab] = useState<'solid' | 'aura' | 'image'>(() => {
+    return (config.type === 'gradient' || config.type === 'pattern') ? 'solid' : config.type;
+  });
   
   // Aura State
   const [auraConfig, setAuraConfig] = useState<WallpaperConfig>(config.auraSettings || DEFAULT_CONFIG);
@@ -33,18 +35,10 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
     xg: { label: 'XG (3840×2160)', width: 3840, height: 2160 },
   };
 
-
-
-
   useEffect(() => {
-    // Safely set activeTab, defaulting legacy types to 'solid'
-    const newActiveTab = (config.type === 'gradient' || config.type === 'pattern') 
-      ? 'solid' 
-      : config.type;
-    setActiveTab(newActiveTab);
-    
     // Load aura state if applicable
     if (config.type === 'aura' && config.auraSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuraConfig(config.auraSettings);
     }
   }, [config.type, config.auraSettings]);

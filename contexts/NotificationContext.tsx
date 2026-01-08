@@ -74,6 +74,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     resolve: () => void;
   } | null>(null);
 
+  const removeNotification = useCallback((id: string) => {
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== id)
+    );
+  }, []);
+
   const showNotification = useCallback(
     (message: string, options: NotificationOptions = {}) => {
       const id =
@@ -96,14 +102,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         }, notification.duration);
       }
     },
-    []
+    [removeNotification]
   );
-
-  const removeNotification = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.filter((notification) => notification.id !== id)
-    );
-  }, []);
 
   const clearAllNotifications = useCallback(() => {
     setNotifications([]);

@@ -28,10 +28,9 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
   const [loading, setLoading] = React.useState(false);
 
   useEffect(() => {
-    setFullContent(null);
-    setLoading(true);
-
     const loadContent = async () => {
+        setFullContent(null);
+        setLoading(true);
         const fetched = await fetchFullContent(article.link);
         if (fetched) {
             setFullContent(fetched);

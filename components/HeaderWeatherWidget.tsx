@@ -93,9 +93,11 @@ export const HeaderWeatherWidget: React.FC = () => {
   );
 
   useEffect(() => {
+    let mounted = true;
     if (city) {
       fetchWeatherForCity(city);
     }
+    return () => { mounted = false; };
   }, [city, fetchWeatherForCity]);
 
   const handleSave = () => {

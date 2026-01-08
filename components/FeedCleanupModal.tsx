@@ -32,12 +32,6 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
 
   const { confirmDanger, alertSuccess } = useNotificationReplacements();
 
-  useEffect(() => {
-    if (isOpen) {
-      loadErrorHistory();
-    }
-  }, [isOpen]);
-
   const loadErrorHistory = () => {
     try {
       const stored = localStorage.getItem('feed-error-history');
@@ -58,6 +52,12 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
       console.error("Failed to load feed error history", e);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadErrorHistory();
+    }
+  }, [isOpen]);
 
   const getFilteredFeeds = () => {
     return errorHistory.filter(item => {

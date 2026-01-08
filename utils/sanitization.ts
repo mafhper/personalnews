@@ -110,6 +110,7 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     // Remove caracteres de controle
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
     .trim();
     
@@ -239,27 +240,27 @@ export function containsHtml(text: string | null | undefined): boolean {
  * @param feedContent - Objeto com propriedades que podem conter HTML
  * @returns Objeto com propriedades sanitizadas
  */
-export function sanitizeFeedContent<T extends Record<string, any>>(feedContent: T): T {
-  const sanitized = { ...feedContent } as any;
+export function sanitizeFeedContent<T extends Record<string, unknown>>(feedContent: T): T {
+  const sanitized = { ...feedContent } as Record<string, unknown>;
   
   // Sanitiza propriedades comuns de feeds
-  if ('title' in sanitized && sanitized.title) {
+  if ('title' in sanitized && typeof sanitized.title === 'string') {
     sanitized.title = sanitizeTitle(sanitized.title);
   }
   
-  if ('description' in sanitized && sanitized.description) {
+  if ('description' in sanitized && typeof sanitized.description === 'string') {
     sanitized.description = sanitizeArticleDescription(sanitized.description);
   }
   
-  if ('link' in sanitized && sanitized.link) {
+  if ('link' in sanitized && typeof sanitized.link === 'string') {
     sanitized.link = sanitizeUrl(sanitized.link);
   }
   
-  if ('author' in sanitized && sanitized.author) {
+  if ('author' in sanitized && typeof sanitized.author === 'string') {
     sanitized.author = sanitizeHtmlContent(sanitized.author);
   }
   
-  if ('sourceTitle' in sanitized && sanitized.sourceTitle) {
+  if ('sourceTitle' in sanitized && typeof sanitized.sourceTitle === 'string') {
     sanitized.sourceTitle = sanitizeTitle(sanitized.sourceTitle);
   }
   

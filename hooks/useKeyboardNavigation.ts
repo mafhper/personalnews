@@ -27,7 +27,10 @@ export const useKeyboardNavigation = (options: KeyboardNavigationOptions = {}) =
   } = options;
 
   const shortcutsRef = useRef(shortcuts);
-  shortcutsRef.current = shortcuts;
+  
+  useEffect(() => {
+    shortcutsRef.current = shortcuts;
+  }, [shortcuts]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((event: Event) => {

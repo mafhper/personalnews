@@ -6,7 +6,7 @@ export function getVideoEmbed(url: string): string | null {
   if (!url) return null;
 
   // YouTube (Standard, Short, Embed)
-  const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
   const ytMatch = url.match(youtubeRegex);
   if (ytMatch && ytMatch[1]) {
     return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&modestbranding=1&rel=0`;
@@ -20,7 +20,7 @@ export function getVideoEmbed(url: string): string | null {
   }
 
   // Twitch
-  const twitchRegex = /(?:twitch\.tv\/)([^"&?\/\s]+)/i;
+  const twitchRegex = /(?:twitch\.tv\/)([^"&?/\s]+)/i;
   const twitchMatch = url.match(twitchRegex);
   if (twitchMatch && twitchMatch[1]) {
     // Requires parent domain for embedding

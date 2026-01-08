@@ -42,7 +42,7 @@ const defaultConfig: PerformanceConfig = {
 
 export const usePerformance = (config: Partial<PerformanceConfig> = {}) => {
   const finalConfig = { ...defaultConfig, ...config };
-  const [metrics, setMetrics] = useState<PerformanceMetrics>({
+  const [metrics, setMetrics] = useState<PerformanceMetrics>(() => ({
     loadTime: 0,
     renderTime: 0,
     memoryUsage: 0,
@@ -54,7 +54,7 @@ export const usePerformance = (config: Partial<PerformanceConfig> = {}) => {
     isBackgrounded: false,
     backgroundedTime: 0,
     lastUpdated: Date.now()
-  });
+  }));
 
   const [snapshots, setSnapshots] = useState<PerformanceSnapshot[]>([]);
   const metricsHistory = useRef<PerformanceMetrics[]>([]);
@@ -312,7 +312,7 @@ export const usePerformance = (config: Partial<PerformanceConfig> = {}) => {
   return {
     metrics,
     snapshots,
-    metricsHistory: metricsHistory.current,
+    metricsHistory, // Return ref object, not .current
     startRenderTiming,
     endRenderTiming,
     trackNetworkRequest,

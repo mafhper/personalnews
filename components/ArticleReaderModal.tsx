@@ -91,8 +91,6 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
   useEffect(() => {
     setModalOpen(true);
-    setFullContent(null);
-    setLoading(true);
     
     // Focus management for accessibility
     if (modalContainerRef.current) {
@@ -102,6 +100,8 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     if (contentRef.current) contentRef.current.scrollTop = 0;
 
     const loadContent = async () => {
+      setFullContent(null); // Clear previous content
+      setLoading(true);
       const fetched = await fetchFullContent(article.link);
       if (fetched) {
         setFullContent(fetched);

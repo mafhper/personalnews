@@ -30,59 +30,59 @@ const Logo: React.FC<LogoProps> = ({
 
   const backgroundClasses = '';
 
-  const LogoImage = () => {
-    if (customSrc?.trim().startsWith('<svg')) {
-      const sanitizedSvg = DOMPurify.sanitize(customSrc, {
-        USE_PROFILES: { svg: true, svgFilters: true },
-        ADD_TAGS: ['use'], // Allow <use> tags if needed for icons
-        ADD_ATTR: ['href', 'xlink:href'] // Allow href attributes
-      });
-
-      return (
-        <div 
-          className={`w-full h-full [&>svg]:w-full [&>svg]:h-full ${useThemeColor ? 'text-[rgb(var(--color-accent))] [&>svg]:fill-current [&>svg_path]:fill-current' : ''}`}
-          dangerouslySetInnerHTML={{ __html: sanitizedSvg }} 
-        />
-      );
-    }
-    
-    const src = customSrc || `${import.meta.env.BASE_URL}assets/logo.svg`;
-
-    if (useThemeColor) {
-      return (
-        <div 
-          className="w-full h-full bg-[rgb(var(--color-accent))]"
-          style={{
-            maskImage: `url(${src})`,
-            maskSize: 'contain',
-            maskRepeat: 'no-repeat',
-            maskPosition: 'center',
-            WebkitMaskImage: `url(${src})`,
-            WebkitMaskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center',
-          }}
-        />
-      );
-    }
-
-    return (
-      <img 
-        src={src}
-        alt="Personal News Logo" 
-        className="w-full h-full object-contain"
-      />
-    );
-  };
-
   return (
     <div 
       className={`${sizeClasses[size]} ${backgroundClasses} flex items-center justify-center ${className} ${baseClasses}`}
       onClick={onClick}
       title={isClickable ? "Ir para a página inicial" : undefined}
     >
-      <LogoImage />
+      <LogoImage customSrc={customSrc} useThemeColor={useThemeColor} />
     </div>
+  );
+};
+
+const LogoImage: React.FC<{ customSrc?: string | null; useThemeColor: boolean }> = ({ customSrc, useThemeColor }) => {
+  if (customSrc?.trim().startsWith('<svg')) {
+    const sanitizedSvg = DOMPurify.sanitize(customSrc, {
+      USE_PROFILES: { svg: true, svgFilters: true },
+      ADD_TAGS: ['use'], // Allow <use> tags if needed for icons
+      ADD_ATTR: ['href', 'xlink:href'] // Allow href attributes
+    });
+
+    return (
+      <div 
+        className={`w-full h-full [&>svg]:w-full [&>svg]:h-full ${useThemeColor ? 'text-[rgb(var(--color-accent))] [&>svg]:fill-current [&>svg_path]:fill-current' : ''}`}
+        dangerouslySetInnerHTML={{ __html: sanitizedSvg }} 
+      />
+    );
+  }
+  
+  const src = customSrc || `${import.meta.env.BASE_URL}assets/logo.svg`;
+
+  if (useThemeColor) {
+    return (
+      <div 
+        className="w-full h-full bg-[rgb(var(--color-accent))]"
+        style={{
+          maskImage: `url(${src})`,
+          maskSize: 'contain',
+          maskRepeat: 'no-repeat',
+          maskPosition: 'center',
+          WebkitMaskImage: `url(${src})`,
+          WebkitMaskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center',
+        }}
+      />
+    );
+  }
+
+  return (
+    <img 
+      src={src}
+      alt="Personal News Logo" 
+      className="w-full h-full object-contain"
+    />
   );
 };
 

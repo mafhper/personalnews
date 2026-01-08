@@ -242,9 +242,9 @@ export class OPMLExportService {
     try {
       const urlObj = new URL(url);
       return urlObj.hostname.replace(/^www\./, "");
-    } catch (error) {
+    } catch {
       // Fallback: use regex to extract domain
-      const match = url.match(/^https?:\/\/(?:www\.)?([^\/]+)/);
+      const match = url.match(/^https?:\/\/(?:www\.)?([^/]+)/);
       return match ? match[1] : url;
     }
   }
@@ -301,7 +301,7 @@ export class OPMLExportService {
       const finalPath = htmlPath === "" || htmlPath === "/" ? "" : htmlPath;
 
       return `${url.protocol}//${url.host}${finalPath}`;
-    } catch (error) {
+    } catch {
       return null;
     }
   }

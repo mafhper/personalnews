@@ -49,7 +49,18 @@ export const usePagination = (
     urlParamName = "page",
   } = options;
 
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(() => {
+    if (persistInUrl && typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const pageParam = urlParams.get(urlParamName);
+      if (pageParam) {
+        const page = parseInt(pageParam, 10) - 1;
+        const estimatedTotalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+        if (page >= 0) return Math.min(page, estimatedTotalPages - 1);
+      }
+    }
+    return 0;
+  });
   const [isNavigating, setIsNavigating] = useState(false);
 
   // Calculate total pages
@@ -57,23 +68,8 @@ export const usePagination = (
     return Math.max(1, Math.ceil(totalItems / itemsPerPage));
   }, [totalItems, itemsPerPage]);
 
-  // Initialize from URL on mount if URL persistence is enabled
-  useEffect(() => {
-    if (persistInUrl && typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const pageParam = urlParams.get(urlParamName);
-
-      if (pageParam) {
-        const page = parseInt(pageParam, 10) - 1; // Convert to 0-based
-        if (page >= 0 && page < totalPages) {
-          setCurrentPage(page);
-        } else if (page >= totalPages && totalPages > 0) {
-          // If URL page is beyond total pages, go to last page
-          setCurrentPage(totalPages - 1);
-        }
-      }
-    }
-  }, [persistInUrl, urlParamName, totalPages]);
+  // Sync URL when page changes (only if it wasn't just read from URL)
+  // We don't need the initialization useEffect anymore.
 
   // Update URL when page changes (if URL persistence is enabled)
   const updateUrl = useCallback(

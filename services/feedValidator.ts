@@ -1370,6 +1370,7 @@ class FeedValidatorService {
   private removeInvalidXMLCharacters(content: string): string {
     // Remove control characters except tab, newline, and carriage return
     // XML 1.0 valid characters: #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
+    // eslint-disable-next-line no-control-regex
     return content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
   }
 

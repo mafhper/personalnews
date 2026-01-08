@@ -731,6 +731,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       .replace(/\u00A0/g, " "); // Non-breaking space to regular space
 
     // Remove invalid XML characters (control characters except tab, newline, carriage return)
+    // eslint-disable-next-line no-control-regex
     cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
     // Try to fix missing channel structure for RSS
