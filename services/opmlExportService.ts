@@ -445,7 +445,7 @@ export class OPMLExportService {
   private static normalizeUrl(url: string): string {
     try {
       // First, clean up the URL string
-      let cleanUrl = url.trim();
+      const cleanUrl = url.trim();
 
       // Handle case variations
       const urlObj = new URL(cleanUrl);

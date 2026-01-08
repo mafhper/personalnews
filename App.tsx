@@ -44,7 +44,7 @@ import { useSwipeGestures } from "./hooks/useSwipeGestures";
 import { useArticleLayout } from "./hooks/useArticleLayout";
 import { withPerformanceTracking } from "./services/performanceUtils";
 import { FeedLoadingProgress } from "./components/ProgressIndicator";
-import { ArticleListSkeleton } from "./components/SkeletonLoader";
+import { FeedSkeleton } from "./components/ui/FeedSkeleton";
 import type { Article } from "./types";
 
 // Lazy load non-critical components
@@ -552,12 +552,12 @@ const App: React.FC = () => {
         )}
 
         {isLoading && articles.length === 0 && (
-          <ArticleListSkeleton count={layoutSettings.articlesPerPage} />
+          <FeedSkeleton count={layoutSettings.articlesPerPage} />
         )}
 
         {paginatedArticles.length > 0 && (
           <>
-            <Suspense fallback={<ArticleListSkeleton count={3} />}>
+            <Suspense fallback={<FeedSkeleton count={3} />}>
                 <FeedContent 
                 articles={paginatedArticles} 
                 timeFormat={timeFormat} 

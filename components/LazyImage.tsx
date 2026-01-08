@@ -14,8 +14,18 @@ const DEFAULT_PLACEHOLDER = `data:image/svg+xml;base64,${btoa(`
 
 const DEFAULT_ERROR_PLACEHOLDER = `data:image/svg+xml;base64,${btoa(`
   <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
-    <rect width="100%" height="100%" fill="#374151" />
-    <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#ef4444" font-family="Arial" font-size="10">Image Error</text>
+    <defs>
+      <linearGradient id="gradError" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#111827;stop-opacity:1" />
+      </linearGradient>
+      <pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+        <circle cx="2" cy="2" r="1" fill="#374151" />
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#gradError)" />
+    <rect width="100%" height="100%" fill="url(#pattern)" />
+    <path d="M30 50 L50 30 L70 50 L50 70 Z" fill="none" stroke="#374151" stroke-width="2" opacity="0.5" />
   </svg>
 `)}`;
 
@@ -95,6 +105,7 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
       }, retryDelay);
     } else {
       setHasError(true);
+      setIsLoaded(true); // Ensure error placeholder is visible
       onError?.();
     }
   }, [currentAttempt, retryAttempts, retryDelay, onError]);
@@ -114,7 +125,7 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
     <img
       ref={imgRef}
       src={getImageSrc()}
-      alt={alt}
+      alt={hasError ? "" : alt} // Hide alt text on error to avoid overlay
       className={`transition-opacity duration-500 ease-in-out ${
         isLoaded ? 'opacity-100' : 'opacity-0'
       } ${className} ${!isLoaded ? 'bg-gray-800 animate-pulse' : ''}`}
@@ -122,7 +133,7 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
       onError={handleImageError}
       loading="lazy"
       sizes={sizes}
-      srcSet={isInView ? srcSet : undefined} // Only set srcSet when in view
+      srcSet={!hasError && isInView ? srcSet : undefined} // Disable srcSet on error
     />
   );
 };

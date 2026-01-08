@@ -217,7 +217,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
       const publishedElements = item.getElementsByTagName("published");
       const dcDateElements = item.getElementsByTagName("date");
 
-      let dateElement = pubDateElements[0] || publishedElements[0] || dcDateElements[0];
+      const dateElement = pubDateElements[0] || publishedElements[0] || dcDateElements[0];
       if (dateElement?.textContent) {
         const parsedDate = new Date(dateElement.textContent.trim());
         if (!isNaN(parsedDate.getTime())) {
@@ -231,7 +231,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
       const summaryElements = item.getElementsByTagName("summary");
       const contentElements = item.getElementsByTagName("content");
 
-      let descElement = descElements[0] || summaryElements[0] || contentElements[0];
+      const descElement = descElements[0] || summaryElements[0] || contentElements[0];
       if (descElement?.textContent) {
         description = cleanDescription(descElement.textContent).substring(0, 300);
       }
@@ -241,7 +241,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
       const authorElements = item.getElementsByTagName("author");
       const creatorElements = item.getElementsByTagName("creator");
 
-      let authorElement = authorElements[0] || creatorElements[0];
+      const authorElement = authorElements[0] || creatorElements[0];
       if (authorElement?.textContent) {
         author = authorElement.textContent.trim();
       }

@@ -18,19 +18,16 @@ const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   maxXmlSize: 10 * 1024 * 1024, // 10MB max
   allowedRootElements: ["rss", "feed", "rdf:rdf", "rdf"],
   blockedPatterns: [
-    // Only block truly dangerous patterns, allow RSS-specific content
+    // Only block truly dangerous patterns for XML structure attacks
     /<!ENTITY[^>]*SYSTEM/i, // External system entity references (dangerous)
     /<!ENTITY[^>]*PUBLIC/i, // External public entity references (dangerous)
-    /javascript:/gi, // JavaScript URLs
-    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, // Script tags
-    /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, // Iframe tags
-    /on\w+\s*=\s*["'][^"']*["']/gi, // Event handlers
-    /data:text\/html/gi, // Data URLs with HTML
+    /javascript:/gi, // JavaScript URLs - still good to block in raw text if possible
     /vbscript:/gi, // VBScript URLs
-    /expression\s*\(/gi, // CSS expressions
-    // Allow CDATA sections and internal DTD declarations (common in RSS)
-    // /<!DOCTYPE.*\[/i, // Removed - allow internal DTD for RSS compatibility
-    // /<!ENTITY/i, // Removed - allow internal entities for RSS compatibility
+    // Relaxed: Allow script/iframe tags in raw content as they are common in RSS <content:encoded>
+    // These will be sanitized by DOMPurify after parsing.
+    // /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, 
+    // /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+    // /on\w+\s*=\s*["'][^"']*["']/gi, 
   ],
 };
 

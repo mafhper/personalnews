@@ -45,6 +45,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   const { t } = useLanguage();
   const { setModalOpen } = useModal();
   const contentRef = useRef<HTMLDivElement>(null);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
   
   // Persistent reader preferences
   const [preferences, setPreferences] = useLocalStorage<ReaderPreferences>(
@@ -92,6 +93,12 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     setModalOpen(true);
     setFullContent(null);
     setLoading(true);
+    
+    // Focus management for accessibility
+    if (modalContainerRef.current) {
+      modalContainerRef.current.focus();
+    }
+
     if (contentRef.current) contentRef.current.scrollTop = 0;
 
     const loadContent = async () => {
@@ -123,24 +130,23 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     };
   }, [article.link, onClose, onNext, onPrev, hasNext, hasPrev, setModalOpen, showPreferences]);
 
-  // Process content to improve formatting
+  // Process content to improve formatting and handle plain text
   const processContent = (html: string | null | undefined): string => {
     if (!html) return '';
     
-    // Wrap plain text paragraphs
-    let processed = html;
+    // Check if it's HTML
+    const hasHtmlTags = /<[a-z][\s\S]*>/i.test(html);
     
-    // If it looks like plain text (no HTML tags), wrap in paragraphs
-    if (!/<[a-z][\s\S]*>/i.test(html)) {
-      processed = html
+    if (!hasHtmlTags) {
+      // Convert plain text to HTML paragraphs
+      return html
         .split(/\n\n+/)
-        .map(p => p.trim())
-        .filter(p => p)
-        .map(p => `<p>${p}</p>`)
-        .join('');
+        .map(p => `<p class="mb-4">${p.trim()}</p>`)
+        .join('')
+        .replace(/\n/g, '<br />');
     }
     
-    return processed;
+    return html;
   };
 
   const contentHtml = fullContent 
@@ -149,12 +155,49 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-[200] flex items-center justify-center animate-in fade-in duration-300 ${
+      ref={modalContainerRef}
+      tabIndex={-1}
+      className={`fixed inset-0 z-[200] flex items-center justify-center animate-in fade-in duration-300 outline-none ${
         isFocusMode 
           ? 'bg-[rgb(var(--color-background))]' 
           : 'p-0 md:p-8 bg-black md:bg-black/80'
       }`}
     >
+      <style>{`
+        .article-content {
+          font-family: inherit;
+          line-height: inherit;
+          color: inherit;
+        }
+        .article-content p { margin-bottom: 1.5em; }
+        .article-content h1 { font-size: 2em; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; color: rgb(var(--color-text)); }
+        .article-content h2 { font-size: 1.5em; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; color: rgb(var(--color-text)); }
+        .article-content h3 { font-size: 1.25em; font-weight: 600; margin-top: 1.25em; margin-bottom: 0.5em; color: rgb(var(--color-text)); }
+        .article-content ul, .article-content ol { margin-bottom: 1.5em; padding-left: 1.5em; }
+        .article-content ul { list-style-type: disc; }
+        .article-content ol { list-style-type: decimal; }
+        .article-content li { margin-bottom: 0.5em; }
+        .article-content blockquote { 
+          border-left: 4px solid rgb(var(--color-accent)); 
+          padding-left: 1em; 
+          margin-left: 0; 
+          margin-right: 0; 
+          margin-bottom: 1.5em; 
+          font-style: italic;
+          background: rgba(var(--color-surface), 0.5);
+          padding: 1rem;
+          border-radius: 0 0.5rem 0.5rem 0;
+        }
+        .article-content a { color: rgb(var(--color-accent)); text-decoration: underline; text-underline-offset: 2px; }
+        .article-content img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 1.5em 0; display: block; }
+        .article-content pre { background: rgb(var(--color-background)); padding: 1em; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1.5em; border: 1px solid rgba(var(--color-border), 0.2); }
+        .article-content code { background: rgba(var(--color-accent), 0.1); color: rgb(var(--color-accent)); padding: 0.2em 0.4em; border-radius: 0.25em; font-family: monospace; }
+        .article-content pre code { background: transparent; color: inherit; padding: 0; }
+        .article-content figure { margin: 1.5em 0; }
+        .article-content figcaption { text-align: center; font-size: 0.875em; color: rgb(var(--color-textSecondary)); margin-top: 0.5em; }
+        .article-content iframe { max-width: 100%; margin: 1.5em 0; }
+      `}</style>
+
       {/* Backdrop - Hidden in focus mode */}
       {!isFocusMode && (
         <div 
@@ -520,7 +563,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                   ) : (
                     <div 
                       dangerouslySetInnerHTML={{ __html: contentHtml }} 
-                      className="animate-in fade-in duration-500" 
+                      className="article-content animate-in fade-in duration-500" 
                     />
                   )}
                 </article>

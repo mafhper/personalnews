@@ -388,8 +388,8 @@ export const perfDebugger = {
  */
 // Legacy compatibility state
 let networkRequestCount = 0;
-let networkRequestBatches: any[] = [];
-let performanceSnapshots: PerformanceSnapshot[] = [];
+const networkRequestBatches: any[] = [];
+const performanceSnapshots: PerformanceSnapshot[] = [];
 let isBackgroundedState = false;
 let backgroundedStartTime = 0;
 let backgroundMonitoringInterval: NodeJS.Timeout | null = null;

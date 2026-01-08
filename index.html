@@ -3,40 +3,16 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src * data: blob:; connect-src *;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Personal News</title>
   <meta name="description" content="Your personal news dashboard aggregating RSS, Weather, and System Status." />
   <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
   <link rel="icon" type="image/svg+xml" sizes="32x32" href="/assets/logo.svg" />
   <link rel="apple-touch-icon" href="/assets/logo.svg" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
-        },
-      },
-    }
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.1.0",
-    "react/jsx-runtime": "https://esm.sh/react@19.1.0/jsx-runtime",
-    "react-dom/client": "https://esm.sh/react-dom@19.1.0/client",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "react/": "https://esm.sh/react@^19.1.0/"
-  }
-}
-</script>
-  <link rel="stylesheet" href="/index.css">
 
   <!-- Custom styles to override Tailwind - loaded LAST for priority -->
   <style>
@@ -58,7 +34,6 @@
 
 <body>
   <div id="root"></div>
-  <script type="module" src="./index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 

@@ -17,6 +17,7 @@ import { useArticleLayout } from "../hooks/useArticleLayout";
 import { FeaturedArticle } from "./FeaturedArticle";
 import { ArticleItem } from "./ArticleItem";
 import { LoadingSpinner } from "./ProgressIndicator";
+import { FeedSkeleton } from "./ui/FeedSkeleton";
 
 // Lazy load layouts to reduce initial bundle size
 const MasonryLayout = lazy(() => import("./layouts/MasonryLayout").then(m => ({ default: m.MasonryLayout })));
@@ -52,8 +53,11 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   const { settings: layoutSettings } = useArticleLayout();
   const { getCategoryById } = useFeedCategories();
 
+  // If no articles are present, we might be loading initially. 
+  // Ideally, the parent component handles the loading state, but if articles is empty here,
+  // returning null is standard. However, during initial load, we might want Skeleton if this component is mounted.
   if (articles.length === 0) {
-    return null;
+    return null; 
   }
 
   // Resolve effective layout - category layout ALWAYS overrides global when set
@@ -99,8 +103,8 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   return (
     <Suspense fallback={
-      <div className="flex justify-center items-center py-20">
-        <LoadingSpinner />
+      <div className="py-8 animate-in fade-in duration-500">
+        <FeedSkeleton count={8} />
       </div>
     }>
       {renderLayout()}

@@ -70,10 +70,10 @@ const ensureVisibility = (shapes: Shape[], baseColor: string): Shape[] => {
   const isLightBase = baseHsl.l > 60;  // General Light Mode
 
   return shapes.map(s => {
-    let shapeHsl = s.color.startsWith('#') ? hexToHsl(s.color) : parseHsl(s.color);
+    const shapeHsl = s.color.startsWith('#') ? hexToHsl(s.color) : parseHsl(s.color);
     let newBlend = s.blendMode;
-    let newOpacity = Math.max(0.5, s.opacity); // Increase opacity floor
-    let newSize = Math.max(30, s.size);
+    const newOpacity = Math.max(0.5, s.opacity); // Increase opacity floor
+    const newSize = Math.max(30, s.size);
 
     // --- PITCH BLACK BACKGROUND RULES (Risk Level: HIGH) ---
     if (isPitchBlack) {
@@ -160,7 +160,7 @@ export const generateVariations = (baseConfig: WallpaperConfig): WallpaperConfig
 
   // Strategy 2: "Atmosphere Shift"
   // Ensure base shift doesn't make it pitch black
-  let atmosBase = shiftColor(baseConfig.baseColor, 10, -5, 5);
+  const atmosBase = shiftColor(baseConfig.baseColor, 10, -5, 5);
   
   variations.push({
     ...baseConfig,

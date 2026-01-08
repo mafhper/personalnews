@@ -13,7 +13,6 @@ node_modules/
 # Build outputs
 build/
 *.local
-# dist/ is intentionally NOT ignored to allow GitHub Pages deployment
 # dist/
 
 # Agent & AI Configuration

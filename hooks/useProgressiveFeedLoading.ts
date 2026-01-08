@@ -250,8 +250,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
     // Get problematic feeds from localStorage (feeds that failed in previous sessions)
     const problematicFeedsKey = 'feed-error-history';
-    let problematicUrls: Set<string> = new Set();
-    let errorHistory: Map<string, { failures: number; lastError: number; lastErrorType: string }> = new Map();
+    const problematicUrls: Set<string> = new Set();
+    const errorHistory: Map<string, { failures: number; lastError: number; lastErrorType: string }> = new Map();
 
     try {
       const stored = localStorage.getItem(problematicFeedsKey);
@@ -373,15 +373,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           // Add result to map
           newFeedResults.set(feed.url, result);
 
-          // If successful, update articles immediately for progressive display
-          if (result.success && result.articles.length > 0) {
-            setFeedResults(prev => {
-              const updated = new Map(prev);
-              updated.set(feed.url, result);
-              updateArticlesFromFeedResults(updated);
-              return updated;
-            });
-          } else if (!result.success) {
+          if (!result.success) {
             // Track error with categorization
             const errorMessage = result.error || 'Unknown error';
             const errorType = categorizeError(errorMessage);
@@ -428,6 +420,18 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
       // Wait for current batch to complete before starting next batch
       await Promise.allSettled(batchPromises);
+
+      // Update articles AFTER the batch completes to reduce re-renders and layout shifts
+      setFeedResults(prev => {
+        const updated = new Map(prev);
+        // Merge new results from this batch into the map
+        newFeedResults.forEach((result, url) => {
+             updated.set(url, result);
+        });
+        // Update the articles state with the accumulated results
+        updateArticlesFromFeedResults(updated);
+        return updated;
+      });
 
       // Add delay between batches (except for the last batch)
       if (batchIndex < feedBatches.length - 1) {

@@ -3,20 +3,18 @@ import DOMPurify from 'dompurify';
 
 const PROXIES = [
   {
-    name: 'AllOrigins',
-    url: (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
-  },
-  {
     name: 'CorsProxy',
     url: (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`
   },
-   {
+  {
     name: 'CodeTabs',
     url: (target: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`
   }
 ];
 
-const CACHE_PREFIX = 'article_cache_';
+const CACHE_PREFIX = 'article_cache_v2_';
+
+const logger = console; // Fallback if getLogger not available, or import it
 
 export async function fetchFullContent(url: string): Promise<string | null> {
     const cacheKey = CACHE_PREFIX + url;
@@ -27,9 +25,20 @@ export async function fetchFullContent(url: string): Promise<string | null> {
     for (const proxy of PROXIES) {
         try {
             const res = await fetch(proxy.url(url));
-            if (!res.ok) continue;
-            const html = await res.text();
+            if (!res.ok) {
+                logger.warn(`Proxy ${proxy.name} returned status ${res.status} for ${url}`);
+                continue;
+            }
+            let html = await res.text();
             
+            // 1. Pre-process to remove problematic tags BEFORE DOM parsing
+            // This prevents the browser from trying to load external stylesheets/scripts that violate CSP
+            html = html
+                .replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '');
+
             // 2. Parse HTML
             const doc = new DOMParser().parseFromString(html, 'text/html');
             
@@ -44,8 +53,12 @@ export async function fetchFullContent(url: string): Promise<string | null> {
             const article = reader.parse();
 
             if (article && article.content) {
-                // 5. Sanitize
-                const sanitized = DOMPurify.sanitize(article.content);
+                // 5. Sanitize aggressively to prevent CSP issues and broken styles
+                const sanitized = DOMPurify.sanitize(article.content, {
+                    FORBID_TAGS: ['style', 'link', 'script', 'iframe', 'frame', 'object', 'embed', 'form', 'input', 'button'],
+                    FORBID_ATTR: ['style', 'class', 'id', 'onmouseover', 'onclick'] // Strip inline styles/classes to force our reader theme
+                });
+                
                 try {
                     localStorage.setItem(cacheKey, sanitized);
                 } catch (e) {

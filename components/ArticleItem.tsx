@@ -84,8 +84,8 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
   
   const handleImageError = useCallback(() => {
     setImageError(true);
-    logger.warn(`Failed to load image for article: ${article.title}`, { url: article.imageUrl });
-  }, [article.title, article.imageUrl, logger]);
+    // Don't log every image error to console to reduce noise, just state change
+  }, []);
 
   const timeSince = (date: Date): string => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -102,19 +102,16 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
     return Math.floor(seconds) + " seconds ago";
   };
   
-  // Safe seed generation for Picsum to avoid URL breaking
+  // Safe seed generation for Picsum
   const safeSeed = encodeURIComponent(article.link);
   const fallbackImage = `https://picsum.photos/seed/${safeSeed}/400/200`;
-  const fallbackImageSmall = `https://picsum.photos/seed/${safeSeed}/200/100`;
-  const fallbackImageLarge = `https://picsum.photos/seed/${safeSeed}/600/300`;
 
   return (
     <article className="h-full flex flex-col">
       {/* Grid layout optimized for cards */}
       <div className="flex flex-col h-full group">
-        {/* Article image - Only render if no error and enabled */}
-        {!imageError && (
-            <div className="relative mb-4">
+        {/* Article image - Always render container */}
+        <div className="relative mb-4 bg-gray-800 rounded-lg overflow-hidden h-40 sm:h-32 lg:h-40">
             <a
                 href={article.link}
                 target="_blank"
@@ -125,21 +122,26 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
                         onClick(article);
                     }
                 }}
-                className="block cursor-pointer"
+                className="block w-full h-full cursor-pointer"
                 aria-hidden="true" 
-                tabIndex={-1} // Remove from tab order to avoid double focus (image + title)
+                tabIndex={-1} 
             >
-                <LazyImage
-                    src={article.imageUrl || fallbackImage}
-                    alt={`Thumbnail image for article: ${article.title}`}
-                    className="w-full h-40 sm:h-32 lg:h-40 object-cover rounded-lg"
-                    onError={handleImageError}
-                    retryAttempts={2}
-                    srcSet={`${article.imageUrl || fallbackImageSmall} 200w,
-                            ${article.imageUrl || fallbackImage} 400w,
-                            ${article.imageUrl || fallbackImageLarge} 600w`}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
+                {!imageError ? (
+                    <LazyImage
+                        src={article.imageUrl || fallbackImage}
+                        alt="" // Empty alt to avoid displaying text on error
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={handleImageError}
+                        retryAttempts={1} // Reduce retries to fail fast to placeholder
+                    />
+                ) : (
+                    // Fallback pattern when image fails completely
+                    <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                )}
             </a>
 
             {/* Article number overlay */}
@@ -169,8 +171,7 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             >
                 <HeartIcon filled={isFavorited} />
             </button>
-            </div>
-        )}
+        </div>
 
         {/* Article content */}
         <div className="flex-1 flex flex-col">

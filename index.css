@@ -1,3 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+}
+
 :root {
   /* Legacy support */
   --color-background: 26 32 44;

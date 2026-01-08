@@ -108,32 +108,36 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   // Subtle compact version when priority feeds are loaded but still loading others
   if (priorityFeedsLoaded && !isComplete) {
     return (
-      <div className={`fixed bottom-4 right-4 z-40 ${className}`}>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900/80 border border-white/10 backdrop-blur-sm shadow-lg">
+      <div className={`fixed top-0 left-0 right-0 z-[60] flex justify-center pt-4 pointer-events-none ${className}`}>
+        <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-gray-900/90 border border-white/10 backdrop-blur-md shadow-xl transform transition-all duration-300 animate-in slide-in-from-top-4">
           {/* Small spinner */}
-          <div className="animate-spin rounded-full h-3 w-3 border border-t-transparent border-[rgb(var(--color-accent))]/60" />
+          <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-t-transparent border-[rgb(var(--color-accent))]" />
           
           {/* Compact text */}
-          <span className="text-xs text-gray-400">
-            {totalFeeds - loadedFeeds} remaining...
+          <span className="text-xs font-medium text-gray-200">
+            Atualizando feeds...
           </span>
           
           {/* Tiny progress bar */}
-          <div className="w-12 h-1 bg-gray-700 rounded-full overflow-hidden">
+          <div className="w-20 h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-[rgb(var(--color-accent))]/60 rounded-full transition-all duration-300"
+              className="h-full bg-[rgb(var(--color-accent))] rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
+
+          <span className="text-xs text-gray-500 font-mono ml-1">
+             {Math.round(progress)}%
+          </span>
           
-          {/* Cancel button */}
+          {/* Cancel button (pointer-events-auto needed because parent is none) */}
           {onCancel && (
             <button 
               onClick={onCancel} 
-              className="text-gray-500 hover:text-white text-xs transition-colors ml-1"
+              className="text-gray-500 hover:text-white transition-colors ml-1 pointer-events-auto p-1 hover:bg-white/10 rounded-full"
               title="Cancel"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
