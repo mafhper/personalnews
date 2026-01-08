@@ -1,82 +1,565 @@
-import { FeedSource } from "../types";
+/**
+ * ARQUIVO GERADO AUTOMATICAMENTE - NÃO EDITE DIRETAMENTE
+ * Edite config/initial-setup.md e rode 'bun run config:sync'
+ */
+
+import { FeedSource, FeedCategory } from "../types";
+
+export const INITIAL_APP_CONFIG = {
+  "theme": "dark-blue",
+  "layout": "masonry",
+  "timeFormat": "24h",
+  "weatherCity": "São Paulo"
+};
+
+export const DEFAULT_CATEGORIES: FeedCategory[] = [
+  {
+    "id": "all",
+    "name": "All",
+    "color": "#6B7280",
+    "order": 0,
+    "isDefault": true,
+    "isPinned": true
+  },
+  {
+    "id": "design",
+    "name": "Design",
+    "description": "Inspiração visual, UX/UI e tendências de design.",
+    "order": 1,
+    "isDefault": true,
+    "color": "#F0EEE9",
+    "layoutMode": "modern",
+    "headerPosition": "floating",
+    "isPinned": false
+  },
+  {
+    "id": "games",
+    "name": "Games",
+    "description": "Lançamentos, reviews e cultura gamer.",
+    "order": 2,
+    "isDefault": true,
+    "color": "#F59E0B",
+    "layoutMode": "masonry",
+    "headerPosition": "floating",
+    "isPinned": false
+  },
+  {
+    "id": "tech",
+    "name": "Tecnologia",
+    "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech.",
+    "order": 3,
+    "isDefault": true,
+    "color": "#3B82F6",
+    "layoutMode": "bento",
+    "headerPosition": "floating",
+    "isPinned": true
+  },
+  {
+    "id": "politics",
+    "name": "Política",
+    "description": "Cobertura política nacional e internacional.",
+    "order": 4,
+    "isDefault": true,
+    "color": "#EF4444",
+    "layoutMode": "list",
+    "headerPosition": "floating",
+    "isPinned": false
+  },
+  {
+    "id": "youtube",
+    "name": "Vídeos",
+    "description": "Canais preferidos do Youtube.",
+    "order": 5,
+    "isDefault": true,
+    "color": "#C4302B",
+    "layoutMode": "brutalist",
+    "headerPosition": "floating",
+    "isPinned": false
+  }
+];
 
 export const DEFAULT_FEEDS: FeedSource[] = [
-  // Dev
-  { url: "https://news.ycombinator.com/rss", categoryId: "dev", customTitle: "Hacker News" },
-  { url: "https://github.blog/feed/", categoryId: "dev", customTitle: "GitHub Blog" },
-  { url: "https://tecnoblog.net/feed/", categoryId: "dev", customTitle: "Tecnoblog" },
-  { url: "https://www.theverge.com/rss/index.xml", categoryId: "dev", customTitle: "The Verge" },
-  { url: "https://techcrunch.com/feed/", categoryId: "dev", customTitle: "TechCrunch" },
-
-  // Design
-  { url: "https://uxdesign.cc/feed", categoryId: "design", customTitle: "UX Collective" },
-
-  { url: "https://designculture.com.br/feed", categoryId: "design", customTitle: "Design Culture" },
-
-  // Ciência
-  { url: "https://www.sciencenews.org/feed", categoryId: "ciencia", customTitle: "Science News" },
-  { url: "https://www.nasa.gov/news-release/feed/", categoryId: "ciencia", customTitle: "NASA News" },
-
-
-  // Mundo
-  { url: "http://feeds.bbci.co.uk/news/world/rss.xml", categoryId: "mundo", customTitle: "BBC World" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", categoryId: "mundo", customTitle: "NY Times World" },
-
+  {
+    "url": "https://www.b9.com.br/feed/",
+    "categoryId": "design",
+    "customTitle": "B9"
+  },
+  {
+    "url": "https://naogames.jogabilida.de/",
+    "categoryId": "games",
+    "customTitle": "Jogabilidade (Não Games)"
+  },
+  {
+    "url": "https://piaui.folha.uol.com.br/feed/",
+    "categoryId": "politics",
+    "customTitle": "Piauí"
+  },
+  {
+    "url": "https://www.xda-developers.com/feed/",
+    "categoryId": "tech",
+    "customTitle": "XDA"
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
+    "categoryId": "youtube",
+    "customTitle": "1155 do ET"
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
+    "categoryId": "youtube",
+    "customTitle": "Corridor Crew"
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",
+    "categoryId": "youtube",
+    "customTitle": "GreatScott!"
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
+    "categoryId": "youtube",
+    "customTitle": "News Rockstar"
+  }
 ];
 
-export const CURATED_FEEDS_BR: FeedSource[] = [
-  // Dev / Tech
-  { url: "https://tecnoblog.net/feed/", categoryId: "dev", customTitle: "Tecnoblog" },
-  { url: "https://canaltech.com.br/rss/", categoryId: "dev", customTitle: "Canaltech" },
-  { url: "https://manualdousuario.net/feed/", categoryId: "dev", customTitle: "Manual do Usuário" },
-  { url: "https://diolinux.com.br/feed", categoryId: "dev", customTitle: "Diolinux" },
-  { url: "https://adrenaline.com.br/feed/", categoryId: "dev", customTitle: "Adrenaline" },
-  { url: "https://meiobit.com/feed/", categoryId: "dev", customTitle: "Meio Bit" },
-  { url: "https://macmagazine.com.br/feed/", categoryId: "dev", customTitle: "MacMagazine" },
-  
-  // Design
-  { url: "https://designculture.com.br/feed", categoryId: "design", customTitle: "Design Culture" },
-  { url: "https://zupi.com.br/feed/", categoryId: "design", customTitle: "Revista Zupi" },
+export const CURATED_LISTS: Record<string, FeedSource[]> = {
+  "Brasil Mix": [
+    {
+      "url": "https://www.b9.com.br/feed/",
+      "categoryId": "design",
+      "customTitle": "B9"
+    },
+    {
+      "url": "https://adrenaline.com.br/feed/",
+      "categoryId": "games",
+      "customTitle": "Adrenaline"
+    },
+    {
+      "url": "https://br.ign.com/feed.xml",
+      "categoryId": "games",
+      "customTitle": "IGN Brasil"
+    },
+    {
+      "url": "https://naogames.jogabilida.de/",
+      "categoryId": "games",
+      "customTitle": "Jogabilidade (Não Games)"
+    },
+    {
+      "url": "https://g1.globo.com/rss/g1/politica/",
+      "categoryId": "politics",
+      "customTitle": "G1 Política"
+    },
+    {
+      "url": "https://midianinja.org/feed/",
+      "categoryId": "politics",
+      "customTitle": "Mídia Ninja"
+    },
+    {
+      "url": "https://piaui.folha.uol.com.br/feed/",
+      "categoryId": "politics",
+      "customTitle": "Piauí"
+    },
+    {
+      "url": "https://theintercept.com/brasil/feed/",
+      "categoryId": "politics",
+      "customTitle": "The Intercept Brasil"
+    },
+    {
+      "url": "https://diolinux.com.br/feed",
+      "categoryId": "tech",
+      "customTitle": "Diolinux"
+    },
+    {
+      "url": "https://macmagazine.com.br/feed/",
+      "categoryId": "tech",
+      "customTitle": "MacMagazine"
+    },
+    {
+      "url": "https://meiobit.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "Meio Bit"
+    },
+    {
+      "url": "https://tecnoblog.net/feed/",
+      "categoryId": "tech",
+      "customTitle": "Tecnoblog"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
+      "categoryId": "youtube",
+      "customTitle": "1155 do ET"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
+      "categoryId": "youtube",
+      "customTitle": "NORMOSE"
+    }
+  ],
+  "International Mix": [
+    {
+      "url": "https://css-tricks.com/feed/",
+      "categoryId": "design",
+      "customTitle": "CSS-Tricks"
+    },
+    {
+      "url": "https://www.dezeen.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Dezeen"
+    },
+    {
+      "url": "https://uxdesign.cc/feed",
+      "categoryId": "design",
+      "customTitle": "UX Collective"
+    },
+    {
+      "url": "https://kotaku.com/rss",
+      "categoryId": "games",
+      "customTitle": "Kotaku"
+    },
+    {
+      "url": "https://www.polygon.com/feed/",
+      "categoryId": "games",
+      "customTitle": "Polygon.com"
+    },
+    {
+      "url": "https://9to5google.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "9to5Google"
+    },
+    {
+      "url": "https://9to5linux.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "9to5Linux"
+    },
+    {
+      "url": "https://9to5mac.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "9to5Mac"
+    },
+    {
+      "url": "https://arstechnica.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "Ars Technica"
+    },
+    {
+      "url": "http://www.cnet.com/rss/news/",
+      "categoryId": "tech",
+      "customTitle": "CNET"
+    },
+    {
+      "url": "https://www.digitaltrends.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "Digital Trends"
+    },
+    {
+      "url": "https://electrek.co/feed/",
+      "categoryId": "tech",
+      "customTitle": "ElecTrek"
+    },
+    {
+      "url": "https://www.engadget.com/rss.xml",
+      "categoryId": "tech",
+      "customTitle": "Engadget"
+    },
+    {
+      "url": "https://mashable.com/feeds/rss/all",
+      "categoryId": "tech",
+      "customTitle": "Mashable"
+    },
+    {
+      "url": "https://www.omglinux.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "OMG! Linux"
+    },
+    {
+      "url": "https://www.omgubuntu.co.uk/feed",
+      "categoryId": "tech",
+      "customTitle": "OMG! Ubuntu"
+    },
+    {
+      "url": "https://techcrunch.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "TechCrunch"
+    },
+    {
+      "url": "https://thenextweb.com/feed",
+      "categoryId": "tech",
+      "customTitle": "The Next Web"
+    },
+    {
+      "url": "https://www.theverge.com/rss/index.xml",
+      "categoryId": "tech",
+      "customTitle": "The Verge"
+    },
+    {
+      "url": "https://www.tomsguide.com/feeds.xml",
+      "categoryId": "tech",
+      "customTitle": "Tom's Guide"
+    },
+    {
+      "url": "https://www.wired.com/feed/tag/ai/latest/rss",
+      "categoryId": "tech",
+      "customTitle": "WIRED AI"
+    },
+    {
+      "url": "https://www.wired.com/feed/tag/wired-guide/latest/rss",
+      "categoryId": "tech",
+      "customTitle": "WIRED Guides"
+    },
+    {
+      "url": "https://www.wired.com/feed/category/ideas/latest/rss",
+      "categoryId": "tech",
+      "customTitle": "WIRED Ideas"
+    },
+    {
+      "url": "https://www.xda-developers.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "XDA"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
+      "categoryId": "youtube",
+      "customTitle": "bizlychannel"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
+      "categoryId": "youtube",
+      "customTitle": "Corridor Crew"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",
+      "categoryId": "youtube",
+      "customTitle": "GreatScott!"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
+      "categoryId": "youtube",
+      "customTitle": "News Rockstar"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ",
+      "categoryId": "youtube",
+      "customTitle": "Stuff Made Here"
+    }
+  ],
+  "Pacote Inicial Padrão": [
+    {
+      "url": "https://www.b9.com.br/feed/",
+      "categoryId": "design",
+      "customTitle": "B9"
+    },
+    {
+      "url": "https://css-tricks.com/feed/",
+      "categoryId": "design",
+      "customTitle": "CSS-Tricks"
+    },
+    {
+      "url": "https://www.dezeen.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Dezeen"
+    },
+    {
+      "url": "https://uxdesign.cc/feed",
+      "categoryId": "design",
+      "customTitle": "UX Collective"
+    },
+    {
+      "url": "https://adrenaline.com.br/feed/",
+      "categoryId": "games",
+      "customTitle": "Adrenaline"
+    },
+    {
+      "url": "https://br.ign.com/feed.xml",
+      "categoryId": "games",
+      "customTitle": "IGN Brasil"
+    },
+    {
+      "url": "https://naogames.jogabilida.de/",
+      "categoryId": "games",
+      "customTitle": "Jogabilidade (Não Games)"
+    },
+    {
+      "url": "https://kotaku.com/rss",
+      "categoryId": "games",
+      "customTitle": "Kotaku"
+    },
+    {
+      "url": "https://www.polygon.com/feed/",
+      "categoryId": "games",
+      "customTitle": "Polygon.com"
+    },
+    {
+      "url": "https://g1.globo.com/rss/g1/politica/",
+      "categoryId": "politics",
+      "customTitle": "G1 Política"
+    },
+    {
+      "url": "https://midianinja.org/feed/",
+      "categoryId": "politics",
+      "customTitle": "Mídia Ninja"
+    },
+    {
+      "url": "https://piaui.folha.uol.com.br/feed/",
+      "categoryId": "politics",
+      "customTitle": "Piauí"
+    },
+    {
+      "url": "https://theintercept.com/brasil/feed/",
+      "categoryId": "politics",
+      "customTitle": "The Intercept Brasil"
+    },
+    {
+      "url": "https://9to5google.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "9to5Google"
+    },
+    {
+      "url": "https://9to5linux.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "9to5Linux"
+    },
+    {
+      "url": "https://9to5mac.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "9to5Mac"
+    },
+    {
+      "url": "https://arstechnica.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "Ars Technica"
+    },
+    {
+      "url": "http://www.cnet.com/rss/news/",
+      "categoryId": "tech",
+      "customTitle": "CNET"
+    },
+    {
+      "url": "https://www.digitaltrends.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "Digital Trends"
+    },
+    {
+      "url": "https://diolinux.com.br/feed",
+      "categoryId": "tech",
+      "customTitle": "Diolinux"
+    },
+    {
+      "url": "https://electrek.co/feed/",
+      "categoryId": "tech",
+      "customTitle": "ElecTrek"
+    },
+    {
+      "url": "https://www.engadget.com/rss.xml",
+      "categoryId": "tech",
+      "customTitle": "Engadget"
+    },
+    {
+      "url": "https://macmagazine.com.br/feed/",
+      "categoryId": "tech",
+      "customTitle": "MacMagazine"
+    },
+    {
+      "url": "https://mashable.com/feeds/rss/all",
+      "categoryId": "tech",
+      "customTitle": "Mashable"
+    },
+    {
+      "url": "https://meiobit.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "Meio Bit"
+    },
+    {
+      "url": "https://www.omglinux.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "OMG! Linux"
+    },
+    {
+      "url": "https://www.omgubuntu.co.uk/feed",
+      "categoryId": "tech",
+      "customTitle": "OMG! Ubuntu"
+    },
+    {
+      "url": "https://techcrunch.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "TechCrunch"
+    },
+    {
+      "url": "https://tecnoblog.net/feed/",
+      "categoryId": "tech",
+      "customTitle": "Tecnoblog"
+    },
+    {
+      "url": "https://thenextweb.com/feed",
+      "categoryId": "tech",
+      "customTitle": "The Next Web"
+    },
+    {
+      "url": "https://www.theverge.com/rss/index.xml",
+      "categoryId": "tech",
+      "customTitle": "The Verge"
+    },
+    {
+      "url": "https://www.tomsguide.com/feeds.xml",
+      "categoryId": "tech",
+      "customTitle": "Tom's Guide"
+    },
+    {
+      "url": "https://www.wired.com/feed/tag/ai/latest/rss",
+      "categoryId": "tech",
+      "customTitle": "WIRED AI"
+    },
+    {
+      "url": "https://www.wired.com/feed/tag/wired-guide/latest/rss",
+      "categoryId": "tech",
+      "customTitle": "WIRED Guides"
+    },
+    {
+      "url": "https://www.wired.com/feed/category/ideas/latest/rss",
+      "categoryId": "tech",
+      "customTitle": "WIRED Ideas"
+    },
+    {
+      "url": "https://www.xda-developers.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "XDA"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
+      "categoryId": "youtube",
+      "customTitle": "1155 do ET"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
+      "categoryId": "youtube",
+      "customTitle": "bizlychannel"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
+      "categoryId": "youtube",
+      "customTitle": "Corridor Crew"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",
+      "categoryId": "youtube",
+      "customTitle": "GreatScott!"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
+      "categoryId": "youtube",
+      "customTitle": "News Rockstar"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
+      "categoryId": "youtube",
+      "customTitle": "NORMOSE"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ",
+      "categoryId": "youtube",
+      "customTitle": "Stuff Made Here"
+    }
+  ]
+};
 
-  // Ciência
-  { url: "https://jornal.usp.br/feed/", categoryId: "ciencia", customTitle: "Jornal USP" },
-  { url: "https://g1.globo.com/rss/g1/ciencia-e-saude/", categoryId: "ciencia", customTitle: "G1 Ciência" },
-  { url: "https://revistapesquisa.fapesp.br/feed/", categoryId: "ciencia", customTitle: "Revista Pesquisa FAPESP" },
-  
-  // Mundo / Notícias
-
-
-  { url: "https://www.estadao.com.br/rss/ultimas.xml", categoryId: "mundo", customTitle: "Estadão" },
-  { url: "https://theintercept.com/brasil/feed/", categoryId: "mundo", customTitle: "The Intercept Brasil" }
-];
-
-export const CURATED_FEEDS_INTL: FeedSource[] = [
-  // Dev / Tech
-  { url: "https://www.theverge.com/rss/index.xml", categoryId: "dev", customTitle: "The Verge" },
-  { url: "https://www.wired.com/feed/rss", categoryId: "dev", customTitle: "Wired" },
-  { url: "https://techcrunch.com/feed/", categoryId: "dev", customTitle: "TechCrunch" },
-  { url: "https://arstechnica.com/feed/", categoryId: "dev", customTitle: "Ars Technica" },
-  { url: "https://www.engadget.com/rss.xml", categoryId: "dev", customTitle: "Engadget" },
-  { url: "https://9to5mac.com/feed/", categoryId: "dev", customTitle: "9to5Mac" },
-  { url: "https://www.androidpolice.com/feed/", categoryId: "dev", customTitle: "Android Police" },
-  { url: "https://news.ycombinator.com/rss", categoryId: "dev", customTitle: "Hacker News" },
-  
-  // Design
-
-  { url: "https://css-tricks.com/feed/", categoryId: "design", customTitle: "CSS-Tricks" },
-  { url: "https://www.nngroup.com/feed/rss/", categoryId: "design", customTitle: "Nielsen Norman Group" },
-  { url: "https://uxdesign.cc/feed", categoryId: "design", customTitle: "UX Collective" },
-  
-  // Ciência
-  { url: "https://www.sciencenews.org/feed", categoryId: "ciencia", customTitle: "Science News" },
-  { url: "https://www.nasa.gov/news-release/feed/", categoryId: "ciencia", customTitle: "NASA News" },
-
-  { url: "https://www.space.com/feeds/all", categoryId: "ciencia", customTitle: "Space.com" },
-  { url: "https://phys.org/rss-feed/", categoryId: "ciencia", customTitle: "Phys.org" },
-  
-  // Mundo
-  { url: "http://feeds.bbci.co.uk/news/world/rss.xml", categoryId: "mundo", customTitle: "BBC World" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", categoryId: "mundo", customTitle: "NY Times World" },
-  { url: "https://www.theguardian.com/world/rss", categoryId: "mundo", customTitle: "The Guardian World" },
-  { url: "https://feeds.npr.org/1001/rss.xml", categoryId: "mundo", customTitle: "NPR News" }
-];
+// Mantendo suporte para exportações legadas e mapeando para as novas listas
+export const CURATED_FEEDS_BR = CURATED_LISTS['Brasil Tech & Ciência'] || DEFAULT_FEEDS;
+export const CURATED_FEEDS_INTL = CURATED_LISTS['International Tech & Ciência'] || DEFAULT_FEEDS;

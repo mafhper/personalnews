@@ -260,7 +260,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
         // Handle migration from old format array of objects to new format
         if (Array.isArray(parsed)) {
-          parsed.forEach((item: any) => {
+          parsed.forEach((item: { url: string; failures?: number; lastError: number; lastErrorType?: string }) => {
             // New format check: has failures property
             if (item.failures !== undefined) {
               errorHistory.set(item.url, {

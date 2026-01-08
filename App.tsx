@@ -45,14 +45,15 @@ import { useArticleLayout } from "./hooks/useArticleLayout";
 import { withPerformanceTracking } from "./services/performanceUtils";
 import { FeedLoadingProgress } from "./components/ProgressIndicator";
 import { FeedSkeleton } from "./components/ui/FeedSkeleton";
-import type { Article } from "./types";
+import type { Article, BackgroundConfig, ExtendedTheme } from "./types";
+import { INITIAL_APP_CONFIG } from "./constants/curatedFeeds";
 
 // Lazy load non-critical components
 const PerformanceDebugger = lazy(
   () => import("./components/PerformanceDebugger")
 );
 
-const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgroundConfig: any, currentTheme: any }) => (
+const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgroundConfig: BackgroundConfig, currentTheme: ExtendedTheme }) => (
   <div
     className={`fixed inset-0 z-[-1] transition-colors duration-500 ease-in-out ${backgroundConfig.type === 'solid' ? "bg-[rgb(var(--color-background))]" : ""}`}
     style={
@@ -71,31 +72,37 @@ const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgr
     {/* Aura Wallpaper Background Layer */}
     {backgroundConfig.type === 'aura' && backgroundConfig.auraSettings && (
       <div className="absolute inset-0">
-          <Suspense fallback={null}>
-            <AuraWallpaperRenderer
+        <Suspense fallback={null}>
+          <AuraWallpaperRenderer
             config={{ ...backgroundConfig.auraSettings, width: window.innerWidth, height: window.innerHeight }}
             className="w-full h-full"
             lowQuality={false} // Always render high quality for main background
-            />
-          </Suspense>
+          />
+        </Suspense>
       </div>
     )}
     {/* Overlay para melhorar a legibilidade - menos intenso para imagens */}
     {backgroundConfig.type !== 'solid' && (
       <div className={`absolute inset-0 ${backgroundConfig.type === 'image' ? 'bg-black/30' : 'bg-black/40'}`}></div>
     )}
-    
+
     {/* Gradiente de transição para o fundo */}
     {backgroundConfig.type !== 'solid' && (
-        <div
-          className="absolute inset-x-0 bottom-0 h-[30vh]"
-          style={{
-            background: `linear-gradient(to bottom, transparent, rgb(var(--color-background)))`,
-          }}
-        ></div>
+      <div
+        className="absolute inset-x-0 bottom-0 h-[30vh]"
+        style={{
+          background: `linear-gradient(to bottom, transparent, rgb(var(--color-background)))`,
+        }}
+      ></div>
     )}
   </div>
 ));
+
+declare global {
+  interface Window {
+    debugMigration: any;
+  }
+}
 
 const App: React.FC = () => {
   // Initialize logging system
@@ -103,22 +110,22 @@ const App: React.FC = () => {
     // Load debug tools in development
     if (process.env.NODE_ENV === 'development') {
       import('./utils/debugMigration').then(({ debugMigration }) => {
-        (window as any).debugMigration = debugMigration;
+        window.debugMigration = debugMigration;
         console.log('🛠️ Debug migration tools loaded. Use window.debugMigration in console.');
       });
     }
   }, []);
 
   // Use FeedContext
-  const { 
-    feeds, 
-    setFeeds, 
-    articles, 
-    loadingState, 
-    loadFeeds, 
+  const {
+    feeds,
+    setFeeds,
+    articles,
+    loadingState,
+    loadFeeds,
     refreshFeeds,
-    retryFailedFeeds, 
-    cancelLoading 
+    retryFailedFeeds,
+    cancelLoading
   } = useFeeds();
 
   // Use UIContext
@@ -139,11 +146,11 @@ const App: React.FC = () => {
 
   // State from ModalContext for global modal visibility (internal logic)
   const { isModalOpen: isAnyModalOpenGlobally } = useModal();
-  
+
   // Legacy loading state for backward compatibility
   const isLoading =
     loadingState.status === "loading" && !loadingState.isBackgroundRefresh;
-    
+
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedFeedUrl, setSelectedFeedUrl] = useState<string | null>(null);
 
@@ -160,8 +167,8 @@ const App: React.FC = () => {
   // Legacy settings for backward compatibility
   const [timeFormat, setTimeFormat] = useLocalStorage<"12h" | "24h">(
     "time-format",
-    "24h"
-  ); 
+    INITIAL_APP_CONFIG.timeFormat as "12h" | "24h"
+  );
 
   // Search state
   const [searchResults, setSearchResults] = useState<Article[]>([]);
@@ -189,12 +196,12 @@ const App: React.FC = () => {
     if (layoutSettings.autoRefreshInterval > 0 && feeds.length > 0) {
       const intervalMs = layoutSettings.autoRefreshInterval * 60 * 1000;
       console.log(`Setting up auto-refresh every ${layoutSettings.autoRefreshInterval} minutes`);
-      
+
       const id = setInterval(() => {
         console.log('Triggering auto-refresh...');
         refreshFeeds();
       }, intervalMs);
-      
+
       return () => clearInterval(id);
     }
   }, [layoutSettings.autoRefreshInterval, feeds.length, refreshFeeds]);
@@ -248,10 +255,10 @@ const App: React.FC = () => {
     if (selectedFeedUrl) {
       const selectedFeed = feeds.find(f => f.url === selectedFeedUrl);
       const feedHostname = (() => {
-        try { return new URL(selectedFeedUrl).hostname.replace('www.', ''); } 
+        try { return new URL(selectedFeedUrl).hostname.replace('www.', ''); }
         catch { return ''; }
       })();
-      
+
       filteredArticles = articles.filter((article) => {
         if (selectedFeed?.customTitle && article.sourceTitle === selectedFeed.customTitle) {
           return true;
@@ -309,6 +316,8 @@ const App: React.FC = () => {
     isArticleRead,
     categories,
     categorizedFeeds,
+    feeds,
+    selectedFeedUrl
   ]);
 
   // Enhanced pagination system with URL persistence and reset triggers
@@ -327,12 +336,12 @@ const App: React.FC = () => {
 
     const categoryObj = categories.find(c => c.id === category);
     if (categoryObj) {
-        if (categoryObj.layoutMode) {
-            applyLayoutPreset(categoryObj.layoutMode, false);
-        }
-        if (categoryObj.headerPosition) {
-            updateHeaderConfig({ position: categoryObj.headerPosition }, false);
-        }
+      if (categoryObj.layoutMode) {
+        applyLayoutPreset(categoryObj.layoutMode, false);
+      }
+      if (categoryObj.headerPosition) {
+        updateHeaderConfig({ position: categoryObj.headerPosition }, false);
+      }
     }
 
     setSelectedFeedUrl(feedUrl || null);
@@ -469,48 +478,35 @@ const App: React.FC = () => {
 
   return (
     <LanguageProvider>
-    <BackgroundLayer backgroundConfig={backgroundConfig} currentTheme={currentTheme} />
-    <div className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""}`}>
-      <SkipLinks />
-      {!isAnyModalOpenGlobally && (
-        <Suspense fallback={<div className="h-16 w-full bg-black/10 animate-pulse" />}>
-          <Header
-            onManageFeedsClick={openFeedManager}
-            onRefreshClick={handleRefresh}
-            selectedCategory={selectedCategory}
-            onNavigation={handleNavigation}
-            categorizedFeeds={categorizedFeeds}
-            onOpenSettings={openSettings}
-            onOpenFavorites={openFavorites}
-            articles={articles}
-            onSearch={handleSearch}
-            onSearchResultsChange={handleSearchResultsChange}
-            categories={categories}
-            onGoHome={() => handleNavigation("all")}
-          />
-        </Suspense>
-      )}
-      <main
-        ref={swipeRef}
-        id="main-content"
-        className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-2 pb-6 lg:pt-4 lg:pb-8 relative z-10 flex-grow"
-        tabIndex={-1}
-      >
-        {loadingState.status === "loading" && (
-          loadingState.priorityFeedsLoaded ? (
-            <FeedLoadingProgress
-              loadedFeeds={loadingState.loadedFeeds}
-              totalFeeds={loadingState.totalFeeds}
-              progress={loadingState.progress}
-              isBackgroundRefresh={loadingState.isBackgroundRefresh}
-              errors={loadingState.errors}
-              currentAction={loadingState.currentAction}
-              onCancel={cancelLoading}
-              onRetryErrors={retryFailedFeeds}
-              priorityFeedsLoaded={true}
+      <BackgroundLayer backgroundConfig={backgroundConfig} currentTheme={currentTheme} />
+      <div className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""}`}>
+        <SkipLinks />
+        {!isAnyModalOpenGlobally && (
+          <Suspense fallback={<div className="h-16 w-full bg-black/10 animate-pulse" />}>
+            <Header
+              onManageFeedsClick={openFeedManager}
+              onRefreshClick={handleRefresh}
+              selectedCategory={selectedCategory}
+              onNavigation={handleNavigation}
+              categorizedFeeds={categorizedFeeds}
+              onOpenSettings={openSettings}
+              onOpenFavorites={openFavorites}
+              articles={articles}
+              onSearch={handleSearch}
+              onSearchResultsChange={handleSearchResultsChange}
+              categories={categories}
+              onGoHome={() => handleNavigation("all")}
             />
-          ) : (
-            <div className="flex flex-col items-center justify-center min-h-[40vh] w-full max-w-2xl mx-auto px-4">
+          </Suspense>
+        )}
+        <main
+          ref={swipeRef}
+          id="main-content"
+          className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-2 pb-6 lg:pt-4 lg:pb-8 relative z-10 flex-grow"
+          tabIndex={-1}
+        >
+          {loadingState.status === "loading" && (
+            loadingState.priorityFeedsLoaded ? (
               <FeedLoadingProgress
                 loadedFeeds={loadingState.loadedFeeds}
                 totalFeeds={loadingState.totalFeeds}
@@ -520,77 +516,90 @@ const App: React.FC = () => {
                 currentAction={loadingState.currentAction}
                 onCancel={cancelLoading}
                 onRetryErrors={retryFailedFeeds}
-                className="w-full"
+                priorityFeedsLoaded={true}
               />
-            </div>
-          )
-        )}
-
-        {isSearchActive && (
-          <div className="mb-6 flex items-center justify-between bg-gray-800 rounded-lg p-4">
-            <div className="flex items-center space-x-3">
-              <div className="text-[rgb(var(--color-accent))]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-[rgb(var(--color-text))] font-medium">Search results for "{searchQuery}"</p>
-                <p className="text-[rgb(var(--color-textSecondary))] text-sm">
-                  {displayArticles.length} article{displayArticles.length !== 1 ? "s" : ""} found
-                  {Object.keys(searchFilters).length > 0 && " with filters applied"}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={clearSearch}
-              className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors px-3 py-1 rounded border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-text))]"
-            >
-              Clear Search
-            </button>
-          </div>
-        )}
-
-        {isLoading && articles.length === 0 && (
-          <FeedSkeleton count={layoutSettings.articlesPerPage} />
-        )}
-
-        {paginatedArticles.length > 0 && (
-          <>
-            <Suspense fallback={<FeedSkeleton count={3} />}>
-                <FeedContent 
-                articles={paginatedArticles} 
-                timeFormat={timeFormat} 
-                selectedCategory={selectedCategory}
+            ) : (
+              <div className="flex flex-col items-center justify-center min-h-[40vh] w-full max-w-2xl mx-auto px-4">
+                <FeedLoadingProgress
+                  loadedFeeds={loadingState.loadedFeeds}
+                  totalFeeds={loadingState.totalFeeds}
+                  progress={loadingState.progress}
+                  isBackgroundRefresh={loadingState.isBackgroundRefresh}
+                  errors={loadingState.errors}
+                  currentAction={loadingState.currentAction}
+                  onCancel={cancelLoading}
+                  onRetryErrors={retryFailedFeeds}
+                  className="w-full"
                 />
-            </Suspense>
+              </div>
+            )
+          )}
 
-            {pagination.totalPages > 1 && (
-              <div className="mt-8 flex flex-col items-center space-y-4">
-                <PaginationControls
-                  currentPage={pagination.currentPage}
-                  totalPages={pagination.totalPages}
-                  onPageChange={pagination.setPage}
-                  isNavigating={pagination.isNavigating}
-                  compact={false}
-                />
-                <div className="sm:hidden text-center text-[rgb(var(--color-textSecondary))] text-xs">
-                  <div className="flex items-center justify-center space-x-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-                    </svg>
-                    <span>Swipe to change category</span>
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </div>
+          {isSearchActive && (
+            <div className="mb-6 flex items-center justify-between bg-gray-800 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="text-[rgb(var(--color-accent))]">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[rgb(var(--color-text))] font-medium">Search results for "{searchQuery}"</p>
+                  <p className="text-[rgb(var(--color-textSecondary))] text-sm">
+                    {displayArticles.length} article{displayArticles.length !== 1 ? "s" : ""} found
+                    {Object.keys(searchFilters).length > 0 && " with filters applied"}
+                  </p>
                 </div>
               </div>
-            )}
-          </>
-        )}
+              <button
+                onClick={clearSearch}
+                className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors px-3 py-1 rounded border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-text))]"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
 
-        {!isLoading && loadingState.status !== "loading" && paginatedArticles.length === 0 && displayArticles.length === 0 && (
+          {isLoading && articles.length === 0 && (
+            <FeedSkeleton count={layoutSettings.articlesPerPage} />
+          )}
+
+          {paginatedArticles.length > 0 && (
+            <>
+              <Suspense fallback={<FeedSkeleton count={3} />}>
+                <FeedContent
+                  articles={paginatedArticles}
+                  timeFormat={timeFormat}
+                  selectedCategory={selectedCategory}
+                />
+              </Suspense>
+
+              {pagination.totalPages > 1 && (
+                <div className="mt-8 flex flex-col items-center space-y-4">
+                  <PaginationControls
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={pagination.setPage}
+                    isNavigating={pagination.isNavigating}
+                    compact={false}
+                  />
+                  <div className="sm:hidden text-center text-[rgb(var(--color-textSecondary))] text-xs">
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                      </svg>
+                      <span>Swipe to change category</span>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {!isLoading && loadingState.status !== "loading" && paginatedArticles.length === 0 && displayArticles.length === 0 && (
             <>
               {isSearchActive ? (
                 <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
@@ -616,35 +625,35 @@ const App: React.FC = () => {
               )}
             </>
           )}
-      </main>
-      <Suspense fallback={null}>
-        <Modal isOpen={isFeedManagerOpen} onClose={closeFeedManager}>
+        </main>
+        <Suspense fallback={null}>
+          <Modal isOpen={isFeedManagerOpen} onClose={closeFeedManager}>
             <FeedManager
-            currentFeeds={feeds}
-            setFeeds={setFeeds}
-            closeModal={closeFeedManager}
-            onRefreshFeeds={() => loadFeeds(true)}
+              currentFeeds={feeds}
+              setFeeds={setFeeds}
+              closeModal={closeFeedManager}
+              onRefreshFeeds={() => loadFeeds(true)}
             />
-        </Modal>
-        <SettingsSidebar
+          </Modal>
+          <SettingsSidebar
             isOpen={isSettingsOpen}
             onClose={closeSettings}
             timeFormat={timeFormat}
             setTimeFormat={setTimeFormat}
-        />
-        <FavoritesModal
+          />
+          <FavoritesModal
             isOpen={isFavoritesOpen}
             onClose={closeFavorites}
-        />
-        <KeyboardShortcutsModal
+          />
+          <KeyboardShortcutsModal
             isOpen={isShortcutsOpen}
             onClose={closeShortcuts}
-        />
-      </Suspense>
-      <Suspense fallback={null}>
-        <PerformanceDebugger />
-      </Suspense>
-    </div>
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <PerformanceDebugger />
+        </Suspense>
+      </div>
     </LanguageProvider>
   );
 };

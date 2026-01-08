@@ -41,7 +41,9 @@ export interface ThemePreset {
 // TEMA PADRÃO (Light Blue)
 // =============================================================================
 
-export const DEFAULT_THEME_ID = 'light-blue';
+import { INITIAL_APP_CONFIG } from '../constants/curatedFeeds';
+
+export const DEFAULT_THEME_ID = INITIAL_APP_CONFIG.theme;
 
 // =============================================================================
 // TEMAS ESCUROS

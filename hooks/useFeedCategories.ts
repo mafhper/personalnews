@@ -1,14 +1,7 @@
 import { useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { FeedCategory, FeedSource, HeaderConfig } from '../types';
-
-const DEFAULT_CATEGORIES: FeedCategory[] = [
-  { id: 'all', name: 'All', color: '#6B7280', order: 0, isDefault: true },
-  { id: 'dev', name: 'Dev', color: '#3B82F6', order: 1, isDefault: true },
-  { id: 'design', name: 'Design', color: '#10B981', order: 2, isDefault: true },
-  { id: 'ciencia', name: 'Ciência', color: '#8B5CF6', order: 3, isDefault: true },
-  { id: 'mundo', name: 'Mundo', color: '#EC4899', order: 4, isDefault: true },
-];
+import { DEFAULT_CATEGORIES } from '../constants/curatedFeeds';
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];

@@ -255,10 +255,11 @@ class FeedValidatorService {
       }
 
       progressCallback?.("Discovery process completed", 100);
-    } catch (discoveryError: any) {
+    } catch (discoveryError) {
+      const errorMessage = discoveryError instanceof Error ? discoveryError.message : String(discoveryError);
       // Discovery failed - this should be treated as invalid, not discovery_required
       result.status = "invalid";
-      result.error = `Feed discovery failed: ${discoveryError.message}`;
+      result.error = `Feed discovery failed: ${errorMessage}`;
       result.suggestions = [
         "Direct validation failed and feed discovery also failed",
         "The URL might not be a valid website or RSS feed",
@@ -268,8 +269,8 @@ class FeedValidatorService {
       result.finalMethod = "discovery";
       result.finalError = directResult.finalError || {
         type: ValidationErrorType.UNKNOWN_ERROR,
-        message: `Feed discovery failed: ${discoveryError.message}`,
-        originalError: discoveryError,
+        message: `Feed discovery failed: ${errorMessage}`,
+        originalError: discoveryError instanceof Error ? discoveryError : undefined,
         suggestions: [
           "Direct validation failed and feed discovery also failed",
           "The URL might not be a valid website or RSS feed",
@@ -373,9 +374,9 @@ class FeedValidatorService {
             }
           }
         }
-      } catch (error: any) {
+      } catch (error) {
         // Unexpected error during attempt
-        const validationError = this.classifyError(error, url, attempt);
+        const validationError = this.classifyError(error as Error, url, attempt);
         lastError = validationError;
 
         const attemptRecord: ValidationAttempt = {
@@ -449,10 +450,10 @@ class FeedValidatorService {
             lastError = proxyResult.error;
           }
         }
-      } catch (error: any) {
+      } catch (error) {
         // Proxy validation threw an exception
         const proxyError = this.classifyError(
-          error,
+          error as Error,
           url,
           result.validationAttempts.length + 1
         );
@@ -969,10 +970,11 @@ class FeedValidatorService {
 
       // If both attempts failed, return the original error
       return parseResult;
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         isValid: false,
-        error: `Error processing content: ${error.message}`,
+        error: `Error processing content: ${errorMessage}`,
       };
     }
   }
@@ -1019,10 +1021,11 @@ class FeedValidatorService {
         description: metadata.description,
         feedType,
       };
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         isValid: false,
-        error: `Error parsing feed: ${error.message}`,
+        error: `Error parsing feed: ${errorMessage}`,
       };
     }
   }

@@ -44,11 +44,12 @@ import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useAppearance } from "../hooks/useAppearance";
 import { sanitizeArticleDescription } from "../utils/sanitization";
 import { resetToDefaultFeeds, addFeedsToCollection } from "../utils/feedMigration";
-import { DEFAULT_FEEDS, CURATED_FEEDS_BR, CURATED_FEEDS_INTL } from "../constants/curatedFeeds";
+import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
+import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { FeedAnalytics } from "./FeedAnalytics";
 import { useLanguage } from "../contexts/LanguageContext";
 
-type CuratedListType = 'default' | 'br' | 'intl';
+
 
 interface FeedManagerProps {
   currentFeeds: FeedSource[];
@@ -74,8 +75,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [processingUrl, setProcessingUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"feeds" | "categories" | "analytics">
     (
-    "feeds" as "feeds" | "categories" | "analytics"
-  );
+      "feeds" as "feeds" | "categories" | "analytics"
+    );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lastArticleCount, setLastArticleCount] = useState(0);
 
@@ -109,22 +110,26 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   >(new Map());
   const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
   const [showCleanupModal, setShowCleanupModal] = useState(false);
-  const [currentDiscoveryResult, setCurrentDiscoveryResult] = useState<{ 
+  const [currentDiscoveryResult, setCurrentDiscoveryResult] = useState<{
     originalUrl: string;
     discoveredFeeds: DiscoveredFeed[];
   } | null>(null);
 
   // Estados para importação de listas curadas
   const [showImportModal, setShowImportModal] = useState(false);
-  const [selectedListType, setSelectedListType] = useState<CuratedListType>('br');
 
-  const getCuratedList = (type: CuratedListType): FeedSource[] => {
-    switch (type) {
-      case 'br': return CURATED_FEEDS_BR;
-      case 'intl': return CURATED_FEEDS_INTL;
-      case 'default': return DEFAULT_FEEDS;
-      default: return DEFAULT_FEEDS;
+  const [selectedListType, setSelectedListType] = useState<string>('');
+
+  // Initialize selectedListType with the first available list
+  useEffect(() => {
+    if (showImportModal && !selectedListType) {
+      const firstList = Object.keys(DEFAULT_CURATED_LISTS)[0];
+      if (firstList) setSelectedListType(firstList);
     }
+  }, [showImportModal, selectedListType]);
+
+  const getCuratedList = (type: string): FeedSource[] => {
+    return DEFAULT_CURATED_LISTS[type] || DEFAULT_FEEDS;
   };
 
   const handleImportCurated = async (mode: 'merge' | 'replace') => {
@@ -144,7 +149,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       // Merge
       const merged = addFeedsToCollection(currentFeeds, feedsToImport);
       const addedCount = merged.length - currentFeeds.length;
-      
+
       if (addedCount === 0) {
         await alertSuccess("Todos os feeds desta lista já estão na sua coleção.");
       } else {
@@ -156,7 +161,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   };
 
   // Estados para detecção de duplicatas
-  const [duplicateWarning, setDuplicateWarning] = useState<{ 
+  const [duplicateWarning, setDuplicateWarning] = useState<{
     show: boolean;
     result: DuplicateDetectionResult;
     newUrl: string;
@@ -878,7 +883,7 @@ URL: ${discoveredFeed.url}`
     _currentFeeds: FeedSource[],
     setFeeds: (updater: (prev: FeedSource[]) => FeedSource[]) => void
   ) => {
-    setFeeds((prev) => 
+    setFeeds((prev) =>
       prev.map((feed) => {
         if (feed.url === feedUrl) {
           return { ...feed, categoryId };
@@ -1034,29 +1039,29 @@ URL: ${discoveredFeed.url}`
         // Note: We don't sanitize OPML with DOMPurify as it removes xmlUrl attributes
         // parseOpml safely extracts only URL strings from the XML structure
         const opmlFeeds = parseOpml(content);
-        
+
         // Process feeds and create categories if needed
         const newFeeds: FeedSource[] = [];
         const categoriesToCreate = new Set<string>();
-        
+
         opmlFeeds.forEach(feed => {
           if (!currentFeeds.some(f => f.url === feed.url)) {
-            const newFeed: FeedSource = { 
+            const newFeed: FeedSource = {
               url: feed.url,
               customTitle: feed.title
             };
-            
+
             if (feed.category) {
               // Normalize category ID
               const categoryId = feed.category.toLowerCase().replace(/[^a-z0-9]/g, '-');
               newFeed.categoryId = categoryId;
-              
+
               // Check if category exists
               if (!categories.some(c => c.id === categoryId)) {
                 categoriesToCreate.add(feed.category);
               }
             }
-            
+
             newFeeds.push(newFeed);
           }
         });
@@ -1098,7 +1103,7 @@ URL: ${discoveredFeed.url}`
   };
 
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [selectedErrorFeed, setSelectedErrorFeed] = useState<{ 
+  const [selectedErrorFeed, setSelectedErrorFeed] = useState<{
     url: string;
     validation: FeedValidationResult;
   } | null>(null);
@@ -1127,102 +1132,100 @@ URL: ${discoveredFeed.url}`
             {currentFeeds.length} {t('feeds.stats.monitored')}
           </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-2">
-            <button
-                onClick={handleExportOPML}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors border border-transparent hover:border-blue-400/20"
-                title="Exportar Feeds (OPML)"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                <span className="hidden sm:inline">Exportar</span>
-            </button>
+          <button
+            onClick={handleExportOPML}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors border border-transparent hover:border-blue-400/20"
+            title="Exportar Feeds (OPML)"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+            <span className="hidden sm:inline">Exportar</span>
+          </button>
 
-            <button
-                onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-green-400 hover:bg-green-400/10 rounded-lg transition-colors border border-transparent hover:border-green-400/20"
-                title={t('feeds.import.lists')}
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                <span className="hidden sm:inline">Listas</span>
-            </button>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-green-400 hover:bg-green-400/10 rounded-lg transition-colors border border-transparent hover:border-green-400/20"
+            title={t('feeds.import.lists')}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+            <span className="hidden sm:inline">Listas</span>
+          </button>
 
-            <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-400/20" title={t('feeds.import.opml')}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                <span className="hidden sm:inline">Importar OPML</span>
-                <input type="file" accept=".opml,.xml" onChange={handleFileImport} className="hidden" />
-            </label>
+          <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-400/20" title={t('feeds.import.opml')}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <span className="hidden sm:inline">Importar OPML</span>
+            <input type="file" accept=".opml,.xml" onChange={handleFileImport} className="hidden" />
+          </label>
 
-             <div className="h-6 w-px bg-white/10 mx-2 hidden sm:block" />
-
-
+          <div className="h-6 w-px bg-white/10 mx-2 hidden sm:block" />
 
 
-             <button 
-                onClick={handleResetToDefaults}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors border border-transparent hover:border-yellow-400/20"
-                title="Restaurar Padrões"
-             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                <span className="hidden sm:inline">Resetar</span>
-             </button>
 
-             <button 
-                onClick={() => setShowCleanupModal(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-orange-500 hover:bg-orange-500/10 rounded-lg transition-colors border border-transparent hover:border-orange-500/20"
-                title="Limpeza Inteligente de Feeds com Erro"
-             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                <span className="hidden sm:inline">Limpar Erros</span>
-             </button>
 
-             <button 
-                onClick={handleDeleteAll}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
-                title="Excluir Todos os Feeds"
-             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                <span className="hidden sm:inline">Excluir Tudo</span>
-             </button>
+          <button
+            onClick={handleResetToDefaults}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors border border-transparent hover:border-yellow-400/20"
+            title="Restaurar Padrões"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            <span className="hidden sm:inline">Resetar</span>
+          </button>
+
+          <button
+            onClick={() => setShowCleanupModal(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-orange-500 hover:bg-orange-500/10 rounded-lg transition-colors border border-transparent hover:border-orange-500/20"
+            title="Limpeza Inteligente de Feeds com Erro"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <span className="hidden sm:inline">Limpar Erros</span>
+          </button>
+
+          <button
+            onClick={handleDeleteAll}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+            title="Excluir Todos os Feeds"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <span className="hidden sm:inline">Excluir Tudo</span>
+          </button>
+        </div>
       </div>
-      </div>
-{/* Cleanup Modal */}
-<FeedCleanupModal 
-    isOpen={showCleanupModal}
-    onClose={() => setShowCleanupModal(false)}
-    feeds={currentFeeds}
-    onRemoveFeeds={(urls) => {
-        // Remove feeds logic
-        setFeeds(prev => prev.filter(f => !urls.includes(f.url)));
-        localStorage.removeItem(`rss-cache-${urls}`); // Simple cleanup attempt, maybe improve?
-        // Note: The modal itself cleans up history.
-    }}
-/>
+      {/* Cleanup Modal */}
+      <FeedCleanupModal
+        isOpen={showCleanupModal}
+        onClose={() => setShowCleanupModal(false)}
+        feeds={currentFeeds}
+        onRemoveFeeds={(urls) => {
+          // Remove feeds logic
+          setFeeds(prev => prev.filter(f => !urls.includes(f.url)));
+          localStorage.removeItem(`rss-cache-${urls}`); // Simple cleanup attempt, maybe improve?
+          // Note: The modal itself cleans up history.
+        }}
+      />
 
       {/* Tab Navigation */}
       <div className="flex border-b border-white/10 bg-black/10">
         <button
           onClick={() => setActiveTab("feeds")}
-          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${ 
-            activeTab === "feeds"
-              ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
-              : "text-gray-400 hover:text-white"
-          }`}
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeTab === "feeds"
+            ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
+            : "text-gray-400 hover:text-white"
+            }`}
         >
           <span className="flex items-center justify-center gap-2">
-             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11c3.866 0 7 3.134 7 7m-7-7v7" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11c3.866 0 7 3.134 7 7m-7-7v7" />
             </svg>
             {t('feeds.tab.feeds')}
           </span>
         </button>
         <button
           onClick={() => setActiveTab("categories")}
-          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${ 
-            activeTab === "categories"
-              ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
-              : "text-gray-400 hover:text-white"
-          }`}
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeTab === "categories"
+            ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
+            : "text-gray-400 hover:text-white"
+            }`}
         >
           <span className="flex items-center justify-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1233,11 +1236,10 @@ URL: ${discoveredFeed.url}`
         </button>
         <button
           onClick={() => setActiveTab("analytics")}
-          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${ 
-            activeTab === "analytics"
-              ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
-              : "text-gray-400 hover:text-white"
-          }`}
+          className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeTab === "analytics"
+            ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))]"
+            : "text-gray-400 hover:text-white"
+            }`}
         >
           <span className="flex items-center justify-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1264,7 +1266,7 @@ URL: ${discoveredFeed.url}`
                   className="w-full bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
-              
+
               <div className="w-full sm:w-48">
                 <select
                   value={newFeedCategory}
@@ -1287,17 +1289,17 @@ URL: ${discoveredFeed.url}`
                 className="px-6 py-2 bg-[rgb(var(--color-accent))] text-white rounded-lg hover:bg-[rgb(var(--color-accent))]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap min-w-[120px]"
               >
                 {processingUrl ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>{t('loading')}</span>
-                    </>
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>{t('loading')}</span>
+                  </>
                 ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span>{t('action.add')}</span>
-                    </>
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>{t('action.add')}</span>
+                  </>
                 )}
               </button>
             </form>
@@ -1316,7 +1318,7 @@ URL: ${discoveredFeed.url}`
                   <span className="text-xs text-gray-500">{Math.round(discoveryProgress.get(processingUrl)?.progress || 0)}%</span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${discoveryProgress.get(processingUrl)?.progress || 5}%` }}
                   />
@@ -1329,172 +1331,172 @@ URL: ${discoveredFeed.url}`
           </div>
 
           {/* Search and Filters */}
-      <div className="p-4 bg-white/5 border-b border-white/5 flex gap-4">
-        <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-4 bg-white/5 border-b border-white/5 flex gap-4">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
+              </svg>
+              <input
                 type="text"
                 placeholder={t('search.placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-black/20 text-white pl-10 pr-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
-            />
-        </div>
-        <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
-        >
-            <option value="all">Todos</option>
-            <option value="valid">{t('analytics.valid')}</option>
-            <option value="invalid">{t('analytics.issues')}</option>
-            <option value="unchecked">{t('analytics.pending')}</option>
-        </select>
-        
-        {onRefreshFeeds && (
-            <button
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+            >
+              <option value="all">Todos</option>
+              <option value="valid">{t('analytics.valid')}</option>
+              <option value="invalid">{t('analytics.issues')}</option>
+              <option value="unchecked">{t('analytics.pending')}</option>
+            </select>
+
+            {onRefreshFeeds && (
+              <button
                 onClick={() => {
-                    if (window.confirm('Deseja forçar a revalidação de todos os feeds? Isso pode levar alguns instantes.')) {
-                        onRefreshFeeds();
-                    }
+                  if (window.confirm('Deseja forçar a revalidação de todos os feeds? Isso pode levar alguns instantes.')) {
+                    onRefreshFeeds();
+                  }
                 }}
                 className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-2 rounded-lg border border-blue-500/20 transition-colors"
                 title="Forçar Revalidação de Todos os Feeds"
-            >
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-            </button>
-        )}
-      </div>
+              </button>
+            )}
+          </div>
 
-      {/* Feed List (Accordions) */}
-      <div className="space-y-3 overflow-y-auto pr-2 mb-6 custom-scrollbar flex-grow p-4"
-        role="list"
-        aria-label={`Current RSS feeds (${filteredFeeds.length} of ${currentFeeds.length} feeds)`}
-      >
-        {/* Issues Section */}
-        {issueFeeds.length > 0 && (
-          <div className="border border-red-500/20 rounded-lg overflow-hidden">
-            <button
-              onClick={() => toggleSection('issues')}
-              className="w-full flex items-center justify-between p-4 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-            >
-              <div className="flex items-center space-x-2 text-red-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <span className="font-medium">{t('analytics.attention')} ({issueFeeds.length})</span>
+          {/* Feed List (Accordions) */}
+          <div className="space-y-3 overflow-y-auto pr-2 mb-6 custom-scrollbar flex-grow p-4"
+            role="list"
+            aria-label={`Current RSS feeds (${filteredFeeds.length} of ${currentFeeds.length} feeds)`}
+          >
+            {/* Issues Section */}
+            {issueFeeds.length > 0 && (
+              <div className="border border-red-500/20 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('issues')}
+                  className="w-full flex items-center justify-between p-4 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                >
+                  <div className="flex items-center space-x-2 text-red-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span className="font-medium">{t('analytics.attention')} ({issueFeeds.length})</span>
+                  </div>
+                  <svg className={`w-5 h-5 text-red-400 transform transition-transform ${expandedSection === 'issues' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {expandedSection === 'issues' && (
+                  <div className="p-4 bg-black/20 space-y-2">
+                    {issueFeeds.map((feed) => (
+                      <FeedItem
+                        key={feed.url}
+                        feed={feed}
+                        validation={feedValidations.get(feed.url)}
+                        onRemove={handleRemoveFeed}
+                        onRetry={validateFeed}
+                        onEdit={handleEditFeed}
+                        onShowError={(url) => handleShowError(url, feedValidations.get(url))}
+                        categories={categories}
+                        onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-              <svg className={`w-5 h-5 text-red-400 transform transition-transform ${expandedSection === 'issues' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {expandedSection === 'issues' && (
-              <div className="p-4 bg-black/20 space-y-2">
-                {issueFeeds.map((feed) => (
-                  <FeedItem
-                    key={feed.url}
-                    feed={feed}
-                    validation={feedValidations.get(feed.url)}
-                    onRemove={handleRemoveFeed}
-                    onRetry={validateFeed}
-                    onEdit={handleEditFeed}
-                    onShowError={(url) => handleShowError(url, feedValidations.get(url))}
-                    categories={categories}
-                    onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
-                  />
-                ))}
+            )}
+
+            {/* Valid Section */}
+            {validFeeds.length > 0 && (
+              <div className="border border-green-500/20 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('valid')}
+                  className="w-full flex items-center justify-between p-4 bg-green-500/10 hover:bg-green-500/20 transition-colors"
+                >
+                  <div className="flex items-center space-x-2 text-green-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="font-medium">{t('analytics.valid')} ({validFeeds.length})</span>
+                  </div>
+                  <svg className={`w-5 h-5 text-green-400 transform transition-transform ${expandedSection === 'valid' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedSection === 'valid' && (
+                  <div className="p-4 bg-black/20 space-y-2">
+                    {validFeeds.map((feed) => (
+                      <FeedItem
+                        key={feed.url}
+                        feed={feed}
+                        validation={feedValidations.get(feed.url)}
+                        onRemove={handleRemoveFeed}
+                        onRetry={validateFeed}
+                        onEdit={handleEditFeed}
+                        onShowError={(url) => handleShowError(url, feedValidations.get(url))}
+                        categories={categories}
+                        onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Unchecked Section */}
+            {uncheckedFeeds.length > 0 && (
+              <div className="border border-gray-500/20 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('unchecked')}
+                  className="w-full flex items-center justify-between p-4 bg-gray-500/10 hover:bg-gray-500/20 transition-colors"
+                >
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-medium">{t('analytics.pending')} ({uncheckedFeeds.length})</span>
+                  </div>
+                  <svg className={`w-5 h-5 text-gray-400 transform transition-transform ${expandedSection === 'unchecked' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedSection === 'unchecked' && (
+                  <div className="p-4 bg-black/20 space-y-2">
+                    {uncheckedFeeds.map((feed) => (
+                      <FeedItem
+                        key={feed.url}
+                        feed={feed}
+                        validation={feedValidations.get(feed.url)}
+                        onRemove={handleRemoveFeed}
+                        onRetry={validateFeed}
+                        onEdit={handleEditFeed}
+                        onShowError={(url) => handleShowError(url, feedValidations.get(url))}
+                        categories={categories}
+                        onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
-
-        {/* Valid Section */}
-        {validFeeds.length > 0 && (
-          <div className="border border-green-500/20 rounded-lg overflow-hidden">
-             <button
-              onClick={() => toggleSection('valid')}
-              className="w-full flex items-center justify-between p-4 bg-green-500/10 hover:bg-green-500/20 transition-colors"
-            >
-              <div className="flex items-center space-x-2 text-green-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="font-medium">{t('analytics.valid')} ({validFeeds.length})</span>
-              </div>
-              <svg className={`w-5 h-5 text-green-400 transform transition-transform ${expandedSection === 'valid' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-             {expandedSection === 'valid' && (
-              <div className="p-4 bg-black/20 space-y-2">
-                {validFeeds.map((feed) => (
-                  <FeedItem
-                    key={feed.url}
-                    feed={feed}
-                    validation={feedValidations.get(feed.url)}
-                    onRemove={handleRemoveFeed}
-                    onRetry={validateFeed}
-                    onEdit={handleEditFeed}
-                    onShowError={(url) => handleShowError(url, feedValidations.get(url))}
-                    categories={categories}
-                    onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Unchecked Section */}
-        {uncheckedFeeds.length > 0 && (
-          <div className="border border-gray-500/20 rounded-lg overflow-hidden">
-             <button
-              onClick={() => toggleSection('unchecked')}
-              className="w-full flex items-center justify-between p-4 bg-gray-500/10 hover:bg-gray-500/20 transition-colors"
-            >
-              <div className="flex items-center space-x-2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-medium">{t('analytics.pending')} ({uncheckedFeeds.length})</span>
-              </div>
-              <svg className={`w-5 h-5 text-gray-400 transform transition-transform ${expandedSection === 'unchecked' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-             {expandedSection === 'unchecked' && (
-              <div className="p-4 bg-black/20 space-y-2">
-                {uncheckedFeeds.map((feed) => (
-                  <FeedItem
-                    key={feed.url}
-                    feed={feed}
-                    validation={feedValidations.get(feed.url)}
-                    onRemove={handleRemoveFeed}
-                    onRetry={validateFeed}
-                    onEdit={handleEditFeed}
-                    onShowError={(url) => handleShowError(url, feedValidations.get(url))}
-                    categories={categories}
-                    onMoveCategory={(catId: string) => moveFeedToCategory(feed.url, catId, currentFeeds, setFeeds)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
         </>
       ) : activeTab === "categories" ? (
         /* Categories Tab */
         <div className="flex-1 overflow-y-auto p-6">
-          <FeedCategoryManager 
-            feeds={currentFeeds} 
-            setFeeds={setFeeds} 
-            onClose={() => setActiveTab("feeds")} 
+          <FeedCategoryManager
+            feeds={currentFeeds}
+            setFeeds={setFeeds}
+            onClose={() => setActiveTab("feeds")}
           />
         </div>
       ) : (
@@ -1524,25 +1526,23 @@ URL: ${discoveredFeed.url}`
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 my-auto">
             <h3 className="text-xl font-bold text-white mb-4">{t('feeds.import_curated.title')}</h3>
-            
+
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">{t('feeds.import_curated.select')}</label>
                 <select
                   value={selectedListType}
-                  onChange={(e) => setSelectedListType(e.target.value as CuratedListType)}
+                  onChange={(e) => setSelectedListType(e.target.value)}
                   className="w-full bg-black/30 text-white rounded-lg px-4 py-2 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]"
                 >
-                  <option value="br">🇧🇷 Brasil Tech & Ciência</option>
-                  <option value="intl">🌎 International Tech & Ciência</option>
-                  <option value="default">📱 Pacote Inicial Padrão</option>
+                  {Object.keys(DEFAULT_CURATED_LISTS).map(listName => (
+                    <option key={listName} value={listName}>{listName}</option>
+                  ))}
                 </select>
               </div>
-              
+
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-sm text-blue-200">
-                {selectedListType === 'br' && "Uma coleção curada das melhores fontes brasileiras de tecnologia, ciência e notícias."}
-                {selectedListType === 'intl' && "Publicações internacionais de tecnologia e ciência de alto nível."}
-                {selectedListType === 'default' && "A coleção inicial padrão de feeds essenciais de tecnologia."}
+                {selectedListType ? `Importar feeds da lista "${selectedListType}"` : "Selecione uma lista"}
               </div>
             </div>
 
@@ -1560,7 +1560,7 @@ URL: ${discoveredFeed.url}`
                 {t('feeds.import_curated.replace')}
               </button>
             </div>
-            
+
             <button
               onClick={() => setShowImportModal(false)}
               className="w-full mt-3 text-gray-400 hover:text-white text-sm py-2"
@@ -1574,102 +1574,102 @@ URL: ${discoveredFeed.url}`
       {/* Validation Error Modal */}
       {showErrorModal && selectedErrorFeed && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-           <div className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-              <div className="p-6 border-b border-white/10 flex justify-between items-start">
-                  <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                       <span className="text-red-400">⚠️</span>
-                       Detalhes do Erro
-                    </h3>
-                    <p className="text-gray-400 text-sm mt-1 font-mono break-all">{selectedErrorFeed.url}</p>
+          <div className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-white/10 flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span className="text-red-400">⚠️</span>
+                  Detalhes do Erro
+                </h3>
+                <p className="text-gray-400 text-sm mt-1 font-mono break-all">{selectedErrorFeed.url}</p>
+              </div>
+              <button onClick={() => setShowErrorModal(false)} className="text-gray-400 hover:text-white">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+              {/* Status Principal */}
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2 text-red-400 font-bold uppercase text-xs tracking-wider">
+                  Status Atual
+                </div>
+                <p className="text-white font-medium text-lg">
+                  {getFeedStatusText(selectedErrorFeed.validation.status)}
+                </p>
+                <p className="text-red-300 mt-1">
+                  {selectedErrorFeed.validation.error || "Erro desconhecido durante validação."}
+                </p>
+              </div>
+
+              {/* Sugestões */}
+              {selectedErrorFeed.validation.suggestions && selectedErrorFeed.validation.suggestions.length > 0 && (
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2 text-blue-400 font-bold uppercase text-xs tracking-wider">
+                    Sugestões de Correção
                   </div>
-                  <button onClick={() => setShowErrorModal(false)} className="text-gray-400 hover:text-white">
-                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-              </div>
-              
-              <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
-                 {/* Status Principal */}
-                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2 text-red-400 font-bold uppercase text-xs tracking-wider">
-                       Status Atual
-                    </div>
-                    <p className="text-white font-medium text-lg">
-                       {getFeedStatusText(selectedErrorFeed.validation.status)}
-                    </p>
-                    <p className="text-red-300 mt-1">
-                       {selectedErrorFeed.validation.error || "Erro desconhecido durante validação."}
-                    </p>
-                 </div>
+                  <ul className="list-disc list-inside space-y-1 text-gray-300">
+                    {selectedErrorFeed.validation.suggestions.map((suggestion, idx) => (
+                      <li key={idx}>{suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-                 {/* Sugestões */}
-                 {selectedErrorFeed.validation.suggestions && selectedErrorFeed.validation.suggestions.length > 0 && (
-                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2 text-blue-400 font-bold uppercase text-xs tracking-wider">
-                           Sugestões de Correção
+              {/* Logs de Tentativas */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Logs de Tentativas</h4>
+                <div className="bg-black/30 rounded-lg border border-white/5 overflow-hidden">
+                  {selectedErrorFeed.validation.validationAttempts?.map((attempt, idx) => (
+                    <div key={idx} className="border-b border-white/5 last:border-0 p-3 text-sm">
+                      <div className="flex justify-between mb-1">
+                        <span className={`font-mono font-bold ${attempt.success ? 'text-green-400' : 'text-red-400'}`}>
+                          Tentativa #{attempt.attemptNumber} ({attempt.method})
+                        </span>
+                        <span className="text-gray-500 text-xs">
+                          {attempt.responseTime}ms
+                        </span>
+                      </div>
+                      {attempt.statusCode && (
+                        <div className="text-gray-400 text-xs mb-1">
+                          Status HTTP: <span className="text-white">{attempt.statusCode}</span>
                         </div>
-                        <ul className="list-disc list-inside space-y-1 text-gray-300">
-                           {selectedErrorFeed.validation.suggestions.map((suggestion, idx) => (
-                              <li key={idx}>{suggestion}</li>
-                           ))}
-                        </ul>
-                     </div>
-                 )}
-
-                 {/* Logs de Tentativas */}
-                 <div>
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Logs de Tentativas</h4>
-                    <div className="bg-black/30 rounded-lg border border-white/5 overflow-hidden">
-                       {selectedErrorFeed.validation.validationAttempts?.map((attempt, idx) => (
-                          <div key={idx} className="border-b border-white/5 last:border-0 p-3 text-sm">
-                             <div className="flex justify-between mb-1">
-                                <span className={`font-mono font-bold ${attempt.success ? 'text-green-400' : 'text-red-400'}`}>
-                                   Tentativa #{attempt.attemptNumber} ({attempt.method})
-                                </span>
-                                <span className="text-gray-500 text-xs">
-                                   {attempt.responseTime}ms
-                                </span>
-                             </div>
-                             {attempt.statusCode && (
-                                <div className="text-gray-400 text-xs mb-1">
-                                   Status HTTP: <span className="text-white">{attempt.statusCode}</span>
-                                </div>
-                             )}
-                             {attempt.error && (
-                                <div className="text-red-400/80 text-xs font-mono bg-red-900/10 p-2 rounded mt-1">
-                                   {attempt.error.message}
-                                </div>
-                             )}
-                          </div>
-                       ))}
-                       {(!selectedErrorFeed.validation.validationAttempts || selectedErrorFeed.validation.validationAttempts.length === 0) && (
-                          <div className="p-4 text-center text-gray-500 italic">
-                             Nenhum log detalhado disponível.
-                          </div>
-                       )}
+                      )}
+                      {attempt.error && (
+                        <div className="text-red-400/80 text-xs font-mono bg-red-900/10 p-2 rounded mt-1">
+                          {attempt.error.message}
+                        </div>
+                      )}
                     </div>
-                 </div>
+                  ))}
+                  {(!selectedErrorFeed.validation.validationAttempts || selectedErrorFeed.validation.validationAttempts.length === 0) && (
+                    <div className="p-4 text-center text-gray-500 italic">
+                      Nenhum log detalhado disponível.
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
 
-              <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-3">
-                 <button 
-                    onClick={() => {
-                        validateFeed(selectedErrorFeed.url);
-                        setShowErrorModal(false);
-                    }}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-                 >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    Tentar Novamente
-                 </button>
-                 <button 
-                    onClick={() => setShowErrorModal(false)}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-medium"
-                 >
-                    Fechar
-                 </button>
-              </div>
-           </div>
+            <div className="p-6 border-t border-white/10 bg-black/20 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  validateFeed(selectedErrorFeed.url);
+                  setShowErrorModal(false);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                Tentar Novamente
+              </button>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-medium"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
         </div>,
         document.body
       )}

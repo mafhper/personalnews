@@ -155,9 +155,10 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
 
       // Generate suggestions based on results
       result.suggestions = this.generateDiscoverySuggestions(result);
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Feed discovery failed:", error);
-      result.suggestions.push(`Discovery failed: ${error.message}`);
+      result.suggestions.push(`Discovery failed: ${errorMessage}`);
     }
 
     result.discoveryTime = Date.now() - discoveryStartTime;
@@ -233,9 +234,10 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
           }
         }
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("HTML scanning failed:", error);
-      throw new Error(`Failed to scan HTML for feeds: ${error.message}`);
+      throw new Error(`Failed to scan HTML for feeds: ${errorMessage}`);
     }
 
     return discoveredFeeds;

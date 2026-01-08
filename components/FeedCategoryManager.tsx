@@ -13,7 +13,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useLogger } from "../services/logger";
-import type { FeedSource, FeedCategory } from "../types";
+import type { FeedSource, FeedCategory, HeaderConfig } from "../types";
 import { sanitizeHtmlContent } from "../utils/sanitization";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -28,7 +28,7 @@ interface FeedCategoryManagerProps {
 }
 
 interface DragState {
-  draggedItem: { type: "feed" | "category"; id: string; data: any } | null;
+  draggedItem: { type: "feed" | "category"; id: string; data: FeedSource | FeedCategory } | null;
   dragOverCategory: string | null;
 }
 
@@ -126,7 +126,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   ];
 
   const handleDragStart = useCallback(
-    (e: React.DragEvent, type: "feed" | "category", id: string, data: any) => {
+    (e: React.DragEvent, type: "feed" | "category", id: string, data: FeedSource | FeedCategory) => {
       setDragState((prev) => ({
         ...prev,
         draggedItem: { type, id, data },
@@ -178,7 +178,8 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       const { type, id, data } = dragState.draggedItem;
 
       if (type === "feed") {
-        moveFeedToCategory(data.url, targetCategoryId, feeds, setFeeds);
+        const feedData = data as FeedSource;
+        moveFeedToCategory(feedData.url, targetCategoryId, feeds, setFeeds);
       } else if (type === "category") {
         // Handle category reordering
         const targetCategory = categories.find(
@@ -217,7 +218,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   );
 
   // Header Position options
-  const headerPositionOptions: { value: any, label: string }[] = [
+  const headerPositionOptions: { value: HeaderConfig['position'] | '', label: string }[] = [
     { value: '', label: 'Padrão (Global)' },
     { value: 'static', label: 'Estático' },
     { value: 'sticky', label: 'Fixo (Sticky)' },
@@ -329,6 +330,8 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       setFeeds,
       moveFeedToCategory,
       deleteCategory,
+      confirmDanger,
+      alertSuccess
     ]
   );
 
@@ -380,7 +383,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         e.target.value = '';
       }
     },
-    [importCategories]
+    [importCategories, alertSuccess, alertError, logger]
   );
 
   // Handler para importar feeds OPML para uma categoria específica
@@ -470,7 +473,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       }));
       setFeeds(resetFeeds);
     }
-  }, [resetToDefaults, feeds, setFeeds]);
+  }, [resetToDefaults, feeds, setFeeds, confirmDanger, refreshAppearance]);
 
   const handleDeleteFeed = useCallback(async (feedUrl: string, feedTitle?: string) => {
     if (await confirmDanger(`Tem certeza que deseja remover o feed "${feedTitle || feedUrl}"?`)) {

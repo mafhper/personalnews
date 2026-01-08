@@ -15,8 +15,9 @@ import type {
     BackgroundConfig,
     FeedCategory,
     FeedSource,
-    ExtendedTheme
+
 } from '../types';
+import { INITIAL_APP_CONFIG, DEFAULT_CATEGORIES as GEN_CATEGORIES, DEFAULT_FEEDS as GEN_FEEDS, CURATED_LISTS as GEN_CURATED_LISTS } from '../constants/curatedFeeds';
 
 // =============================================================================
 // CONFIGURAÇÕES DE APARÊNCIA (Header, Content, Background)
@@ -57,7 +58,7 @@ export const DEFAULT_CONTENT_CONFIG: ContentConfig = {
     showDate: true,             // Mostrar data de publicação
     showTime: false,            // Mostrar hora de publicação
     showTags: true,             // Mostrar tags/categorias
-    layoutMode: 'modern',       // Layout padrão dos artigos
+    layoutMode: INITIAL_APP_CONFIG.layout as ContentConfig['layoutMode'],       // Layout padrão dos artigos
     density: 'comfortable',     // 'compact' | 'comfortable' | 'spacious'
     paginationType: 'numbered', // 'numbered' | 'infinite' | 'load-more'
 };
@@ -75,17 +76,7 @@ export const DEFAULT_ARTICLE_LAYOUT = {
 // CATEGORIAS PADRÃO DO SISTEMA
 // =============================================================================
 
-/**
- * Categorias que vêm pré-configuradas no sistema
- * ID 'all' é especial e não pode ser removido
- */
-export const DEFAULT_CATEGORIES: FeedCategory[] = [
-    { id: 'all', name: 'All', color: '#6B7280', order: 0, isDefault: true },
-    { id: 'dev', name: 'Dev', color: '#3B82F6', order: 1, isDefault: true },
-    { id: 'design', name: 'Design', color: '#10B981', order: 2, isDefault: true },
-    { id: 'ciencia', name: 'Ciência', color: '#8B5CF6', order: 3, isDefault: true },
-    { id: 'mundo', name: 'Mundo', color: '#EC4899', order: 4, isDefault: true },
-];
+export const DEFAULT_CATEGORIES: FeedCategory[] = GEN_CATEGORIES;
 
 // =============================================================================
 // FEEDS PADRÃO (PRÉ-CONFIGURADOS)
@@ -94,26 +85,12 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
 /**
  * Feeds que vêm pré-configurados para novos usuários
  */
-export const DEFAULT_FEEDS: FeedSource[] = [
-    // Dev
-    { url: "https://news.ycombinator.com/rss", categoryId: "dev", customTitle: "Hacker News" },
-    { url: "https://github.blog/feed/", categoryId: "dev", customTitle: "GitHub Blog" },
-    { url: "https://tecnoblog.net/feed/", categoryId: "dev", customTitle: "Tecnoblog" },
-    { url: "https://www.theverge.com/rss/index.xml", categoryId: "dev", customTitle: "The Verge" },
-    { url: "https://techcrunch.com/feed/", categoryId: "dev", customTitle: "TechCrunch" },
+export const DEFAULT_FEEDS: FeedSource[] = GEN_FEEDS;
 
-    // Design
-    { url: "https://uxdesign.cc/feed", categoryId: "design", customTitle: "UX Collective" },
-    { url: "https://designculture.com.br/feed", categoryId: "design", customTitle: "Design Culture" },
-
-    // Ciência
-    { url: "https://www.sciencenews.org/feed", categoryId: "ciencia", customTitle: "Science News" },
-    { url: "https://www.nasa.gov/news-release/feed/", categoryId: "ciencia", customTitle: "NASA News" },
-
-    // Mundo
-    { url: "http://feeds.bbci.co.uk/news/world/rss.xml", categoryId: "mundo", customTitle: "BBC World" },
-    { url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", categoryId: "mundo", customTitle: "NY Times World" },
-];
+/**
+ * Listas de feeds curados disponíveis para importação
+ */
+export const DEFAULT_CURATED_LISTS = GEN_CURATED_LISTS;
 
 // =============================================================================
 // OUTRAS CONFIGURAÇÕES
@@ -122,7 +99,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
 /**
  * Cidade padrão para previsão do tempo
  */
-export const DEFAULT_WEATHER_CITY = 'São Paulo';
+export const DEFAULT_WEATHER_CITY = INITIAL_APP_CONFIG.weatherCity;
 
 /**
  * Configurações de performance

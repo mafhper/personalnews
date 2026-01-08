@@ -1,71 +1,57 @@
-# Personal News Dashboard 📰
+# Personal News Dashboard
 
-> **Sua central de notícias personalizada, inteligente e visualmente imersiva.**
+## Introdução
+O Personal News Dashboard é um agregador de feeds RSS moderno, desenvolvido para oferecer uma experiência de leitura centralizada, segura e altamente personalizável. O projeto prioriza a performance e o design, permitindo que os usuários consumam conteúdo de diversas fontes em uma interface fluida e adaptável a diferentes dispositivos. Através de um sistema modular, a aplicação combina flexibilidade visual com um motor de processamento de dados robusto.
 
-O **Personal News** é um agregador de feeds RSS de última geração ("Next-Gen"), construído para transformar a maneira como você consome conteúdo na web. Focando em **design**, **performance** e **personalização**, ele oferece uma experiência de leitura fluida, adaptável e esteticamente agradável.
+## Instalação
+Para configurar o projeto localmente, siga as instruções abaixo. Recomenda-se o uso do Bun para uma melhor experiência de desenvolvimento e gerenciamento de pacotes.
 
-## ✨ Principais Recursos
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/seu-usuario/personalnews.git
+   cd personalnews
+   ```
 
-### 🎨 Aura Wall (Generative Backgrounds)
-Esqueça os fundos estáticos. O **Aura Wall** utiliza algoritmos generativos para criar fundos animados, vetoriais e únicos baseados em ruído fractal e gradientes fluidos.
-- **Zero Imagens Pesadas:** Tudo é gerado via código (SVG), garantindo carregamento instantâneo.
-- **Totalmente Customizável:** Ajuste ruído, escala, cores e presets (Aurora, Neon, Dark, etc.).
-- **Botão "Randomize":** Gere uma nova identidade visual para seu app com um clique.
+2. Instale as dependências:
+   ```bash
+   bun install
+   ```
 
-### 📱 Layouts Adaptativos
-O sistema oferece mais de **15 layouts de visualização**, que se adaptam automaticamente ao dispositivo (Mobile/Desktop) e à categoria do conteúdo:
-- **Clássicos:** Magazine, Newspaper, List.
-- **Visuais:** Masonry, Gallery, Polaroid, Immersive.
-- **Modernos:** Bento Grid, Timeline, Split View.
-- **Experimentais:** Cyberpunk, Terminal (CLI style), Brutalist.
+3. Inicie o ambiente de desenvolvimento:
+   ```bash
+   bun dev
+   ```
 
-### ⚡ Performance & UX
-- **Carregamento Progressivo:** Os feeds são carregados em "chunks" para não travar a interface.
-- **Background Layer Memoizado:** O fundo complexo é isolado da renderização principal, garantindo scroll suave (60fps).
-- **Lazy Loading Inteligente:** Imagens carregam apenas quando entram na tela com transições suaves.
-- **Mobile First:** Navegação por gestos (swipe), modais em tela cheia e headers ultra-compactos.
+4. Realize o build para produção:
+   ```bash
+   bun run build
+   ```
 
-### 🛠️ Gerenciamento Avançado
-- **Descoberta Automática:** Cole qualquer URL (site ou YouTube) e o sistema encontra o feed RSS automaticamente.
-- **Categorias Drag-and-Drop:** Organize seus feeds arrastando-os entre categorias coloridas.
-- **Importação/Exportação:** Suporte total a arquivos OPML para migração fácil.
+## Uso
+A aplicação foi desenhada para ser intuitiva e poderosa:
+- Gerenciamento de Feeds: Adicione novos feeds RSS, Atom ou links de canais do YouTube através da ferramenta de descoberta automática.
+- Categorização: Organize suas fontes de notícias em categorias customizáveis, permitindo layouts específicos para cada tipo de conteúdo.
+- Navegação Avançada: Utilize atalhos de teclado (Ctrl+K para busca, Ctrl+R para atualizar) e gestos de swipe em dispositivos móveis.
+- Leitor Imersivo: Acesse uma versão limpa dos artigos, otimizada para leitura e livre de anúncios, com controle total sobre tipografia e espaçamento.
+- Backup e Portabilidade: Exporte ou importe sua coleção completa de feeds e categorias utilizando o padrão universal OPML.
 
-## 🚀 Tecnologias
+## Tecnologias de Processamento de Feeds
+A aplicação utiliza uma arquitetura de múltiplas camadas para garantir a disponibilidade e a integridade dos dados:
 
-- **Core:** React 18, TypeScript, Vite.
-- **Estilização:** Tailwind CSS, CSS Modules.
-- **Estado & Persistência:** Custom Hooks, LocalStorage (Offline-first).
-- **Algoritmos:** Simplex Noise (para Aura Wall), Fuzzy Search.
+- Motor de Parsing: Implementação customizada capaz de processar RSS 2.0, Atom e RDF. Inclui rotinas de recuperação para XML malformado e normalização de metadados entre diferentes padrões de sindicação.
+- Extração de Conteúdo Completo: Integração com o algoritmo Readability para identificar e isolar o conteúdo principal dos artigos, permitindo que o usuário leia a matéria completa sem sair da aplicação.
+- Sistema de Proxies e Disponibilidade: Estratégia de failover com múltiplos provedores de proxy para contornar restrições de CORS e garantir a entrega do conteúdo mesmo quando fontes diretas estão inacessíveis.
+- Segurança e Sanitização: Validação rigorosa contra ataques de entidades externas (XXE) no parser de XML e sanitização profunda via DOMPurify para prevenir XSS, garantindo que o conteúdo de terceiros seja renderizado de forma segura.
+- Cache Inteligente e Performance: Estratégia de stale-while-revalidate com armazenamento persistente em SmartCache, minimizando requisições de rede e permitindo o carregamento instantâneo da interface.
 
-## 📦 Instalação e Uso
+## Contribuição
+Contribuições são bem-vindas e incentivadas. Para colaborar:
+- Verifique os problemas relatados nas Issues ou abra um novo reporte.
+- Proponha novos layouts visuais ou melhorias de acessibilidade.
+- Siga as diretrizes de desenvolvimento descritas em CONTRIBUTING.md, garantindo que novas funcionalidades mantenham a tipagem rigorosa e os padrões de qualidade de código.
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone https://github.com/seu-usuario/personalnews.git
-    cd personalnews
-    ```
-
-2.  **Instale as dependências:**
-    ```bash
-    npm install
-    # ou
-    bun install
-    ```
-
-3.  **Inicie o servidor de desenvolvimento:**
-    ```bash
-    npm run dev
-    ```
-
-4.  **Build para produção:**
-    ```bash
-    npm run build
-    ```
-
-## 🤝 Contribuição
-
-Contribuições são bem-vindas! Confira os issues abertos ou proponha novos layouts e features.
+## Licença
+Este projeto está licenciado sob a Licença MIT. Consulte o arquivo LICENSE incluído no repositório para obter o texto completo da licença.
 
 ---
-
-*Desenvolvido com foco em UX e Performance.*
+Desenvolvido com ❤.
