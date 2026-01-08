@@ -14,6 +14,7 @@ export default defineConfig({
       '__tests__/FavoriteButton.test.tsx',
       '__tests__/ProgressIndicator.test.tsx',
       '__tests__/SkeletonLoader.test.tsx',
+      '__tests__/FeedContext.test.tsx',
       
       // Hooks básicos
       '__tests__/useSearch.test.ts',

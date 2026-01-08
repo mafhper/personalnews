@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SearchBar, SearchFilters } from "./SearchBar";
-import { PaginationControls } from "./PaginationControls";
 import { Article, FeedCategory, FeedSource } from "../types";
 import Logo from "./Logo";
 import { HeaderIcons } from "./icons";
@@ -20,9 +19,6 @@ interface HeaderProps {
   onSearchResultsChange?: (results: Article[]) => void;
   onOpenFavorites: () => void;
   categories: FeedCategory[];
-  currentPage?: number;
-  totalPages?: number;
-  onPageChange?: (page: number) => void;
   onGoHome?: () => void;
 }
 
@@ -412,18 +408,6 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Right Section: Actions */}
             <div className={`flex items-center justify-end space-x-2 flex-shrink-0 ${isCentered ? 'lg:absolute lg:right-4' : ''}`}>
-
-              {/* Pagination - Always visible on md+ screens */}
-              {props.onPageChange && props.totalPages && props.totalPages > 1 && (
-                <div className="hidden md:block">
-                  <PaginationControls
-                    currentPage={props.currentPage || 0}
-                    totalPages={props.totalPages}
-                    onPageChange={props.onPageChange}
-                    compact={true}
-                  />
-                </div>
-              )}
 
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center space-x-1">

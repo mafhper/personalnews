@@ -6,7 +6,7 @@
  * and fixes synchronization issues.
  *
  * @author Matheus Pereira
- * @version 2.0.0
+ * @version 2.1.0
  */
 
 import React, { useCallback } from "react";
@@ -31,11 +31,6 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
   isNavigating = false,
   disabled = false,
 }) => {
-  // Don't render if there are no pages or only one page
-  if (totalPages <= 1) {
-    return null;
-  }
-
   // Memoized event handlers to prevent unnecessary re-renders
   const handlePrevPage = useCallback(
     (e: React.MouseEvent) => {
@@ -69,6 +64,12 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
     },
     [disabled, isNavigating, currentPage, onPageChange]
   );
+
+  // Don't render if there are no pages or only one page
+  // Moved AFTER hooks to comply with Rules of Hooks
+  if (totalPages <= 1) {
+    return null;
+  }
 
   // Determinar quais números de página mostrar
   const getPageNumbers = () => {

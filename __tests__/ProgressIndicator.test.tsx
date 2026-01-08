@@ -71,8 +71,9 @@ describe("ProgressIndicator Components", () => {
     it("renders loading progress with correct information", () => {
       render(<FeedLoadingProgress {...defaultProps} />);
 
-      expect(screen.getByText("Loading feeds...")).toBeInTheDocument();
-      expect(screen.getByText("3 of 5 feeds loaded")).toBeInTheDocument();
+      // Component now shows "Loading..." by default
+      expect(screen.getByText("Loading...")).toBeInTheDocument();
+      expect(screen.getByText("3/5")).toBeInTheDocument();
     });
 
     it("shows background refresh state", () => {
@@ -80,10 +81,21 @@ describe("ProgressIndicator Components", () => {
         <FeedLoadingProgress {...defaultProps} isBackgroundRefresh={true} />
       );
 
+      // Component now shows "Updating..." for background refresh
       expect(
-        screen.getByText("Refreshing feeds in background...")
+        screen.getByText("Updating...")
       ).toBeInTheDocument();
     });
+
+    it("displays current action when provided", () => {
+        render(
+          <FeedLoadingProgress {...defaultProps} currentAction="Fetching TechCrunch..." />
+        );
+  
+        expect(
+          screen.getByText("Fetching TechCrunch...")
+        ).toBeInTheDocument();
+      });
 
     it("displays errors when present", () => {
       const errors = [
@@ -95,10 +107,10 @@ describe("ProgressIndicator Components", () => {
         { url: "https://test.com/feed", error: "network error" },
       ];
 
-      render(<FeedLoadingProgress {...defaultProps} errors={errors} />);
+      // In the new component, error summary is only shown when complete
+      render(<FeedLoadingProgress loadedFeeds={5} totalFeeds={5} progress={100} errors={errors} />);
 
-      expect(screen.getByText("Failed feeds:")).toBeInTheDocument();
-      expect(screen.getByText(/Example Feed/)).toBeInTheDocument();
+      expect(screen.getByText("2 feed(s) failed")).toBeInTheDocument();
     });
 
     it("calls onCancel when cancel button is clicked", () => {
@@ -106,7 +118,9 @@ describe("ProgressIndicator Components", () => {
 
       render(<FeedLoadingProgress {...defaultProps} onCancel={onCancel} />);
 
-      const cancelButton = screen.getByText("Cancel");
+      // The button has a title "Cancel" or contains the SVG. We find it by its role/label or tag.
+      // The current implementation uses a button with an SVG inside.
+      const cancelButton = screen.getByRole("button");
       fireEvent.click(cancelButton);
 
       expect(onCancel).toHaveBeenCalledOnce();
@@ -118,43 +132,28 @@ describe("ProgressIndicator Components", () => {
 
       render(
         <FeedLoadingProgress
-          {...defaultProps}
+          loadedFeeds={5}
+          totalFeeds={5}
+          progress={100}
           errors={errors}
           onRetryErrors={onRetryErrors}
         />
       );
 
-      const retryButton = screen.getByText("Retry failed feeds");
+      const retryButton = screen.getByText("Retry");
       fireEvent.click(retryButton);
 
       expect(onRetryErrors).toHaveBeenCalledOnce();
     });
 
-    it("shows completion state", () => {
-      render(
+    it("shows completion state with checkmark", () => {
+      const { container } = render(
         <FeedLoadingProgress loadedFeeds={5} totalFeeds={5} progress={100} />
       );
 
-      expect(
-        screen.getByText("All feeds loaded successfully")
-      ).toBeInTheDocument();
-    });
-
-    it("shows completion with errors", () => {
-      const errors = [{ url: "https://example.com/feed", error: "timeout" }];
-
-      render(
-        <FeedLoadingProgress
-          loadedFeeds={5}
-          totalFeeds={5}
-          progress={100}
-          errors={errors}
-        />
-      );
-
-      expect(
-        screen.getByText("Loading complete with 1 error")
-      ).toBeInTheDocument();
+      // Should have a checkmark icon (SVG with path)
+      const svg = container.querySelector('svg.text-green-400');
+      expect(svg).toBeInTheDocument();
     });
   });
 

@@ -51,7 +51,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                             <div className="flex flex-wrap items-center gap-x-3 text-xs text-gray-500 mb-1 font-medium">
                                 <span className="text-yellow-600/80">[{new Date(article.pubDate).toISOString().split('T')[0]}]</span>
                                 <span className="text-blue-500/80 lowercase">@{article.sourceTitle.replace(/\s/g, '_')}</span>
-                                <span className="text-gray-700">pid:{Math.floor(Math.random() * 9000) + 1000}</span>
+                                <span className="text-gray-700">pid:{1000 + (article.title.length * 7 + new Date(article.pubDate).getDate()) % 9000}</span>
                             </div>
                             <h2
                                 className="text-lg md:text-xl font-bold text-gray-200 hover:text-green-400 hover:underline decoration-green-500/50 underline-offset-4 transition-all cursor-pointer mb-2"
