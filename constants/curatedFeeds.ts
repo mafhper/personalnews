@@ -85,14 +85,119 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "B9"
   },
   {
+    "url": "https://css-tricks.com/feed/",
+    "categoryId": "design",
+    "customTitle": "CSS-Tricks"
+  },
+  {
+    "url": "https://www.dezeen.com/feed/",
+    "categoryId": "design",
+    "customTitle": "Dezeen"
+  },
+  {
+    "url": "https://uxdesign.cc/feed",
+    "categoryId": "design",
+    "customTitle": "UX Collective"
+  },
+  {
+    "url": "https://adrenaline.com.br/feed/",
+    "categoryId": "games",
+    "customTitle": "Adrenaline"
+  },
+  {
     "url": "https://naogames.jogabilida.de/",
     "categoryId": "games",
     "customTitle": "Jogabilidade (Não Games)"
   },
   {
+    "url": "https://kotaku.com/rss",
+    "categoryId": "games",
+    "customTitle": "Kotaku"
+  },
+  {
+    "url": "https://www.polygon.com/feed/",
+    "categoryId": "games",
+    "customTitle": "Polygon.com"
+  },
+  {
+    "url": "https://g1.globo.com/rss/g1/politica/",
+    "categoryId": "politics",
+    "customTitle": "G1 Política"
+  },
+  {
+    "url": "https://midianinja.org/feed/",
+    "categoryId": "politics",
+    "customTitle": "Mídia Ninja"
+  },
+  {
     "url": "https://piaui.folha.uol.com.br/feed/",
     "categoryId": "politics",
     "customTitle": "Piauí"
+  },
+  {
+    "url": "https://theintercept.com/brasil/feed/",
+    "categoryId": "politics",
+    "customTitle": "The Intercept Brasil"
+  },
+  {
+    "url": "https://9to5google.com/feed/",
+    "categoryId": "tech",
+    "customTitle": "9to5Google"
+  },
+  {
+    "url": "https://9to5linux.com/feed/",
+    "categoryId": "tech",
+    "customTitle": "9to5Linux"
+  },
+  {
+    "url": "https://9to5mac.com/feed/",
+    "categoryId": "tech",
+    "customTitle": "9to5Mac"
+  },
+  {
+    "url": "https://arstechnica.com/feed/",
+    "categoryId": "tech",
+    "customTitle": "Ars Technica"
+  },
+  {
+    "url": "http://www.cnet.com/rss/news/",
+    "categoryId": "tech",
+    "customTitle": "CNET"
+  },
+  {
+    "url": "https://diolinux.com.br/feed",
+    "categoryId": "tech",
+    "customTitle": "Diolinux"
+  },
+  {
+    "url": "https://macmagazine.com.br/feed/",
+    "categoryId": "tech",
+    "customTitle": "MacMagazine"
+  },
+  {
+    "url": "https://meiobit.com/feed/",
+    "categoryId": "tech",
+    "customTitle": "Meio Bit"
+  },
+  {
+    "url": "https://tecnoblog.net/feed/",
+    "categoryId": "tech",
+    "customTitle": "Tecnoblog"
+  },
+  {
+    "url": "https://thenextweb.com/feed",
+    "categoryId": "tech",
+    "customTitle": "The Next Web"
+  },
+  {
+    "url": "https://www.theverge.com/rss/index.xml",
+    "categoryId": "tech",
+    "customTitle": "The Verge"
+  },
+  {
+    "url": "https://www.tomsguide.com/feeds.xml",
+    "categoryId": "tech",
+    "customTitle": "Tom's Guide"
   },
   {
     "url": "https://www.xda-developers.com/feed/",
@@ -110,14 +215,14 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Corridor Crew"
   },
   {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",
-    "categoryId": "youtube",
-    "customTitle": "GreatScott!"
-  },
-  {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
     "categoryId": "youtube",
     "customTitle": "News Rockstar"
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
+    "categoryId": "youtube",
+    "customTitle": "NORMOSE"
   }
 ];
 
@@ -261,11 +366,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Engadget"
     },
     {
-      "url": "https://mashable.com/feeds/rss/all",
-      "categoryId": "tech",
-      "customTitle": "Mashable"
-    },
-    {
       "url": "https://www.omglinux.com/feed/",
       "categoryId": "tech",
       "customTitle": "OMG! Linux"
@@ -274,11 +374,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.omgubuntu.co.uk/feed",
       "categoryId": "tech",
       "customTitle": "OMG! Ubuntu"
-    },
-    {
-      "url": "https://techcrunch.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "TechCrunch"
     },
     {
       "url": "https://thenextweb.com/feed",
@@ -341,7 +436,7 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Stuff Made Here"
     }
   ],
-  "Pacote Inicial Padrão": [
+  "Pacote Mix Global": [
     {
       "url": "https://www.b9.com.br/feed/",
       "categoryId": "design",
@@ -458,11 +553,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "MacMagazine"
     },
     {
-      "url": "https://mashable.com/feeds/rss/all",
-      "categoryId": "tech",
-      "customTitle": "Mashable"
-    },
-    {
       "url": "https://meiobit.com/feed/",
       "categoryId": "tech",
       "customTitle": "Meio Bit"
@@ -476,11 +566,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.omgubuntu.co.uk/feed",
       "categoryId": "tech",
       "customTitle": "OMG! Ubuntu"
-    },
-    {
-      "url": "https://techcrunch.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "TechCrunch"
     },
     {
       "url": "https://tecnoblog.net/feed/",
