@@ -627,7 +627,7 @@ const App: React.FC = () => {
           )}
         </main>
         <Suspense fallback={null}>
-          <Modal isOpen={isFeedManagerOpen} onClose={closeFeedManager}>
+          <Modal isOpen={isFeedManagerOpen} onClose={closeFeedManager} size="full">
             <FeedManager
               currentFeeds={feeds}
               setFeeds={setFeeds}
