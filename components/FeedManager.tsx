@@ -48,8 +48,7 @@ import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { FeedAnalytics } from "./FeedAnalytics";
 import { useLanguage } from "../contexts/LanguageContext";
-
-
+import { FeedDuplicateModal } from "./FeedDuplicateModal";
 
 interface FeedManagerProps {
   currentFeeds: FeedSource[];
@@ -1675,94 +1674,15 @@ URL: ${discoveredFeed.url}`
       )}
 
       {/* Duplicate Feed Warning Modal */}
-      {duplicateWarning?.show && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center mb-6">
-              <div className="flex-shrink-0 bg-yellow-500/10 p-3 rounded-full">
-                <svg
-                  className="w-8 h-8 text-yellow-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-xl font-bold text-white">
-                  {t('feeds.duplicate.title')}
-                </h3>
-                <p className="text-gray-400 text-sm mt-1">
-                  {t('feeds.duplicate.message')}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{t('feeds.duplicate.existing')}</div>
-                <div className="text-white font-medium text-lg mb-1">
-                  {duplicateWarning.result.duplicateOf?.customTitle ||
-                    duplicateWarning.result.duplicateOf?.url}
-                </div>
-                <div className="text-[rgb(var(--color-accent))] text-sm font-mono truncate">
-                  {duplicateWarning.result.duplicateOf?.url}
-                </div>
-              </div>
-
-              <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{t('feeds.duplicate.new')}</div>
-                <div className="text-white font-medium text-lg mb-1">
-                  {duplicateWarning.newUrl}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm text-gray-400 px-2">
-                <span>{t('feeds.duplicate.confidence')}:</span>
-                <span
-                  className={`font-bold ${duplicateWarning.result.confidence > 0.9
-                    ? "text-red-400"
-                    : duplicateWarning.result.confidence > 0.7
-                      ? "text-yellow-400"
-                      : "text-green-400"
-                    }`}
-                >
-                  {Math.round(duplicateWarning.result.confidence * 100)}%
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={handleDuplicateWarningReject}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl transition-all font-medium"
-              >
-                {t('feeds.action.cancel_dont_add')}
-              </button>
-
-              <button
-                onClick={handleDuplicateWarningReplace}
-                className="w-full bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-3 rounded-xl transition-all font-medium shadow-lg shadow-yellow-600/20"
-              >
-                {t('feeds.action.replace')}
-              </button>
-
-              <button
-                onClick={handleDuplicateWarningAccept}
-                className="w-full bg-transparent border border-white/10 hover:bg-white/5 text-gray-300 hover:text-white px-4 py-3 rounded-xl transition-all font-medium"
-              >
-                {t('feeds.action.add_anyway')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <FeedDuplicateModal 
+        isOpen={!!duplicateWarning?.show}
+        onClose={handleDuplicateWarningReject}
+        onReplace={handleDuplicateWarningReplace}
+        onAddAnyway={handleDuplicateWarningAccept}
+        existingFeed={duplicateWarning?.result.duplicateOf || null}
+        newFeedUrl={duplicateWarning?.newUrl || ''}
+        confidence={duplicateWarning?.result.confidence || 0}
+      />
     </div>
   );
 };
