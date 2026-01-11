@@ -59,7 +59,7 @@ Edite as seções abaixo para alterar o comportamento da aplicação.
 ## Configurações Globais
 
 - Tema Padrão: dark-blue
-- Layout Global: masonry
+- Layout Global: bento
 - Formato Hora: 24h
 - Cidade Padrão: São Paulo
 
