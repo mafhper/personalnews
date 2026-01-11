@@ -44,11 +44,11 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
     <div className="flex flex-col gap-8 pb-12">
       
       {/* SECTION 1: HERO GRID (Desktop: 2/3 + 1/3 split) */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-1 lg:gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
         
         {/* Main Hero */}
         <div 
-            className="lg:col-span-8 group relative overflow-hidden rounded-2xl min-h-[400px] lg:min-h-[500px] shadow-2xl cursor-pointer"
+            className="lg:col-span-8 group relative overflow-hidden rounded-2xl min-h-[300px] sm:min-h-[400px] lg:min-h-[500px] shadow-2xl cursor-pointer"
             onClick={() => handleOpenReader(heroArticle)}
         >
            <div 
@@ -61,7 +61,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
               <span className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-widest text-white uppercase bg-[rgb(var(--color-primary))] rounded-full">
                 Top Story
               </span>
-              <h1 className="text-3xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-md">
+              <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-md">
                 <a 
                     href={heroArticle.link} 
                     target="_blank" 
@@ -84,7 +84,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
         </div>
 
         {/* Right Column: Top Stories */}
-        <div className="lg:col-span-4 flex flex-col gap-1 lg:gap-6">
+        <div className="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 lg:gap-6">
           {topStories.map((article) => (
              <div 
                 key={article.link} 

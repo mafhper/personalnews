@@ -28,7 +28,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "order": 1,
     "isDefault": true,
     "color": "#F0EEE9",
-    "layoutMode": "modern",
+    "layoutMode": "gallery",
     "headerPosition": "floating",
     "isPinned": false
   },
@@ -52,7 +52,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "color": "#3B82F6",
     "layoutMode": "modern",
     "headerPosition": "floating",
-    "isPinned": true
+    "isPinned": false
   },
   {
     "id": "politics",
@@ -223,6 +223,11 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
     "categoryId": "youtube",
     "customTitle": "NORMOSE"
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+    "categoryId": "youtube",
+    "customTitle": "Diolinux"
   }
 ];
 
@@ -297,6 +302,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
       "categoryId": "youtube",
       "customTitle": "NORMOSE"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+      "categoryId": "youtube",
+      "customTitle": "Diolinux"
     }
   ],
   "International Mix": [
@@ -621,6 +631,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
       "categoryId": "youtube",
       "customTitle": "Corridor Crew"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+      "categoryId": "youtube",
+      "customTitle": "Diolinux"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",

@@ -313,7 +313,6 @@ const App: React.FC = () => {
     searchResults,
     articles,
     selectedCategory,
-    isArticleRead,
     categories,
     categorizedFeeds,
     feeds,

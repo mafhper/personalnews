@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { usePagination } from "../hooks/usePagination";
 
@@ -171,7 +171,7 @@ describe("usePagination", () => {
       expect(result.current.currentPage).toBe(0);
     });
 
-    it("should reset when reset triggers change", () => {
+    it("should reset when reset triggers change", async () => {
       let trigger = "initial";
       const { result, rerender } = renderHook(
         ({ triggerValue }) => usePagination(100, 10, { resetTriggers: [triggerValue] }),
@@ -189,7 +189,9 @@ describe("usePagination", () => {
       trigger = "changed";
       rerender({ triggerValue: trigger });
 
-      expect(result.current.currentPage).toBe(0);
+      await waitFor(() => {
+        expect(result.current.currentPage).toBe(0);
+      });
     });
   });
 
@@ -280,7 +282,7 @@ describe("usePagination", () => {
   });
 
   describe("Dynamic total items", () => {
-    it("should adjust current page when total items decrease", () => {
+    it("should adjust current page when total items decrease", async () => {
       const { result, rerender } = renderHook(
         ({ totalItems }) => usePagination(totalItems, 10),
         { initialProps: { totalItems: 100 } }
@@ -296,7 +298,9 @@ describe("usePagination", () => {
       // Reduce total items
       rerender({ totalItems: 25 }); // Now only 3 pages
 
-      expect(result.current.currentPage).toBe(2); // Should adjust to last valid page
+      await waitFor(() => {
+        expect(result.current.currentPage).toBe(2); // Should adjust to last valid page
+      });
       expect(result.current.totalPages).toBe(3);
     });
 

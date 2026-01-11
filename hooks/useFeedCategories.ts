@@ -40,7 +40,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       }
       return prev;
     });
-  }, []);
+  }, [setCategories]);
 
   const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position']): FeedCategory => {
     const newCategory: FeedCategory = {

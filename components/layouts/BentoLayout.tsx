@@ -38,7 +38,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
     switch (patternIndex) {
       case 0: // Hero - Large featured
         return {
-          span: 'md:col-span-2 md:row-span-2',
+          span: 'sm:col-span-2 sm:row-span-2',
           size: 'hero',
           showDescription: true,
           containerClass: 'min-h-[400px] md:min-h-[500px]'
@@ -46,7 +46,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
       case 1: // Tall
       case 6:
         return {
-          span: 'md:col-span-1 md:row-span-2',
+          span: 'sm:col-span-1 sm:row-span-2',
           size: 'tall',
           showDescription: false,
           containerClass: 'min-h-[400px] md:min-h-[500px]'
@@ -54,14 +54,14 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
       case 3: // Wide
       case 10:
         return {
-          span: 'md:col-span-2 md:row-span-1',
+          span: 'sm:col-span-2 sm:row-span-1',
           size: 'wide',
           showDescription: true,
           containerClass: 'min-h-[220px]'
         };
       default: // Standard
         return {
-          span: 'md:col-span-1 md:row-span-1',
+          span: 'sm:col-span-1 sm:row-span-1',
           size: 'standard',
           showDescription: false,
           containerClass: 'min-h-[220px]'
@@ -73,7 +73,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
     <>
       <div className="w-full p-4 md:p-6">
         {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
           {articles.map((article, index) => {
             const style = getCardStyle(index);
             const isHero = style.size === 'hero';

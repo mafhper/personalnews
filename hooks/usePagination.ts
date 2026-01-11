@@ -132,14 +132,14 @@ export const usePagination = (
   // Reset pagination when triggers change
   useEffect(() => {
     if (resetTriggers.length > 0) {
-      resetPagination();
+      setTimeout(() => resetPagination(), 0);
     }
   }, resetTriggers); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ensure current page is valid when total pages change
   useEffect(() => {
     if (currentPage >= totalPages && totalPages > 0) {
-      setPage(totalPages - 1);
+      setTimeout(() => setPage(totalPages - 1), 0);
     }
   }, [currentPage, totalPages, setPage]);
 

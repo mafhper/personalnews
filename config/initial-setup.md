@@ -67,9 +67,9 @@ Edite as seções abaixo para alterar o comportamento da aplicação.
 
 Formato: `- [id] Nome | Cor: #HEX | Layout: modo | Header: pos | Pinned: true - Descrição`
 
-- [design] Design | Cor: #f0eee9| Layout: modern| Header: floating | Pinned: false - Inspiração visual, UX/UI e tendências de design.
+- [design] Design | Cor: #f0eee9| Layout: gallery | Header: floating | Pinned: false - Inspiração visual, UX/UI e tendências de design.
 - [games] Games | Cor: #F59E0B | Layout: masonry | Header: floating| Pinned: false - Lançamentos, reviews e cultura gamer.
-- [tech] Tecnologia | Cor: #3B82F6 | Layout: modern | Header: floating| Pinned: true - Notícias sobre desenvolvimento, gadgets e o mundo tech.
+- [tech] Tecnologia | Cor: #3B82F6 | Layout: modern | Header: floating| Pinned: false - Notícias sobre desenvolvimento, gadgets e o mundo tech.
 - [politics] Política | Cor: #EF4444 | Layout: list | Header: floating| Pinned: false - Cobertura política nacional e internacional.
 - [youtube] Vídeos| Cor: #c4302b| Layout: brutalist | Header: floating| Pinned: false - Canais preferidos do Youtube.
 
@@ -118,6 +118,7 @@ Formato: `- [id] Nome | Cor: #HEX | Layout: modo | Header: pos | Pinned: true - 
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
 - NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
 
 # Listas Curadas
 
@@ -154,6 +155,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
 - NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
 
 ## International Mix
 
@@ -250,6 +252,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
 - bizlychannel: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
 - GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
 - NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>

@@ -147,7 +147,7 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
       // Reset the input
       event.target.value = "";
     },
-    [importFavorites]
+    [importFavorites, alertSuccess]
   );
 
   const handleRemoveFavorite = useCallback(

@@ -32,7 +32,7 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
 
   const { confirmDanger, alertSuccess } = useNotificationReplacements();
 
-  const loadErrorHistory = () => {
+  const loadErrorHistory = React.useCallback(() => {
     try {
       const stored = localStorage.getItem('feed-error-history');
       if (stored) {
@@ -51,13 +51,15 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
     } catch (e) {
       console.error("Failed to load feed error history", e);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
-      loadErrorHistory();
+      // Use requestAnimationFrame to avoid "synchronous setState" error during render/mount
+      const handle = requestAnimationFrame(() => loadErrorHistory());
+      return () => cancelAnimationFrame(handle);
     }
-  }, [isOpen]);
+  }, [isOpen, loadErrorHistory]);
 
   const getFilteredFeeds = () => {
     return errorHistory.filter(item => {

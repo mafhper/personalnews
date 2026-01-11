@@ -230,7 +230,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     <>
       {/* Spacer for fixed position headers - reserves space for the fixed header */}
       {needsSpacer && (
-        <div className={`${spacerHeightClasses[headerConfig.height]}`} />
+        <div className={`${spacerHeightClasses[headerConfig.height]} mb-[52px] md:mb-0 transition-[margin] duration-300`} />
       )}
       <header
         className={`${headerPositionClasses[headerConfig.position]} z-30 transition-all duration-300 ${blurClass} ${
@@ -245,27 +245,6 @@ const Header: React.FC<HeaderProps> = (props) => {
       >
         <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''} overflow-hidden`}>
           
-          {/* MOBILE/TABLET: Categories FIRST - always visible, centered (hidden on md+ screens) */}
-          <div className="md:hidden w-full py-2">
-            <div className="overflow-x-auto no-scrollbar w-full" style={{ scrollbarWidth: 'none' }}>
-              <div className="flex items-center justify-center min-w-full space-x-2">
-                {activeCategories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => props.onNavigation(category.id)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-medium border transition-all whitespace-nowrap min-h-[32px] ${
-                      props.selectedCategory === category.id
-                        ? "bg-[rgb(var(--color-primary))] text-white border-[rgb(var(--color-primary))] shadow-lg"
-                        : "bg-[rgba(255,255,255,0.05)] text-gray-300 border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {/* Main header row - on mobile, hidden when scrolled. On desktop, always visible */}
           {/* Auto height when logo and title are both hidden */}
           <div className={`
@@ -276,7 +255,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           `}>
             
             {/* Left Section: Logo & Title */}
-            <div className={`flex items-center space-x-4 group flex-shrink-0 ${isCentered ? 'lg:absolute lg:left-4' : ''}`}>
+            <div className={`flex items-center space-x-2 md:space-x-4 group flex-shrink-0 ${isCentered ? 'lg:absolute lg:left-4' : ''}`}>
               {headerConfig.showLogo !== false && (
               <div 
                   className="relative cursor-pointer" 
@@ -310,7 +289,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               )}
               {headerConfig.showTitle ? (
                 <h1 
-                    className="font-bold tracking-tight cursor-pointer pb-1 text-xl truncate max-w-[150px] md:max-w-none"
+                    className="font-bold tracking-tight cursor-pointer pb-1 text-lg md:text-xl truncate max-w-[120px] sm:max-w-[200px] md:max-w-none"
                     onClick={props.onGoHome}
                     style={{ color: headerConfig.titleGradient?.enabled ? undefined : (headerConfig.titleColor || 'rgb(var(--color-text))') }}
                 >
@@ -467,6 +446,27 @@ const Header: React.FC<HeaderProps> = (props) => {
                     isActive={mobileMenuOpen}
                   />
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* MOBILE/TABLET: Categories (Second row) - always visible, centered (hidden on md+ screens) */}
+          <div className="md:hidden w-full py-2 border-t border-white/5 bg-black/10">
+            <div className="overflow-x-auto no-scrollbar w-full" style={{ scrollbarWidth: 'none' }}>
+              <div className="flex items-center px-1 space-x-2">
+                {activeCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => props.onNavigation(category.id)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
+                      props.selectedCategory === category.id
+                        ? "bg-[rgb(var(--color-primary))] text-white border-[rgb(var(--color-primary))] shadow-lg"
+                        : "bg-[rgba(255,255,255,0.05)] text-gray-300 border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.1)]"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

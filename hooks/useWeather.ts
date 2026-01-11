@@ -100,11 +100,17 @@ export const useWeather = () => {
   }, [fetchWeather]);
 
   useEffect(() => {
-    fetchWeather(state.city);
+    // Use requestAnimationFrame to avoid "synchronous setState" error during initial mount
+    const handle = requestAnimationFrame(() => fetchWeather(state.city));
+    
     // Refresh every 30 minutes
     const interval = setInterval(() => fetchWeather(state.city), 30 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    return () => {
+      cancelAnimationFrame(handle);
+      clearInterval(interval);
+    };
+  }, [fetchWeather, state.city]);
 
   const getWeatherIcon = useCallback(() => {
     if (!state.data) return '🌡️';

@@ -38,7 +38,9 @@ export function useSearch(
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  
+  // Derived state
+  const isSearching = query !== debouncedQuery;
 
   // Build search index when articles change
   const searchIndex = useMemo(() => {
@@ -48,10 +50,8 @@ export function useSearch(
 
   // Debounce the query
   useEffect(() => {
-    setIsSearching(true);
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
-      setIsSearching(false);
     }, debounceMs);
 
     return () => {
@@ -62,13 +62,32 @@ export function useSearch(
   // Perform search when debounced query changes
   useEffect(() => {
     if (!searchIndex || !debouncedQuery.trim() || debouncedQuery.length < minQueryLength) {
-      setResults([]);
-      return;
+      const handle = requestAnimationFrame(() => setResults([]));
+      return () => cancelAnimationFrame(handle);
     }
 
-    const searchResults = searchArticles(searchIndex, debouncedQuery, searchOptions);
-    setResults(searchResults);
-  }, [searchIndex, debouncedQuery, minQueryLength, searchOptions.includeTitle, searchOptions.includeContent, searchOptions.includeCategories, searchOptions.includeSource, searchOptions.fuzzyThreshold]);
+    // Reconstruct options to avoid dependency on the unstable searchOptions object
+    const effectiveOptions: SearchOptions = {
+      includeTitle: searchOptions.includeTitle,
+      includeContent: searchOptions.includeContent,
+      includeCategories: searchOptions.includeCategories,
+      includeSource: searchOptions.includeSource,
+      fuzzyThreshold: searchOptions.fuzzyThreshold
+    };
+
+    const searchResults = searchArticles(searchIndex, debouncedQuery, effectiveOptions);
+    const handle = requestAnimationFrame(() => setResults(searchResults));
+    return () => cancelAnimationFrame(handle);
+  }, [
+    searchIndex, 
+    debouncedQuery, 
+    minQueryLength, 
+    searchOptions.includeTitle, 
+    searchOptions.includeContent, 
+    searchOptions.includeCategories, 
+    searchOptions.includeSource, 
+    searchOptions.fuzzyThreshold
+  ]);
 
   const hasResults = results.length > 0;
 
@@ -136,12 +155,9 @@ export function useSearchSuggestions(
   query: string,
   maxSuggestions: number = 5
 ): string[] {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-
-  useEffect(() => {
+  const suggestions = useMemo(() => {
     if (!searchIndex || !query.trim() || query.length < 2) {
-      setSuggestions([]);
-      return;
+      return [];
     }
 
     const queryLower = query.toLowerCase();
@@ -165,7 +181,7 @@ export function useSearchSuggestions(
       .sort((a, b) => a.length - b.length)
       .slice(0, maxSuggestions);
 
-    setSuggestions(sortedSuggestions);
+    return sortedSuggestions;
   }, [searchIndex, query, maxSuggestions]);
 
   return suggestions;

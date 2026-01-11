@@ -6,15 +6,35 @@
 import React from 'react';
 import { performanceMonitor } from './performanceMonitor';
 
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+interface ExtendedPerformance extends Performance {
+  memory?: PerformanceMemory;
+}
+
+interface NetworkRequestBatch {
+  id: string;
+  urls: string[];
+  startTime: number;
+  endTime?: number;
+  status: string;
+  results: any[];
+}
+
+
 /**
  * Performance decorator for React components
  * Automatically tracks component render performance
  */
-export function withPerformanceTracking<T extends React.ComponentType<any>>(
-  Component: T,
+export function withPerformanceTracking<P extends object>(
+  Component: React.ComponentType<P>,
   componentName?: string
-): T {
-  const WrappedComponent = (props: React.ComponentProps<T>) => {
+): React.FC<P> {
+  const WrappedComponent: React.FC<P> = (props: P) => {
     const name = componentName || Component.displayName || Component.name || 'Unknown Component';
 
     React.useEffect(() => {
@@ -29,13 +49,13 @@ export function withPerformanceTracking<T extends React.ComponentType<any>>(
       }, 0);
 
       return () => clearTimeout(timeoutId);
-    }, []);
+    }, [name, props]);
 
     return React.createElement(Component, props);
   };
 
-  WrappedComponent.displayName = `withPerformanceTracking(${name})`;
-  return WrappedComponent as T;
+  WrappedComponent.displayName = `withPerformanceTracking(${componentName || Component.displayName || Component.name || 'Unknown'})`;
+  return WrappedComponent;
 }
 
 /**
@@ -58,9 +78,10 @@ export function usePerformanceTracking(componentName: string, dependencies?: Rea
         });
       }
     };
-  }, []);
+  }, [componentName, renderCount]);
 
   // Track re-renders
+  const deps = dependencies ? [...dependencies] : [];
   React.useEffect(() => {
     setRenderCount(prev => prev + 1);
 
@@ -75,7 +96,7 @@ export function usePerformanceTracking(componentName: string, dependencies?: Rea
         });
       }, 0);
     }
-  }, dependencies);
+  }, [componentName, renderCount, ...deps]);
 
   return {
     renderCount,
@@ -148,7 +169,7 @@ export async function trackFeedParsing<T>(
     // Extract article count if result has articles
     const articleCount = Array.isArray(result) ? result.length :
       (result && typeof result === 'object' && 'articles' in result) ?
-        (result as any).articles?.length || 0 : 0;
+        (result as { articles?: unknown[] }).articles?.length || 0 : 0;
 
     performanceMonitor.completeFeedLoading(id, articleCount, {
       resultType: typeof result,
@@ -211,7 +232,7 @@ export async function trackSearchPerformance<T>(
 
     const resultCount = Array.isArray(result) ? result.length :
       (result && typeof result === 'object' && 'length' in result) ?
-        (result as any).length : 0;
+        (result as { length: number }).length : 0;
 
     performanceMonitor.completeApplication(id, {
       searchTerm,
@@ -388,7 +409,7 @@ export const perfDebugger = {
  */
 // Legacy compatibility state
 let networkRequestCount = 0;
-const networkRequestBatches: any[] = [];
+const networkRequestBatches: NetworkRequestBatch[] = [];
 const performanceSnapshots: PerformanceSnapshot[] = [];
 let isBackgroundedState = false;
 let backgroundedStartTime = 0;
@@ -396,8 +417,9 @@ let backgroundMonitoringInterval: NodeJS.Timeout | null = null;
 
 export const performanceUtils = {
   getMemoryUsage: () => {
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
+    const perf = performance as ExtendedPerformance;
+    if (perf.memory) {
+      const memory = perf.memory;
       return {
         used: memory.usedJSHeapSize / 1024 / 1024, // MB
         total: memory.totalJSHeapSize / 1024 / 1024, // MB
@@ -428,7 +450,7 @@ export const performanceUtils = {
 
   createNetworkRequestBatch: (urls: string[]) => {
     const batchId = `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const batch = {
+    const batch: NetworkRequestBatch = {
       id: batchId,
       urls,
       startTime: Date.now(),
@@ -441,7 +463,7 @@ export const performanceUtils = {
   },
 
   completeNetworkRequestBatch: (batchId: string, results: any[], status: string) => {
-    const batch = networkRequestBatches.find((b: any) => b.id === batchId);
+    const batch = networkRequestBatches.find((b) => b.id === batchId);
     if (batch) {
       batch.endTime = Date.now();
       batch.status = status;

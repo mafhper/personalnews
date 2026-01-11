@@ -100,16 +100,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
   }, [showImportModal, selectedListType]);
 
-  // Auto-validate feeds on load (only when in feeds tab)
-  useEffect(() => {
-    if (currentFeeds.length > 0 && activeTab === "feeds") {
-      validateAllFeeds();
-    }
-  }, [activeTab]); // Removed currentFeeds dependency to prevent loop, relies on explicit refresh or tab switch
-
-  // --- Actions & Handlers ---
-
-  const validateAllFeeds = async () => {
+  const validateAllFeeds = React.useCallback(async () => {
     if (isValidating) return;
     setIsValidating(true);
     const urls = currentFeeds.map((feed) => feed.url);
@@ -124,7 +115,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     } finally {
       setIsValidating(false);
     }
-  };
+  }, [currentFeeds, isValidating, logger]);
+
+  // Auto-validate feeds on load (only when in feeds tab)
+  useEffect(() => {
+    if (currentFeeds.length > 0 && activeTab === "feeds") {
+      validateAllFeeds();
+    }
+  }, [activeTab, validateAllFeeds, currentFeeds.length]);
 
   const validateSingleFeed = async (url: string) => {
     try {
