@@ -13,6 +13,7 @@ interface FeedListTabProps {
   onEdit: (url: string) => void;
   onShowError: (url: string, validation?: FeedValidationResult) => void;
   onMoveCategory: (feedUrl: string, categoryId: string) => void;
+  onToggleHideFromAll?: (url: string) => void;
   onRefreshAll?: () => void;
 }
 
@@ -25,10 +26,11 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   onEdit,
   onShowError,
   onMoveCategory,
+  onToggleHideFromAll,
   onRefreshAll
 }) => {
   const { t } = useLanguage();
-  
+
   // Local state for filtering and display
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -89,46 +91,46 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
           />
         </div>
         <div className="flex gap-2">
-            <select
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="flex-1 sm:flex-none bg-black/20 text-white px-4 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
-            >
+          >
             <option value="all">Todos</option>
             <option value="valid">{t('analytics.valid')}</option>
             <option value="invalid">{t('analytics.issues')}</option>
             <option value="unchecked">{t('analytics.pending')}</option>
-            </select>
+          </select>
 
-            {onRefreshAll && (
+          {onRefreshAll && (
             <button
-                onClick={() => {
+              onClick={() => {
                 if (window.confirm('Deseja forçar a revalidação de todos os feeds? Isso pode levar alguns instantes.')) {
-                    onRefreshAll();
+                  onRefreshAll();
                 }
-                }}
-                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-2 rounded-lg border border-blue-500/20 transition-colors"
-                title="Forçar Revalidação"
+              }}
+              className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-2 rounded-lg border border-blue-500/20 transition-colors"
+              title="Forçar Revalidação"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+              </svg>
             </button>
-            )}
+          )}
         </div>
       </div>
 
       {/* Lists */}
       <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar p-3 sm:p-4 space-y-3" role="list">
-        
+
         {/* Empty State */}
         {filteredFeeds.length === 0 && (
-           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              <svg className="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              <p>Nenhum feed encontrado com os filtros atuais.</p>
-           </div>
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <svg className="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <p>Nenhum feed encontrado com os filtros atuais.</p>
+          </div>
         )}
 
         {/* Issues Section */}
@@ -162,6 +164,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                     onShowError={(url) => onShowError(url, validations.get(url))}
                     categories={categories}
                     onMoveCategory={(catId: string) => onMoveCategory(feed.url, catId)}
+                    onToggleHideFromAll={onToggleHideFromAll}
                   />
                 ))}
               </div>
@@ -199,6 +202,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                     onShowError={(url) => onShowError(url, validations.get(url))}
                     categories={categories}
                     onMoveCategory={(catId: string) => onMoveCategory(feed.url, catId)}
+                    onToggleHideFromAll={onToggleHideFromAll}
                   />
                 ))}
               </div>
@@ -236,6 +240,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                     onShowError={(url) => onShowError(url, validations.get(url))}
                     categories={categories}
                     onMoveCategory={(catId: string) => onMoveCategory(feed.url, catId)}
+                    onToggleHideFromAll={onToggleHideFromAll}
                   />
                 ))}
               </div>

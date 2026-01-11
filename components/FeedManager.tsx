@@ -57,14 +57,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const { categories, createCategory, resetToDefaults } = useFeedCategories();
   const { refreshAppearance } = useAppearance();
   const { t } = useLanguage();
-  
+
   // State
   const [activeTab, setActiveTab] = useState<TabType>("feeds");
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedCategory, setNewFeedCategory] = useState<string>("");
   const [processingUrl, setProcessingUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Validation State
   const [feedValidations, setFeedValidations] = useState<Map<string, FeedValidationResult>>(new Map());
   const [isValidating, setIsValidating] = useState(false);
@@ -84,7 +84,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedListType, setSelectedListType] = useState<string>('');
-  
+
   // Duplicate Detection State
   const [duplicateWarning, setDuplicateWarning] = useState<{ show: boolean; result: DuplicateDetectionResult; newUrl: string } | null>(null);
 
@@ -140,29 +140,29 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     // Simple prompt for now, could be a modal
     const newUrl = prompt("Editar URL do feed:", oldUrl);
     if (newUrl && newUrl !== oldUrl) {
-        handleSaveEdit(oldUrl, newUrl);
+      handleSaveEdit(oldUrl, newUrl);
     } else {
-        setEditingFeed(null);
+      setEditingFeed(null);
     }
   };
 
   const handleSaveEdit = async (oldUrl: string, newUrlStr: string) => {
-      const validation = await validateSingleFeed(newUrlStr);
-      if (validation && validation.status === "valid") {
-        setFeeds((prev) =>
-          prev.map((feed) =>
-            feed.url === oldUrl ? { ...feed, url: newUrlStr } : feed
-          )
-        );
-      } else {
-        await alertError("O novo URL não é um feed RSS válido.");
-      }
-      setEditingFeed(null);
+    const validation = await validateSingleFeed(newUrlStr);
+    if (validation && validation.status === "valid") {
+      setFeeds((prev) =>
+        prev.map((feed) =>
+          feed.url === oldUrl ? { ...feed, url: newUrlStr } : feed
+        )
+      );
+    } else {
+      await alertError("O novo URL não é um feed RSS válido.");
+    }
+    setEditingFeed(null);
   };
 
   const handleRemoveFeed = async (urlToRemove: string) => {
-    if(await confirmDanger("Tem certeza que deseja remover este feed?")) {
-        setFeeds((prev) => prev.filter((f) => f.url !== urlToRemove));
+    if (await confirmDanger("Tem certeza que deseja remover este feed?")) {
+      setFeeds((prev) => prev.filter((f) => f.url !== urlToRemove));
     }
   };
 
@@ -176,6 +176,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       })
     );
     alertSuccess("Categoria atualizada!");
+  };
+
+  const handleToggleHideFromAll = (feedUrl: string) => {
+    setFeeds((prev) =>
+      prev.map((feed) => {
+        if (feed.url === feedUrl) {
+          return { ...feed, hideFromAll: !feed.hideFromAll };
+        }
+        return feed;
+      })
+    );
   };
 
   const handleExportOPML = async () => {
@@ -266,8 +277,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     try {
       return await feedDuplicateDetector.detectDuplicate(newUrl, currentFeeds);
     } catch (error) {
-       // Fallback logic could go here
-       return { isDuplicate: false, confidence: 0, reason: "Error" };
+      // Fallback logic could go here
+      return { isDuplicate: false, confidence: 0, reason: "Error" };
     }
   };
 
@@ -296,7 +307,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
     try {
       const result = await feedValidator.validateFeedWithDiscovery(url, (status, progress) => {
-         setDiscoveryProgress((prev) => new Map(prev.set(url, { status, progress })));
+        setDiscoveryProgress((prev) => new Map(prev.set(url, { status, progress })));
       });
 
       if (result.isValid) {
@@ -311,16 +322,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       } else {
         // Offer force add
         if (await confirm(`Validação falhou: ${result.error}\n\nDeseja adicionar mesmo assim?`)) {
-             setFeeds((prev) => [...prev, { url: url, categoryId: newFeedCategory || undefined }]);
-             setNewFeedUrl("");
-             await alertSuccess("Feed adicionado (sem validação).");
+          setFeeds((prev) => [...prev, { url: url, categoryId: newFeedCategory || undefined }]);
+          setNewFeedUrl("");
+          await alertSuccess("Feed adicionado (sem validação).");
         }
       }
     } catch (error: any) {
-        await alertError(`Erro: ${error.message}`);
+      await alertError(`Erro: ${error.message}`);
     } finally {
-        setProcessingUrl(null);
-        setDiscoveryInProgress((prev) => { const s = new Set(prev); s.delete(url); return s; });
+      setProcessingUrl(null);
+      setDiscoveryInProgress((prev) => { const s = new Set(prev); s.delete(url); return s; });
     }
   };
 
@@ -355,7 +366,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-gray-900 overflow-hidden">
-      
+
       {/* Clean Header */}
       <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between bg-black/40 shrink-0">
         <div>
@@ -373,13 +384,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         </div>
 
         <button
-            onClick={closeModal}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/15 hover:border-white/20 transition-all duration-200"
-            aria-label="Close"
+          onClick={closeModal}
+          className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/15 hover:border-white/20 transition-all duration-200"
+          aria-label="Close"
         >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
@@ -389,11 +400,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as TabType)}
-            className={`flex-1 px-4 py-3 sm:py-4 text-sm font-medium transition-colors whitespace-nowrap min-w-[60px] sm:min-w-[100px] flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${
-              activeTab === tab.id
-                ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))] bg-white/5"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
-            }`}
+            className={`flex-1 px-4 py-3 sm:py-4 text-sm font-medium transition-colors whitespace-nowrap min-w-[60px] sm:min-w-[100px] flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${activeTab === tab.id
+              ? "text-[rgb(var(--color-accent))] border-b-2 border-[rgb(var(--color-accent))] bg-white/5"
+              : "text-gray-400 hover:text-white hover:bg-white/5"
+              }`}
             title={tab.label}
           >
             <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,6 +426,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             onEdit={handleEditFeed}
             onShowError={handleShowError}
             onMoveCategory={moveFeedToCategory}
+            onToggleHideFromAll={handleToggleHideFromAll}
             onRefreshAll={onRefreshFeeds}
           />
         )}
@@ -445,13 +456,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
         {activeTab === 'tools' && (
           <FeedToolsTab
-             onExportOPML={handleExportOPML}
-             onImportOPML={() => fileInputRef.current?.click()}
-             onShowImportModal={() => setShowImportModal(true)}
-             onResetDefaults={handleResetToDefaults}
-             onCleanupErrors={() => setShowCleanupModal(true)}
-             onDeleteAll={handleDeleteAll}
-             feedCount={currentFeeds.length}
+            onExportOPML={handleExportOPML}
+            onImportOPML={() => fileInputRef.current?.click()}
+            onShowImportModal={() => setShowImportModal(true)}
+            onResetDefaults={handleResetToDefaults}
+            onCleanupErrors={() => setShowCleanupModal(true)}
+            onDeleteAll={handleDeleteAll}
+            feedCount={currentFeeds.length}
           />
         )}
 
@@ -467,17 +478,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       </div>
 
       {/* Hidden File Input for Import */}
-      <input 
-        type="file" 
+      <input
+        type="file"
         ref={fileInputRef}
         accept=".opml,.xml"
-        onChange={handleFileImport} 
-        className="hidden" 
+        onChange={handleFileImport}
+        className="hidden"
       />
 
       {/* --- Modals --- */}
-      
-      <FeedDuplicateModal 
+
+      <FeedDuplicateModal
         isOpen={!!duplicateWarning?.show}
         onClose={() => setDuplicateWarning(null)}
         onReplace={handleDuplicateWarningReplace}
@@ -494,11 +505,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           originalUrl={currentDiscoveryResult.originalUrl}
           discoveredFeeds={currentDiscoveryResult.discoveredFeeds}
           onSelectFeed={async (feed) => {
-             // Quick implementation of select logic
-             setFeeds((prev) => [...prev, { url: feed.url, customTitle: feed.title, categoryId: newFeedCategory || undefined }]);
-             setShowDiscoveryModal(false);
-             setCurrentDiscoveryResult(null);
-             await alertSuccess("Feed adicionado!");
+            // Quick implementation of select logic
+            setFeeds((prev) => [...prev, { url: feed.url, customTitle: feed.title, categoryId: newFeedCategory || undefined }]);
+            setShowDiscoveryModal(false);
+            setCurrentDiscoveryResult(null);
+            await alertSuccess("Feed adicionado!");
           }}
         />
       )}
@@ -512,24 +523,24 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
       {showImportModal && (
         createPortal(
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-               <div className="bg-gray-900 border border-white/10 rounded-xl p-6 max-w-md w-full">
-                  <h3 className="text-xl font-bold text-white mb-4">Importar Listas Curadas</h3>
-                  <select 
-                    value={selectedListType}
-                    onChange={(e) => setSelectedListType(e.target.value)}
-                    className="w-full bg-black/30 text-white p-2 rounded mb-4 border border-white/10"
-                  >
-                     {Object.keys(DEFAULT_CURATED_LISTS).map(k => <option key={k} value={k}>{k}</option>)}
-                  </select>
-                  <div className="flex gap-2">
-                     <button onClick={() => handleImportCurated('merge')} className="flex-1 bg-blue-600 text-white py-2 rounded">Mesclar</button>
-                     <button onClick={() => handleImportCurated('replace')} className="flex-1 bg-red-600/20 text-red-400 py-2 rounded">Substituir Tudo</button>
-                  </div>
-                  <button onClick={() => setShowImportModal(false)} className="w-full mt-2 text-gray-500 py-2">Cancelar</button>
-               </div>
-            </div>,
-            document.body
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+            <div className="bg-gray-900 border border-white/10 rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-white mb-4">Importar Listas Curadas</h3>
+              <select
+                value={selectedListType}
+                onChange={(e) => setSelectedListType(e.target.value)}
+                className="w-full bg-black/30 text-white p-2 rounded mb-4 border border-white/10"
+              >
+                {Object.keys(DEFAULT_CURATED_LISTS).map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+              <div className="flex gap-2">
+                <button onClick={() => handleImportCurated('merge')} className="flex-1 bg-blue-600 text-white py-2 rounded">Mesclar</button>
+                <button onClick={() => handleImportCurated('replace')} className="flex-1 bg-red-600/20 text-red-400 py-2 rounded">Substituir Tudo</button>
+              </div>
+              <button onClick={() => setShowImportModal(false)} className="w-full mt-2 text-gray-500 py-2">Cancelar</button>
+            </div>
+          </div>,
+          document.body
         )
       )}
 
@@ -537,16 +548,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       {showErrorModal && selectedErrorFeed && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
           <div className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-             <div className="p-6 border-b border-white/10 flex justify-between">
-                <h3 className="text-white font-bold">Detalhes do Erro</h3>
-                <button onClick={() => setShowErrorModal(false)} className="text-gray-400">✕</button>
-             </div>
-             <div className="p-6 overflow-y-auto">
-                <p className="text-red-400 font-mono mb-4">{selectedErrorFeed.validation.error}</p>
-                <div className="bg-black/30 p-4 rounded text-sm text-gray-300 font-mono break-all">
-                    {selectedErrorFeed.url}
-                </div>
-             </div>
+            <div className="p-6 border-b border-white/10 flex justify-between">
+              <h3 className="text-white font-bold">Detalhes do Erro</h3>
+              <button onClick={() => setShowErrorModal(false)} className="text-gray-400">✕</button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <p className="text-red-400 font-mono mb-4">{selectedErrorFeed.validation.error}</p>
+              <div className="bg-black/30 p-4 rounded text-sm text-gray-300 font-mono break-all">
+                {selectedErrorFeed.url}
+              </div>
+            </div>
           </div>
         </div>,
         document.body

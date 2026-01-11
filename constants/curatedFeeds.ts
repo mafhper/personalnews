@@ -7,8 +7,9 @@ import { FeedSource, FeedCategory } from "../types";
 
 export const INITIAL_APP_CONFIG = {
   "theme": "dark-blue",
-  "layout": "masonry",
+  "layout": "bento",
   "timeFormat": "24h",
+  "header": "sticky",
   "weatherCity": "São Paulo"
 };
 
@@ -22,59 +23,59 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "isPinned": true
   },
   {
-    "id": "design",
-    "name": "Design",
-    "description": "Inspiração visual, UX/UI e tendências de design.",
     "order": 1,
     "isDefault": true,
+    "name": "Design",
+    "id": "design",
     "color": "#F0EEE9",
     "layoutMode": "gallery",
-    "headerPosition": "floating",
-    "isPinned": false
+    "headerPosition": "sticky",
+    "isPinned": false,
+    "description": "Inspiração visual, UX/UI e tendências de design."
   },
   {
-    "id": "games",
-    "name": "Games",
-    "description": "Lançamentos, reviews e cultura gamer.",
     "order": 2,
     "isDefault": true,
+    "name": "Games",
+    "id": "games",
     "color": "#F59E0B",
     "layoutMode": "masonry",
-    "headerPosition": "floating",
-    "isPinned": false
+    "headerPosition": "sticky",
+    "isPinned": false,
+    "description": "Lançamentos, reviews e cultura gamer."
   },
   {
-    "id": "tech",
-    "name": "Tecnologia",
-    "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech.",
     "order": 3,
     "isDefault": true,
+    "name": "Tecnologia",
+    "id": "tech",
     "color": "#3B82F6",
     "layoutMode": "modern",
-    "headerPosition": "floating",
-    "isPinned": false
+    "headerPosition": "sticky",
+    "isPinned": false,
+    "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
   },
   {
-    "id": "politics",
-    "name": "Política",
-    "description": "Cobertura política nacional e internacional.",
     "order": 4,
     "isDefault": true,
+    "name": "Política",
+    "id": "politics",
     "color": "#EF4444",
     "layoutMode": "list",
-    "headerPosition": "floating",
-    "isPinned": false
+    "headerPosition": "sticky",
+    "isPinned": false,
+    "description": "Cobertura política nacional e internacional."
   },
   {
-    "id": "youtube",
-    "name": "Vídeos",
-    "description": "Canais preferidos do Youtube.",
     "order": 5,
     "isDefault": true,
+    "name": "Vídeos",
+    "id": "youtube",
     "color": "#C4302B",
     "layoutMode": "brutalist",
-    "headerPosition": "floating",
-    "isPinned": false
+    "headerPosition": "sticky",
+    "isPinned": false,
+    "description": "Canais preferidos do Youtube."
   }
 ];
 
@@ -207,27 +208,32 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
     "categoryId": "youtube",
-    "customTitle": "1155 do ET"
+    "customTitle": "1155 do ET",
+    "hideFromAll": true
   },
   {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
     "categoryId": "youtube",
-    "customTitle": "Corridor Crew"
+    "customTitle": "Corridor Crew",
+    "hideFromAll": true
   },
   {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
     "categoryId": "youtube",
-    "customTitle": "News Rockstar"
+    "customTitle": "News Rockstar",
+    "hideFromAll": true
   },
   {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
     "categoryId": "youtube",
-    "customTitle": "NORMOSE"
+    "customTitle": "NORMOSE",
+    "hideFromAll": true
   },
   {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
     "categoryId": "youtube",
-    "customTitle": "Diolinux"
+    "customTitle": "Diolinux",
+    "hideFromAll": true
   }
 ];
 

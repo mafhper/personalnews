@@ -195,7 +195,8 @@ export const VirtualizedArticleList: React.FC<VirtualizedArticleListProps> = ({
       }
     },
     threshold: 70, // Higher threshold for more intentional swipes
-    element: scrollElementRef.current
+    threshold: 70, // Higher threshold for more intentional swipes
+    // element: scrollElementRef.current - Removed to avoid accessing ref during render
   });
 
   return (

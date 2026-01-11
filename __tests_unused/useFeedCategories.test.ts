@@ -18,6 +18,7 @@ Object.defineProperty(window, 'localStorage', {
 // Mock useLocalStorage hook
 vi.mock('../hooks/useLocalStorage', () => ({
   useLocalStorage: vi.fn((key: string, defaultValue: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const [value, setValue] = require('react').useState(defaultValue);
     return [value, setValue];
   }),

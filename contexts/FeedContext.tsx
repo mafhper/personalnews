@@ -1,27 +1,15 @@
-import React, { createContext, useContext, useEffect, useCallback, ReactNode } from 'react';
+import React, { useEffect, useCallback, ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { useProgressiveFeedLoading, FeedLoadingState } from '../hooks/useProgressiveFeedLoading';
+import { useProgressiveFeedLoading } from '../hooks/useProgressiveFeedLoading';
 import { useNotification } from './NotificationContext';
 import { getDefaultFeeds, migrateFeeds } from '../utils/feedMigration';
-import type { FeedSource, Article } from '../types';
-
-interface FeedContextType {
-  feeds: FeedSource[];
-  setFeeds: (feeds: FeedSource[] | ((val: FeedSource[]) => FeedSource[])) => void;
-  articles: Article[];
-  loadingState: FeedLoadingState;
-  loadFeeds: (forceRefresh?: boolean, priorityCategoryId?: string) => Promise<void>;
-  retryFailedFeeds: () => Promise<void>;
-  cancelLoading: () => void;
-  refreshFeeds: (categoryFilter?: string) => void;
-}
-
-const FeedContext = createContext<FeedContextType | undefined>(undefined);
+import type { FeedSource } from '../types';
+import { FeedContext } from './FeedContextState';
 
 export const FeedProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [feeds, setFeeds] = useLocalStorage<FeedSource[]>('rss-feeds', getDefaultFeeds());
   const { showNotification } = useNotification();
-  
+
   // Feed migration logic
   useEffect(() => {
     const migrationResult = migrateFeeds(feeds);
@@ -34,9 +22,9 @@ export const FeedProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           '🎉 Feeds atualizados! Agora você tem 16 feeds organizados por categoria.',
           { type: 'success', duration: 8000 }
         );
-      } else if (migrationResult.reason?.includes('categorization')) {
+      } else if (migrationResult.reason?.includes('categorization') || migrationResult.reason?.includes('Synchronized')) {
         showNotification(
-          '✨ Seus feeds foram organizados automaticamente por categoria.',
+          '✨ Seus feeds foram sincronizados com as configurações do sistema.',
           { type: 'info', duration: 6000 }
         );
       }
@@ -71,12 +59,4 @@ export const FeedProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return <FeedContext.Provider value={value}>{children}</FeedContext.Provider>;
-};
-
-export const useFeeds = () => {
-  const context = useContext(FeedContext);
-  if (context === undefined) {
-    throw new Error('useFeeds must be used within a FeedProvider');
-  }
-  return context;
 };

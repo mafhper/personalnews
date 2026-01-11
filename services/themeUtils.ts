@@ -1,4 +1,5 @@
 import type { ExtendedTheme, ThemePreset, ThemeSettings } from '../types';
+import { INITIAL_APP_CONFIG } from '../constants/curatedFeeds';
 
 // Color conversion utilities
 export const hexToRgb = (hex: string): string => {
@@ -209,7 +210,7 @@ export const defaultThemePresets: ThemePreset[] = [
 
 // Default theme settings
 export const defaultThemeSettings: ThemeSettings = {
-  currentTheme: defaultThemePresets.find(preset => preset.id === 'light-blue')?.theme || defaultThemePresets[0].theme,
+  currentTheme: defaultThemePresets.find(preset => preset.id === INITIAL_APP_CONFIG.theme)?.theme || defaultThemePresets[0].theme,
   customThemes: [],
   autoDetectSystemTheme: true,
   systemThemeOverride: null,

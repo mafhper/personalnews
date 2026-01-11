@@ -5,15 +5,15 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ---
 
-# Documentação
+# Configurações Globais
 
-Esta seção serve como guia para as opções disponíveis. Não edite esta seção.
+---
 
-## Dicionário de Opções
+### Tema Padrão - Define a paleta de cores inicial da interface
 
-Use os valores abaixo nos campos correspondentes para personalizar o setup inicial na seção de Configuração Ativa.
+- Tema Padrão: dark-blue;
 
-### Temas (ID do Tema)
+Opções:
 
 - `dark-blue`: Azul Escuro (Padrão Dark)
 - `dark-green`: Verde Escuro (Nature)
@@ -22,7 +22,15 @@ Use os valores abaixo nos campos correspondentes para personalizar o setup inici
 - `light-pink`: Rosa Claro (Soft)
 - `light-cyan`: Ciano Claro (Minimal)
 
-### Layouts de Conteúdo (Modo)
+---
+
+---
+
+### Layout Global - Define como os artigos são organizados na grade
+
+- Layout Global: bento;
+
+Opções:
 
 - `grid`: Grade de revista clássica
 - `list`: Lista limpa estilo portal
@@ -43,7 +51,15 @@ Use os valores abaixo nos campos correspondentes para personalizar o setup inici
 - `pocketfeeds`: Minimalista focado em leitura
 - `modern`: Portal moderno com cards flutuantes
 
-### Posição do Cabeçalho (Header)
+---
+
+---
+
+### Header Global - Define o comportamento do cabeçalho de navegação
+
+- Header Global: sticky;
+
+Opções:
 
 - `static`: Move junto com o scroll (topo da página)
 - `sticky`: Fixado no topo enquanto você navega
@@ -52,26 +68,84 @@ Use os valores abaixo nos campos correspondentes para personalizar o setup inici
 
 ---
 
-# Configuração Ativa
+---
 
-Edite as seções abaixo para alterar o comportamento da aplicação.
+### Formato Hora - Define como as datas e horas são exibidas
 
-## Configurações Globais
+- Formato Hora: 24h;
 
-- Tema Padrão: dark-blue
-- Layout Global: bento
-- Formato Hora: 24h
-- Cidade Padrão: São Paulo
+Opções:
+
+- `12h`: Formato AM/PM
+- `24h`: Formato militar/europeu
+
+---
+
+---
+
+### Cidade Padrão - Define o local para as informações de clima
+
+- Cidade Padrão: São Paulo;
+
+---
 
 ## Categorias
 
-Formato: `- [id] Nome | Cor: #HEX | Layout: modo | Header: pos | Pinned: true - Descrição`
+---
 
-- [design] Design | Cor: #f0eee9| Layout: gallery | Header: sticky | Pinned: false - Inspiração visual, UX/UI e tendências de design.
-- [games] Games | Cor: #F59E0B | Layout: masonry | Header: sticky | Pinned: false - Lançamentos, reviews e cultura gamer.
-- [tech] Tecnologia | Cor: #3B82F6 | Layout: modern | Header: sticky | Pinned: false - Notícias sobre desenvolvimento, gadgets e o mundo tech.
-- [politics] Política | Cor: #EF4444 | Layout: list | Header: sticky | Pinned: false - Cobertura política nacional e internacional.
-- [youtube] Vídeos| Cor: #c4302b| Layout: brutalist | Header: sticky | Pinned: false - Canais preferidos do Youtube.
+- Nome: Design;
+- ID: design;
+- Cor: #F0EEE9;
+- Layout: gallery;
+- Header: sticky;
+- Pinned: false;
+- Descrição: Inspiração visual, UX/UI e tendências de design.;
+
+---
+---
+
+- Nome: Games;
+- ID: games;
+- Cor: #F59E0B;
+- Layout: masonry;
+- Header: sticky;
+- Pinned: false;
+- Descrição: Lançamentos, reviews e cultura gamer.;
+
+---
+---
+
+- Nome: Tecnologia;
+- ID: tech;
+- Cor: #3B82F6;
+- Layout: modern;
+- Header: sticky;
+- Pinned: false;
+- Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
+
+---
+---
+
+- Nome: Política;
+- ID: politics;
+- Cor: #EF4444;
+- Layout: list;
+- Header: sticky;
+- Pinned: false;
+- Descrição: Cobertura política nacional e internacional.;
+
+---
+---
+
+- Nome: Vídeos;
+- ID: youtube;
+- Cor: #C4302B;
+- Layout: brutalist;
+- Header: sticky;
+- Pinned: false;
+- Descrição: Canais preferidos do Youtube.;
+
+---
 
 ## Feeds Iniciais
 
@@ -114,11 +188,11 @@ Formato: `- [id] Nome | Cor: #HEX | Layout: modo | Header: pos | Pinned: true - 
 
 ### youtube
 
-- 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
-- Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
-- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
-- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
-- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
+- 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
+- Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
+- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA> | Hide-from-All: true
+- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw> | Hide-from-All: true
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
 
 # Listas Curadas
 
@@ -197,7 +271,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
 - Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ>
-
 
 ## Pacote Mix Global
 

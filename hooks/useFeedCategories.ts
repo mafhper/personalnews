@@ -26,14 +26,14 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     setCategories(prev => {
       const existingIds = new Set(prev.map(c => c.id));
       const missingDefaults = DEFAULT_CATEGORIES.filter(d => !existingIds.has(d.id));
-      
+
       if (missingDefaults.length > 0) {
         // Add missing defaults while preserving existing order/customizations
         return [...prev, ...missingDefaults].sort((a, b) => {
           // Keep defaults at the top in their defined order, customs after
           const orderA = a.isDefault ? (DEFAULT_CATEGORIES.find(d => d.id === a.id)?.order ?? 999) : 999;
           const orderB = b.isDefault ? (DEFAULT_CATEGORIES.find(d => d.id === b.id)?.order ?? 999) : 999;
-          
+
           if (orderA !== orderB) return orderA - orderB;
           return a.order - b.order;
         });
@@ -110,8 +110,8 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
         result['uncategorized'].push(feed);
       }
 
-      // All feeds also go to 'all' category
-      if (result['all']) {
+      // All feeds also go to 'all' category, UNLESS hidden
+      if (result['all'] && !feed.hideFromAll) {
         result['all'].push(feed);
       }
     });

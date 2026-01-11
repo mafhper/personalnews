@@ -36,13 +36,14 @@ function sync() {
 
   let currentSection = '';
   let currentCategoryForFeeds = '';
+  let buildingCategory: any = null;
 
   lines.forEach(line => {
     const trimmed = line.trim();
     if (!trimmed) return;
 
     // Detectar Seções
-    if (trimmed.startsWith('## Configurações Globais')) {
+    if (trimmed.startsWith('# Configurações Globais') || trimmed.startsWith('## Configurações Globais')) {
       currentSection = 'globals';
       return;
     }
@@ -61,45 +62,54 @@ function sync() {
 
     // Processar Globais
     if (currentSection === 'globals' && trimmed.startsWith('- ')) {
-      if (trimmed.includes('Tema Padrão:')) globalConfig.theme = trimmed.split(':')[1].trim();
-      if (trimmed.includes('Layout Global:')) globalConfig.layout = trimmed.split(':')[1].trim();
-      if (trimmed.includes('Formato Hora:')) globalConfig.timeFormat = trimmed.split(':')[1].trim();
-      if (trimmed.includes('Cidade Padrão:')) globalConfig.weatherCity = trimmed.split(':')[1].trim();
+      const colonIndex = trimmed.indexOf(':');
+      if (colonIndex === -1) return;
+
+      const key = trimmed.substring(2, colonIndex).trim().toLowerCase();
+      let value = trimmed.substring(colonIndex + 1).trim();
+      if (value.endsWith(';')) value = value.slice(0, -1).trim();
+
+      if (key === 'tema padrão') globalConfig.theme = value;
+      if (key === 'layout global') globalConfig.layout = value;
+      if (key === 'header global') globalConfig.header = value;
+      if (key === 'formato hora') globalConfig.timeFormat = value;
+      if (key === 'cidade padrão') globalConfig.weatherCity = value;
     }
 
     // Processar Categorias
-    if (currentSection === 'categories' && trimmed.startsWith('- [')) {
-      const idMatch = trimmed.match(/- \[([^\]]+)\]/);
-      if (!idMatch) return;
-
-      const id = idMatch[1];
-      // Rest of parsing logic remains similar but ensures no emojis are accidentally captured
-      const mainContent = trimmed.split(']')[1];
-      const [metaPart, ...descParts] = mainContent.split(' - ');
-      const description = descParts.join(' - ').trim();
-      const metaItems = metaPart.split('|').map(i => i.trim());
-      const name = metaItems[0];
-
-      const category: any = {
-        id,
-        name,
-        description: description || undefined,
-        order: categories.length,
-        isDefault: true
-      };
-
-      metaItems.forEach(item => {
-        if (item.includes(':')) {
-          const [key, value] = item.split(':').map(i => i.trim().toLowerCase());
-          if (key === 'cor') category.color = value.toUpperCase();
-          if (key === 'layout') category.layoutMode = value;
-          if (key === 'header') category.headerPosition = value;
-          if (key === 'pinned') category.isPinned = value === 'true';
+    if (currentSection === 'categories') {
+      if (trimmed === '---') {
+        if (buildingCategory && buildingCategory.id) {
+          if (!buildingCategory.color) buildingCategory.color = '#3B82F6';
+          categories.push(buildingCategory);
+          buildingCategory = null;
+        } else {
+          buildingCategory = {
+            order: categories.length,
+            isDefault: true
+          };
         }
-      });
+        return;
+      }
 
-      if (!category.color) category.color = '#3B82F6';
-      categories.push(category);
+      if (buildingCategory && trimmed.startsWith('- ')) {
+        const colonIndex = trimmed.indexOf(':');
+        if (colonIndex === -1) return;
+
+        const key = trimmed.substring(2, colonIndex).trim().toLowerCase();
+        let value = trimmed.substring(colonIndex + 1).trim();
+        // Remove trailing semicolon if present
+        if (value.endsWith(';')) value = value.slice(0, -1).trim();
+
+        if (key === 'nome') buildingCategory.name = value;
+        if (key === 'id') buildingCategory.id = value;
+        if (key === 'cor') buildingCategory.color = value.toUpperCase();
+        if (key === 'layout') buildingCategory.layoutMode = value;
+        if (key === 'header') buildingCategory.headerPosition = value;
+        if (key === 'pinned') buildingCategory.isPinned = value.toLowerCase() === 'true';
+        if (key === 'hide-from-all') buildingCategory.hideFromAll = value.toLowerCase() === 'true';
+        if (key === 'descrição') buildingCategory.description = value;
+      }
     }
 
     // Processar Feeds
@@ -107,14 +117,26 @@ function sync() {
       if (trimmed.startsWith('### ')) {
         currentCategoryForFeeds = trimmed.replace('### ', '').toLowerCase();
       } else if (trimmed.startsWith('- ') && currentCategoryForFeeds) {
-        // Regex adjusted to handle optional angle brackets around URLs
-        const match = trimmed.match(/- ([^:]+): (?:<)?(https?:\/\/[^\s>]+)(?:>)?/);
+        // Regex adjusted to handle optional angle brackets around URLs and metadata
+        const match = trimmed.match(/- ([^:]+): (?:<)?(https?:\/\/[^\s>| ]+)(?:>)?(?:\s*\|\s*(.*))?/);
         if (match) {
-          feeds.push({
+          const feed: any = {
             url: match[2],
             categoryId: currentCategoryForFeeds,
             customTitle: match[1]
-          });
+          };
+
+          const metadata = match[3];
+          if (metadata) {
+            const metaItems = metadata.split('|').map(i => i.trim());
+            metaItems.forEach(item => {
+              if (item.includes(':')) {
+                const [key, value] = item.split(':').map(i => i.trim().toLowerCase());
+                if (key === 'hide-from-all') feed.hideFromAll = value === 'true';
+              }
+            });
+          }
+          feeds.push(feed);
         }
       }
     }
@@ -131,13 +153,25 @@ function sync() {
       } else if (trimmed.startsWith('### ')) {
         currentCategoryForCurated = trimmed.replace('### ', '').toLowerCase();
       } else if (trimmed.startsWith('- ') && currentCuratedList && currentCategoryForCurated) {
-        const match = trimmed.match(/- ([^:]+): (?:<)?(https?:\/\/[^\s>]+)(?:>)?/);
+        const match = trimmed.match(/- ([^:]+): (?:<)?(https?:\/\/[^\s>| ]+)(?:>)?(?:\s*\|\s*(.*))?/);
         if (match) {
-          curatedLists[currentCuratedList].push({
+          const feed: any = {
             url: match[2],
             categoryId: currentCategoryForCurated,
             customTitle: match[1]
-          });
+          };
+
+          const metadata = match[3];
+          if (metadata) {
+            const metaItems = metadata.split('|').map(i => i.trim());
+            metaItems.forEach(item => {
+              if (item.includes(':')) {
+                const [key, value] = item.split(':').map(i => i.trim().toLowerCase());
+                if (key === 'hide-from-all') feed.hideFromAll = value === 'true';
+              }
+            });
+          }
+          curatedLists[currentCuratedList].push(feed);
         }
       }
     }

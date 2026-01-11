@@ -41,16 +41,37 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
     };
   }
 
-  // Add auto-categorization logic here if needed for legacy feeds
-  // For now, we just return the current feeds if they exist
+  // Sync metadata from DEFAULT_FEEDS to existing feeds
   let hasChanges = false;
   const migratedFeeds = currentFeeds.map(feed => {
-    // Example migration: ensure categoryId exists if it matches a known feed
-    if (!feed.categoryId) {
-      const knownFeed = DEFAULT_FEEDS.find(df => df.url === feed.url);
-      if (knownFeed && knownFeed.categoryId) {
+    const knownFeed = DEFAULT_FEEDS.find(df => df.url === feed.url);
+    if (knownFeed) {
+      const updatedFeed = { ...feed };
+      let changed = false;
+
+      // Ensure categoryId exists or is updated if it matches default
+      if (!feed.categoryId && knownFeed.categoryId) {
+        updatedFeed.categoryId = knownFeed.categoryId;
+        changed = true;
+      }
+
+      // Sync hideFromAll from defaults
+      if (feed.hideFromAll !== knownFeed.hideFromAll) {
+        updatedFeed.hideFromAll = knownFeed.hideFromAll;
+        changed = true;
+      }
+
+      // Sync customTitle if not set or if it's currently using the URL
+      if (!feed.customTitle || feed.customTitle === feed.url) {
+        if (knownFeed.customTitle && feed.customTitle !== knownFeed.customTitle) {
+          updatedFeed.customTitle = knownFeed.customTitle;
+          changed = true;
+        }
+      }
+
+      if (changed) {
         hasChanges = true;
-        return { ...feed, categoryId: knownFeed.categoryId };
+        return updatedFeed;
       }
     }
     return feed;
@@ -60,7 +81,7 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
     return {
       migrated: true,
       feeds: migratedFeeds,
-      reason: 'Categorized legacy feeds'
+      reason: 'Synchronized metadata with default configurations'
     };
   }
 

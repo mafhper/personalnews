@@ -4,10 +4,11 @@ import type { HeaderConfig, ContentConfig, LayoutPreset, BackgroundConfig } from
 import { useExtendedTheme } from './useExtendedTheme';
 import { DEFAULT_CONFIG } from '../services/auraWallpaperService';
 import { BUILT_LAYOUT_PRESETS } from '../config/layoutPresets.config';
+import { INITIAL_APP_CONFIG } from '../constants/curatedFeeds';
 
 const defaultHeaderConfig: HeaderConfig = {
   style: 'default',
-  position: 'floating',
+  position: (INITIAL_APP_CONFIG.header as any) || 'floating',
   height: 'compact',
   showTitle: false,
   showLogo: true,
@@ -75,7 +76,7 @@ export const useAppearance = () => {
 
   const [activeLayoutId, setActiveLayoutId] = useLocalStorage<string | null>(
     'appearance-active-layout',
-    'modern'
+    INITIAL_APP_CONFIG.layout || 'modern'
   );
 
   // Store user manual overrides to ensure they take precedence over presets

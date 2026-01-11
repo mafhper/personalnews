@@ -50,6 +50,7 @@ export interface FeedSource {
   url: string;
   categoryId?: string;
   customTitle?: string;
+  hideFromAll?: boolean;
 }
 
 export interface FeedCategory {

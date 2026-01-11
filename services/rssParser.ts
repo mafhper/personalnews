@@ -16,6 +16,7 @@ import type { Article } from "../types";
 import { getLogger } from "./logger";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
 import { parseSecureRssXml } from "./secureXmlParser";
+import { proxyManager } from "./proxyManager";
 import { getAlternativeUrls } from "./feedUrlMapper";
 import { sanitizeWithDomPurify } from "../utils/sanitization";
 
@@ -28,58 +29,6 @@ const logger = getLogger();
 
 // --- HELPERS ---
 
-/**
- * Fetch com timeout
- */
-async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}): Promise<Response> {
-  const { timeout = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
-
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, {
-      ...fetchOptions,
-      signal: options.signal || controller.signal,
-    });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-}
-
-/**
- * Circuit Breaker Simples
- */
-const circuitBreaker = {
-  failures: {} as Record<string, number>,
-  threshold: 3,
-  resetTime: 60000, // 1 minuto
-  lastFailure: {} as Record<string, number>,
-
-  isOpen(provider: string): boolean {
-    if ((this.failures[provider] || 0) >= this.threshold) {
-      const timeSinceLastFailure = Date.now() - (this.lastFailure[provider] || 0);
-      if (timeSinceLastFailure > this.resetTime) {
-        this.failures[provider] = 0; // Reset após tempo de espera
-        return false;
-      }
-      return true;
-    }
-    return false;
-  },
-
-  recordFailure(provider: string) {
-    this.failures[provider] = (this.failures[provider] || 0) + 1;
-    this.lastFailure[provider] = Date.now();
-  },
-
-  recordSuccess(provider: string) {
-    this.failures[provider] = 0;
-  }
-};
 
 function cleanDescription(text: string): string {
   if (!text) return "";
@@ -133,10 +82,10 @@ function selectBestImage(candidates: ImageCandidate[]): string | undefined {
     // 2. Prefer media:content/enclosure over thumbnail/html
     const scoreA = a.score + (a.source === 'media:content' || a.source === 'enclosure' ? 2 : 0);
     const scoreB = b.score + (b.source === 'media:content' || b.source === 'enclosure' ? 2 : 0);
-    
+
     // 3. Sort by known width
     if (a.width && b.width && a.width !== b.width) return b.width - a.width;
-    
+
     // 4. Sort by file size (if known)
     if (a.size && b.size && a.size !== b.size) return b.size - a.size;
 
@@ -145,7 +94,7 @@ function selectBestImage(candidates: ImageCandidate[]): string | undefined {
 
   // Filter out tiny tracking pixels or icons (unless it's the only option)
   const viable = candidates.filter(c => !c.width || c.width > 50);
-  
+
   return viable.length > 0 ? viable[0].url : candidates[0].url;
 }
 
@@ -179,9 +128,9 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
       const content = sanitizeWithDomPurify(item.content || item.description || "");
       const author = sanitizeAuthor(item.author || "");
       const categories = Array.isArray(item.categories) ? item.categories : [];
-      
+
       let imageUrl = item.thumbnail || item.enclosure?.link;
-      
+
       // Validação básica de URL de imagem
       if (imageUrl && !imageUrl.startsWith('http')) imageUrl = undefined;
 
@@ -325,7 +274,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         const enc = enclosureElements[j];
         const type = getAttr(enc, "type") || "";
         const url = getAttr(enc, "url");
-        
+
         if (url) {
           if (type.startsWith("image/")) {
             imageCandidates.push({
@@ -346,7 +295,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         const type = getAttr(el, "type") || getAttr(el, "medium") || "";
         const width = parseInt(getAttr(el, "width") || "0");
         const height = parseInt(getAttr(el, "height") || "0");
-        
+
         if (url && (type.startsWith("image") || type === "image")) {
           imageCandidates.push({
             url,
@@ -363,7 +312,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         const contents = mediaGroups[j].getElementsByTagName("media:content");
         for (let k = 0; k < contents.length; k++) processMediaElement(contents[k]);
       }
-      
+
       const mediaContents = item.getElementsByTagName("media:content");
       for (let j = 0; j < mediaContents.length; j++) processMediaElement(mediaContents[j]);
 
@@ -387,8 +336,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       const imgPatterns = [
         /<img[^>]+src=["']([^"']+)["'][^>]*>/gi, // Global match
       ];
-      
-      const searchContent = htmlContent.substring(0, 3000); 
+
+      const searchContent = htmlContent.substring(0, 3000);
       for (const pattern of imgPatterns) {
         let match;
         while ((match = pattern.exec(searchContent)) !== null) {
@@ -396,7 +345,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
             imageCandidates.push({
               url: match[1],
               source: 'html',
-              score: 1 
+              score: 1
             });
             if (imageCandidates.length > 3) break;
           }
@@ -423,7 +372,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
             }
           }
         } catch (e) {
-           // Invalid URL
+          // Invalid URL
         }
       }
 
@@ -452,28 +401,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
 
 // --- PROVIDERS (DEFINED AFTER PARSERS) ---
 
-const RSS_PROVIDERS = [
-  {
-    name: "CorsProxy",
-    url: "https://corsproxy.io",
-    format: (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    parser: parseXmlResponse
-  },
-  {
-    name: "CodeTabs",
-    url: "https://api.codetabs.com/v1/proxy",
-    format: (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-    parser: parseXmlResponse
-  },
-  {
-    name: "RSS2JSON",
-    url: "https://api.rss2json.com/v1/api.json",
-    format: (url: string) => `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`,
-    parser: parseRss2JsonResponse
-  }
-];
-
-// --- MAIN FUNCTIONS ---
+// --- FETCHING ---
 
 function validateResponse(content: string): boolean {
   if (!content || content.trim().length === 0) return false;
@@ -484,78 +412,55 @@ function validateResponse(content: string): boolean {
   return trimmed.startsWith('<') || trimmed.startsWith('{');
 }
 
-async function tryProvider(
-  provider: typeof RSS_PROVIDERS[0],
-  url: string,
-  signal?: AbortSignal
-): Promise<{ title: string; articles: Article[] }> {
-  if (circuitBreaker.isOpen(provider.name)) {
-    throw new Error(`Circuit breaker open for ${provider.name}`);
-  }
-
-  const proxyUrl = provider.format(url);
-
-  logger.debug(`Trying provider: ${provider.name}`, {
-    component: "rssParser",
-    additionalData: { feedUrl: url, proxyUrl },
-  });
-
-  const response = await fetchWithTimeout(proxyUrl, { signal });
-
-  if (!response.ok) {
-    if (response.status === 422) {
-      throw new Error(`Provider ${provider.name} cannot process this feed (422 Unprocessable Entity)`);
-    }
-    throw new Error(`Provider ${provider.name} returned ${response.status}: ${response.statusText}`);
-  }
-
-  const content = await response.text();
-
-  if (!validateResponse(content)) {
-    throw new Error(`Invalid response from ${provider.name}`);
-  }
-
-  const result = provider.parser(content, url);
-
-  if (!result.articles || result.articles.length === 0) {
-    throw new Error(`No articles parsed from ${provider.name}`);
-  }
-
-  circuitBreaker.recordSuccess(provider.name);
-
-  logger.info(`Successfully fetched via ${provider.name}`, {
-    component: "rssParser",
-    additionalData: {
-      feedUrl: url,
-      provider: provider.name,
-      articlesCount: result.articles.length
-    },
-  });
-
-  return result;
-}
-
 async function fetchRssFeed(
   url: string,
-  signal?: AbortSignal
+  _signal?: AbortSignal
 ): Promise<{ title: string; articles: Article[] }> {
   const urlsToTry = getAlternativeUrls(url);
   let lastError: Error = new Error("Unknown error");
 
   for (const currentUrl of urlsToTry) {
-    for (const provider of RSS_PROVIDERS) {
-      try {
-        const result = await tryProvider(provider, currentUrl, signal);
-        return result;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        circuitBreaker.recordFailure(provider.name);
+    try {
+      // Use ProxyManager for robust fetching with failover
+      const result = await proxyManager.tryProxiesWithFailover(currentUrl);
+
+      // Parse the content returned by the proxy
+      // We try to detect if it's JSON (RSS2JSON) or XML
+      const content = result.content;
+
+      if (!validateResponse(content)) {
+        throw new Error(`Invalid response format from proxy (${result.proxyUsed})`);
       }
+
+      // Try parsing as JSON first if it looks like JSON
+      if (content.trim().startsWith('{')) {
+        try {
+          const jsonResult = parseRss2JsonResponse(content, currentUrl);
+          if (jsonResult.articles.length > 0) return jsonResult;
+        } catch (e) {
+          // Identify if it was just a failed JSON parse or if content is actually XML
+          // proceed to XML parsing
+        }
+      }
+
+      // Fallback to XML parsing
+      const xmlResult = parseXmlResponse(content, currentUrl);
+      if (xmlResult.articles.length > 0) return xmlResult;
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      logger.warn(`Failed to fetch/parse ${currentUrl} via ProxyManager`, {
+        component: 'rssParser',
+        additionalData: { error: lastError.message }
+      });
     }
   }
 
-  throw new Error(`All providers failed. Last error: ${lastError.message}`);
+  throw new Error(`Failed to fetch RSS feed: ${lastError.message}`);
 }
+
+// function fetchRssFeed removed (replaced by new implementation above)
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -646,7 +551,7 @@ export async function parseRssUrl(
         title: "RSS Feed Temporarily Unavailable",
         link: url,
         pubDate: new Date(),
-        description: `Unable to fetch this RSS feed. This may be due to CORS restrictions or temporary server issues. The feed will be retried automatically.`, 
+        description: `Unable to fetch this RSS feed. This may be due to CORS restrictions or temporary server issues. The feed will be retried automatically.`,
         sourceTitle: "System Notice",
         categories: ["system", "unavailable"],
       }],

@@ -1,7 +1,8 @@
 import { render, renderHook, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { FeedProvider, useFeeds } from '../contexts/FeedContext';
+import { FeedProvider } from '../contexts/FeedContext';
+import { useFeeds } from '../contexts/FeedContextState';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import { ModalProvider } from '../contexts/ModalContext';
 import { UIProvider } from '../contexts/UIContext';
@@ -37,7 +38,7 @@ describe('FeedContext', () => {
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <NotificationProvider>
-        <FeedProvider>{children}</FeedProvider>
+      <FeedProvider>{children}</FeedProvider>
     </NotificationProvider>
   );
 

@@ -15,6 +15,7 @@ import {
   type DiscoveredFeed,
   type FeedDiscoveryResult,
 } from "./feedDiscoveryService";
+import { detectEnvironment, isCrossOrigin } from "./environmentDetector";
 
 // Enhanced error classification system
 export enum ValidationErrorType {
@@ -58,17 +59,17 @@ export interface FeedValidationResult {
   url: string;
   isValid: boolean;
   status:
-    | "valid"
-    | "invalid"
-    | "timeout"
-    | "network_error"
-    | "parse_error"
-    | "checking"
-    | "cors_error"
-    | "not_found"
-    | "server_error"
-    | "discovery_required"
-    | "discovery_in_progress";
+  | "valid"
+  | "invalid"
+  | "timeout"
+  | "network_error"
+  | "parse_error"
+  | "checking"
+  | "cors_error"
+  | "not_found"
+  | "server_error"
+  | "discovery_required"
+  | "discovery_in_progress";
   statusCode?: number;
   error?: string;
   responseTime?: number;
@@ -322,95 +323,121 @@ class FeedValidatorService {
     };
 
     let lastError: ValidationError | undefined;
+    let directSkipped = false;
+
+    // Check environment to decide if we should skip direct validation
+    // In browser, direct requests to other domains usually fail with CORS
+    // unless the user is on localhost (where we might have a local proxy or dev setup)
+    const env = detectEnvironment();
+    if (typeof window !== 'undefined' && isCrossOrigin(url) && !env.isLocalhost) {
+      directSkipped = true;
+      // Add a placeholder attempt record for UI visibility
+      result.validationAttempts.push({
+        attemptNumber: 0,
+        timestamp: Date.now(),
+        method: "direct",
+        success: false,
+        error: {
+          type: ValidationErrorType.CORS_ERROR,
+          message: "Direct validation skipped (Cross-Origin prediction)",
+          suggestions: ["Skipped direct fetch to avoid console errors"],
+          retryable: false
+        },
+        responseTime: 0
+      });
+    }
 
     // First, attempt direct validation with exponential backoff retry
-    for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
-      const attemptStartTime = Date.now();
+    // Only if not skipped
+    if (!directSkipped) {
+      for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+        const attemptStartTime = Date.now();
 
-      try {
-        const attemptResult = await this.attemptValidation(url, attempt);
+        try {
+          const attemptResult = await this.attemptValidation(url, attempt);
 
-        const attemptRecord: ValidationAttempt = {
-          attemptNumber: attempt,
-          timestamp: attemptStartTime,
-          method: attempt === 1 ? "direct" : "retry",
-          success: attemptResult.success,
-          responseTime: Date.now() - attemptStartTime,
-          statusCode: attemptResult.statusCode,
-        };
+          const attemptRecord: ValidationAttempt = {
+            attemptNumber: attempt,
+            timestamp: attemptStartTime,
+            method: attempt === 1 ? "direct" : "retry",
+            success: attemptResult.success,
+            responseTime: Date.now() - attemptStartTime,
+            statusCode: attemptResult.statusCode,
+          };
 
-        if (attemptResult.success && attemptResult.feedData) {
-          // Success case
-          result.isValid = true;
-          result.status = "valid";
-          result.title = attemptResult.feedData.title;
-          result.description = attemptResult.feedData.description;
-          result.statusCode = attemptResult.statusCode;
-          result.responseTime = Date.now() - attemptStartTime;
-          result.suggestions = ["Feed validated successfully"];
+          if (attemptResult.success && attemptResult.feedData) {
+            // Success case
+            result.isValid = true;
+            result.status = "valid";
+            result.title = attemptResult.feedData.title;
+            result.description = attemptResult.feedData.description;
+            result.statusCode = attemptResult.statusCode;
+            result.responseTime = Date.now() - attemptStartTime;
+            result.suggestions = ["Feed validated successfully"];
 
-          attemptRecord.success = true;
-          attemptRecord.responseTime = result.responseTime;
+            attemptRecord.success = true;
+            attemptRecord.responseTime = result.responseTime;
+            result.validationAttempts.push(attemptRecord);
+            break;
+          } else {
+            // Failure case - record attempt and prepare for retry
+            lastError = attemptResult.error!;
+            attemptRecord.error = lastError;
+            result.validationAttempts.push(attemptRecord);
+
+            // Check if we should retry
+            if (attempt < this.MAX_RETRIES && lastError.retryable) {
+              const retryDelay = this.calculateRetryDelay(attempt);
+              attemptRecord.retryDelay = retryDelay;
+              result.totalRetries++;
+
+              // Wait before next attempt
+              await this.delay(retryDelay);
+            } else {
+              // If not retryable, break out of the retry loop
+              if (!lastError.retryable) {
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          // Unexpected error during attempt
+          const validationError = this.classifyError(error as Error, url, attempt);
+          lastError = validationError;
+
+          const attemptRecord: ValidationAttempt = {
+            attemptNumber: attempt,
+            timestamp: attemptStartTime,
+            method: attempt === 1 ? "direct" : "retry",
+            success: false,
+            error: validationError,
+            responseTime: Date.now() - attemptStartTime,
+          };
+
           result.validationAttempts.push(attemptRecord);
-          break;
-        } else {
-          // Failure case - record attempt and prepare for retry
-          lastError = attemptResult.error!;
-          attemptRecord.error = lastError;
-          result.validationAttempts.push(attemptRecord);
 
-          // Check if we should retry
-          if (attempt < this.MAX_RETRIES && lastError.retryable) {
+          if (attempt < this.MAX_RETRIES && validationError.retryable) {
             const retryDelay = this.calculateRetryDelay(attempt);
             attemptRecord.retryDelay = retryDelay;
             result.totalRetries++;
-
-            // Wait before next attempt
             await this.delay(retryDelay);
           } else {
             // If not retryable, break out of the retry loop
-            if (!lastError.retryable) {
+            if (!validationError.retryable) {
               break;
             }
-          }
-        }
-      } catch (error) {
-        // Unexpected error during attempt
-        const validationError = this.classifyError(error as Error, url, attempt);
-        lastError = validationError;
-
-        const attemptRecord: ValidationAttempt = {
-          attemptNumber: attempt,
-          timestamp: attemptStartTime,
-          method: attempt === 1 ? "direct" : "retry",
-          success: false,
-          error: validationError,
-          responseTime: Date.now() - attemptStartTime,
-        };
-
-        result.validationAttempts.push(attemptRecord);
-
-        if (attempt < this.MAX_RETRIES && validationError.retryable) {
-          const retryDelay = this.calculateRetryDelay(attempt);
-          attemptRecord.retryDelay = retryDelay;
-          result.totalRetries++;
-          await this.delay(retryDelay);
-        } else {
-          // If not retryable, break out of the retry loop
-          if (!validationError.retryable) {
-            break;
           }
         }
       }
     }
 
-    // If direct validation failed, try proxy validation for network-related errors
+    // If direct validation failed (or was skipped), try proxy validation
     if (
       !result.isValid &&
-      lastError &&
-      (lastError.type === ValidationErrorType.CORS_ERROR ||
-        lastError.type === ValidationErrorType.NETWORK_ERROR ||
-        lastError.type === ValidationErrorType.TIMEOUT_ERROR)
+      (directSkipped || (lastError &&
+        (lastError.type === ValidationErrorType.CORS_ERROR ||
+          lastError.type === ValidationErrorType.NETWORK_ERROR ||
+          lastError.type === ValidationErrorType.TIMEOUT_ERROR)))
     ) {
       try {
         const proxyResult = await this.attemptProxyValidation(url);
@@ -924,7 +951,7 @@ class FeedValidatorService {
     const avgResponseTime =
       attempts.length > 0
         ? attempts.reduce((sum, a) => sum + (a.responseTime || 0), 0) /
-          attempts.length
+        attempts.length
         : 0;
 
     return {
@@ -1068,7 +1095,7 @@ class FeedValidatorService {
     if (
       namespaceURI === "http://www.w3.org/1999/02/22-rdf-syntax-ns#" ||
       rootElement.getAttribute("xmlns:rdf") ===
-        "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     ) {
       return "rdf";
     }

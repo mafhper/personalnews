@@ -32,7 +32,7 @@ import { SearchFilters } from "./components/SearchBar";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { useModal } from "./contexts/ModalContext";
-import { useFeeds } from "./contexts/FeedContext";
+import { useFeeds } from "./contexts/FeedContextState";
 import { useUI } from "./contexts/UIContext";
 
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
@@ -275,7 +275,28 @@ const App: React.FC = () => {
       filteredArticles = searchResults;
     } else {
       if (selectedCategory === "all" || selectedCategory === "All") {
-        filteredArticles = articles;
+        const allowedFeeds = categorizedFeeds['all'] || [];
+        // Optimization: Only filter if we actually have hidden feeds
+        if (allowedFeeds.length === feeds.length) {
+          filteredArticles = articles;
+        } else {
+          filteredArticles = articles.filter((article) =>
+            allowedFeeds.some((feed) => {
+              // Safe URL parsing
+              let feedHostname = '';
+              try {
+                feedHostname = new URL(feed.url).hostname;
+              } catch (e) {
+                // Invalid URL in feed, skip hostname check
+              }
+
+              return (
+                (feed.customTitle && article.sourceTitle === feed.customTitle) ||
+                (feedHostname && article.link?.includes(feedHostname))
+              );
+            })
+          );
+        }
       } else {
         const selectedCategoryObj = categories.find(
           (cat) => cat.id === selectedCategory
@@ -501,7 +522,7 @@ const App: React.FC = () => {
         <main
           ref={swipeRef}
           id="main-content"
-          className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-2 pb-6 lg:pt-4 lg:pb-8 relative z-10 flex-grow"
+          className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-8 pb-6 lg:pt-8 lg:pb-8 relative z-10 flex-grow"
           tabIndex={-1}
         >
           {loadingState.status === "loading" && (

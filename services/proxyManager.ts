@@ -52,6 +52,18 @@ export interface ProxyManagerConfig {
 export class ProxyManager {
   private readonly PROXY_CONFIGS: ProxyConfig[] = [
     {
+      url: "https://api.rss2json.com/v1/api.json?rss_url=",
+      name: "RSS2JSON",
+      responseTransform: (response: string) => {
+        // RSS2JSON returns object, we need it as string for the parser to detect JSON format
+        // Note: fetch() .text() will already return stringified JSON if the response is JSON
+        return response;
+      },
+      priority: 0,
+      enabled: true,
+      timeout: 5000,
+    },
+    {
       url: "https://api.allorigins.win/get?url=",
       name: "AllOrigins",
       responseTransform: (response: string) => {
