@@ -67,11 +67,11 @@ Edite as seções abaixo para alterar o comportamento da aplicação.
 
 Formato: `- [id] Nome | Cor: #HEX | Layout: modo | Header: pos | Pinned: true - Descrição`
 
-- [design] Design | Cor: #f0eee9| Layout: gallery | Header: floating | Pinned: false - Inspiração visual, UX/UI e tendências de design.
-- [games] Games | Cor: #F59E0B | Layout: masonry | Header: floating| Pinned: false - Lançamentos, reviews e cultura gamer.
-- [tech] Tecnologia | Cor: #3B82F6 | Layout: modern | Header: floating| Pinned: false - Notícias sobre desenvolvimento, gadgets e o mundo tech.
-- [politics] Política | Cor: #EF4444 | Layout: list | Header: floating| Pinned: false - Cobertura política nacional e internacional.
-- [youtube] Vídeos| Cor: #c4302b| Layout: brutalist | Header: floating| Pinned: false - Canais preferidos do Youtube.
+- [design] Design | Cor: #f0eee9| Layout: gallery | Header: sticky | Pinned: false - Inspiração visual, UX/UI e tendências de design.
+- [games] Games | Cor: #F59E0B | Layout: masonry | Header: sticky | Pinned: false - Lançamentos, reviews e cultura gamer.
+- [tech] Tecnologia | Cor: #3B82F6 | Layout: modern | Header: sticky | Pinned: false - Notícias sobre desenvolvimento, gadgets e o mundo tech.
+- [politics] Política | Cor: #EF4444 | Layout: list | Header: sticky | Pinned: false - Cobertura política nacional e internacional.
+- [youtube] Vídeos| Cor: #c4302b| Layout: brutalist | Header: sticky | Pinned: false - Canais preferidos do Youtube.
 
 ## Feeds Iniciais
 
