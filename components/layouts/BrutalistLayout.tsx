@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { getVideoEmbed } from '../../utils/videoEmbed';
+import { OptimizedImage } from '../OptimizedImage';
 
 interface BrutalistLayoutProps {
   articles: Article[];
@@ -50,11 +51,13 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
         ) : (
           <>
             {article.imageUrl ? (
-              <img 
-                src={article.imageUrl} 
-                alt="" 
+              <OptimizedImage
+                src={article.imageUrl}
+                alt=""
+                fallbackText="NO_SIGNAL"
+                width={600}
+                height={400}
                 className="w-full h-full object-cover"
-                loading="lazy"
               />
             ) : (
               <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
@@ -63,7 +66,7 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
             )}
             
             {/* Play Overlay (Only if not expanded) */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[2px] pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[2px] pointer-events-none z-10">
               <div className="w-12 h-12 bg-[rgb(var(--color-accent))] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
@@ -129,22 +132,23 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
 export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({ articles }) => {
   return (
     <div className="min-h-screen bg-[rgb(var(--color-background))] p-4 md:p-8 font-mono">
-      
-      {/* Header Decoration */}
-      <div className="mb-8 border-b-4 border-black dark:border-white pb-2 flex justify-between items-end uppercase">
-        <h1 className="text-4xl md:text-6xl font-black leading-none tracking-tighter">
-          VIDEO_FEED
-        </h1>
-        <span className="hidden md:block font-bold text-xs tracking-widest">
-          CNT: {articles.length} // MODE: RAW
-        </span>
-      </div>
+      <div className="max-w-[2000px] mx-auto">
+        {/* Header Decoration */}
+        <div className="mb-8 border-b-4 border-black dark:border-white pb-2 flex justify-between items-end uppercase">
+          <h1 className="text-4xl md:text-6xl font-black leading-none tracking-tighter">
+            VIDEO_FEED
+          </h1>
+          <span className="hidden md:block font-bold text-xs tracking-widest">
+            CNT: {articles.length} // MODE: RAW
+          </span>
+        </div>
 
-      {/* Uniform Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 auto-dense">
-        {articles.map((article, index) => (
-          <BrutalistCard key={`${article.link}-${index}`} article={article} index={index} />
-        ))}
+        {/* Uniform Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 auto-dense">
+          {articles.map((article, index) => (
+            <BrutalistCard key={`${article.link}-${index}`} article={article} index={index} />
+          ))}
+        </div>
       </div>
     </div>
   );

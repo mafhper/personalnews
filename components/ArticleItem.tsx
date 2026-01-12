@@ -1,11 +1,10 @@
-import React, { memo, useEffect, useCallback, useState } from "react";
+import React, { memo, useEffect, useCallback } from "react";
 import type { Article } from "../types";
-import { LazyImage } from "./LazyImage";
+import { ArticleImage } from "./ArticleImage";
 import { usePerformance } from "../hooks/usePerformance";
 import { useFavorites } from "../hooks/useFavorites";
 import { useArticleLayout } from "../hooks/useArticleLayout";
 import { useAppearance } from "../hooks/useAppearance";
-import { useLogger } from "../services/logger";
 
 const ChatBubbleIcon: React.FC = memo(() => (
   <svg
@@ -59,10 +58,7 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
   const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: layoutSettings } = useArticleLayout();
   const { contentConfig } = useAppearance();
-  const logger = useLogger('ArticleItem');
   
-  const [imageError, setImageError] = useState(false);
-
   // Start performance measurement
   useEffect(() => {
     startRenderTiming();
@@ -82,11 +78,6 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
     [toggleFavorite, article]
   );
   
-  const handleImageError = useCallback(() => {
-    setImageError(true);
-    // Don't log every image error to console to reduce noise, just state change
-  }, []);
-
   const timeSince = (date: Date): string => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
     let interval = seconds / 31536000;
@@ -102,10 +93,6 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
     return Math.floor(seconds) + " seconds ago";
   };
   
-  // Safe seed generation for Picsum
-  const safeSeed = encodeURIComponent(article.link);
-  const fallbackImage = `https://picsum.photos/seed/${safeSeed}/400/200`;
-
   return (
     <article className="h-full flex flex-col">
       {/* Grid layout optimized for cards */}
@@ -126,33 +113,23 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
                 aria-hidden="true" 
                 tabIndex={-1} 
             >
-                {!imageError ? (
-                    <LazyImage
-                        src={article.imageUrl || fallbackImage}
-                        alt="" // Empty alt to avoid displaying text on error
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={handleImageError}
-                        retryAttempts={1} // Reduce retries to fail fast to placeholder
-                    />
-                ) : (
-                    // Fallback pattern when image fails completely
-                    <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                )}
+                <ArticleImage
+                    article={article}
+                    width={400}
+                    height={200}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
             </a>
 
             {/* Article number overlay */}
-            <div className="absolute top-2 left-2 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold pointer-events-none">
+            <div className="absolute top-2 left-2 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold pointer-events-none z-10">
                 {index}
             </div>
 
             {/* Favorite button overlay */}
             <button
                 onClick={handleToggleFavorite}
-                className={`absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm transition-all duration-200 ${isFavorited
+                className={`absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm transition-all duration-200 z-10 ${isFavorited
                     ? "text-red-500 hover:text-red-400"
                     : "text-white hover:text-red-500"
                 }`}

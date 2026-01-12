@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Article } from '../../types';
-import { LazyImage } from '../LazyImage';
+import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -81,13 +81,18 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
     <div ref={containerRef} className="overflow-hidden bg-black text-white isolate font-sans" style={containerStyle}>
       {/* Fixed Background with Transition */}
       <div className="absolute inset-0 z-0 transition-opacity duration-700 ease-in-out">
-         <LazyImage
-            key={currentIndex} // Force re-render for animation
-            src={currentArticle.imageUrl || ''}
-            className="w-full h-full object-cover opacity-40 animate-in fade-in zoom-in-105 duration-1000"
-            alt=""
-         />
-         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
+         <div key={currentIndex} className="w-full h-full animate-in fade-in zoom-in-105 duration-1000">
+            <OptimizedImage
+                src={currentArticle.imageUrl}
+                className="w-full h-full object-cover opacity-40"
+                alt=""
+                fallbackText={currentArticle.sourceTitle}
+                width={1920}
+                height={1080}
+                priority={true}
+            />
+         </div>
+         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80 pointer-events-none" />
       </div>
 
       {/* Progress Indicator */}

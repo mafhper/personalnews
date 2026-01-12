@@ -17,6 +17,7 @@ build/
 
 # Agent & AI Configuration
 .gemini/
+.gemini-clipboard/
 GEMINI.md
 
 # Development & Temporary

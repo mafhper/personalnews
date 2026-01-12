@@ -100,7 +100,7 @@ const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgr
 
 declare global {
   interface Window {
-    debugMigration: any;
+    debugMigration: { run: () => void };
   }
 }
 
@@ -160,9 +160,6 @@ const App: React.FC = () => {
   // Feed categories system
   const { categories, getCategorizedFeeds } = useFeedCategories();
   const categorizedFeeds = getCategorizedFeeds(feeds);
-
-  // Read status functionality
-  const { isArticleRead } = useReadStatus();
 
   // Legacy settings for backward compatibility
   const [timeFormat, setTimeFormat] = useLocalStorage<"12h" | "24h">(
@@ -286,7 +283,7 @@ const App: React.FC = () => {
               let feedHostname = '';
               try {
                 feedHostname = new URL(feed.url).hostname;
-              } catch (e) {
+              } catch {
                 // Invalid URL in feed, skip hostname check
               }
 
@@ -522,24 +519,12 @@ const App: React.FC = () => {
         <main
           ref={swipeRef}
           id="main-content"
-          className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-8 pb-6 lg:pt-8 lg:pb-8 relative z-10 flex-grow"
+          className="w-full min-h-screen relative z-10 flex-grow pt-8 pb-6 lg:pt-8 lg:pb-8"
           tabIndex={-1}
         >
           {loadingState.status === "loading" && (
-            loadingState.priorityFeedsLoaded ? (
-              <FeedLoadingProgress
-                loadedFeeds={loadingState.loadedFeeds}
-                totalFeeds={loadingState.totalFeeds}
-                progress={loadingState.progress}
-                isBackgroundRefresh={loadingState.isBackgroundRefresh}
-                errors={loadingState.errors}
-                currentAction={loadingState.currentAction}
-                onCancel={cancelLoading}
-                onRetryErrors={retryFailedFeeds}
-                priorityFeedsLoaded={true}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center min-h-[40vh] w-full max-w-2xl mx-auto px-4">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+              {loadingState.priorityFeedsLoaded ? (
                 <FeedLoadingProgress
                   loadedFeeds={loadingState.loadedFeeds}
                   totalFeeds={loadingState.totalFeeds}
@@ -549,44 +534,66 @@ const App: React.FC = () => {
                   currentAction={loadingState.currentAction}
                   onCancel={cancelLoading}
                   onRetryErrors={retryFailedFeeds}
-                  className="w-full"
+                  priorityFeedsLoaded={true}
                 />
-              </div>
-            )
+              ) : (
+                <div className="flex flex-col items-center justify-center min-h-[40vh] w-full max-w-2xl mx-auto">
+                  <FeedLoadingProgress
+                    loadedFeeds={loadingState.loadedFeeds}
+                    totalFeeds={loadingState.totalFeeds}
+                    progress={loadingState.progress}
+                    isBackgroundRefresh={loadingState.isBackgroundRefresh}
+                    errors={loadingState.errors}
+                    currentAction={loadingState.currentAction}
+                    onCancel={cancelLoading}
+                    onRetryErrors={retryFailedFeeds}
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </div>
           )}
 
           {isSearchActive && (
-            <div className="mb-6 flex items-center justify-between bg-gray-800 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <div className="text-[rgb(var(--color-accent))]">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+              <div className="mb-6 flex items-center justify-between bg-gray-800 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="text-[rgb(var(--color-accent))]">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[rgb(var(--color-text))] font-medium">Search results for "{searchQuery}"</p>
+                    <p className="text-[rgb(var(--color-textSecondary))] text-sm">
+                      {displayArticles.length} article{displayArticles.length !== 1 ? "s" : ""} found
+                      {Object.keys(searchFilters).length > 0 && " with filters applied"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[rgb(var(--color-text))] font-medium">Search results for "{searchQuery}"</p>
-                  <p className="text-[rgb(var(--color-textSecondary))] text-sm">
-                    {displayArticles.length} article{displayArticles.length !== 1 ? "s" : ""} found
-                    {Object.keys(searchFilters).length > 0 && " with filters applied"}
-                  </p>
-                </div>
+                <button
+                  onClick={clearSearch}
+                  className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors px-3 py-1 rounded border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-text))]"
+                >
+                  Clear Search
+                </button>
               </div>
-              <button
-                onClick={clearSearch}
-                className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors px-3 py-1 rounded border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-text))]"
-              >
-                Clear Search
-              </button>
             </div>
           )}
 
           {isLoading && articles.length === 0 && (
-            <FeedSkeleton count={layoutSettings.articlesPerPage} />
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+              <FeedSkeleton count={layoutSettings.articlesPerPage} />
+            </div>
           )}
 
           {paginatedArticles.length > 0 && (
             <>
-              <Suspense fallback={<FeedSkeleton count={3} />}>
+              <Suspense fallback={
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+                  <FeedSkeleton count={3} />
+                </div>
+              }>
                 <FeedContent
                   articles={paginatedArticles}
                   timeFormat={timeFormat}
@@ -595,7 +602,7 @@ const App: React.FC = () => {
               </Suspense>
 
               {pagination.totalPages > 1 && (
-                <div className="mt-8 flex flex-col items-center space-y-4">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 mt-8 flex flex-col items-center space-y-4">
                   <PaginationControls
                     currentPage={pagination.currentPage}
                     totalPages={pagination.totalPages}
@@ -620,7 +627,7 @@ const App: React.FC = () => {
           )}
 
           {!isLoading && loadingState.status !== "loading" && paginatedArticles.length === 0 && displayArticles.length === 0 && (
-            <>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
               {isSearchActive ? (
                 <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
                   <div className="mb-4">
@@ -643,7 +650,7 @@ const App: React.FC = () => {
                   <button onClick={openFeedManager} className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent-dark))] text-white font-bold py-2 px-4 rounded-lg transition-colors">Add Your First Feed</button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </main>
         <Suspense fallback={null}>

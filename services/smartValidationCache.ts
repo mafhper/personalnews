@@ -326,7 +326,7 @@ export class SmartValidationCache implements ValidationCacheManager {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
-    const { data, ...metadata } = entry;
+    const { data: _, ...metadata } = entry;
     return metadata;
   }
 
@@ -360,7 +360,7 @@ export class SmartValidationCache implements ValidationCacheManager {
       // Simple estimation based on JSON serialization
       const jsonString = JSON.stringify(data);
       return new Blob([jsonString]).size;
-    } catch (error) {
+    } catch {
       // Fallback estimation
       if (typeof data === "string") {
         return data.length * 2; // Assume UTF-16 encoding

@@ -16,7 +16,7 @@ import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useArticleLayout } from "../hooks/useArticleLayout";
 import { FeaturedArticle } from "./FeaturedArticle";
 import { ArticleItem } from "./ArticleItem";
-import { LoadingSpinner } from "./ProgressIndicator";
+import { NewspaperSkeleton, ImmersiveSkeleton, TerminalSkeleton, TimelineSkeleton } from "./ui/LayoutSkeletons";
 import { FeedSkeleton } from "./ui/FeedSkeleton";
 
 // Lazy load layouts to reduce initial bundle size
@@ -101,13 +101,59 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     }
   };
 
+  // Layouts that manage their own container width (e.g. they need full width or have internal containers)
+  const isSelfManagedLayout = [
+    'newspaper',
+    'immersive',
+    'terminal',
+    'magazine', // Has max-w-7xl internal
+    'focus',
+  ].includes(effectiveLayout);
+
+  if (process.env.NODE_ENV === 'development' && articles.length > 0) {
+    console.log(`[FeedContent] Layout: ${effectiveLayout}, First Article Image:`, articles[0].imageUrl);
+  }
+
+  const content = renderLayout();
+
+  // Determine the appropriate skeleton
+  let skeletonFallback: React.ReactNode;
+  switch (effectiveLayout) {
+    case 'newspaper':
+      skeletonFallback = <NewspaperSkeleton />;
+      break;
+    case 'immersive':
+      skeletonFallback = <ImmersiveSkeleton />;
+      break;
+    case 'timeline':
+      skeletonFallback = <TimelineSkeleton />;
+      break;
+    case 'terminal':
+      skeletonFallback = <TerminalSkeleton />;
+      break;
+    default:
+      // For all other layouts, use the generic skeleton
+      skeletonFallback = <FeedSkeleton count={8} />;
+  }
+
   return (
     <Suspense fallback={
-      <div className="py-8 animate-in fade-in duration-500">
-        <FeedSkeleton count={8} />
-      </div>
+      // Wrap specific skeletons if they are self-managed, otherwise wrap generic in container
+      isSelfManagedLayout ? (
+        <div className="animate-pulse">
+          {skeletonFallback}
+        </div>
+      ) : (
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 animate-in fade-in duration-500">
+          {skeletonFallback}
+        </div>
+      )
     }>
-      {renderLayout()}
+      {isSelfManagedLayout ? content : (
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+          {content}
+        </div>
+      )}
     </Suspense>
   );
 };

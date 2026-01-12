@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { MagazineReaderModal } from '../MagazineReaderModal';
-import { LazyImage } from '../LazyImage';
 import { useAppearance } from '../../hooks/useAppearance';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { ArticleImage } from '../ArticleImage';
 
 interface MagazineLayoutProps {
   articles: Article[];
@@ -14,6 +14,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { contentConfig } = useAppearance();
   const { t } = useLanguage();
+  const now = new Date();
 
   // Pagination State for Load More
   const [displayLimit, setDisplayLimit] = useState(20);
@@ -55,7 +56,6 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   // Helper
   const formatTimeAgo = (dateInput: Date | string) => {
     const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-    const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     if (diffMs < 0 || isNaN(diffMs)) return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
@@ -93,9 +93,10 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
           <div className="grid md:grid-cols-2 gap-0">
             {/* Hero Image */}
             <div className="relative aspect-[4/3] md:aspect-auto md:h-[400px] overflow-hidden">
-              <LazyImage
-                src={heroArticle.imageUrl || `https://picsum.photos/seed/${heroArticle.link}/1200/800`}
-                alt={heroArticle.title}
+              <ArticleImage
+                article={heroArticle}
+                width={1200}
+                height={800}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent md:hidden" />
@@ -153,9 +154,10 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 onClick={() => handleOpenReader(article)}
               >
                 <div className="relative aspect-[16/10] overflow-hidden rounded-xl mb-4 bg-[rgb(var(--color-surface))]">
-                  <LazyImage
-                    src={article.imageUrl || `https://picsum.photos/seed/${article.link}/600/400`}
-                    alt={article.title}
+                  <ArticleImage
+                    article={article}
+                    width={600}
+                    height={400}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -197,15 +199,14 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all"
                 onClick={() => handleOpenReader(article)}
               >
-                {article.imageUrl && (
-                  <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
-                    <LazyImage
-                      src={article.imageUrl}
-                      alt={article.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+                <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
+                  <ArticleImage
+                    article={article}
+                    width={200}
+                    height={200}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))]">

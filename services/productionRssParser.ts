@@ -13,6 +13,186 @@ import { getLogger } from "./logger";
 import { perfDebugger } from "./performanceUtils";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
 
+// Import image extraction utilities from rssParser
+// These functions are shared between parsers
+interface ImageCandidate {
+  url: string;
+  width?: number;
+  height?: number;
+  size?: number;
+  score: number;
+  source: 'enclosure' | 'media:content' | 'media:thumbnail' | 'html';
+  isFeatured?: boolean;
+}
+
+/**
+ * Normalize image URL - resolve relative URLs and protocol-relative URLs
+ */
+function normalizeImageUrl(url: string, baseUrl?: string): string | null {
+  if (!url || url.trim().length === 0) return null;
+  
+  let normalized = url.trim();
+  normalized = normalized.replace(/^["']|["']$/g, '');
+  
+  if (normalized.startsWith('data:') || normalized.startsWith('javascript:') || normalized.startsWith('#')) {
+    return null;
+  }
+  
+  if (normalized.startsWith('//')) {
+    normalized = 'https:' + normalized;
+  }
+  
+  if (baseUrl && !normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+    try {
+      const base = new URL(baseUrl);
+      if (normalized.startsWith('/')) {
+        normalized = base.origin + normalized;
+      } else {
+        normalized = new URL(normalized, baseUrl).href;
+      }
+    } catch {
+      return null;
+    }
+  }
+  
+  try {
+    const urlObj = new URL(normalized);
+    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+      return null;
+    }
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if an image element is likely a featured/hero image
+ */
+function isFeaturedImage(img: Element, parent?: Element | null): boolean {
+  if (parent) {
+    const parentClass = parent.getAttribute('class') || '';
+    const parentTag = parent.tagName.toLowerCase();
+    
+    if (
+      parentClass.includes('featured') ||
+      parentClass.includes('hero') ||
+      parentClass.includes('cover') ||
+      parentClass.includes('header') ||
+      parentClass.includes('banner') ||
+      (parentTag === 'figure' && (parentClass.includes('image') || parentClass.includes('img')))
+    ) {
+      return true;
+    }
+  }
+  
+  const imgClass = img.getAttribute('class') || '';
+  const imgId = img.getAttribute('id') || '';
+  const fetchPriority = img.getAttribute('fetchpriority');
+  
+  if (
+    imgClass.includes('featured') ||
+    imgClass.includes('hero') ||
+    imgClass.includes('cover') ||
+    imgClass.includes('wp-post-image') ||
+    imgId.includes('featured') ||
+    imgId.includes('hero') ||
+    fetchPriority === 'high'
+  ) {
+    return true;
+  }
+  
+  const width = parseInt(img.getAttribute('width') || '0');
+  const height = parseInt(img.getAttribute('height') || '0');
+  if (width >= 800 || height >= 600) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Parse srcset attribute and return best image URL
+ */
+function parseSrcset(srcset: string): { url: string; width: number } | null {
+  if (!srcset || srcset.trim().length === 0) return null;
+  
+  const sources = srcset.split(',').map(s => s.trim()).filter(s => s);
+  if (sources.length === 0) return null;
+  
+  const parsedSources: { url: string; width: number }[] = [];
+  
+  for (const source of sources) {
+    const parts = source.split(/\s+/);
+    const url = parts[0];
+    const widthPart = parts.find(p => p.endsWith('w'));
+    const width = widthPart ? parseInt(widthPart) : 0;
+    const densityPart = parts.find(p => p.endsWith('x'));
+    const density = densityPart ? parseFloat(densityPart) : 1;
+    const estimatedWidth = width || (density > 1 ? 800 * density : 800);
+    parsedSources.push({ url, width: estimatedWidth });
+  }
+  
+  parsedSources.sort((a, b) => b.width - a.width);
+  return parsedSources.length > 0 ? parsedSources[0] : null;
+}
+
+/**
+ * Select the best image from candidates
+ */
+function selectBestImage(candidates: ImageCandidate[], articleLink?: string): string | undefined {
+  if (candidates.length === 0) return undefined;
+
+  const normalizedCandidates = candidates
+    .map(c => {
+      const normalizedUrl = normalizeImageUrl(c.url, articleLink);
+      if (!normalizedUrl) return null;
+      return { ...c, url: normalizedUrl };
+    })
+    .filter((c): c is ImageCandidate => c !== null);
+
+  if (normalizedCandidates.length === 0) return undefined;
+
+  normalizedCandidates.sort((a, b) => {
+    if (a.isFeatured && !b.isFeatured) return -1;
+    if (!a.isFeatured && b.isFeatured) return 1;
+    const aIsLarge = (a.width || 0) >= 800;
+    const bIsLarge = (b.width || 0) >= 800;
+    if (aIsLarge && !bIsLarge) return -1;
+    if (!aIsLarge && bIsLarge) return 1;
+    const scoreA = a.score + (a.source === 'media:content' || a.source === 'enclosure' ? 2 : 0);
+    const scoreB = b.score + (b.source === 'media:content' || b.source === 'enclosure' ? 2 : 0);
+    if (a.width && b.width && a.width !== b.width) return b.width - a.width;
+    if (a.size && b.size && a.size !== b.size) return b.size - a.size;
+    return scoreB - scoreA;
+  });
+
+  const viable = normalizedCandidates.filter(c => {
+    if (c.width && c.width <= 50) {
+      return c.isFeatured || c.source === 'media:content' || c.source === 'enclosure';
+    }
+    return true;
+  });
+
+  const filtered = viable.filter(c => {
+    const urlLower = c.url.toLowerCase();
+    if (
+      urlLower.includes('pixel') ||
+      urlLower.includes('tracking') ||
+      urlLower.includes('beacon') ||
+      urlLower.includes('spacer') ||
+      urlLower.includes('1x1') ||
+      urlLower.includes('blank.gif') ||
+      urlLower.includes('transparent.gif')
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  return filtered.length > 0 ? filtered[0].url : (viable.length > 0 ? viable[0].url : normalizedCandidates[0].url);
+}
+
 // Production-ready CORS proxies and APIs
 const RSS_APIS = [
   {
@@ -96,17 +276,184 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
     throw new Error(`RSS2JSON API error: ${data.message || 'Unknown error'}`);
   }
 
-  // Convert RSS2JSON format to our Article format
-  const articles: Article[] = data.items.map((item: any) => ({
+  // Convert RSS2JSON format to our Article format with improved image extraction
+  const articles: Article[] = [];
+  
+  for (const item of data.items || []) {
+    try {
+      const link = item.link || '';
+      const imageCandidates: ImageCandidate[] = [];
+      
+      // Check thumbnail
+      if (item.thumbnail) {
+        const normalized = normalizeImageUrl(item.thumbnail, link);
+        if (normalized) {
+          imageCandidates.push({
+            url: normalized,
+            source: 'media:thumbnail',
+            score: 5
+          });
+        }
+      }
+      
+      // Check enclosure
+      if (item.enclosure?.link && item.enclosure?.type?.startsWith('image/')) {
+        const normalized = normalizeImageUrl(item.enclosure.link, link);
+        if (normalized) {
+          imageCandidates.push({
+            url: normalized,
+            size: item.enclosure.length ? parseInt(item.enclosure.length) : undefined,
+            source: 'enclosure',
+            score: 10
+          });
+        }
+      }
+      
+      // Extract from content/description HTML if available (use RAW, not cleaned)
+      // Note: RSS2JSON may already provide HTML in content/description fields
+      const htmlContent = item.content || item.description || "";
+      
+      
+      if (htmlContent && typeof DOMParser !== 'undefined') {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlContent, 'text/html');
+          const images = doc.getElementsByTagName('img');
+          
+          for (let j = 0; j < Math.min(images.length, 5); j++) {
+            const img = images[j];
+            const src = img.getAttribute('src');
+            const srcset = img.getAttribute('srcset');
+            const dataSrc = img.getAttribute('data-src') || 
+                          img.getAttribute('data-original') || 
+                          img.getAttribute('data-lazy-src');
+            
+            const isFeatured = isFeaturedImage(img, img.parentElement);
+            const width = parseInt(img.getAttribute('width') || '0');
+            
+            if (srcset) {
+              const parsed = parseSrcset(srcset);
+              if (parsed) {
+                const normalized = normalizeImageUrl(parsed.url, link);
+                if (normalized) {
+                  imageCandidates.push({
+                    url: normalized,
+                    width: parsed.width || width || undefined,
+                    source: 'html',
+                    score: isFeatured ? 12 : 8,
+                    isFeatured
+                  });
+                }
+              }
+            }
+            
+            if (dataSrc) {
+              const normalized = normalizeImageUrl(dataSrc, link);
+              if (normalized) {
+                imageCandidates.push({
+                  url: normalized,
+                  width: width || undefined,
+                  source: 'html',
+                  score: isFeatured ? 10 : 7,
+                  isFeatured
+                });
+              }
+            }
+            
+            if (src) {
+              const normalized = normalizeImageUrl(src, link);
+              if (normalized) {
+                imageCandidates.push({
+                  url: normalized,
+                  width: width || undefined,
+                  source: 'html',
+                  score: isFeatured ? 8 : 5,
+                  isFeatured
+                });
+              }
+            }
+          }
+        } catch (e) {
+          // Fallback to regex if DOMParser fails
+          const imgPattern = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+          const searchContent = htmlContent.substring(0, 3000);
+          let match;
+          let count = 0;
+          while ((match = imgPattern.exec(searchContent)) !== null && count < 3) {
+            if (match[1]) {
+              const normalized = normalizeImageUrl(match[1], link);
+              if (normalized) {
+                imageCandidates.push({
+                  url: normalized,
+                  source: 'html',
+                  score: 3
+                });
+                count++;
+              }
+            }
+          }
+        }
+      }
+      
+      const imageUrl = selectBestImage(imageCandidates, link);
+      
+      // Final validation
+      let validImageUrl: string | undefined = undefined;
+      if (imageUrl) {
+        const urlLower = imageUrl.toLowerCase();
+        if (
+          !urlLower.includes('?text=') &&
+          !urlLower.match(/^[a-z0-9]{6}\?text=/i) &&
+          !(urlLower.includes('placeholder') && !urlLower.includes('image')) &&
+          !(urlLower.includes('blank') && urlLower.includes('.gif'))
+        ) {
+          try {
+            const urlObj = new URL(imageUrl);
+            if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+              const pathname = urlObj.pathname.toLowerCase();
+              const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
+              const hasImageIndicator = pathname.includes('image') || pathname.includes('img') || pathname.includes('photo') || pathname.includes('media');
+              const hasImageParam = urlObj.searchParams.has('image') || urlObj.searchParams.has('img') || urlObj.searchParams.has('photo');
+              const isKnownImageCdn = urlObj.hostname.includes('cdn') || 
+                                     urlObj.hostname.includes('images') ||
+                                     urlObj.hostname.includes('media') ||
+                                     urlObj.hostname.includes('static') ||
+                                     urlObj.hostname.includes('assets') ||
+                                     urlObj.hostname.includes('uploads') ||
+                                     urlObj.hostname.includes('wp-content');
+              
+              if (hasImageExtension || hasImageIndicator || hasImageParam || isKnownImageCdn) {
+                validImageUrl = imageUrl;
+              }
+            }
+          } catch (e) {
+            // Invalid URL
+          }
+        }
+      }
+      
+      // Log only if no image found (for debugging)
+      if (process.env.NODE_ENV === 'development' && !validImageUrl && imageCandidates.length === 0) {
+        console.warn(`[ImageExtraction] No images found for: "${(item.title || 'No Title').substring(0, 50)}..."`, {
+          link: link.substring(0, 60) + '...'
+        });
+      }
+      
+      articles.push({
     title: item.title || 'No Title',
-    link: item.link || '',
+        link: link,
     pubDate: new Date(item.pubDate || Date.now()),
     description: cleanDescription(item.description || ''),
-    imageUrl: item.enclosure?.link || item.thumbnail || undefined,
+        imageUrl: validImageUrl,
     author: item.author || undefined,
     categories: item.categories || [],
     sourceTitle: data.feed?.title || 'Unknown Feed',
-  }));
+      });
+    } catch (e) {
+      // Skip invalid items
+      logger.warn("Failed to parse RSS2JSON item", { component: "productionRssParser" });
+    }
+  }
 
   return articles;
 }
@@ -225,16 +572,27 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
         }
       }
 
-      // Extract description
-      let description = "";
+      // Extract RAW content/description BEFORE cleaning (needed for image extraction)
+      let descriptionRaw = "";
+      let contentRaw = "";
+      
       const descElements = item.getElementsByTagName("description");
       const summaryElements = item.getElementsByTagName("summary");
       const contentElements = item.getElementsByTagName("content");
+      const encodedContentElements = item.getElementsByTagName("content:encoded");
+      const bodyElements = item.getElementsByTagName("body");
 
-      const descElement = descElements[0] || summaryElements[0] || contentElements[0];
-      if (descElement?.textContent) {
-        description = cleanDescription(descElement.textContent).substring(0, 300);
-      }
+      const descEl = descElements[0] || summaryElements[0];
+      if (descEl?.textContent) descriptionRaw = descEl.textContent;
+
+      const contentEl = encodedContentElements[0] || contentElements[0] || bodyElements[0] || descElements[0];
+      if (contentEl?.textContent) contentRaw = contentEl.textContent;
+
+      if (!descriptionRaw && contentRaw) descriptionRaw = contentRaw;
+      if (!contentRaw && descriptionRaw) contentRaw = descriptionRaw;
+
+      // Clean description for final use (after image extraction)
+      const description = cleanDescription(descriptionRaw).substring(0, 300);
 
       // Extract author
       let author = "";
@@ -254,15 +612,286 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
         if (catText) categories.push(catText);
       }
 
-      // Extract image URL (simplified for performance)
-      let imageUrl = "";
+      // --- IMPROVED IMAGE EXTRACTION ---
+      const imageCandidates: ImageCandidate[] = [];
+
+      // 1. Check Enclosures
       const enclosureElements = item.getElementsByTagName("enclosure");
       for (let j = 0; j < enclosureElements.length; j++) {
         const enclosure = enclosureElements[j];
-        const type = enclosure.getAttribute("type");
-        if (type && type.startsWith("image/")) {
-          imageUrl = enclosure.getAttribute("url") || "";
+        const type = enclosure.getAttribute("type") || "";
+        const url = enclosure.getAttribute("url");
+        if (url && type.startsWith("image/")) {
+          const normalized = normalizeImageUrl(url, link);
+          if (normalized) {
+            imageCandidates.push({
+              url: normalized,
+              size: parseInt(enclosure.getAttribute("length") || "0"),
+              source: 'enclosure',
+              score: 10
+            });
+          }
+        }
+      }
+
+      // 2. Check Media Content/Group
+      const processMediaElement = (el: Element) => {
+        const url = el.getAttribute("url");
+        const type = el.getAttribute("type") || el.getAttribute("medium") || "";
+        const width = parseInt(el.getAttribute("width") || "0");
+        const height = parseInt(el.getAttribute("height") || "0");
+        if (url && (type.startsWith("image") || type === "image")) {
+          const normalized = normalizeImageUrl(url, link);
+          if (normalized) {
+            imageCandidates.push({
+              url: normalized,
+              width: width || undefined,
+              height: height || undefined,
+              source: 'media:content',
+              score: 10 + (width > 600 ? 5 : 0)
+            });
+          }
+        }
+      };
+
+      const mediaGroups = item.getElementsByTagName("media:group");
+      for (let j = 0; j < mediaGroups.length; j++) {
+        const contents = mediaGroups[j].getElementsByTagName("media:content");
+        for (let k = 0; k < contents.length; k++) processMediaElement(contents[k]);
+      }
+
+      const mediaContents = item.getElementsByTagName("media:content");
+      for (let j = 0; j < mediaContents.length; j++) processMediaElement(mediaContents[j]);
+
+      // 3. Check Media Thumbnail
+      const mediaThumbnails = item.getElementsByTagName("media:thumbnail");
+      for (let j = 0; j < mediaThumbnails.length; j++) {
+        const url = mediaThumbnails[j].getAttribute("url");
+        const width = parseInt(mediaThumbnails[j].getAttribute("width") || "0");
+        if (url) {
+          const normalized = normalizeImageUrl(url, link);
+          if (normalized) {
+            imageCandidates.push({
+              url: normalized,
+              width: width || undefined,
+              source: 'media:thumbnail',
+              score: 5
+            });
+          }
+        }
+      }
+
+      // 4. Extract from Content/Description HTML (use RAW content, not cleaned)
+      const htmlContent = contentRaw || descriptionRaw || "";
+      
+      
+      if (htmlContent && typeof DOMParser !== 'undefined') {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlContent, 'text/html');
+          const figures = doc.getElementsByTagName('figure');
+          
+          for (let f = 0; f < figures.length; f++) {
+            const figure = figures[f];
+            const figureImages = figure.getElementsByTagName('img');
+            if (figureImages.length > 0) {
+              const img = figureImages[0];
+              const src = img.getAttribute('src');
+              const srcset = img.getAttribute('srcset');
+              const dataSrc = img.getAttribute('data-src') || 
+                            img.getAttribute('data-original') || 
+                            img.getAttribute('data-lazy-src');
+              
+              const isFeatured = isFeaturedImage(img, figure);
+              const width = parseInt(img.getAttribute('width') || '0');
+              const height = parseInt(img.getAttribute('height') || '0');
+              
+              if (srcset) {
+                const parsed = parseSrcset(srcset);
+                if (parsed) {
+                  const normalized = normalizeImageUrl(parsed.url, link);
+                  if (normalized) {
+                    imageCandidates.push({
+                      url: normalized,
+                      width: parsed.width || width || undefined,
+                      height: height || undefined,
+                      source: 'html',
+                      score: isFeatured ? 15 : 10,
+                      isFeatured
+                    });
+                  }
+                }
+              }
+              
+              if (dataSrc) {
+                const normalized = normalizeImageUrl(dataSrc, link);
+                if (normalized) {
+                  imageCandidates.push({
+                    url: normalized,
+                    width: width || undefined,
+                    height: height || undefined,
+                    source: 'html',
+                    score: isFeatured ? 12 : 8,
+                    isFeatured
+                  });
+                }
+              }
+              
+              if (src) {
+                const normalized = normalizeImageUrl(src, link);
+                if (normalized) {
+                  imageCandidates.push({
+                    url: normalized,
+                    width: width || undefined,
+                    height: height || undefined,
+                    source: 'html',
+                    score: isFeatured ? 10 : 6,
+                    isFeatured
+                  });
+                }
+              }
+            }
+          }
+          
+          const images = doc.getElementsByTagName('img');
+          for (let j = 0; j < images.length; j++) {
+            const img = images[j];
+            let alreadyProcessed = false;
+            let parent = img.parentElement;
+            while (parent) {
+              if (parent.tagName.toLowerCase() === 'figure') {
+                alreadyProcessed = true;
           break;
+              }
+              parent = parent.parentElement;
+            }
+            if (alreadyProcessed) continue;
+            
+            const src = img.getAttribute('src');
+            const srcset = img.getAttribute('srcset');
+            const dataSrc = img.getAttribute('data-src') || 
+                          img.getAttribute('data-original') || 
+                          img.getAttribute('data-lazy-src');
+            
+            const isFeatured = isFeaturedImage(img, img.parentElement);
+            const width = parseInt(img.getAttribute('width') || '0');
+            const height = parseInt(img.getAttribute('height') || '0');
+            
+            if (srcset) {
+              const parsed = parseSrcset(srcset);
+              if (parsed) {
+                const normalized = normalizeImageUrl(parsed.url, link);
+                if (normalized) {
+                  imageCandidates.push({
+                    url: normalized,
+                    width: parsed.width || width || undefined,
+                    height: height || undefined,
+                    source: 'html',
+                    score: isFeatured ? 12 : 8,
+                    isFeatured
+                  });
+                }
+              }
+            }
+            
+            if (dataSrc) {
+              const normalized = normalizeImageUrl(dataSrc, link);
+              if (normalized) {
+                imageCandidates.push({
+                  url: normalized,
+                  width: width || undefined,
+                  height: height || undefined,
+                  source: 'html',
+                  score: isFeatured ? 10 : 7,
+                  isFeatured
+                });
+              }
+            }
+            
+            if (src) {
+              const normalized = normalizeImageUrl(src, link);
+              if (normalized) {
+                imageCandidates.push({
+                  url: normalized,
+                  width: width || undefined,
+                  height: height || undefined,
+                  source: 'html',
+                  score: isFeatured ? 8 : 5,
+                  isFeatured
+                });
+              }
+            }
+            
+            if (imageCandidates.length > 20) break;
+          }
+        } catch (e) {
+          // Fallback regex
+          const imgPatterns = [
+            /<img[^>]+src=["']([^"']+)["'][^>]*>/gi,
+            /<img[^>]+srcset=["']([^"']+)["'][^>]*>/gi,
+            /<img[^>]+data-src=["']([^"']+)["'][^>]*>/gi,
+          ];
+          const searchContent = htmlContent.substring(0, 5000);
+          for (const pattern of imgPatterns) {
+            let match;
+            while ((match = pattern.exec(searchContent)) !== null) {
+              if (match[1]) {
+                const normalized = normalizeImageUrl(match[1], link);
+                if (normalized) {
+                  imageCandidates.push({
+                    url: normalized,
+                    source: 'html',
+                    score: 3
+                  });
+                  if (imageCandidates.length > 5) break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const imageUrl = selectBestImage(imageCandidates, link);
+
+      // Log image extraction only in development and only if no image found
+      if (process.env.NODE_ENV === 'development' && !imageUrl && imageCandidates.length === 0) {
+        console.warn(`[ImageExtraction] No images found for: "${title.substring(0, 50)}..."`, {
+          link: link.substring(0, 60) + '...'
+        });
+      }
+
+      // Final validation
+      let validImageUrl: string | undefined = undefined;
+      if (imageUrl) {
+        const urlLower = imageUrl.toLowerCase();
+        if (
+          !urlLower.includes('?text=') &&
+          !urlLower.match(/^[a-z0-9]{6}\?text=/i) &&
+          !(urlLower.includes('placeholder') && !urlLower.includes('image')) &&
+          !(urlLower.includes('blank') && urlLower.includes('.gif'))
+        ) {
+          try {
+            const urlObj = new URL(imageUrl);
+            if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+              const pathname = urlObj.pathname.toLowerCase();
+              const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
+              const hasImageIndicator = pathname.includes('image') || pathname.includes('img') || pathname.includes('photo') || pathname.includes('media');
+              const hasImageParam = urlObj.searchParams.has('image') || urlObj.searchParams.has('img') || urlObj.searchParams.has('photo');
+              const isKnownImageCdn = urlObj.hostname.includes('cdn') || 
+                                     urlObj.hostname.includes('images') ||
+                                     urlObj.hostname.includes('media') ||
+                                     urlObj.hostname.includes('static') ||
+                                     urlObj.hostname.includes('assets') ||
+                                     urlObj.hostname.includes('uploads') ||
+                                     urlObj.hostname.includes('wp-content');
+              
+              if (hasImageExtension || hasImageIndicator || hasImageParam || isKnownImageCdn) {
+                validImageUrl = imageUrl;
+              }
+            }
+          } catch (e) {
+            // Invalid URL
+          }
         }
       }
 
@@ -273,7 +902,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
           link,
           pubDate,
           description,
-          imageUrl: imageUrl || undefined,
+          imageUrl: validImageUrl,
           author: author || undefined,
           categories,
           sourceTitle: channelTitle,
@@ -455,7 +1084,7 @@ export async function parseRssUrl(
   if (!skipCache) {
     const cachedArticles = getCachedArticles(url);
     if (cachedArticles && cachedArticles.length > 0) {
-      logger.debug(`Using cached articles for feed`, {
+          logger.debug(`Using cached articles for feed`, {
         component: "productionRssParser",
         additionalData: {
           feedUrl: url,

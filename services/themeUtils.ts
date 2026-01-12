@@ -434,7 +434,7 @@ export const validateAllThemesAccessibility = (): {
 };
 
 // Theme migration utilities
-export const migrateTheme = (oldTheme: any, _version: string = '1.0'): ExtendedTheme | null => {
+export const migrateTheme = (oldTheme: unknown, _version: string = '1.0'): ExtendedTheme | null => {
   try {
     // Handle migration from old theme format
     if (typeof oldTheme === 'string') {
@@ -442,15 +442,22 @@ export const migrateTheme = (oldTheme: any, _version: string = '1.0'): ExtendedT
       return createThemeFromAccentColor(oldTheme, 'Migrated Theme');
     }
 
+    if (!oldTheme || typeof oldTheme !== 'object') {
+      return null;
+    }
+
+    const themeObj = oldTheme as Record<string, any>;
+
     // If it's already in new format, validate and return
-    if (validateTheme(oldTheme)) {
-      return oldTheme as ExtendedTheme;
+    if (validateTheme(themeObj as Partial<ExtendedTheme>)) {
+      return themeObj as ExtendedTheme;
     }
 
     // Try to extract accent color and create new theme
-    if (oldTheme.colors?.accent || oldTheme.accent) {
-      const accentColor = oldTheme.colors?.accent || oldTheme.accent;
-      return createThemeFromAccentColor(accentColor, oldTheme.name || 'Migrated Theme');
+    const colors = themeObj.colors as Record<string, any> | undefined;
+    if (colors?.accent || themeObj.accent) {
+      const accentColor = (colors?.accent || themeObj.accent) as string;
+      return createThemeFromAccentColor(accentColor, (themeObj.name as string) || 'Migrated Theme');
     }
 
     return null;

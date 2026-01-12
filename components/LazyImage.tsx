@@ -30,7 +30,7 @@ const DEFAULT_ERROR_PLACEHOLDER = `data:image/svg+xml;base64,${btoa(`
 `)}`;
 
 interface LazyImageProps {
-  src: string;
+  src: string | undefined | null;
   alt: string;
   placeholder?: string;
   className?: string;
@@ -40,6 +40,8 @@ interface LazyImageProps {
   retryDelay?: number;
   sizes?: string;
   srcSet?: string;
+  fallbacks?: string[];
+  priority?: boolean; // If true, load immediately without waiting for intersection
 }
 
 const LazyImageComponent: React.FC<LazyImageProps> = ({
@@ -49,35 +51,61 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
   className = '',
   onLoad,
   onError,
-  retryAttempts = 3,
-  retryDelay = 1000,
+  retryAttempts = 2,
+  retryDelay = 500,
   sizes = '(max-width: 480px) 100vw, (max-width: 768px) 50vw, 33vw',
   srcSet,
+  fallbacks = [],
+  priority = false,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  const [isInView, setIsInView] = useState(priority); // If priority, start as in view
   const [hasError, setHasError] = useState(false);
   const [currentAttempt, setCurrentAttempt] = useState(0);
+  const [currentSrcIndex, setCurrentSrcIndex] = useState(0); 
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Create intersection observer
+  // List of all valid sources to try
+  const sources = [src, ...fallbacks].filter((s): s is string => typeof s === 'string' && s.length > 0);
+
+  // Log for debugging
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[LazyImage] Initialized', {
+        src: src?.substring(0, 60) + '...',
+        priority,
+        sourcesCount: sources.length,
+        isInView: isInView
+      });
+    }
+  }, [src, priority, sources.length, isInView]);
+
+  // Create intersection observer (skip if priority)
+  useEffect(() => {
+    if (priority) {
+      // If priority, we're already in view, no need for observer
+      return;
+    }
+
     if (!imgRef.current) return;
 
-    // Check for native lazy loading support (optional optimization, but we keep IO for animation)
-    // If we purely relied on native, we wouldn't know when to setIsInView for the fade-in.
-    
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
           setIsInView(true);
           observerRef.current?.disconnect();
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[LazyImage] Entered viewport', {
+              src: src?.substring(0, 60) + '...'
+            });
+          }
         }
       },
       {
-        rootMargin: '100px', // Increased margin for pre-loading
+        rootMargin: '200px', // Pre-load earlier
         threshold: 0.01,
       }
     );
@@ -87,53 +115,106 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
     return () => {
       observerRef.current?.disconnect();
     };
-  }, []);
+  }, [priority, src]);
 
-  // Handle image loading with retry logic
   const handleImageLoad = useCallback(() => {
     setIsLoaded(true);
     setHasError(false);
-    setCurrentAttempt(0);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[LazyImage] Image loaded successfully', {
+        src: sources[currentSrcIndex]?.substring(0, 60) + '...',
+        srcIndex: currentSrcIndex
+      });
+    }
+    
     onLoad?.();
-  }, [onLoad]);
+  }, [onLoad, sources, currentSrcIndex]);
 
   const handleImageError = useCallback(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[LazyImage] Image load error', {
+        src: sources[currentSrcIndex]?.substring(0, 60) + '...',
+        attempt: currentAttempt + 1,
+        maxAttempts: retryAttempts,
+        srcIndex: currentSrcIndex,
+        totalSources: sources.length
+      });
+    }
+
     if (currentAttempt < retryAttempts) {
-      // Retry after delay
+      // Retry current source
       setTimeout(() => {
         setCurrentAttempt(prev => prev + 1);
       }, retryDelay);
     } else {
-      setHasError(true);
-      setIsLoaded(true); // Ensure error placeholder is visible
-      onError?.();
+      // Current source failed all retries. Try next source in the chain.
+      const nextIndex = currentSrcIndex + 1;
+      if (nextIndex < sources.length) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[LazyImage] Trying next fallback', {
+            nextSrc: sources[nextIndex]?.substring(0, 60) + '...',
+            nextIndex
+          });
+        }
+        setCurrentSrcIndex(nextIndex);
+        setCurrentAttempt(0);
+      } else {
+        // Absolutely all sources failed
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[LazyImage] All sources failed', {
+            totalSources: sources.length
+          });
+        }
+        setHasError(true);
+        setIsLoaded(true); // Show the error placeholder
+        onError?.();
+      }
     }
-  }, [currentAttempt, retryAttempts, retryDelay, onError]);
+  }, [currentAttempt, retryAttempts, retryDelay, onError, currentSrcIndex, sources]);
 
-  // Determine which source to show
+  // Determine current image source
   const getImageSrc = () => {
-    if (hasError) {
+    if (hasError || sources.length === 0) {
       return DEFAULT_ERROR_PLACEHOLDER;
     }
-    if (isInView || currentAttempt > 0) { // If retrying, keep trying src
-      return src;
+    
+    // While loading or not in view, show placeholder
+    if (!isInView && currentAttempt === 0 && currentSrcIndex === 0) {
+      return placeholder || DEFAULT_PLACEHOLDER;
     }
-    return placeholder || DEFAULT_PLACEHOLDER;
+
+    return sources[currentSrcIndex];
   };
+
+  // Reset state if src changes significantly
+  useEffect(() => {
+    // We need to reset the state when the src prop changes to handle the new image load
+    // This is a valid use case for derived state from props where a key change isn't possible
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoaded(false);
+    setHasError(false);
+    setCurrentAttempt(0);
+    setCurrentSrcIndex(0);
+  }, [src]);
+
+  const currentSrc = getImageSrc();
+  const shouldUseLazy = !priority; // Only use lazy loading if not priority
 
   return (
     <img
       ref={imgRef}
-      src={getImageSrc()}
-      alt={hasError ? "" : alt} // Hide alt text on error to avoid overlay
+      src={currentSrc}
+      alt={hasError ? "" : alt}
       className={`transition-opacity duration-500 ease-in-out ${
         isLoaded ? 'opacity-100' : 'opacity-0'
       } ${className} ${!isLoaded ? 'bg-gray-800 animate-pulse' : ''}`}
       onLoad={handleImageLoad}
       onError={handleImageError}
-      loading="lazy"
+      loading={shouldUseLazy ? "lazy" : "eager"}
       sizes={sizes}
-      srcSet={!hasError && isInView ? srcSet : undefined} // Disable srcSet on error
+      // Disable srcSet if we're on a fallback to avoid confusion
+      srcSet={!hasError && isInView && currentSrcIndex === 0 ? srcSet : undefined}
     />
   );
 };

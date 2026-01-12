@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import type { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { useWeather } from '../../hooks/useWeather';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { ArticleImage } from '../ArticleImage';
 
 interface NewspaperLayoutProps {
   articles: Article[];
@@ -14,6 +14,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { data: weatherData, city, getWeatherIcon, isLoading, changeCity } = useWeather();
   const { t } = useLanguage();
+  const now = new Date();
 
   const main = articles[0];
   const secondary = articles.slice(1, 3);
@@ -25,35 +26,13 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
   };
 
   const formatTimeAgo = (date: Date) => {
-    const diff = Date.now() - date.getTime();
+    const diff = now.getTime() - date.getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return t('time.now') || 'agora';
     if (mins < 60) return `${mins}min`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h`;
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-  };
-
-  const ImageOrFallback = ({ article }: { article: Article }) => {
-    if (article.imageUrl) {
-      return (
-        <SmallOptimizedImage
-          src={article.imageUrl}
-          alt={article.title}
-          size={1600}
-          className="absolute inset-0 w-full h-full object-cover"
-          fallbackText={article.sourceTitle}
-        />
-      );
-    }
-
-    return (
-      <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 via-neutral-700 to-neutral-900 flex items-center justify-center">
-        <span className="text-xs uppercase tracking-widest text-neutral-300 px-6 text-center">
-          {article.sourceTitle}
-        </span>
-      </div>
-    );
   };
 
   return (
@@ -124,7 +103,12 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 bg-[rgb(var(--color-background))]
               "
             >
-              <ImageOrFallback article={main} />
+              <ArticleImage 
+                article={main} 
+                className="absolute inset-0 w-full h-full object-cover" 
+                width={1600}
+                height={900}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             </div>
 
@@ -178,7 +162,12 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 className="flex gap-5 cursor-pointer group"
               >
                 <div className="relative w-40 h-28 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] flex-shrink-0">
-                  <ImageOrFallback article={article} />
+                  <ArticleImage 
+                    article={article} 
+                    className="absolute inset-0 w-full h-full object-cover" 
+                    width={400}
+                    height={300}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -208,7 +197,12 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               className="cursor-pointer group border-t border-[rgb(var(--color-border))] pt-4"
             >
               <div className="relative h-40 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
-                <ImageOrFallback article={article} />
+                <ArticleImage 
+                  article={article} 
+                  className="absolute inset-0 w-full h-full object-cover" 
+                  width={600}
+                  height={400}
+                />
               </div>
 
               <span className="inline-block text-[10px] uppercase tracking-widest bg-[rgb(var(--color-accent))]/10 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded mb-2 font-bold">

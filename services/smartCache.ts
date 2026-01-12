@@ -432,7 +432,7 @@ export class SmartCache {
         // Convert article dates back to Date objects
         const entry: CacheEntry = {
           ...entryData,
-          articles: entryData.articles.map((article: any) => ({
+          articles: (entryData.articles as Article[]).map((article) => ({
             ...article,
             pubDate: new Date(article.pubDate),
           })),

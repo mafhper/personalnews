@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { ArticleImage } from '../ArticleImage';
 
 interface BentoLayoutProps {
   articles: Article[];
@@ -12,11 +12,11 @@ interface BentoLayoutProps {
 export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { t } = useLanguage();
+  const now = new Date();
 
   // Helper for time formatting
   const formatTimeAgo = (dateInput: Date | string) => {
     const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-    const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     if (diffMs < 0 || isNaN(diffMs)) return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 
@@ -98,26 +98,20 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                 `}
               >
                 {/* Background Image Layer */}
-                {article.imageUrl ? (
-                  <div className="absolute inset-0">
-                    <SmallOptimizedImage
-                      src={article.imageUrl}
-                      alt=""
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      fallbackText={article.sourceTitle}
-                      size={isHero ? 1200 : 600}
-                    />
-                    {/* Gradient Overlay */}
-                    <div className={`absolute inset-0 transition-opacity duration-500 ${
-                      isHero || isTall
-                        ? 'bg-gradient-to-t from-black via-black/60 to-transparent'
-                        : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'
-                    }`} />
-                  </div>
-                ) : (
-                  /* Fallback gradient for articles without images */
-                  <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--color-primary))]/20 to-[rgb(var(--color-accent))]/20" />
-                )}
+                <div className="absolute inset-0">
+                  <ArticleImage 
+                    article={article}
+                    width={isHero ? 1200 : 800}
+                    height={isTall ? 1200 : 800}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  {/* Gradient Overlay */}
+                  <div className={`absolute inset-0 transition-opacity duration-500 ${
+                    isHero || isTall
+                      ? 'bg-gradient-to-t from-black via-black/60 to-transparent'
+                      : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'
+                  }`} />
+                </div>
 
                 {/* Glassmorphism Overlay on Hover */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[rgb(var(--color-accent))]/5 backdrop-blur-[1px]" />

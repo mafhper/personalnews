@@ -13,7 +13,6 @@ import { IconButton } from "./ui/IconButton";
 import { ActionIcons, StatusIcons } from "./icons";
 import { ChevronDown } from "lucide-react";
 import { Modal } from "./Modal";
-import { BackgroundCreator } from "./BackgroundCreator";
 
 interface AppearanceCustomizerProps {
   isOpen: boolean;
@@ -30,14 +29,8 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
     customThemes,
     setCurrentTheme,
     removeCustomTheme,
-    headerConfig,
-    updateHeaderConfig,
-    contentConfig,
-    updateContentConfig,
     applyLayoutPreset,
     activeLayoutId,
-    backgroundConfig,
-    updateBackgroundConfig,
   } = useAppearance();
 
   const { alertSuccess, alertError } = useNotificationReplacements();
@@ -49,8 +42,6 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
   const [importText, setImportText] = useState("");
   const [exportText, setExportText] = useState("");
   const [editingTheme, setEditingTheme] = useState<ExtendedTheme | null>(null);
-
-  // ... (handlers remain the same)
 
   const handlePresetSelect = useCallback(
     (preset: ThemePreset) => {
@@ -80,7 +71,7 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
             }
             : null
         );
-      } catch (error) {
+      } catch {
         console.warn("Invalid hex color:", hexValue);
       }
     },
@@ -124,17 +115,6 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
       await alertError("Failed to import theme. Please check the format.");
     }
   }, [importText, setCurrentTheme, alertSuccess, alertError]);
-  
-  const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateHeaderConfig({ logoUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
-  }, [updateHeaderConfig]);
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     headerStyle: true,

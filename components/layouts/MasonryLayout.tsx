@@ -37,7 +37,7 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-[1800px] mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Featured Article - Full Width Hero */}
       <div className="h-[60vh] min-h-[400px] rounded-2xl overflow-hidden shadow-2xl relative group">
         <FeaturedArticle article={featured} timeFormat={timeFormat} />

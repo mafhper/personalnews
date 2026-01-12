@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { OptimizedImage } from '../OptimizedImage';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface TerminalLayoutProps {
@@ -22,7 +23,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
           min-h-[70vh] flex flex-col relative backdrop-blur-sm
 
           /* 🔑 comportamento desejado */
-          w-max max-w-full
+          w-full
 
           /* controle em telas grandes */
           lg:max-w-[90vw]
@@ -72,13 +73,15 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                   <span className="text-gray-700 select-none font-bold opacity-50">{'>'}</span>
 
                   {/* Image */}
-                  <div className="w-28 h-20 flex-shrink-0 rounded-md overflow-hidden bg-white/5">
+                  <div className="w-28 h-20 flex-shrink-0 rounded-md overflow-hidden bg-white/5 border border-white/10">
                     {article.imageUrl ? (
-                      <img
+                      <OptimizedImage
                         src={article.imageUrl}
                         alt={article.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
+                        fallbackText="NO_IMG"
+                        width={200}
+                        height={150}
+                        className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 uppercase tracking-widest">
