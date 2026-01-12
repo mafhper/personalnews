@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Article } from '../../types';
+import type { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { useWeather } from '../../hooks/useWeather';
@@ -12,193 +12,186 @@ interface NewspaperLayoutProps {
 
 export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { data: weatherData, city, getWeatherIcon, isLoading: weatherLoading, changeCity } = useWeather();
+  const { data: weatherData, city, getWeatherIcon, isLoading, changeCity } = useWeather();
   const { t } = useLanguage();
 
+  const main = articles[0];
+  const secondary = articles.slice(1, 3);
+  const rest = articles.slice(3);
+
   const handleCityChange = () => {
-    const newCity = prompt(t('weather.city_prompt'), city);
-    if (newCity && newCity.trim() !== '') {
-      changeCity(newCity);
-    }
+    const next = prompt(t('weather.city_prompt'), city);
+    if (next) changeCity(next);
   };
 
-  // Helper for time formatting
-  const formatTimeAgo = (dateInput: Date | string) => {
-    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    if (diffMs < 0 || isNaN(diffMs)) return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return t('time.now') || 'agora';
-    if (diffMins < 60) return `${diffMins}min`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays}d`;
+  const formatTimeAgo = (date: Date) => {
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t('time.now') || 'agora';
+    if (mins < 60) return `${mins}min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   };
 
-  // Layout slices
-  const mainArticle = articles[0];
-  const secondaryArticles = articles.slice(1, 3);
-  const columnArticles = articles.slice(3);
+  const ImageOrFallback = ({ article }: { article: Article }) => {
+    if (article.imageUrl) {
+      return (
+        <SmallOptimizedImage
+          src={article.imageUrl}
+          alt={article.title}
+          size={1600}
+          className="absolute inset-0 w-full h-full object-cover"
+          fallbackText={article.sourceTitle}
+        />
+      );
+    }
+
+    return (
+      <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 via-neutral-700 to-neutral-900 flex items-center justify-center">
+        <span className="text-xs uppercase tracking-widest text-neutral-300 px-6 text-center">
+          {article.sourceTitle}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen">
-      {/* Newspaper Container with subtle transparency */}
-      <div className="max-w-6xl mx-auto p-6 md:p-10 bg-[rgb(var(--color-surface))]/80 backdrop-blur-md rounded-2xl border border-[rgb(var(--color-border))]/20">
+      <div
+        className="
+          mx-auto px-6 md:px-10 py-8
+          max-w-[1400px]
+          2xl:max-w-[1680px]
+          bg-[rgb(var(--color-surface))]/85
+          backdrop-blur
+          rounded-2xl
+          border border-[rgb(var(--color-border))]/20
+        "
+      >
 
         {/* Masthead */}
-        <header className="text-center border-b-2 border-[rgb(var(--color-text))] pb-4 mb-8">
-          <div className="flex items-center justify-between text-xs uppercase tracking-widest text-[rgb(var(--color-textSecondary))] mb-2">
+        <header className="border-b border-[rgb(var(--color-border))] pb-6 mb-10">
+          <div className="flex justify-between items-center text-xs uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
             <span>{t('article.vol')} {new Date().getFullYear()}</span>
-            {/* Weather Widget */}
+
             <button
               onClick={handleCityChange}
-              className="flex items-center gap-1.5 hover:text-[rgb(var(--color-accent))] transition-colors"
-              title={t('action.edit')}
+              className="flex items-center gap-2 hover:text-[rgb(var(--color-accent))]"
             >
-              {weatherLoading ? (
-                <span className="animate-pulse">...</span>
-              ) : weatherData ? (
+              {isLoading ? '...' : weatherData && (
                 <>
                   <span>{getWeatherIcon()}</span>
                   <span>{weatherData.temperature}°</span>
-                  <span className="hidden sm:inline text-[rgb(var(--color-textSecondary))]">{city}</span>
+                  <span className="hidden sm:inline">{city}</span>
                 </>
-              ) : null}
+              )}
             </button>
-            <span>{new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-          </div>
 
-          <h1 className="font-serif text-4xl md:text-6xl font-black tracking-tight text-[rgb(var(--color-text))]">
-            THE DAILY NEWS
-          </h1>
-
-          <div className="flex items-center justify-center gap-4 mt-3 text-xs text-[rgb(var(--color-textSecondary))]">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              {t('feeds.live') || 'LIVE'}
+            <span>
+              {new Date().toLocaleDateString('pt-BR', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+              })}
             </span>
-            <span className="h-3 w-px bg-[rgb(var(--color-border))]" />
-            <span>{articles.length} {t('feeds.articles') || 'artigos'}</span>
           </div>
         </header>
 
-        {/* Main Story */}
-        {mainArticle && (
-          <section className="mb-8 pb-8 border-b border-[rgb(var(--color-border))]">
-            <article
-              className="group cursor-pointer"
-              onClick={() => setReadingArticle(mainArticle)}
+        {/* HERO — ESTÁVEL EM TODOS OS BREAKPOINTS */}
+        {main && (
+          <section
+            onClick={() => setReadingArticle(main)}
+            className="
+              relative mb-16 cursor-pointer group
+              grid grid-cols-1
+              lg:grid-cols-12
+              gap-8
+              items-stretch
+            "
+          >
+            {/* Media */}
+            <div
+              className="
+                relative overflow-hidden rounded-xl
+                h-[260px]
+                sm:h-[320px]
+                md:h-[360px]
+                lg:h-[420px]
+                2xl:h-[480px]
+                lg:col-span-7
+                2xl:col-span-8
+                bg-[rgb(var(--color-background))]
+              "
             >
-              <div className="grid md:grid-cols-5 gap-6">
-                {/* Main Image - 3 columns */}
-                <div className="md:col-span-3 relative aspect-[16/10] overflow-hidden rounded-xl bg-[rgb(var(--color-background))]">
-                  {mainArticle.imageUrl && (
-                    <SmallOptimizedImage
-                      src={mainArticle.imageUrl}
-                      alt={mainArticle.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      fallbackText={mainArticle.sourceTitle}
-                      size={1000}
-                    />
-                  )}
-                </div>
+              <ImageOrFallback article={main} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            </div>
 
-                {/* Main Content - 2 columns */}
-                <div className="md:col-span-2 flex flex-col justify-center">
-                  <span className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-accent))] mb-2">
-                    {mainArticle.sourceTitle}
-                  </span>
+            {/* Content */}
+            <div
+              className="
+                lg:col-span-5
+                2xl:col-span-4
+                flex flex-col justify-center
+                gap-4
+                max-w-none
+              "
+            >
+              <span className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-accent))]">
+                {main.sourceTitle}
+              </span>
 
-                  <h2 className="font-serif text-2xl md:text-4xl font-bold leading-tight text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors mb-4">
-                    {mainArticle.title}
-                  </h2>
+              <h2
+                className="
+                  font-serif font-bold leading-tight
+                  text-2xl
+                  sm:text-3xl
+                  md:text-4xl
+                  lg:text-4xl
+                  2xl:text-5xl
+                "
+              >
+                {main.title}
+              </h2>
 
-                  <p className="text-[rgb(var(--color-textSecondary))] leading-relaxed mb-4 line-clamp-4 first-letter:text-4xl first-letter:font-bold first-letter:float-left first-letter:mr-2 first-letter:mt-0.5">
-                    {mainArticle.description}
-                  </p>
+              {main.description && (
+                <p className="text-[rgb(var(--color-textSecondary))] leading-relaxed line-clamp-4">
+                  {main.description}
+                </p>
+              )}
 
-                  <div className="flex items-center gap-3 text-xs text-[rgb(var(--color-textSecondary))]">
-                    {mainArticle.author && (
-                      <>
-                        <span className="font-medium">{mainArticle.author}</span>
-                        <span className="h-3 w-px bg-[rgb(var(--color-border))]" />
-                      </>
-                    )}
-                    <span>{formatTimeAgo(mainArticle.pubDate)}</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </section>
-        )}
-
-        {/* Secondary Stories Row */}
-        {secondaryArticles.length > 0 && (
-          <section className="mb-8 pb-8 border-b border-[rgb(var(--color-border))]">
-            <div className="grid md:grid-cols-2 gap-6">
-              {secondaryArticles.map((article, i) => (
-                <article
-                  key={i}
-                  className="group cursor-pointer flex gap-4"
-                  onClick={() => setReadingArticle(article)}
-                >
-                  {article.imageUrl && (
-                    <div className="w-32 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
-                      <SmallOptimizedImage
-                        src={article.imageUrl}
-                        alt={article.title}
-                        className="w-full h-full object-cover"
-                        fallbackText={article.sourceTitle}
-                        size={300}
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[rgb(var(--color-accent))]">
-                      {article.sourceTitle}
-                    </span>
-                    <h3 className="font-serif text-lg font-bold leading-tight text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2 mt-1">
-                      {article.title}
-                    </h3>
-                    <p className="text-sm text-[rgb(var(--color-textSecondary))] line-clamp-2 mt-1">
-                      {article.description}
-                    </p>
-                  </div>
-                </article>
-              ))}
+              <span className="text-xs text-[rgb(var(--color-textSecondary))]">
+                {formatTimeAgo(main.pubDate)}
+              </span>
             </div>
           </section>
         )}
 
-        {/* Columns Section */}
-        {columnArticles.length > 0 && (
-          <section className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-4">
-            {columnArticles.map((article, i) => (
+        {/* SECONDARY */}
+        {secondary.length > 0 && (
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+            {secondary.map(article => (
               <article
-                key={i}
-                className="break-inside-avoid group cursor-pointer pb-4 border-b border-[rgb(var(--color-border))]"
+                key={article.link}
                 onClick={() => setReadingArticle(article)}
+                className="flex gap-5 cursor-pointer group"
               >
-                <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-[rgb(var(--color-accent))]/10 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded mb-2">
-                  {article.sourceTitle}
-                </span>
+                <div className="relative w-40 h-28 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] flex-shrink-0">
+                  <ImageOrFallback article={article} />
+                </div>
 
-                <h3 className="font-serif text-lg font-bold leading-snug text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors mb-2">
-                  {article.title}
-                </h3>
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] uppercase tracking-widest text-[rgb(var(--color-accent))] font-bold">
+                    {article.sourceTitle}
+                  </span>
 
-                <p className="text-sm text-[rgb(var(--color-textSecondary))] leading-relaxed line-clamp-3 mb-2">
-                  {article.description}
-                </p>
+                  <h3 className="font-serif text-lg font-bold leading-snug group-hover:text-[rgb(var(--color-accent))]">
+                    {article.title}
+                  </h3>
 
-                <div className="flex items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))]">
-                  <span>{formatTimeAgo(article.pubDate)}</span>
-                  <span className="text-[rgb(var(--color-accent))] font-medium group-hover:underline">
-                    {t('action.read') || 'Ler'} →
+                  <span className="text-xs text-[rgb(var(--color-textSecondary))]">
+                    {formatTimeAgo(article.pubDate)}
                   </span>
                 </div>
               </article>
@@ -206,15 +199,46 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
           </section>
         )}
 
-        {/* Footer */}
-        <footer className="mt-10 pt-6 border-t border-[rgb(var(--color-border))] text-center">
+        {/* EDITORIAL GRID */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-10">
+          {rest.map(article => (
+            <article
+              key={article.link}
+              onClick={() => setReadingArticle(article)}
+              className="cursor-pointer group border-t border-[rgb(var(--color-border))] pt-4"
+            >
+              <div className="relative h-40 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
+                <ImageOrFallback article={article} />
+              </div>
+
+              <span className="inline-block text-[10px] uppercase tracking-widest bg-[rgb(var(--color-accent))]/10 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded mb-2 font-bold">
+                {article.sourceTitle}
+              </span>
+
+              <h3 className="font-serif text-lg font-bold leading-snug mb-2 group-hover:text-[rgb(var(--color-accent))]">
+                {article.title}
+              </h3>
+
+              {article.description && (
+                <p className="text-sm text-[rgb(var(--color-textSecondary))] line-clamp-3 mb-2">
+                  {article.description}
+                </p>
+              )}
+
+              <span className="text-xs text-[rgb(var(--color-textSecondary))]">
+                {formatTimeAgo(article.pubDate)}
+              </span>
+            </article>
+          ))}
+        </section>
+
+        <footer className="mt-16 pt-6 border-t border-[rgb(var(--color-border))] text-center">
           <p className="text-xs uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
             {t('article.end') || 'Fim da edição'}
           </p>
         </footer>
       </div>
 
-      {/* Reader Modal */}
       {readingArticle && (
         <ArticleReaderModal
           article={readingArticle}
