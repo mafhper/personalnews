@@ -24,8 +24,10 @@ _dev/
 tmp/
 temp/
 .bun/
+docs/*
 
 # Logs & Reports
+docs/logs/
 logs/
 *.log
 npm-debug.log*
