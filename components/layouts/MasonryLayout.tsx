@@ -4,6 +4,7 @@ import { ArticleItem } from '../ArticleItem';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface MasonryLayoutProps {
   articles: Article[];

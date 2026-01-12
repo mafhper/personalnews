@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface GalleryLayoutProps {
   articles: Article[];
@@ -39,6 +40,15 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
 
               {/* Always visible gradient overlay at bottom */}
               <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
+
+              {/* Favorite Button */}
+              <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                <FavoriteButton 
+                  article={article} 
+                  size="small" 
+                  className="bg-black/40 hover:bg-black/60 border border-white/10"
+                />
+              </div>
 
               {/* Post info at bottom-left */}
               <div className="absolute bottom-0 left-0 right-0 p-3 text-left">

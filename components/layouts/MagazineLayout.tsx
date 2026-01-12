@@ -4,6 +4,7 @@ import { MagazineReaderModal } from '../MagazineReaderModal';
 import { useAppearance } from '../../hooks/useAppearance';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ArticleImage } from '../ArticleImage';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface MagazineLayoutProps {
   articles: Article[];
@@ -100,6 +101,15 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent md:hidden" />
+              
+              {/* Favorite Button */}
+              <div className="absolute top-4 right-4 z-20">
+                <FavoriteButton 
+                  article={heroArticle} 
+                  size="medium" 
+                  className="bg-black/40 hover:bg-black/60 border border-white/10"
+                />
+              </div>
             </div>
 
             {/* Hero Content */}
@@ -161,6 +171,15 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  {/* Favorite Button */}
+                  <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <FavoriteButton 
+                      article={article} 
+                      size="small" 
+                      className="bg-black/40 hover:bg-black/60 border border-white/10"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 mb-2">
@@ -208,13 +227,21 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                   />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))]">
-                      {article.sourceTitle}
-                    </span>
-                    <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
-                      {formatTimeAgo(article.pubDate)}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))]">
+                        {article.sourceTitle}
+                      </span>
+                      <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
+                        {formatTimeAgo(article.pubDate)}
+                      </span>
+                    </div>
+                    <FavoriteButton 
+                      article={article} 
+                      size="small" 
+                      position="inline"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
                   </div>
                   <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2 leading-snug">
                     {article.title}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleItem } from '../ArticleItem';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface ModernPortalLayoutProps {
   articles: Article[];
@@ -57,6 +58,14 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
            />
            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
            
+           <div className="absolute top-6 right-6 z-20">
+              <FavoriteButton 
+                article={heroArticle} 
+                size="large" 
+                className="bg-black/40 hover:bg-black/60 border border-white/10"
+              />
+           </div>
+
            <div className="absolute bottom-0 left-0 p-6 lg:p-10 max-w-3xl">
               <span className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-widest text-white uppercase bg-[rgb(var(--color-primary))] rounded-full">
                 Top Story
@@ -96,6 +105,13 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                   style={{ backgroundImage: `url(${article.imageUrl})` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <FavoriteButton 
+                      article={article} 
+                      size="medium" 
+                      className="bg-black/40 hover:bg-black/60 border border-white/10"
+                   />
+                </div>
                 <div className="absolute bottom-0 left-0 p-5">
                    <h2 className="text-lg font-bold text-white leading-snug mb-2">
                      <a 
@@ -192,16 +208,24 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                             {index + 1}
                           </span>
                           <div className="flex-1">
-                             <h5 className="font-semibold text-[rgb(var(--color-text))] leading-tight group-hover:text-[rgb(var(--color-primary))] transition-colors text-sm mb-1">
-                               <a 
-                                    href={article.link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
-                               >
-                                 {article.title}
-                               </a>
-                             </h5>
+                             <div className="flex justify-between items-start gap-2">
+                               <h5 className="font-semibold text-[rgb(var(--color-text))] leading-tight group-hover:text-[rgb(var(--color-primary))] transition-colors text-sm mb-1">
+                                 <a 
+                                      href={article.link} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
+                                 >
+                                   {article.title}
+                                 </a>
+                               </h5>
+                               <FavoriteButton 
+                                 article={article} 
+                                 size="small" 
+                                 position="inline"
+                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
+                               />
+                             </div>
                              <span className="text-xs text-[rgb(var(--color-textSecondary))]">
                                {article.sourceTitle}
                              </span>

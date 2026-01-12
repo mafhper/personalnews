@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface CompactLayoutProps {
   articles: Article[];
@@ -29,9 +30,19 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                 <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
                   ({new URL(article.link).hostname.replace('www.', '')})
                 </span>
-                <div className="text-[10px] text-[rgb(var(--color-textSecondary))] ml-6 leading-tight mt-0.5">
-                  by {article.author || article.sourceTitle} <span className="mx-1 opacity-50">|</span> {new Date(article.pubDate).toLocaleDateString()} <span className="mx-1 opacity-50">|</span>
-                  <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] mx-1 transition-colors">{t('action.preview').toLowerCase()}</span>
+                <div className="text-[10px] text-[rgb(var(--color-textSecondary))] ml-6 leading-tight mt-0.5 flex items-center gap-2">
+                  <span>by {article.author || article.sourceTitle}</span>
+                  <span className="opacity-50">|</span>
+                  <span>{new Date(article.pubDate).toLocaleDateString()}</span>
+                  <span className="opacity-50">|</span>
+                  <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] transition-colors">{t('action.preview').toLowerCase()}</span>
+                  <span className="opacity-50">|</span>
+                  <FavoriteButton 
+                    article={article} 
+                    size="small"
+                    position="inline"
+                    className="p-0 h-auto w-auto hover:text-[rgb(var(--color-accent))] transition-colors"
+                  />
                 </div>
               </li>
             ))}

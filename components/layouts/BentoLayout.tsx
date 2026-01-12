@@ -3,6 +3,7 @@ import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ArticleImage } from '../ArticleImage';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface BentoLayoutProps {
   articles: Article[];
@@ -117,26 +118,29 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[rgb(var(--color-accent))]/5 backdrop-blur-[1px]" />
 
                 {/* Content Layer */}
-                <div className={`relative h-full flex flex-col ${
-                  isWide ? 'flex-row items-end' : 'justify-end'
-                } p-5 md:p-6`}>
-
-                  {/* Content Block */}
-                  <div className={`transform transition-all duration-500 ${
-                    isWide ? 'flex-1' : ''
-                  }`}>
-                    {/* Meta Row */}
-                    <div className={`flex items-center gap-2 mb-3 ${
-                      isHero ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0'
-                    } transition-all duration-300`}>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/30">
+                <div className={`relative h-full flex flex-col justify-between p-5 md:p-6`}>
+                  
+                  {/* Top Part: Source, Date and Favorite */}
+                  <div className="flex justify-between items-start w-full">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="inline-flex items-center self-start px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20">
                         {article.sourceTitle}
                       </span>
-                      <span className="text-xs text-white/70 drop-shadow-lg">
+                      <span className="text-[10px] md:text-xs font-bold text-white/70 drop-shadow-md">
                         {formatTimeAgo(article.pubDate)}
                       </span>
                     </div>
 
+                    <FavoriteButton 
+                      article={article} 
+                      size="medium"
+                      position="inline"
+                      className="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+
+                  {/* Bottom Part: Content Block */}
+                  <div className={`transform transition-all duration-500`}>
                     {/* Title */}
                     <h3 className={`font-bold text-white leading-tight mb-2 drop-shadow-xl ${
                       isHero ? 'text-2xl md:text-4xl' :
@@ -168,19 +172,16 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                       </span>
                     </div>
                   </div>
-
-                  {/* Category Icon for wide cards */}
-                  {isWide && (
-                    <div className="w-20 h-20 flex-shrink-0 ml-4 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg">
-                      <svg className="w-8 h-8 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                      </svg>
-                    </div>
-                  )}
                 </div>
 
-                {/* Corner Accent */}
-                <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-[rgb(var(--color-accent))] opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg shadow-[rgb(var(--color-accent))]/50" />
+                {/* Favorite Button */}
+                <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <FavoriteButton 
+                    article={article} 
+                    size="medium" 
+                    className="bg-black/40 hover:bg-black/60 border border-white/10 shadow-lg"
+                  />
+                </div>
               </article>
             );
           })}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface CyberpunkLayoutProps {
   articles: Article[];
@@ -22,7 +23,15 @@ export const CyberpunkLayout: React.FC<CyberpunkLayoutProps> = ({ articles }) =>
             <div className="absolute bottom-0 right-0 w-2 h-2 bg-[#00ff41]" />
 
             <div className="flex justify-between items-center border-b border-[#00ff41]/30 pb-2 mb-3 text-[#00ff41] text-xs">
-              <span>SYS.FEED.{i.toString().padStart(3, '0')}</span>
+              <div className="flex items-center gap-2">
+                <span>SYS.FEED.{i.toString().padStart(3, '0')}</span>
+                <FavoriteButton 
+                  article={article} 
+                  size="small" 
+                  position="inline"
+                  className="p-0 text-[#00ff41]/60 hover:text-[#00ff41] transition-colors"
+                />
+              </div>
               <span>[{article.sourceTitle}]</span>
             </div>
 

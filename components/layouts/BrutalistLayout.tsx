@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { getVideoEmbed } from '../../utils/videoEmbed';
 import { OptimizedImage } from '../OptimizedImage';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface BrutalistLayoutProps {
   articles: Article[];
@@ -98,7 +99,15 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
         </div>
 
         <div className="pt-3 border-t-2 border-dashed border-black/20 dark:border-white/20 flex justify-between items-center text-xs font-bold">
-          <span>{new Date(article.pubDate).toLocaleDateString()}</span>
+          <div className="flex items-center gap-3">
+            <span>{new Date(article.pubDate).toLocaleDateString()}</span>
+            <FavoriteButton 
+              article={article} 
+              size="small" 
+              position="inline"
+              className="text-black dark:text-white hover:text-[rgb(var(--color-accent))] p-0"
+            />
+          </div>
           
           <div className="flex gap-2 z-20">
             {embedUrl && (

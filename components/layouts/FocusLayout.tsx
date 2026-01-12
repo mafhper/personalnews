@@ -3,6 +3,7 @@ import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface FocusLayoutProps {
   articles: Article[];
@@ -121,6 +122,12 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                 <span className="text-xs text-gray-400 font-mono tracking-widest">
                     {new Date(currentArticle.pubDate).toLocaleDateString().split('/').join('.')}
                 </span>
+                <FavoriteButton 
+                  article={currentArticle} 
+                  size="medium"
+                  position="inline"
+                  className="bg-white/5 hover:bg-white/10 border border-white/10"
+                />
             </div>
 
             <h2

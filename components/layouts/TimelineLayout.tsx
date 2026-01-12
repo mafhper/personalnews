@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface TimelineLayoutProps {
   articles: Article[];
@@ -80,16 +81,24 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                 <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-[rgb(var(--color-accent))] border-4 border-[rgb(var(--color-background))] shadow-sm group-hover:scale-125 transition-transform" />
 
                 <div className="bg-[rgb(var(--color-surface))] p-4 md:p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all shadow-sm hover:shadow-md relative overflow-hidden">
-                  <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))] mb-2">
-                    <span className="font-medium text-[rgb(var(--color-accent))]">{article.sourceTitle}</span>
-                    <span>•</span>
-                    <span>
-                      {new Date(article.pubDate).toLocaleTimeString(language, { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: timeFormat === '12h'
-                      })}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))]">
+                      <span className="font-medium text-[rgb(var(--color-accent))]">{article.sourceTitle}</span>
+                      <span>•</span>
+                      <span>
+                        {new Date(article.pubDate).toLocaleTimeString(language, { 
+                          hour: '2-digit', 
+                          minute: '2-digit',
+                          hour12: timeFormat === '12h'
+                        })}
+                      </span>
+                    </div>
+                    <FavoriteButton 
+                      article={article} 
+                      size="small"
+                      position="inline"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
                   </div>
 
                   <h3 

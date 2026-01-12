@@ -3,6 +3,7 @@ import { Article } from '../../types';
 import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface MinimalLayoutProps {
   articles: Article[];
@@ -92,6 +93,12 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                     <time dateTime={article.pubDate.toISOString()}>
                       {formatTimeAgo(article.pubDate)}
                     </time>
+                    <FavoriteButton 
+                      article={article} 
+                      size="small"
+                      position="inline"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+                    />
                   </div>
 
                   {/* Title */}

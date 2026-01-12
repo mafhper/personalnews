@@ -3,6 +3,7 @@ import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { FavoriteButton } from '../FavoriteButton';
 
 interface SplitLayoutProps {
   articles: Article[];
@@ -35,7 +36,15 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
           </div>
           <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-[rgb(var(--color-surface))] border-b border-[rgb(var(--color-border))]">
             <div className="max-w-xl mx-auto md:mx-0">
-                <span className="text-[rgb(var(--color-accent))] font-bold uppercase tracking-widest text-xs mb-4 block">{article.sourceTitle}</span>
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-[rgb(var(--color-accent))] font-bold uppercase tracking-widest text-xs">{article.sourceTitle}</span>
+                  <FavoriteButton 
+                    article={article} 
+                    size="medium"
+                    position="inline"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                </div>
                 <h2
                     className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6 text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-accent))] transition-colors cursor-pointer leading-tight"
                     onClick={() => setReadingArticle(article)}
