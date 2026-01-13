@@ -1,14 +1,10 @@
-import { render, renderHook, screen, waitFor } from '@testing-library/react';
+import { render, renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { FeedProvider } from '../contexts/FeedContext';
 import { useFeeds } from '../contexts/FeedContextState';
 import { NotificationProvider } from '../contexts/NotificationContext';
-import { ModalProvider } from '../contexts/ModalContext';
-import { UIProvider } from '../contexts/UIContext';
 import * as feedMigration from '../utils/feedMigration';
-import * as useLocalStorage from '../hooks/useLocalStorage';
-import * as useProgressiveFeedLoading from '../hooks/useProgressiveFeedLoading';
 
 // Mock dependencies
 vi.mock('../utils/feedMigration', () => ({

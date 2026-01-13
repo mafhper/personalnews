@@ -68,7 +68,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   // Validation State
   const [feedValidations, setFeedValidations] = useState<Map<string, FeedValidationResult>>(new Map());
   const [isValidating, setIsValidating] = useState(false);
-  const [editingFeed, setEditingFeed] = useState<string | null>(null);
 
   // Notification Hooks
   const { confirm, alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
@@ -127,19 +126,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       const result = await feedValidator.validateFeed(url);
       setFeedValidations((prev) => new Map(prev.set(url, result)));
       return result;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
 
   const handleEditFeed = (oldUrl: string) => {
-    setEditingFeed(oldUrl);
     // Simple prompt for now, could be a modal
     const newUrl = prompt("Editar URL do feed:", oldUrl);
     if (newUrl && newUrl !== oldUrl) {
       handleSaveEdit(oldUrl, newUrl);
-    } else {
-      setEditingFeed(null);
     }
   };
 
@@ -154,7 +150,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     } else {
       await alertError("O novo URL não é um feed RSS válido.");
     }
-    setEditingFeed(null);
   };
 
   const handleRemoveFeed = async (urlToRemove: string) => {
@@ -262,7 +257,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         categoriesToCreate.forEach(catName => createCategory(catName, '#6B7280'));
         if (newFeeds.length > 0) setFeeds((prev) => [...prev, ...newFeeds]);
         await alertSuccess(`${newFeeds.length} feeds importados!`);
-      } catch (error) {
+      } catch {
         await alertError('Falha ao processar arquivo OPML');
       }
     }
@@ -273,7 +268,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const checkForDuplicates = async (newUrl: string): Promise<DuplicateDetectionResult> => {
     try {
       return await feedDuplicateDetector.detectDuplicate(newUrl, currentFeeds);
-    } catch (error) {
+    } catch {
       // Fallback logic could go here
       return { isDuplicate: false, confidence: 0, reason: "Error" };
     }

@@ -280,7 +280,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
   let data;
   try {
     data = JSON.parse(jsonContent);
-  } catch (e) {
+  } catch {
     throw new Error("Failed to parse JSON response");
   }
 
@@ -391,7 +391,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
               }
             }
           }
-        } catch (e) {
+        } catch {
           // Fallback to regex if DOMParser fails
         }
       }
@@ -418,7 +418,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
           sourceTitle: channelTitle,
         });
       }
-    } catch (e) {
+    } catch {
       logger.warn("Failed to parse JSON item", { component: "rssParser" });
     }
   }
@@ -918,7 +918,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           audioDuration: audioDuration || undefined,
         });
       }
-    } catch (error) {
+    } catch {
       logger.warn(`Failed to parse article ${i + 1}`, { component: "rssParser" });
     }
   }
@@ -964,7 +964,7 @@ async function fetchRssFeed(
         try {
           const jsonResult = parseRss2JsonResponse(content, currentUrl);
           if (jsonResult.articles.length > 0) return jsonResult;
-        } catch (e) {
+        } catch {
           // Identify if it was just a failed JSON parse or if content is actually XML
           // proceed to XML parsing
         }

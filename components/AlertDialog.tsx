@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { CheckCircle, AlertCircle, AlertTriangle, Info, X } from "lucide-react";
-import type { NotificationOptions } from "../contexts/NotificationContext";
+import type { NotificationOptions } from "../types";
 
 interface AlertDialogProps {
   isOpen: boolean;

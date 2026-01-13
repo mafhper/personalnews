@@ -5,7 +5,6 @@ import { HeaderIcons } from "./icons";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useLanguage } from "../contexts/LanguageContext";
-import { useAppearance } from "../hooks/useAppearance";
 
 interface FeedDropdownProps {
   category: FeedCategory;
@@ -50,7 +49,7 @@ const getFaviconUrl = (url: string): string => {
     try {
       const domain = new URL(url).hostname;
       return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-    } catch (e) {
+    } catch {
       return '';
     }
 };
@@ -59,7 +58,7 @@ const getSiteName = (url: string): string => {
     try {
       const hostname = new URL(url).hostname;
       return hostname.replace(/^www\./, '');
-    } catch (e) {
+    } catch {
       return url;
     }
 };
@@ -72,8 +71,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   selectedCategory,
   onEditCategory,
 }) => {
-  const { updateCategory, deleteCategory } = useFeedCategories();
-  const { updateContentConfig } = useAppearance();
+  const { deleteCategory, updateCategory } = useFeedCategories();
   const { confirmDanger, alertSuccess } = useNotificationReplacements();
   const { t } = useLanguage();
 

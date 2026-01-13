@@ -7,29 +7,7 @@ import React, {
 } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { AlertDialog } from "../components/AlertDialog";
-
-export interface NotificationOptions {
-  type?: "success" | "error" | "warning" | "info";
-  duration?: number;
-  persistent?: boolean;
-}
-
-export interface Notification {
-  id: string;
-  message: string;
-  type: "success" | "error" | "warning" | "info";
-  duration: number;
-  persistent: boolean;
-  timestamp: number;
-}
-
-export interface ConfirmDialogOptions {
-  title?: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  type?: "danger" | "warning" | "info";
-}
+import { NotificationOptions, Notification, ConfirmDialogOptions } from "../types";
 
 interface NotificationContextType {
   notifications: Notification[];

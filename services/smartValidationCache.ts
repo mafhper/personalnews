@@ -326,7 +326,7 @@ export class SmartValidationCache implements ValidationCacheManager {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
-    const { data: _, ...metadata } = entry;
+    const { data: _unused, ...metadata } = entry;
     return metadata;
   }
 

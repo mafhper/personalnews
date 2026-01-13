@@ -579,16 +579,17 @@ class FeedValidatorService {
           },
         };
       }
-    } catch (error: any) {
+    } catch (error) {
       const responseTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       return {
         success: false,
         responseTime,
         error: {
           type: ValidationErrorType.NETWORK_ERROR,
-          message: `Proxy validation failed: ${error.message}`,
-          originalError: error,
+          message: `Proxy validation failed: ${errorMessage}`,
+          originalError: error instanceof Error ? error : undefined,
           suggestions: [
             "All proxy services failed to access the feed",
             "The feed server might be blocking proxy requests",

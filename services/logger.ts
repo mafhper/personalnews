@@ -3,14 +3,20 @@ export interface LogMessage {
   timestamp: number;
   type: 'info' | 'warn' | 'error' | 'log' | 'debug';
   message: string;
-  data?: any[];
+  data?: unknown[];
 }
 
 class LoggerService {
   private logs: LogMessage[] = [];
   private maxLogs = 100;
   private listeners: ((logs: LogMessage[]) => void)[] = [];
-  private originalConsole: { log: any; warn: any; error: any; info: any; debug?: any };
+  private originalConsole: { 
+    log: (...args: unknown[]) => void; 
+    warn: (...args: unknown[]) => void; 
+    error: (...args: unknown[]) => void; 
+    info: (...args: unknown[]) => void; 
+    debug?: (...args: unknown[]) => void; 
+  };
 
   constructor() {
     this.originalConsole = {
@@ -25,28 +31,28 @@ class LoggerService {
   }
 
   private init() {
-    console.log = (...args) => {
+    console.log = (...args: unknown[]) => {
       this.addLog('log', args);
       this.originalConsole.log(...args);
     };
 
-    console.info = (...args) => {
+    console.info = (...args: unknown[]) => {
       this.addLog('info', args);
       this.originalConsole.info(...args);
     };
 
-    console.warn = (...args) => {
+    console.warn = (...args: unknown[]) => {
       this.addLog('warn', args);
       this.originalConsole.warn(...args);
     };
 
-    console.error = (...args) => {
+    console.error = (...args: unknown[]) => {
       this.addLog('error', args);
       this.originalConsole.error(...args);
     };
   }
 
-  private addLog(type: LogMessage['type'], args: any[]) {
+  private addLog(type: LogMessage['type'], args: unknown[]) {
     const message = args.map(arg => 
       typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
     ).join(' ');
@@ -79,27 +85,27 @@ class LoggerService {
     };
   }
 
-  public log(...args: any[]) {
+  public log(...args: unknown[]) {
     this.addLog('log', args);
     this.originalConsole.log(...args);
   }
 
-  public info(...args: any[]) {
+  public info(...args: unknown[]) {
     this.addLog('info', args);
     this.originalConsole.info(...args);
   }
 
-  public warn(...args: any[]) {
+  public warn(...args: unknown[]) {
     this.addLog('warn', args);
     this.originalConsole.warn(...args);
   }
 
-  public error(...args: any[]) {
+  public error(...args: unknown[]) {
     this.addLog('error', args);
     this.originalConsole.error(...args);
   }
 
-  public debug(...args: any[]) {
+  public debug(...args: unknown[]) {
     // Debug logs might not need to go to console in production, but for now we'll log them
     this.addLog('debug', args);
     // Use log for debug if debug doesn't exist on console (it usually does)

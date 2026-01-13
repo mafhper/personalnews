@@ -481,7 +481,7 @@ export class OPMLExportService {
       const queryString = searchParams.toString();
 
       return queryString ? `${normalizedUrl}?${queryString}` : normalizedUrl;
-    } catch (error) {
+    } catch {
       // If URL parsing fails, return the original URL in lowercase and trimmed
       return url.toLowerCase().trim();
     }

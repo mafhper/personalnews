@@ -1,5 +1,4 @@
 import React from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 interface FeedToolsTabProps {
   onExportOPML: () => void;
@@ -54,8 +53,6 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   onDeleteAll,
   feedCount
 }) => {
-  const { t } = useLanguage();
-
   return (
     <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar h-full">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">

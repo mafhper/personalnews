@@ -10,10 +10,11 @@ import { Tabs } from './ui/Tabs';
 import { Card } from './ui/Card';
 import { Input } from './ui/Input';
 import { Switch } from './ui/Switch';
-import { logger, LogMessage } from '../services/logger';
+import { logger } from '../services/logger';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
-import { useLanguage, Language } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Language } from '../types';
 
 interface SettingsModalProps {
     isOpen: boolean;

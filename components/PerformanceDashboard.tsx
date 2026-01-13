@@ -67,7 +67,7 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ isOpen, onC
       await fetch('data:text/plain,test');
       const networkTime = performance.now() - networkStart;
       results.push({ name: 'Network Request', value: networkTime, unit: 'ms', status: networkTime < 50 ? 'good' : networkTime < 100 ? 'warning' : 'poor' });
-    } catch (error) {
+    } catch {
       results.push({ name: 'Network Request', value: 0, unit: 'ms', status: 'error' });
     }
 

@@ -334,7 +334,7 @@ export class SmartCache {
       return null;
     }
 
-    const { articles: _, ...metadata } = entry;
+    const { articles: _unused, ...metadata } = entry;
     return metadata;
   }
 

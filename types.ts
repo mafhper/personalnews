@@ -243,3 +243,28 @@ export interface AppearanceSettings {
   theme: ThemeSettings;
   background: BackgroundConfig;
 }
+
+export type Language = 'pt-BR' | 'en-US' | 'es' | 'fr' | 'it' | 'zh' | 'ja';
+
+export interface NotificationOptions {
+  type?: "success" | "error" | "warning" | "info";
+  duration?: number;
+  persistent?: boolean;
+}
+
+export interface Notification {
+  id: string;
+  message: string;
+  type: "success" | "error" | "warning" | "info";
+  duration: number;
+  persistent: boolean;
+  timestamp: number;
+}
+
+export interface ConfirmDialogOptions {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  type?: "danger" | "warning" | "info";
+}

@@ -108,7 +108,7 @@ export async function checkLocalProxyAvailability(): Promise<boolean> {
 
     clearTimeout(timeoutId);
     return response.ok;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -183,7 +183,7 @@ export function isCrossOrigin(url: string): boolean {
     return targetUrl.protocol !== windowUrl.protocol ||
       targetUrl.hostname !== windowUrl.hostname ||
       targetUrl.port !== windowUrl.port;
-  } catch (e) {
+  } catch {
     // If URL is invalid, assume it might be cross-origin/external
     return true;
   }

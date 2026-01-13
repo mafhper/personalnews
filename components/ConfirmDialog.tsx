@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { AlertTriangle, AlertCircle, Info, X } from "lucide-react";
-import type { ConfirmDialogOptions } from "../contexts/NotificationContext";
+import type { ConfirmDialogOptions } from "../types";
 
 interface ConfirmDialogProps {
   isOpen: boolean;

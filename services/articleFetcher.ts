@@ -61,7 +61,7 @@ export async function fetchFullContent(url: string): Promise<string | null> {
                 
                 try {
                     localStorage.setItem(cacheKey, sanitized);
-                } catch (e) {
+                } catch {
                     // Start cleaning up old cache if full? For now just ignore
                     console.warn('Cache full, could not save article');
                 }

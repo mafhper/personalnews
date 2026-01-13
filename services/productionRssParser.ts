@@ -373,7 +373,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
               }
             }
           }
-        } catch (e) {
+        } catch {
           // Fallback to regex if DOMParser fails
           const imgPattern = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
           const searchContent = htmlContent.substring(0, 3000);
@@ -426,7 +426,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
                 validImageUrl = imageUrl;
               }
             }
-          } catch (e) {
+          } catch {
             // Invalid URL
           }
         }
@@ -449,7 +449,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
     categories: item.categories || [],
     sourceTitle: data.feed?.title || 'Unknown Feed',
       });
-    } catch (e) {
+    } catch {
       // Skip invalid items
       logger.warn("Failed to parse RSS2JSON item", { component: "productionRssParser" });
     }
@@ -824,7 +824,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
             
             if (imageCandidates.length > 20) break;
           }
-        } catch (e) {
+        } catch {
           // Fallback regex
           const imgPatterns = [
             /<img[^>]+src=["']([^"']+)["'][^>]*>/gi,
@@ -889,7 +889,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
                 validImageUrl = imageUrl;
               }
             }
-          } catch (e) {
+          } catch {
             // Invalid URL
           }
         }
@@ -908,11 +908,11 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
           sourceTitle: channelTitle,
         });
       }
-    } catch (error) {
+    } catch {
       logger.warn(`Failed to parse article ${i + 1} from ${feedUrl}`, {
         component: "productionRssParser",
         additionalData: {
-          error: error instanceof Error ? error.message : String(error),
+          error: "Parse error",
         },
       });
     }

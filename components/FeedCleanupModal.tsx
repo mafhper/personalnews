@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FeedSource } from '../types';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
-import { categorizeError } from '../components/ErrorRecovery';
 
 interface FeedErrorHistoryItem {
   url: string;

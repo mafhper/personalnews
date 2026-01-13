@@ -269,7 +269,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
         };
 
         return feed;
-      } catch (error) {
+      } catch {
         // Path doesn't exist or isn't a valid feed
         return null;
       }
@@ -388,7 +388,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
         });
         clearTimeout(timeoutId);
         if (response.ok) return await response.text();
-      } catch (e) {
+      } catch {
         // Direct fetch failed, proceed to proxy
       }
 
@@ -420,7 +420,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
         });
         clearTimeout(timeoutId);
         if (response.ok) return await response.text();
-      } catch (e) {
+      } catch {
         // Direct fetch failed, proceed to proxy
       }
 
@@ -472,7 +472,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
               };
 
               discoveredFeeds.push(feed);
-            } catch (error) {
+            } catch {
               // URL found but not a valid feed
               continue;
             }
@@ -500,10 +500,9 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
     try {
       // Convert relative URLs to absolute
       return new URL(href, baseUrl).toString();
-    } catch (error) {
-      return null;
-    }
-  }
+            } catch {
+              return null;
+            }  }
 
   /**
    * Determine feed type from element attributes

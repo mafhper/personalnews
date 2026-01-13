@@ -21,10 +21,8 @@ import {
   logger,
   useLogger,
   withLogging,
-  LOG_LEVELS,
   LogLevel,
   LogEntry,
-  LogContext,
   LoggerConfig,
   LogTransportConfig,
 } from '../services/logger';
@@ -32,10 +30,10 @@ import {
 // Mock React for testing
 vi.mock('react', () => ({
   default: {
-    useEffect: vi.fn((fn, deps) => fn()),
+    useEffect: vi.fn((fn, _deps) => fn()),
     FC: vi.fn(),
   },
-  useEffect: vi.fn((fn, deps) => fn()),
+  useEffect: vi.fn((fn, _deps) => fn()),
 }));
 
 // Mock localStorage
@@ -56,14 +54,6 @@ const mockConsole = {
   info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
-};
-
-// Store original console methods
-const originalConsole = {
-  debug: console.debug,
-  info: console.info,
-  warn: console.warn,
-  error: console.error,
 };
 
 // Replace console methods with mocks

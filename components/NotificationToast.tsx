@@ -1,10 +1,8 @@
 import React from "react";
 import { Alert, Snackbar, IconButton } from "@mui/material";
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
-import {
-  useNotification,
-  type Notification,
-} from "../contexts/NotificationContext";
+import { useNotification } from "../contexts/NotificationContext";
+import { Notification } from "../types";
 
 interface NotificationToastProps {
   notification: Notification;

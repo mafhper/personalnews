@@ -150,7 +150,7 @@ class PerformanceMetrics {
       });
       paintObserver.observe({ entryTypes: ['paint'] });
       this.observers.push(paintObserver);
-    } catch (e) {
+    } catch {
       // Silently fail if not supported
     }
 
@@ -163,7 +163,7 @@ class PerformanceMetrics {
       });
       layoutObserver.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(layoutObserver);
-    } catch (e) {
+    } catch {
       // Silently fail if not supported
     }
   }

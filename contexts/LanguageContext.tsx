@@ -1,7 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-
-export type Language = 'pt-BR' | 'en-US' | 'es' | 'fr' | 'it' | 'zh' | 'ja';
+import { Language } from '../types';
 
 interface LanguageContextType {
   language: Language;

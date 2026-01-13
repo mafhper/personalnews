@@ -93,7 +93,7 @@ class FeedPreloader {
       const loadTime = Date.now() - startTime;
       this.recordFeedAccess(feed.url, loadTime, true);
 
-    } catch (error) {
+    } catch {
       const loadTime = Date.now() - startTime;
       this.recordFeedAccess(feed.url, loadTime, false);
     }
@@ -103,7 +103,7 @@ class FeedPreloader {
     try {
       const stats = Array.from(this.usageStats.entries());
       localStorage.setItem('feed-usage-stats', JSON.stringify(stats));
-    } catch (error) {
+    } catch {
       // Silently fail
     }
   }
@@ -115,7 +115,7 @@ class FeedPreloader {
         const stats = JSON.parse(stored);
         this.usageStats = new Map(stats);
       }
-    } catch (error) {
+    } catch {
       // Silently fail
     }
   }

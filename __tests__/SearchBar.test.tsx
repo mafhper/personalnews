@@ -24,11 +24,9 @@ const mockArticles: Article[] = [
 
 describe('SearchBar Component', () => {
   let mockOnSearch: ReturnType<typeof vi.fn>;
-  let mockOnResultsChange: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockOnSearch = vi.fn();
-    mockOnResultsChange = vi.fn();
   });
 
   it('renders without crashing', () => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { GitCommit, Calendar, ChevronDown, ChevronUp, ExternalLink, Rocket } from 'lucide-react';
+import { GitCommit, ChevronDown, ChevronUp, ExternalLink, Rocket } from 'lucide-react';
 
 // GitHub commit interface
 interface GitHubCommit {
