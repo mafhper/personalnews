@@ -58,13 +58,12 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
            />
            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
            
-           <div className="absolute top-6 right-6 z-20">
-              <FavoriteButton 
-                article={heroArticle} 
-                size="large" 
-                className="bg-black/40 hover:bg-black/60 border border-white/10"
-              />
-           </div>
+           <FavoriteButton 
+             article={heroArticle} 
+             size="large" 
+             position="overlay"
+             className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+           />
 
            <div className="absolute bottom-0 left-0 p-6 lg:p-10 max-w-3xl">
               <span className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-widest text-white uppercase bg-[rgb(var(--color-primary))] rounded-full">
@@ -105,20 +104,19 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                   style={{ backgroundImage: `url(${article.imageUrl})` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <FavoriteButton 
-                      article={article} 
-                      size="medium" 
-                      className="bg-black/40 hover:bg-black/60 border border-white/10"
-                   />
-                </div>
+                <FavoriteButton 
+                  article={article} 
+                  size="medium" 
+                  position="overlay"
+                  className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 border border-white/20 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                />
                 <div className="absolute bottom-0 left-0 p-5">
                    <h2 className="text-lg font-bold text-white leading-snug mb-2">
                      <a 
                         href={article.link} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="hover:text-[rgb(var(--color-primary))] transition-colors"
+                        className="hover:text-yellow-400 transition-colors"
                         onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
                      >
                        {article.title}

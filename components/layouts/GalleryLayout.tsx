@@ -19,7 +19,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
             <div
               key={i}
               onClick={() => setReadingArticle(article)}
-              className="group relative aspect-square overflow-hidden cursor-pointer"
+              className="group relative aspect-square overflow-hidden cursor-pointer bg-[rgb(var(--color-surface))]"
             >
               {article.imageUrl ? (
                  <div className="w-full h-full">
@@ -33,7 +33,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
                     />
                  </div>
               ) : (
-                <div className="w-full h-full bg-[rgb(var(--color-surface))] flex items-center justify-center text-[rgb(var(--color-textSecondary))] font-bold text-4xl select-none">
+                <div className="w-full h-full flex items-center justify-center text-[rgb(var(--color-textSecondary))] font-bold text-4xl select-none">
                   {article.sourceTitle.charAt(0)}
                 </div>
               )}
@@ -41,14 +41,13 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
               {/* Always visible gradient overlay at bottom */}
               <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
-              {/* Favorite Button */}
-              <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                <FavoriteButton 
-                  article={article} 
-                  size="small" 
-                  className="bg-black/40 hover:bg-black/60 border border-white/10"
-                />
-              </div>
+              {/* Favorite Button - Fixed Positioning */}
+              <FavoriteButton 
+                article={article} 
+                size="small" 
+                position="overlay"
+                className="top-2 right-2 z-20 bg-black/40 hover:bg-black/60 border border-white/10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+              />
 
               {/* Post info at bottom-left */}
               <div className="absolute bottom-0 left-0 right-0 p-3 text-left">

@@ -94,7 +94,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                   {/* Text */}
                   <div className="flex-1 min-w-0">
 
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-1 font-medium">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1 font-medium">
                       <div className="flex items-center gap-x-3 text-xs text-gray-500">
                         <span className="text-yellow-600/80">
                           [{new Date(article.pubDate).toISOString().split('T')[0]}]
@@ -103,12 +103,14 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                           @{article.sourceTitle.replace(/\s/g, '_')}
                         </span>
                       </div>
-                      <FavoriteButton 
-                        article={article} 
-                        size="small" 
-                        position="inline"
-                        className="opacity-40 group-hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
-                      />
+                      <span className="ml-2 inline-flex">
+                        <FavoriteButton 
+                          article={article} 
+                          size="small" 
+                          position="inline"
+                          className="opacity-40 group-hover:opacity-100 transition-opacity grayscale hover:grayscale-0 p-0"
+                        />
+                      </span>
                     </div>
 
                     <h2

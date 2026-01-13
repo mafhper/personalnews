@@ -30,19 +30,26 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                 <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
                   ({new URL(article.link).hostname.replace('www.', '')})
                 </span>
-                <div className="text-[10px] text-[rgb(var(--color-textSecondary))] ml-6 leading-tight mt-0.5 flex items-center gap-2">
-                  <span>by {article.author || article.sourceTitle}</span>
-                  <span className="opacity-50">|</span>
-                  <span>{new Date(article.pubDate).toLocaleDateString()}</span>
-                  <span className="opacity-50">|</span>
-                  <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] transition-colors">{t('action.preview').toLowerCase()}</span>
-                  <span className="opacity-50">|</span>
-                  <FavoriteButton 
-                    article={article} 
-                    size="small"
-                    position="inline"
-                    className="p-0 h-auto w-auto hover:text-[rgb(var(--color-accent))] transition-colors"
-                  />
+                <div className="text-[10px] text-[rgb(var(--color-textSecondary))] ml-6 leading-tight mt-1 flex flex-col gap-1.5">
+                  {article.description && (
+                    <p className="line-clamp-2 italic opacity-80 mb-1 max-w-3xl leading-relaxed">
+                      {article.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span>by {article.author || article.sourceTitle}</span>
+                    <span className="opacity-50">|</span>
+                    <span>{new Date(article.pubDate).toLocaleDateString()}</span>
+                    <span className="opacity-50">|</span>
+                    <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] transition-colors">{t('action.preview').toLowerCase()}</span>
+                    <span className="opacity-50">|</span>
+                    <FavoriteButton 
+                      article={article} 
+                      size="small"
+                      position="inline"
+                      className="p-0 hover:text-[rgb(var(--color-accent))] transition-colors"
+                    />
+                  </div>
                 </div>
               </li>
             ))}

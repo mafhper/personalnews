@@ -112,13 +112,12 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               
-              <div className="absolute top-4 right-4 z-20">
-                <FavoriteButton 
-                  article={main} 
-                  size="medium" 
-                  className="bg-black/40 hover:bg-black/60 border border-white/10"
-                />
-              </div>
+              <FavoriteButton 
+                article={main} 
+                size="medium" 
+                position="overlay"
+                className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 backdrop-blur-sm border border-white/20 shadow-lg"
+              />
             </div>
 
             {/* Content */}

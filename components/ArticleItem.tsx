@@ -129,7 +129,7 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             {/* Favorite button overlay */}
             <button
                 onClick={handleToggleFavorite}
-                className={`absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm transition-all duration-200 z-10 ${isFavorited
+                className={`absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm transition-all duration-200 z-10 opacity-0 group-hover:opacity-100 ${isFavorited
                     ? "text-red-500 hover:text-red-400"
                     : "text-white hover:text-red-500"
                 }`}

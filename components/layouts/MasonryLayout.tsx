@@ -4,7 +4,6 @@ import { ArticleItem } from '../ArticleItem';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { FavoriteButton } from '../FavoriteButton';
 
 interface MasonryLayoutProps {
   articles: Article[];
@@ -59,21 +58,7 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
         {rest.map((article, index) => (
           <div key={`${article.link}-${index}`} className="break-inside-avoid mb-6">
             <div className="bg-gray-800/40 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden hover:border-white/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 p-5 relative group">
-              <ArticleItem article={article} index={index + 2} timeFormat={timeFormat} />
-              
-              {/* Preview Button Overlay */}
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  <button 
-                      onClick={(e) => {
-                          e.preventDefault();
-                          handleOpenReader(article);
-                      }}
-                      className="bg-black/60 hover:bg-[rgb(var(--color-accent))] text-white p-2 rounded-full backdrop-blur-sm shadow-lg transition-all transform hover:scale-110"
-                      title={t('action.preview')}
-                  >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-                  </button>
-              </div>
+              <ArticleItem article={article} index={index + 2} timeFormat={timeFormat} onClick={handleOpenReader} />
             </div>
           </div>
         ))}

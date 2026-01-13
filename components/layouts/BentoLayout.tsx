@@ -173,15 +173,6 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                     </div>
                   </div>
                 </div>
-
-                {/* Favorite Button */}
-                <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <FavoriteButton 
-                    article={article} 
-                    size="medium" 
-                    className="bg-black/40 hover:bg-black/60 border border-white/10 shadow-lg"
-                  />
-                </div>
               </article>
             );
           })}

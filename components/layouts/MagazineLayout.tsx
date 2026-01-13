@@ -103,13 +103,12 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent md:hidden" />
               
               {/* Favorite Button */}
-              <div className="absolute top-4 right-4 z-20">
-                <FavoriteButton 
-                  article={heroArticle} 
-                  size="medium" 
-                  className="bg-black/40 hover:bg-black/60 border border-white/10"
-                />
-              </div>
+              <FavoriteButton 
+                article={heroArticle} 
+                size="medium" 
+                position="overlay"
+                className="top-4 right-4 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg"
+              />
             </div>
 
             {/* Hero Content */}
@@ -173,13 +172,12 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
                   {/* Favorite Button */}
-                  <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <FavoriteButton 
-                      article={article} 
-                      size="small" 
-                      className="bg-black/40 hover:bg-black/60 border border-white/10"
-                    />
-                  </div>
+                  <FavoriteButton 
+                    article={article} 
+                    size="small" 
+                    position="overlay"
+                    className="top-3 right-3 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  />
                 </div>
 
                 <div className="flex items-center gap-2 mb-2">
@@ -215,7 +213,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             {gridArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all"
+                className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all relative"
                 onClick={() => handleOpenReader(article)}
               >
                 <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
@@ -236,12 +234,14 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                         {formatTimeAgo(article.pubDate)}
                       </span>
                     </div>
-                    <FavoriteButton 
-                      article={article} 
-                      size="small" 
-                      position="inline"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
+                    <div className="relative">
+                      <FavoriteButton 
+                        article={article} 
+                        size="small" 
+                        position="inline"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
                   </div>
                   <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2 leading-snug">
                     {article.title}

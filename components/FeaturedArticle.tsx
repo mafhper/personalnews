@@ -52,7 +52,7 @@ export const FeaturedArticle: React.FC<{
             article={article}
             size="large"
             position="overlay"
-            className="absolute top-3 right-3 z-20 hover:scale-110 active:scale-95 transition-transform duration-200 ease-in-out"
+            className="top-3 right-3 z-20 hover:scale-110 active:scale-95 transition-transform duration-200 ease-in-out"
           />
 
           <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 lg:p-8 xl:p-10 text-white">

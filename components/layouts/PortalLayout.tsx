@@ -39,13 +39,12 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                     
-                    <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <FavoriteButton 
-                          article={article} 
-                          size="small" 
-                          className="bg-black/40 hover:bg-black/60 border border-white/10"
-                        />
-                    </div>
+                    <FavoriteButton 
+                      article={article} 
+                      size="small" 
+                      position="overlay"
+                      className="top-3 right-3 z-20 bg-black/40 hover:bg-black/60 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
 
                     <div className="absolute bottom-0 p-4">
                         <span className="text-[10px] font-bold text-[rgb(var(--color-accent))] uppercase bg-black/50 px-2 py-1 rounded mb-2 inline-block">{article.sourceTitle}</span>
@@ -84,7 +83,12 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                         <h4 className="text-lg font-bold text-gray-200 leading-tight mb-2 hover:text-[rgb(var(--color-accent))] cursor-pointer">
                             <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
                         </h4>
-                        <p className="text-sm text-gray-400 line-clamp-2">{article.author ? `Por ${article.author}` : ''}</p>
+                        {article.description && (
+                            <p className="text-sm text-gray-400 line-clamp-2 mb-2">{article.description}</p>
+                        )}
+                        {article.author && (
+                            <p className="text-sm text-gray-500">{`Por ${article.author}`}</p>
+                        )}
                         
                         {/* Preview Button (Only if content available) */}
                         {(!!article.content || (article.description && article.description.length > 200)) && (

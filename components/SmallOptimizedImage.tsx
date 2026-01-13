@@ -17,6 +17,7 @@ interface SmallOptimizedImageProps {
   fallbackText: string;
   size: number; // Para imagens quadradas ou width para retangulares
   height?: number; // Opcional para imagens retangulares
+  priority?: boolean;
 }
 
 export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
@@ -25,7 +26,8 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
   className = '',
   fallbackText,
   size,
-  height
+  height,
+  priority = false
 }) => {
   const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [currentSrc, setCurrentSrc] = useState(src);
@@ -122,7 +124,7 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
         }`}
         onLoad={handleImageLoad}
         onError={handleImageError}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
       />
 
       {/* Error state */}

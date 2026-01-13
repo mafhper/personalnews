@@ -136,23 +136,26 @@ const HeroArticle: React.FC<{
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/10 pointer-events-none" />
 
+      {/* Favorite Button - Fixed to section */}
+      <div className="absolute top-4 right-4 z-20">
+        <FavoriteButton 
+          article={article} 
+          size="large"
+          position="overlay"
+          className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg"
+        />
+      </div>
+
       {/* Content Container - Split between top and bottom */}
       <div className="relative z-10 h-full flex flex-col justify-between p-6 sm:p-8 md:p-10 xl:p-14 min-h-[inherit]">
         
-        {/* Top Part: Source and Actions */}
-        <div className="flex justify-between items-start w-full">
+        {/* Top Part: Source */}
+        <div className="flex justify-start items-start w-full">
           <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
             <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/90">
               {article.sourceTitle}
             </span>
           </div>
-
-          <FavoriteButton 
-            article={article} 
-            size="large"
-            position="inline"
-            className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg"
-          />
         </div>
 
         {/* Bottom Part: Main Content */}
@@ -232,12 +235,14 @@ const ArticleCard: React.FC<{
             </span>
           </div>
 
-          <FavoriteButton 
-            article={article} 
-            size="medium"
-            position="inline"
-            className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10"
-          />
+          <div className="absolute top-3 right-3 z-20">
+            <FavoriteButton 
+              article={article} 
+              size="medium"
+              position="overlay"
+              className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10"
+            />
+          </div>
         </div>
 
         {/* Bottom Part */}
