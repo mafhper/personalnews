@@ -69,13 +69,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [feedValidations, setFeedValidations] = useState<Map<string, FeedValidationResult>>(new Map());
   const [isValidating, setIsValidating] = useState(false);
   const [editingFeed, setEditingFeed] = useState<string | null>(null);
-  const [editUrl, setEditUrl] = useState("");
 
   // Notification Hooks
   const { confirm, alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
 
   // Discovery State
-  const [discoveryInProgress, setDiscoveryInProgress] = useState<Set<string>>(new Set());
   const [discoveryProgress, setDiscoveryProgress] = useState<Map<string, { status: string; progress: number }>>(new Map());
   const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
   const [currentDiscoveryResult, setCurrentDiscoveryResult] = useState<{ originalUrl: string; discoveredFeeds: DiscoveredFeed[] } | null>(null);
@@ -136,7 +134,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const handleEditFeed = (oldUrl: string) => {
     setEditingFeed(oldUrl);
-    setEditUrl(oldUrl);
     // Simple prompt for now, could be a modal
     const newUrl = prompt("Editar URL do feed:", oldUrl);
     if (newUrl && newUrl !== oldUrl) {
@@ -302,7 +299,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const proceedWithFeedAddition = async (url: string) => {
     setProcessingUrl(url);
-    setDiscoveryInProgress((prev) => new Set(prev.add(url)));
     setDiscoveryProgress((prev) => new Map(prev.set(url, { status: "Validando...", progress: 10 })));
 
     try {
@@ -331,7 +327,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       await alertError(`Erro: ${error.message}`);
     } finally {
       setProcessingUrl(null);
-      setDiscoveryInProgress((prev) => { const s = new Set(prev); s.delete(url); return s; });
     }
   };
 

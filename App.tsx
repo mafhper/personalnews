@@ -37,7 +37,6 @@ import { useUI } from "./contexts/UIContext";
 
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
 import { useAppearance } from "./hooks/useAppearance";
-import { useReadStatus } from "./hooks/useReadStatus";
 import { useFeedCategories } from "./hooks/useFeedCategories";
 import { usePagination } from "./hooks/usePagination";
 import { useSwipeGestures } from "./hooks/useSwipeGestures";

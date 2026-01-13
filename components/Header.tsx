@@ -26,7 +26,6 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { headerConfig } = useAppearance();
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { t } = useLanguage();
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -549,22 +548,6 @@ const Header: React.FC<HeaderProps> = (props) => {
       </div>
     </>
   );
-};
-
-// Helper to update favicon
-const FaviconUpdater: React.FC<{ svg: string }> = ({ svg }) => {
-  useEffect(() => {
-    const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
-    link.type = 'image/svg+xml';
-    link.rel = 'icon';
-    link.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
-    document.getElementsByTagName('head')[0].appendChild(link);
-    
-    return () => {
-       // Optional: restore default on unmount? Maybe not needed for this persistent setting
-    };
-  }, [svg]);
-  return null;
 };
 
 export default Header;

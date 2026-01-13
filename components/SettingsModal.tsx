@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { ThemeSelector } from './ThemeSelector';
 import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
 import { useArticleLayout } from '../hooks/useArticleLayout';
-import { useAppearance, LAYOUT_PRESETS } from '../hooks/useAppearance';
+import { useAppearance } from '../hooks/useAppearance';
 import { useFeedCategories } from '../hooks/useFeedCategories';
 import { Tabs } from './ui/Tabs';
 import { Card } from './ui/Card';
@@ -31,8 +31,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [activeTab, setActiveTab] = useState<'appearance' | 'layouts' | 'display' | 'system'>('appearance');
     const { currentTheme, updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
     const { settings: layoutSettings, updateSettings: updateLayoutSettings } = useArticleLayout();
-    const { applyLayoutPreset, activeLayoutId, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
-    const [logs, setLogs] = useState<LogMessage[]>([]);
+    const { backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
     const { alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
     const { language, setLanguage, t } = useLanguage();
     const { resetCategoryLayouts } = useFeedCategories();
@@ -613,40 +612,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     {t('settings.reset.factory')}
                                 </button>
                             </div>
-
-                            {/* Logs Preview (Collapsed by default or button to open) */}
-                            <div className="pt-8 border-t border-white/5">
-                                <button 
-                                  onClick={() => setActiveTab('logs' as any)}
-                                  className="text-xs text-gray-600 hover:text-gray-400 transition-colors w-full text-center"
-                                >
-                                  Ver Logs do Sistema
-                                </button>
-                            </div>
                         </div>
-                    )}
-
-                    {activeTab === ('logs' as any) && (
-                         <div className="space-y-4 animate-in fade-in duration-200">
-                             <div className="flex justify-between items-center">
-                                <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider">Console Logs</h3>
-                                <button onClick={() => logger.clearLogs()} className="text-xs text-red-400 hover:text-red-300">Limpar</button>
-                            </div>
-                            <div className="bg-black/50 rounded-lg p-4 h-[400px] overflow-y-auto font-mono text-xs space-y-2 border border-white/10 custom-scrollbar">
-                                {logs.length === 0 && <p className="text-gray-500 italic text-center mt-10">Nenhum log registrado.</p>}
-                                {logs.map((log) => (
-                                    <div key={log.id} className={`border-b border-white/5 pb-1 last:border-0 ${
-                                        log.type === 'error' ? 'text-red-400' : 
-                                        log.type === 'warn' ? 'text-yellow-400' : 
-                                        'text-gray-300'
-                                    }`}>
-                                        <span className="opacity-50 mr-2">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-                                        <span className="uppercase font-bold mr-2 text-[10px]">{log.type}</span>
-                                        <span>{log.message}</span>
-                                    </div>
-                                ))}
-                            </div>
-                         </div>
                     )}
                 </div>
             </div>

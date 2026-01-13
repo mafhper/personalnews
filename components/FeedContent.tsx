@@ -13,9 +13,6 @@ import type { Article } from "../types";
 import { withPerformanceTracking } from "../services/performanceUtils";
 import { useAppearance } from "../hooks/useAppearance";
 import { useFeedCategories } from "../hooks/useFeedCategories";
-import { useArticleLayout } from "../hooks/useArticleLayout";
-import { FeaturedArticle } from "./FeaturedArticle";
-import { ArticleItem } from "./ArticleItem";
 import { NewspaperSkeleton, ImmersiveSkeleton, TerminalSkeleton, TimelineSkeleton } from "./ui/LayoutSkeletons";
 import { FeedSkeleton } from "./ui/FeedSkeleton";
 
@@ -50,7 +47,6 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   selectedCategory,
 }) => {
   const { contentConfig } = useAppearance();
-  const { settings: layoutSettings } = useArticleLayout();
   const { getCategoryById } = useFeedCategories();
 
   // If no articles are present, we might be loading initially. 

@@ -28,7 +28,7 @@ Opções:
 
 ### Layout Global - Define como os artigos são organizados na grade
 
-- Layout Global: bento;
+- Layout Global: modern;
 
 Opções:
 

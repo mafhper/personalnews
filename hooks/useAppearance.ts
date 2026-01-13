@@ -201,56 +201,12 @@ export const useAppearance = () => {
       }
     }
 
-    // Fallback or Custom mode: Just re-apply overrides over defaults/current
-    // This ensures temporary changes are wiped if they aren't in overrides
-    const mergedHeader = { ...headerConfig, ...headerOverrides };
-    // Note: if headerConfig is dirty from temp changes, this might not clear it if overrides doesn't touch those keys.
-    // To strictly clear temp changes, we should rebuild from a clean state if possible.
-    // But we don't have a "clean state" stored other than defaultHeaderConfig.
-    // If activeLayoutId is null, we assume user manually configured everything, so current headerConfig IS the source of truth mostly.
-    // However, for the specific case of "category override", we want to revert.
-    // If we are in custom mode, maybe we can't easily revert without losing manual unsaved changes?
-    // But manual changes SHOULD be in userOverrides if they were made via settings.
-    // So:
-    const cleanHeader = { ...defaultHeaderConfig, ...headerConfig, ...headerOverrides };
-    // Wait, spread order: default -> current (dirty) -> overrides. Dirty wins if not in overrides.
-    // We want: default -> preset (if any) -> overrides.
-
-    if (!activeLayoutId) {
-      // If custom, we accept 'headerConfig' is the state. 
-      // But if 'headerConfig' has a temp change... we can't distinguish it from a permanent custom change made before overrides existed?
-      // Actually, updateHeaderConfig persists to overrides. So ALL permanent changes are in overrides.
-      // So we can rebuild from default + overrides.
-      const rebuiltHeader = { ...defaultHeaderConfig, ...headerOverrides };
-      // But wait, defaults might not match what the user had before the temp change if they started from a preset and then modified it?
-      // If they modified it, it went to overrides.
-      // So yes, default + overrides should be safe IF overrides captures everything.
-      // But overrides only captures partials.
-      // If I start with "Brutalist" (Logo: false). Set activeLayoutId = null.
-      // Overrides = {}.
-      // User enables Logo. Overrides = { Logo: true }.
-      // Rebuilt = Default (Logo: true) + { Logo: true } -> Logo true.
-      // But what about other Brutalist props? (Height: spacious).
-      // Default has Height: compact.
-      // Rebuilt will have Height: compact. User loses Brutalist base.
-
-      // CONCLUSION: We cannot easily rebuild custom state without a base preset.
-      // BUT, we only need to fix the "Category Override" issue.
-      // Category override uses `persistOverride: false`.
-      // So it updates `headerConfig` but NOT `userOverrides`.
-      // If we want to undo it, we need to know what to go back to.
-
-      // Best approach: `applyLayoutPreset` works fine. 
-      // If `activeLayoutId` is present, `refreshAppearance` works perfectly.
-      // If `activeLayoutId` is NULL, we are in trouble.
-      // Workaround: Only support resetting category overrides if a preset is active.
-      // OR, just re-apply the current `activeLayoutId` if it exists.
-
-      if (activeLayoutId) {
-        applyLayoutPreset(activeLayoutId);
-      }
+    // Fallback or Custom mode: Just re-apply the current active layout if it exists
+    // to clear temporary category-specific overrides.
+    if (activeLayoutId) {
+      applyLayoutPreset(activeLayoutId);
     }
-  }, [activeLayoutId, applyLayoutPreset, headerConfig, contentConfig, userOverrides, setHeaderConfig, setContentConfig]);
+  }, [activeLayoutId, applyLayoutPreset, setContentConfig, setHeaderConfig, userOverrides?.content, userOverrides?.header]);
 
   const resetAppearance = useCallback(() => {
     setHeaderConfig(defaultHeaderConfig);

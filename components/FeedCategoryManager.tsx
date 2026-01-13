@@ -47,7 +47,6 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     reorderCategories,
     getCategorizedFeeds,
     moveFeedToCategory,
-    exportCategories,
     importCategories,
     resetToDefaults,
   } = useFeedCategories();
@@ -90,7 +89,6 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   });
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false); // Show only first 2 categories by default
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({}); // Track collapsed state per category
   const fileInputRef = useRef<HTMLInputElement>(null);
   const opmlFileInputRef = useRef<HTMLInputElement>(null);
   const [importTargetCategory, setImportTargetCategory] = useState<string | null>(null);
@@ -334,20 +332,6 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       alertSuccess
     ]
   );
-
-  const handleExportCategories = useCallback(() => {
-    const data = exportCategories();
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `feed-categories-${new Date().toISOString().split("T")[0]
-      }.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [exportCategories]);
 
   const handleImportCategories = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -900,12 +884,8 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         </div>
       )}
 
-      {/* Categories and feeds */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar pr-2 pb-6 flex-grow">
         {visibleCategories.map((category) => {
-          const feedCount = categorizedFeeds[category.id]?.length || 0;
-          const isCollapsed = feedCount === 0 ? (collapsedCategories[category.id] ?? true) : collapsedCategories[category.id];
-          
           return (
           <div
             key={category.id}

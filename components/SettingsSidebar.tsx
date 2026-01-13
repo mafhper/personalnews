@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ThemeSelector } from './ThemeSelector';
 import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
-import { useArticleLayout } from '../hooks/useArticleLayout';
 import { useAppearance, LAYOUT_PRESETS } from '../hooks/useAppearance';
 import { useFeedCategories } from '../hooks/useFeedCategories';
-import { Card } from './ui/Card';
-import { Input } from './ui/Input';
 import { Switch } from './ui/Switch';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
@@ -27,10 +24,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>('appearance');
   const { currentTheme, updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
-  const { settings: layoutSettings, updateSettings: updateLayoutSettings } = useArticleLayout();
-  const { applyLayoutPreset, activeLayoutId, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
+  const { applyLayoutPreset, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
   const { alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const { resetCategoryLayouts } = useFeedCategories();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
