@@ -76,12 +76,12 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
               </div>
 
               {/* Hero Content Side */}
-              <div className="lg:col-span-5 flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-white/5 backdrop-blur-sm order-last lg:order-none">
-                <div className="space-y-8">
-                  <div className="flex items-center gap-4 text-[10px] tracking-[0.4em] uppercase text-[rgb(var(--color-textSecondary))] font-black">
-                    <span className="text-[rgb(var(--color-accent))]">{heroArticle.sourceTitle}</span>
-                    <span className="w-10 h-px bg-[rgb(var(--color-accent))]/30" />
-                    <time>{formatTimeAgo(heroArticle.pubDate)}</time>
+                <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-white/5 backdrop-blur-sm order-last lg:order-none min-w-0">
+                <div className="space-y-8 min-w-0">
+                  <div className="flex items-center gap-4 text-[10px] tracking-[0.4em] uppercase text-[rgb(var(--color-textSecondary))] font-black min-w-0">
+                    <span className="text-[rgb(var(--color-accent))] truncate max-w-[150px] md:max-w-[250px]">{heroArticle.sourceTitle}</span>
+                    <span className="w-10 h-px bg-[rgb(var(--color-accent))]/30 flex-shrink-0" />
+                    <time className="flex-shrink-0">{formatTimeAgo(heroArticle.pubDate)}</time>
                   </div>
 
                   <h1 className={`font-serif font-black text-[rgb(var(--color-text))] leading-[1.05] tracking-tighter group-hover:text-[rgb(var(--color-accent))] transition-colors duration-500 break-words line-clamp-4 ${
@@ -108,7 +108,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       article={heroArticle} 
                       size="large"
                       position="inline"
-                      className="bg-white/10 hover:bg-[rgb(var(--color-accent))]/10 border border-white/10 transition-all duration-500"
+                      className="bg-white/10 hover:bg-[rgb(var(--color-accent))]/10 border border-white/10 transition-all duration-500 opacity-0 group-hover:opacity-100"
                     />
                   </div>
                 </div>
@@ -131,8 +131,8 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                 <div className={`flex flex-col ${isFullWidth ? '' : 'md:flex-row'} items-stretch border border-[rgb(var(--color-border))]/20 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/10 hover:bg-[rgb(var(--color-surface))]/30 transition-colors duration-500`}>
                   
                   {/* Small Vertical Indicator/Source */}
-                  <div className={`flex ${isFullWidth ? 'flex-row' : 'md:flex-col'} items-center justify-between p-3 md:p-4 border-b ${isFullWidth ? '' : 'md:border-b-0 md:border-r'} border-[rgb(var(--color-border))]/20 bg-white/5`}>
-                    <span className={`text-[8px] font-black uppercase tracking-[0.3em] text-[rgb(var(--color-accent))] ${isFullWidth ? '' : 'md:[writing-mode:vertical-lr] md:rotate-180'}`}>
+                  <div className={`flex ${isFullWidth ? 'flex-row' : 'md:flex-col'} items-center justify-between p-3 md:p-4 border-b ${isFullWidth ? '' : 'md:border-b-0 md:border-r'} border-[rgb(var(--color-border))]/20 bg-white/5 min-w-0 max-w-full overflow-hidden`}>
+                    <span className={`text-[8px] font-black uppercase tracking-[0.3em] text-[rgb(var(--color-accent))] truncate ${isFullWidth ? 'max-w-[150px]' : 'md:max-h-[120px] md:[writing-mode:vertical-lr] md:rotate-180'}`}>
                       {article.sourceTitle}
                     </span>
                     <FavoriteButton 

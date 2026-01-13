@@ -9,6 +9,7 @@ import { screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { renderWithNotifications } from "./NotificationTestWrapper";
 import { useNotification } from "../../contexts/NotificationContext";
+import { act, fireEvent } from "@testing-library/react";
 
 // Test component that uses notification context
 const TestComponent: React.FC = () => {
@@ -39,8 +40,8 @@ describe("NotificationTestWrapper", () => {
     const button = screen.getByText("Show Notification");
 
     // Should not throw error when clicking (using notification context)
-    expect(() => {
-      button.click();
-    }).not.toThrow();
+    act(() => {
+      fireEvent.click(button);
+    });
   });
 });

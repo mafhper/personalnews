@@ -31,6 +31,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "layoutMode": "gallery",
     "headerPosition": "sticky",
     "isPinned": false,
+    "autoDiscovery": true,
     "description": "Inspiração visual, UX/UI e tendências de design."
   },
   {
@@ -42,6 +43,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "layoutMode": "masonry",
     "headerPosition": "sticky",
     "isPinned": false,
+    "autoDiscovery": true,
     "description": "Lançamentos, reviews e cultura gamer."
   },
   {
@@ -53,6 +55,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "layoutMode": "modern",
     "headerPosition": "sticky",
     "isPinned": false,
+    "autoDiscovery": true,
     "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
   },
   {
@@ -64,6 +67,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "layoutMode": "list",
     "headerPosition": "sticky",
     "isPinned": false,
+    "autoDiscovery": true,
     "description": "Cobertura política nacional e internacional."
   },
   {
@@ -75,6 +79,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "layoutMode": "brutalist",
     "headerPosition": "sticky",
     "isPinned": false,
+    "autoDiscovery": false,
     "description": "Canais preferidos do Youtube."
   }
 ];

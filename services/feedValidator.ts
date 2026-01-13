@@ -505,6 +505,9 @@ class FeedValidatorService {
         result.status = this.mapErrorTypeToStatus(lastError.type);
         result.error = lastError.message;
         result.suggestions = lastError.suggestions;
+        if (lastError.context?.statusCode) {
+          result.statusCode = lastError.context.statusCode;
+        }
       } else {
         // Fallback if no error was set (shouldn't happen, but just in case)
         result.status = "invalid";
@@ -581,21 +584,14 @@ class FeedValidatorService {
       }
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const validationError = this.classifyError(error as Error, url, 0);
 
       return {
         success: false,
         responseTime,
         error: {
-          type: ValidationErrorType.NETWORK_ERROR,
-          message: `Proxy validation failed: ${errorMessage}`,
-          originalError: error instanceof Error ? error : undefined,
-          suggestions: [
-            "All proxy services failed to access the feed",
-            "The feed server might be blocking proxy requests",
-            "Try again later or check if the feed URL is correct",
-          ],
-          retryable: true,
+          ...validationError,
+          message: `Proxy validation failed: ${validationError.message}`,
           context: {
             url,
             method: "proxy",

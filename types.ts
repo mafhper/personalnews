@@ -63,6 +63,7 @@ export interface FeedCategory {
   isPinned?: boolean;
   layoutMode?: ContentConfig['layoutMode'];
   headerPosition?: HeaderConfig['position'];
+  autoDiscovery?: boolean;
 }
 
 export interface LayoutPreset {
@@ -79,6 +80,7 @@ export interface Article {
   link: string;
   pubDate: Date;
   sourceTitle: string;
+  feedUrl?: string; // Originating feed URL for precise filtering
   imageUrl?: string;
   description?: string;
   content?: string;

@@ -454,8 +454,8 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
               `}>
                 {/* Meta - Hidden in Focus Mode */}
                 {!isFocusMode && (
-                  <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm tracking-wider uppercase text-[rgb(var(--color-accent))] mb-4 md:mb-6 animate-in slide-in-from-bottom-4 duration-500">
-                    <span className="font-bold bg-[rgb(var(--color-background))]/80 backdrop-blur px-3 py-1.5 rounded-lg border border-[rgb(var(--color-border))]/20">
+                  <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm tracking-wider uppercase text-[rgb(var(--color-accent))] mb-4 md:mb-6 animate-in slide-in-from-bottom-4 duration-500 min-w-0">
+                    <span className="font-bold bg-[rgb(var(--color-background))]/80 backdrop-blur px-3 py-1.5 rounded-lg border border-[rgb(var(--color-border))]/20 truncate max-w-[200px] sm:max-w-[300px]">
                       {article.sourceTitle}
                     </span>
                     <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-textSecondary))]" />

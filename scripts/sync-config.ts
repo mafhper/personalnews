@@ -107,6 +107,7 @@ function sync() {
         if (key === 'layout') buildingCategory.layoutMode = value;
         if (key === 'header') buildingCategory.headerPosition = value;
         if (key === 'pinned') buildingCategory.isPinned = value.toLowerCase() === 'true';
+        if (key === 'auto-discovery') buildingCategory.autoDiscovery = value.toLowerCase() === 'true';
         if (key === 'hide-from-all') buildingCategory.hideFromAll = value.toLowerCase() === 'true';
         if (key === 'descrição') buildingCategory.description = value;
       }

@@ -1,7 +1,17 @@
+import { expect, afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import * as matchers from '@testing-library/jest-dom/matchers';
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
 
-// Mock básico para localStorage
+// Estende o expect do Vitest com os matchers do jest-dom
+expect.extend(matchers);
+
+// Limpa o DOM apÃ³s cada teste para evitar vazamento de estado
+afterEach(() => {
+  cleanup();
+});
+
+// Mock bÃ¡sico para localStorage
 const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
@@ -12,7 +22,7 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 });
 
-// Mock básico para matchMedia
+// Mock bÃ¡sico para matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
@@ -27,14 +37,14 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock básico para ResizeObserver
+// Mock bÃ¡sico para ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-// Mock básico para IntersectionObserver
+// Mock bÃ¡sico para IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),

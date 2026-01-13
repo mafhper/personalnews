@@ -46,9 +46,9 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                       className="top-3 right-3 z-20 bg-black/40 hover:bg-black/60 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
                     />
 
-                    <div className="absolute bottom-0 p-4">
-                        <span className="text-[10px] font-bold text-[rgb(var(--color-accent))] uppercase bg-black/50 px-2 py-1 rounded mb-2 inline-block">{article.sourceTitle}</span>
-                        <h3 className="text-white font-bold text-lg leading-tight group-hover:underline">{article.title}</h3>
+                    <div className="absolute bottom-0 p-4 w-full">
+                        <span className="text-[10px] font-bold text-[rgb(var(--color-accent))] uppercase bg-black/50 px-2 py-1 rounded mb-2 inline-block truncate max-w-full">{article.sourceTitle}</span>
+                        <h3 className="text-white font-bold text-lg leading-tight group-hover:underline line-clamp-2">{article.title}</h3>
                     </div>
                 </a>
             </div>
@@ -66,19 +66,21 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                     <div className="w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden">
                         <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" fallbackText={article.sourceTitle} size={200} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-[rgb(var(--color-accent))]">{article.sourceTitle}</span>
-                                <span className="text-xs text-gray-500">•</span>
-                                <time className="text-xs text-gray-500">{article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</time>
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs font-bold text-[rgb(var(--color-accent))] truncate max-w-[120px] sm:max-w-[200px]">{article.sourceTitle}</span>
+                                <span className="text-xs text-gray-500 flex-shrink-0">•</span>
+                                <time className="text-xs text-gray-500 flex-shrink-0">{article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</time>
                             </div>
-                            <FavoriteButton 
-                              article={article} 
-                              size="small" 
-                              position="inline"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            />
+                            <div className="flex-shrink-0">
+                              <FavoriteButton 
+                                article={article} 
+                                size="small" 
+                                position="inline"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              />
+                            </div>
                         </div>
                         <h4 className="text-lg font-bold text-gray-200 leading-tight mb-2 hover:text-[rgb(var(--color-accent))] cursor-pointer">
                             <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
@@ -118,20 +120,22 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                 </h3>
                 <div className="bg-gray-800/30 rounded-xl p-4 border border-white/5 space-y-4">
                     {sidebar.map((article, idx) => (
-                        <div key={idx} className="group cursor-pointer border-b border-white/5 last:border-0 pb-4 last:pb-0">
+                        <div className="group cursor-pointer border-b border-white/5 last:border-0 pb-4 last:pb-0">
                             <div className="flex justify-between items-start gap-2">
-                                <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1">
-                                    <span className="text-xs text-gray-500 mb-1 block">{idx + 1}. {article.sourceTitle}</span>
+                                <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
+                                    <span className="text-xs text-gray-500 mb-1 block truncate max-w-full">{idx + 1}. {article.sourceTitle}</span>
                                     <h4 className="text-sm font-medium text-gray-200 group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2">
                                         {article.title}
                                     </h4>
                                 </a>
-                                <FavoriteButton 
-                                  article={article} 
-                                  size="small" 
-                                  position="inline"
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity mt-1"
-                                />
+                                <div className="flex-shrink-0">
+                                  <FavoriteButton 
+                                    article={article} 
+                                    size="small" 
+                                    position="inline"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity mt-1"
+                                  />
+                                </div>
                             </div>
                         </div>
                     ))}

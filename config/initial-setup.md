@@ -99,6 +99,7 @@ Opções:
 - Layout: gallery;
 - Header: sticky;
 - Pinned: false;
+- Auto-Discovery: true;
 - Descrição: Inspiração visual, UX/UI e tendências de design.;
 
 ---
@@ -110,6 +111,7 @@ Opções:
 - Layout: masonry;
 - Header: sticky;
 - Pinned: false;
+- Auto-Discovery: true;
 - Descrição: Lançamentos, reviews e cultura gamer.;
 
 ---
@@ -121,6 +123,7 @@ Opções:
 - Layout: modern;
 - Header: sticky;
 - Pinned: false;
+- Auto-Discovery: true;
 - Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
 
 ---
@@ -132,6 +135,7 @@ Opções:
 - Layout: list;
 - Header: sticky;
 - Pinned: false;
+- Auto-Discovery: true;
 - Descrição: Cobertura política nacional e internacional.;
 
 ---
@@ -143,6 +147,7 @@ Opções:
 - Layout: brutalist;
 - Header: sticky;
 - Pinned: false;
+- Auto-Discovery: false;
 - Descrição: Canais preferidos do Youtube.;
 
 ---

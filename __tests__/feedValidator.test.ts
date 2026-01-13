@@ -78,7 +78,7 @@ describe('FeedValidator', () => {
     });
 
     it('should handle HTTP errors', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as any).mockResolvedValue({
         status: 404,
         statusText: 'Not Found',
         headers: {
@@ -89,15 +89,17 @@ describe('FeedValidator', () => {
       const result = await feedValidator.validateFeed('https://example.com/notfound.xml');
 
       expect(result.isValid).toBe(false);
-      expect(result.status).toBe('invalid');
+      expect(result.status).toBe('not_found');
       expect(result.statusCode).toBe(404);
       expect(result.error).toContain('HTTP 404');
     });
 
     it('should handle network timeouts', async () => {
-      (global.fetch as any).mockImplementationOnce(() =>
+      (global.fetch as any).mockImplementation(() =>
         new Promise((_, reject) => {
-          setTimeout(() => reject(new DOMException('Aborted', 'AbortError')), 100);
+          const error = new Error('Aborted');
+          error.name = 'AbortError';
+          reject(error);
         })
       );
 
@@ -105,23 +107,23 @@ describe('FeedValidator', () => {
 
       expect(result.isValid).toBe(false);
       expect(result.status).toBe('timeout');
-      expect(result.error).toContain('Timeout');
+      expect(result.error).toContain('timed out');
     });
 
     it('should handle network errors', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
       const result = await feedValidator.validateFeed('https://unreachable.com/rss.xml');
 
       expect(result.isValid).toBe(false);
       expect(result.status).toBe('network_error');
-      expect(result.error).toBe('Network error');
+      expect(result.error).toContain('Network error occurred while fetching the feed');
     });
 
     it('should handle invalid XML content', async () => {
       const invalidXML = 'This is not XML content';
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as any).mockResolvedValue({
         status: 200,
         headers: {
           get: () => null
@@ -141,7 +143,7 @@ describe('FeedValidator', () => {
           <data>This is valid XML but not a feed</data>
         </root>`;
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as any).mockResolvedValue({
         status: 200,
         headers: {
           get: () => null
@@ -153,7 +155,7 @@ describe('FeedValidator', () => {
 
       expect(result.isValid).toBe(false);
       expect(result.status).toBe('parse_error');
-      expect(result.error).toContain('Não é um feed RSS ou Atom válido');
+      expect(result.error).toContain('Not a valid RSS, Atom, or RDF feed');
     });
   });
 
@@ -184,7 +186,7 @@ describe('FeedValidator', () => {
 
       expect(results).toHaveLength(2);
       expect(results[0].status).toBe('valid');
-      expect(results[1].status).toBe('invalid');
+      expect(results[1].status).toBe('not_found');
     });
   });
 

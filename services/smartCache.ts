@@ -105,7 +105,11 @@ export class SmartCache {
           articlesCount: entry.articles.length,
         }
       });
-      return entry.articles;
+      // Ensure all articles have the feedUrl attached
+      return entry.articles.map(article => ({
+        ...article,
+        feedUrl: entry.feedUrl || feedUrl
+      }));
     }
 
     // Check if we can serve stale content
@@ -120,7 +124,11 @@ export class SmartCache {
           articlesCount: entry.articles.length,
         }
       });
-      return entry.articles;
+      // Ensure all articles have the feedUrl attached
+      return entry.articles.map(article => ({
+        ...article,
+        feedUrl: entry.feedUrl || feedUrl
+      }));
     }
 
     // Cache is too old, remove it
@@ -165,7 +173,10 @@ export class SmartCache {
         }
       });
 
-      return entry.articles;
+      return entry.articles.map(article => ({
+        ...article,
+        feedUrl: entry.feedUrl || feedUrl
+      }));
     }
 
     return null;

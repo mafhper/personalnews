@@ -22,7 +22,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   timeFormat,
   setTimeFormat
 }) => {
-  const [expandedSection, setExpandedSection] = useState<string | null>('appearance');
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { currentTheme, updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
   const { applyLayoutPreset, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
   const { alertSuccess, alertError, confirmDanger } = useNotificationReplacements();

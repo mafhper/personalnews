@@ -20,6 +20,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import { useAppearance } from "../hooks/useAppearance";
 import { OPMLExportService } from "../services/opmlExportService";
 import { parseOpml } from "../services/rssParser";
+import { Switch } from "./ui/Switch";
 
 interface FeedCategoryManagerProps {
   feeds: FeedSource[];
@@ -66,12 +67,14 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     description: string;
     layoutMode?: FeedCategory['layoutMode'];
     headerPosition?: FeedCategory['headerPosition'];
+    autoDiscovery?: boolean;
   }>({
     name: "",
     color: "#3B82F6",
     description: "",
     layoutMode: undefined,
     headerPosition: undefined,
+    autoDiscovery: true,
   });
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [newCategoryForm, setNewCategoryForm] = useState<{
@@ -80,12 +83,14 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     description: string;
     layoutMode?: FeedCategory['layoutMode'];
     headerPosition?: FeedCategory['headerPosition'];
+    autoDiscovery?: boolean;
   }>({
     name: "",
     color: "#3B82F6",
     description: "",
     layoutMode: undefined,
     headerPosition: undefined,
+    autoDiscovery: true,
   });
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false); // Show only first 2 categories by default
@@ -236,9 +241,10 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           newCategoryForm.color,
           newCategoryForm.description.trim() || undefined,
           newCategoryForm.layoutMode,
-          newCategoryForm.headerPosition
+          newCategoryForm.headerPosition,
+          newCategoryForm.autoDiscovery
         );
-        setNewCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined });
+        setNewCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined, autoDiscovery: true });
         setShowNewCategoryForm(false);
       }
     },
@@ -253,6 +259,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       description: category.description || "",
       layoutMode: category.layoutMode,
       headerPosition: category.headerPosition,
+      autoDiscovery: category.autoDiscovery ?? true,
     });
   }, []);
 
@@ -266,9 +273,10 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           description: editingCategoryForm.description.trim() || undefined,
           layoutMode: editingCategoryForm.layoutMode,
           headerPosition: editingCategoryForm.headerPosition,
+          autoDiscovery: editingCategoryForm.autoDiscovery,
         });
         setEditingCategory(null);
-        setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined });
+        setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined, autoDiscovery: true });
       }
     },
     [editingCategory, editingCategoryForm, updateCategory]
@@ -276,7 +284,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
 
   const handleCancelEditCategory = useCallback(() => {
     setEditingCategory(null);
-    setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined });
+    setEditingCategoryForm({ name: "", color: "#3B82F6", description: "", layoutMode: undefined, headerPosition: undefined, autoDiscovery: true });
   }, []);
 
   const handleDeleteCategory = useCallback(
@@ -691,6 +699,16 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 ))}
               </select>
             </div>
+            <div className="flex items-center justify-between bg-black/20 p-4 rounded-lg border border-white/5">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-300">Auto-Descoberta</span>
+                <span className="text-xs text-gray-500">Agrega artigos de outros feeds com temas relacionados</span>
+              </div>
+              <Switch 
+                checked={newCategoryForm.autoDiscovery ?? true} 
+                onChange={(checked) => setNewCategoryForm(prev => ({ ...prev, autoDiscovery: checked }))} 
+              />
+            </div>
             <div>
               <label
                 htmlFor="category-description"
@@ -843,6 +861,16 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex items-center justify-between bg-black/20 p-4 rounded-lg border border-white/5">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-300">Auto-Descoberta</span>
+                <span className="text-xs text-gray-500">Agrega artigos de outros feeds com temas relacionados</span>
+              </div>
+              <Switch 
+                checked={editingCategoryForm.autoDiscovery ?? true} 
+                onChange={(checked) => setEditingCategoryForm(prev => ({ ...prev, autoDiscovery: checked }))} 
+              />
             </div>
             <div>
               <label

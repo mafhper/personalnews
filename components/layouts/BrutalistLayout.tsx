@@ -105,7 +105,7 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
               article={article} 
               size="small" 
               position="inline"
-              className="text-black dark:text-white hover:text-[rgb(var(--color-accent))] p-0"
+              className="text-black dark:text-white hover:text-[rgb(var(--color-accent))] p-0 opacity-0 group-hover:opacity-100 transition-opacity"
             />
           </div>
           

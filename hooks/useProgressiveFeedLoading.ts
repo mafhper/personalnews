@@ -157,7 +157,12 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
     results.forEach((result) => {
       if (result.success && result.articles.length > 0) {
-        allArticles.push(...result.articles);
+        // Ensure each article has its source feedUrl for precise filtering
+        const articlesWithFeedUrl = result.articles.map(article => ({
+          ...article,
+          feedUrl: result.url
+        }));
+        allArticles.push(...articlesWithFeedUrl);
       }
     });
 

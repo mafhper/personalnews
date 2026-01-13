@@ -382,9 +382,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                           {renderHighlightedText(article.description)}
                         </p>
                       )}
-                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                        <span>{article.sourceTitle}</span>
-                        <span>{new Date(article.pubDate).toLocaleDateString()}</span>
+                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500 min-w-0">
+                        <span className="truncate max-w-[150px]">{article.sourceTitle}</span>
+                        <span className="flex-shrink-0">{new Date(article.pubDate).toLocaleDateString()}</span>
                       </div>
                     </div>
                   ))}

@@ -158,7 +158,7 @@ describe('LazyImage', () => {
     expect(mockIntersectionObserver).toHaveBeenCalledWith(
       expect.any(Function),
       {
-        rootMargin: '100px',
+        rootMargin: '200px',
         threshold: 0.01,
       }
     );

@@ -82,8 +82,8 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
         className={`${className} bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center`}
         style={{ minHeight: height || 200, minWidth: width || 300 }}
       >
-        <div className="text-center p-4">
-          <div className="text-gray-500 text-xs font-medium uppercase tracking-widest mb-2">
+        <div className="text-center p-4 min-w-0 max-w-full">
+          <div className="text-gray-500 text-xs font-medium uppercase tracking-widest mb-2 truncate px-2">
             {article.sourceTitle}
           </div>
           <div className="text-gray-600 text-xs">

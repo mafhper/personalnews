@@ -36,8 +36,8 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
           </div>
           <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-[rgb(var(--color-surface))] border-b border-[rgb(var(--color-border))]">
             <div className="max-w-xl mx-auto md:mx-0">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[rgb(var(--color-accent))] font-bold uppercase tracking-widest text-xs">{article.sourceTitle}</span>
+                <div className="flex justify-between items-start mb-4 gap-4">
+                  <span className="text-[rgb(var(--color-accent))] font-bold uppercase tracking-widest text-xs truncate max-w-[200px] md:max-w-[300px]">{article.sourceTitle}</span>
                   <FavoriteButton 
                     article={article} 
                     size="medium"

@@ -115,8 +115,8 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col justify-center px-8 md:px-24 max-w-6xl mx-auto">
          <div key={currentIndex} className="animate-in slide-in-from-bottom-10 fade-in duration-500 flex flex-col justify-center h-full pb-12">
-            <div className="flex items-center gap-4 mb-8">
-                <span className="px-3 py-1 rounded border border-white/20 text-xs uppercase tracking-[0.2em] bg-black/40 backdrop-blur-md">
+            <div className="flex items-center gap-4 mb-8 min-w-0">
+                <span className="px-3 py-1 rounded border border-white/20 text-xs uppercase tracking-[0.2em] bg-black/40 backdrop-blur-md truncate max-w-[200px] md:max-w-[300px]">
                     {currentArticle.sourceTitle}
                 </span>
                 <span className="text-xs text-gray-400 font-mono tracking-widest">

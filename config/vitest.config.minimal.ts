@@ -23,10 +23,16 @@ export default defineConfig({
       
       // Testes de serviços críticos (funcionando)
       '__tests__/securityFixes.test.ts',
+      '__tests__/feedValidator.test.ts',
+      '__tests__/feedDiscoveryService.test.ts',
+      '__tests__/articleCache.test.ts',
+      '__tests__/logger.test.ts',
       
       // Testes de utilidades básicas (funcionando)
       '__tests__/searchUtils.test.ts',
-      '__tests__/themeUtils.test.ts'
+      '__tests__/themeUtils.test.ts',
+      '__tests__/FeedContext.test.tsx',
+      '__tests__/helpers/NotificationTestWrapper.test.tsx'
     ],
     // Excluir todos os outros testes
     exclude: [

@@ -116,7 +116,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 article={main} 
                 size="medium" 
                 position="overlay"
-                className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 backdrop-blur-sm border border-white/20 shadow-lg"
+                className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 backdrop-blur-sm border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
               />
             </div>
 
@@ -130,7 +130,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 max-w-none
               "
             >
-              <span className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-accent))]">
+              <span className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-accent))] truncate max-w-[200px]">
                 {main.sourceTitle}
               </span>
 
@@ -180,15 +180,17 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
 
                 <div className="flex flex-col gap-2 flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] uppercase tracking-widest text-[rgb(var(--color-accent))] font-bold">
+                    <span className="text-[10px] uppercase tracking-widest text-[rgb(var(--color-accent))] font-bold truncate max-w-[120px]">
                       {article.sourceTitle}
                     </span>
-                    <FavoriteButton 
-                      article={article} 
-                      size="small" 
-                      position="inline"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
+                    <div className="flex-shrink-0">
+                      <FavoriteButton 
+                        article={article} 
+                        size="small" 
+                        position="inline"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
                   </div>
 
                   <h3 className="font-serif text-lg font-bold leading-snug group-hover:text-[rgb(var(--color-accent))]">
@@ -222,15 +224,17 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               </div>
 
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="inline-block text-[10px] uppercase tracking-widest bg-[rgb(var(--color-accent))]/10 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded font-bold">
+                <span className="inline-block text-[10px] uppercase tracking-widest bg-[rgb(var(--color-accent))]/10 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded font-bold truncate max-w-[150px]">
                   {article.sourceTitle}
                 </span>
-                <FavoriteButton 
-                  article={article} 
-                  size="small" 
-                  position="inline"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                />
+                <div className="flex-shrink-0">
+                  <FavoriteButton 
+                    article={article} 
+                    size="small" 
+                    position="inline"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                </div>
               </div>
 
               <h3 className="font-serif text-lg font-bold leading-snug mb-2 group-hover:text-[rgb(var(--color-accent))]">

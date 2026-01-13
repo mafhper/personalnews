@@ -82,9 +82,9 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
 
                 <div className="bg-[rgb(var(--color-surface))] p-4 md:p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all shadow-sm hover:shadow-md relative overflow-hidden">
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))]">
-                      <span className="font-medium text-[rgb(var(--color-accent))]">{article.sourceTitle}</span>
-                      <span>•</span>
+                    <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))] min-w-0">
+                      <span className="font-medium text-[rgb(var(--color-accent))] truncate max-w-[150px] sm:max-w-[200px]">{article.sourceTitle}</span>
+                      <span className="flex-shrink-0">•</span>
                       <span>
                         {new Date(article.pubDate).toLocaleTimeString(language, { 
                           hour: '2-digit', 
@@ -93,12 +93,14 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                         })}
                       </span>
                     </div>
-                    <FavoriteButton 
-                      article={article} 
-                      size="small"
-                      position="inline"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
+                    <div className="flex-shrink-0">
+                      <FavoriteButton 
+                        article={article} 
+                        size="small"
+                        position="inline"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
                   </div>
 
                   <h3 

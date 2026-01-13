@@ -23,7 +23,7 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
         <div className="p-2 sm:p-4">
           <ol className="list-decimal list-inside space-y-1 text-[rgb(var(--color-textSecondary))]">
             {articles.map((article, i) => (
-              <li key={i} className="py-1.5 border-b border-[rgb(var(--color-border))]/30 last:border-b-0">
+              <li key={i} className="py-1.5 border-b border-[rgb(var(--color-border))]/30 last:border-b-0 group">
                 <span onClick={() => setReadingArticle(article)} className="text-[rgb(var(--color-text))] font-medium hover:text-[rgb(var(--color-accent))] hover:underline cursor-pointer mr-2 transition-colors">
                   {article.title}
                 </span>
@@ -36,9 +36,9 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                       {article.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-2">
-                    <span>by {article.author || article.sourceTitle}</span>
-                    <span className="opacity-50">|</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="truncate max-w-[150px] sm:max-w-[200px]">by {article.author || article.sourceTitle}</span>
+                    <span className="opacity-50 flex-shrink-0">|</span>
                     <span>{new Date(article.pubDate).toLocaleDateString()}</span>
                     <span className="opacity-50">|</span>
                     <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] transition-colors">{t('action.preview').toLowerCase()}</span>
@@ -47,7 +47,7 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                       article={article} 
                       size="small"
                       position="inline"
-                      className="p-0 hover:text-[rgb(var(--color-accent))] transition-colors"
+                      className="p-0 hover:text-[rgb(var(--color-accent))] transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
                     />
                   </div>
                 </div>

@@ -321,8 +321,8 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
                           >
                             {favorite.title}
                           </a>
-                          <div className="flex flex-wrap items-center gap-3 mt-3 text-sm">
-                            <Badge variant="secondary" className="text-xs">
+                          <div className="flex flex-wrap items-center gap-3 mt-3 text-sm min-w-0">
+                            <Badge variant="secondary" className="text-xs truncate max-w-[150px] sm:max-w-[200px]">
                               {favorite.author || favorite.sourceTitle}
                             </Badge>
                             <span className="text-[rgb(var(--color-textSecondary))]">

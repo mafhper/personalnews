@@ -107,14 +107,14 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 article={heroArticle} 
                 size="medium" 
                 position="overlay"
-                className="top-4 right-4 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg"
+                className="top-4 right-4 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
               />
             </div>
 
             {/* Hero Content */}
             <div className="flex flex-col justify-center p-6 md:p-10 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))]">
               <div className="flex items-center gap-3 mb-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[rgb(var(--color-accent))] text-white">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[rgb(var(--color-accent))] text-white truncate max-w-[150px] md:max-w-[200px]">
                   {heroArticle.sourceTitle}
                 </span>
                 <span className="text-sm text-[rgb(var(--color-textSecondary))]">
@@ -181,7 +181,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 </div>
 
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))]">
+                  <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))] truncate max-w-[120px]">
                     {article.sourceTitle}
                   </span>
                   <span className="text-xs text-[rgb(var(--color-textSecondary))]">•</span>
@@ -226,11 +226,11 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))] truncate max-w-[100px]">
                         {article.sourceTitle}
                       </span>
-                      <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">
+                      <span className="text-[10px] text-[rgb(var(--color-textSecondary))] flex-shrink-0">
                         {formatTimeAgo(article.pubDate)}
                       </span>
                     </div>

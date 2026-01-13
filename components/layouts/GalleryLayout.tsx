@@ -51,7 +51,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
 
               {/* Post info at bottom-left */}
               <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-                <span className="text-[rgb(var(--color-accent))] text-[10px] font-bold uppercase tracking-widest block mb-1">
+                <span className="text-[rgb(var(--color-accent))] text-[10px] font-bold uppercase tracking-widest block mb-1 truncate max-w-full">
                   {article.sourceTitle}
                 </span>
                 <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 group-hover:text-[rgb(var(--color-accent))] transition-colors">

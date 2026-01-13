@@ -32,7 +32,7 @@ export const CyberpunkLayout: React.FC<CyberpunkLayoutProps> = ({ articles }) =>
                   className="p-0 text-[#00ff41]/60 hover:text-[#00ff41] transition-colors"
                 />
               </div>
-              <span>[{article.sourceTitle}]</span>
+              <span className="truncate max-w-[120px] sm:max-w-[150px]">[{article.sourceTitle}]</span>
             </div>
 
             {article.imageUrl && (

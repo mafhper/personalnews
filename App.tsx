@@ -205,24 +205,7 @@ const App: React.FC = () => {
     let filteredArticles: Article[];
 
     if (selectedFeedUrl) {
-      const selectedFeed = feeds.find(f => f.url === selectedFeedUrl);
-      const feedHostname = (() => {
-        try { return new URL(selectedFeedUrl).hostname.replace('www.', ''); }
-        catch { return ''; }
-      })();
-
-      filteredArticles = articles.filter((article) => {
-        if (selectedFeed?.customTitle && article.sourceTitle === selectedFeed.customTitle) {
-          return true;
-        }
-        if (feedHostname && article.link?.includes(feedHostname)) {
-          return true;
-        }
-        if (feedHostname && article.sourceTitle?.toLowerCase().includes(feedHostname.replace(/\..+$/, ''))) {
-          return true;
-        }
-        return false;
-      });
+      filteredArticles = articles.filter((article) => article.feedUrl === selectedFeedUrl);
     } else if (isSearchActive && searchResults.length >= 0) {
       filteredArticles = searchResults;
     } else {
@@ -232,21 +215,9 @@ const App: React.FC = () => {
         if (allowedFeeds.length === feeds.length) {
           filteredArticles = articles;
         } else {
-          filteredArticles = articles.filter((article) =>
-            allowedFeeds.some((feed) => {
-              // Safe URL parsing
-              let feedHostname = '';
-              try {
-                feedHostname = new URL(feed.url).hostname;
-              } catch {
-                // Invalid URL in feed, skip hostname check
-              }
-
-              return (
-                (feed.customTitle && article.sourceTitle === feed.customTitle) ||
-                (feedHostname && article.link?.includes(feedHostname))
-              );
-            })
+          const allowedUrls = new Set(allowedFeeds.map(f => f.url));
+          filteredArticles = articles.filter((article) => 
+            article.feedUrl && allowedUrls.has(article.feedUrl)
           );
         }
       } else {
@@ -255,13 +226,14 @@ const App: React.FC = () => {
         );
         if (selectedCategoryObj) {
           const feedsInCategory = categorizedFeeds[selectedCategory] || [];
+          const feedUrlsInCategory = new Set(feedsInCategory.map(f => f.url));
 
           filteredArticles = articles.filter((article) => {
-            const isFromCategorizedFeed = feedsInCategory.some(
-              (feed) =>
-                article.sourceTitle === feed.customTitle ||
-                article.link?.includes(new URL(feed.url).hostname)
-            );
+            const isFromCategorizedFeed = article.feedUrl && feedUrlsInCategory.has(article.feedUrl);
+
+            if (selectedCategoryObj.autoDiscovery === false) {
+              return isFromCategorizedFeed;
+            }
 
             const hasMatchingCategory = article.categories?.some(
               (cat) =>
@@ -271,6 +243,7 @@ const App: React.FC = () => {
             return isFromCategorizedFeed || hasMatchingCategory;
           });
         } else {
+          // Fallback matching by category name if ID not found (e.g. for legacy or external categories)
           filteredArticles = articles.filter((article) =>
             article.categories?.some(
               (cat) => cat.toLowerCase() === selectedCategory.toLowerCase()

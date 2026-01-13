@@ -83,10 +83,10 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
               <p className="hidden md:block text-lg text-gray-200 line-clamp-2 mb-4 max-w-2xl">
                 {heroArticle.description}
               </p>
-              <div className="flex items-center text-sm text-gray-300 font-medium">
-                 <span className="text-white">{heroArticle.sourceTitle}</span>
-                 <span className="mx-2">•</span>
-                 <span>{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              <div className="flex items-center text-sm text-gray-300 font-medium min-w-0">
+                 <span className="text-white truncate max-w-[150px] sm:max-w-[250px]">{heroArticle.sourceTitle}</span>
+                 <span className="mx-2 flex-shrink-0">•</span>
+                 <span className="truncate">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
               </div>
            </div>
         </div>
@@ -122,9 +122,9 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                        {article.title}
                      </a>
                    </h2>
-                   <div className="flex items-center text-xs text-gray-400">
-                      <span>{article.sourceTitle}</span>
-                      <span className="mx-2">•</span>
+                   <div className="flex items-center text-xs text-gray-400 min-w-0">
+                      <span className="truncate max-w-[120px]">{article.sourceTitle}</span>
+                      <span className="mx-2 flex-shrink-0">•</span>
                       <span>{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                    </div>
                 </div>
@@ -224,7 +224,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
                                />
                              </div>
-                             <span className="text-xs text-[rgb(var(--color-textSecondary))]">
+                             <span className="text-xs text-[rgb(var(--color-textSecondary))] truncate block max-w-full">
                                {article.sourceTitle}
                              </span>
                           </div>

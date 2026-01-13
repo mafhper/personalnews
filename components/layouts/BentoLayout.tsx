@@ -121,22 +121,24 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                 <div className={`relative h-full flex flex-col justify-between p-5 md:p-6`}>
                   
                   {/* Top Part: Source, Date and Favorite */}
-                  <div className="flex justify-between items-start w-full">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="inline-flex items-center self-start px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20">
+                  <div className="flex justify-between items-start w-full gap-3">
+                    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                      <span className="inline-flex items-center self-start px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20 truncate max-w-full">
                         {article.sourceTitle}
                       </span>
-                      <span className="text-[10px] md:text-xs font-bold text-white/70 drop-shadow-md">
+                      <span className="text-[10px] md:text-xs font-bold text-white/70 drop-shadow-md truncate">
                         {formatTimeAgo(article.pubDate)}
                       </span>
                     </div>
 
-                    <FavoriteButton 
-                      article={article} 
-                      size="medium"
-                      position="inline"
-                      className="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
+                    <div className="flex-shrink-0">
+                      <FavoriteButton 
+                        article={article} 
+                        size="medium"
+                        position="inline"
+                        className="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
                   </div>
 
                   {/* Bottom Part: Content Block */}

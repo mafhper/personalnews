@@ -99,7 +99,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                         <span className="text-yellow-600/80">
                           [{new Date(article.pubDate).toISOString().split('T')[0]}]
                         </span>
-                        <span className="text-blue-500/80 lowercase">
+                        <span className="text-blue-500/80 lowercase truncate max-w-[150px] sm:max-w-[200px]">
                           @{article.sourceTitle.replace(/\s/g, '_')}
                         </span>
                       </div>

@@ -43,7 +43,7 @@ export const FeaturedArticle: React.FC<{
           ></div>
 
           {/* Source badge */}
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 bg-[rgb(var(--color-accent))]/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 bg-[rgb(var(--color-accent))]/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider truncate max-w-[150px] sm:max-w-[200px]">
             {article.sourceTitle}
           </div>
 
@@ -71,8 +71,9 @@ export const FeaturedArticle: React.FC<{
             <p className="mt-2 lg:mt-6 text-sm md:text-base lg:text-lg xl:text-xl text-gray-200 drop-shadow-md block leading-relaxed max-w-4xl line-clamp-2 md:line-clamp-none">
               {sanitizeArticleDescription(article.description || "")}
             </p>
-            <footer className="mt-2 lg:mt-6 flex items-center space-x-4 lg:space-x-6 text-xs lg:text-sm font-bold uppercase text-gray-300">
+            <footer className="mt-2 lg:mt-6 flex items-center space-x-4 lg:space-x-6 text-xs lg:text-sm font-bold uppercase text-gray-300 min-w-0">
               <span
+                className="truncate max-w-[150px] sm:max-w-[250px]"
                 aria-label={`Author: ${article.author || article.sourceTitle}`}
               >
                 {article.author || article.sourceTitle}

@@ -136,61 +136,50 @@ const HeroArticle: React.FC<{
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/10 pointer-events-none" />
 
-      {/* Favorite Button - Fixed to section */}
-      <div className="absolute top-4 right-4 z-20">
+      {/* Top Controls: Site name and FavoriteButton aligned */}
+      <div className="absolute top-0 left-0 right-0 p-6 sm:p-8 md:p-10 flex justify-between items-start z-20">
+        <div className="bg-black/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/90">
+            {article.sourceTitle}
+          </span>
+        </div>
         <FavoriteButton 
           article={article} 
           size="large"
           position="overlay"
-          className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg"
+          className="!static bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300"
         />
       </div>
 
-      {/* Content Container - Split between top and bottom */}
-      <div className="relative z-10 h-full flex flex-col justify-between p-6 sm:p-8 md:p-10 xl:p-14 min-h-[inherit]">
-        
-        {/* Top Part: Source */}
-        <div className="flex justify-start items-start w-full">
-          <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/90">
-              {article.sourceTitle}
-            </span>
-          </div>
-        </div>
+      {/* Content at the bottom */}
+      <div className="relative z-10 mt-auto p-8 sm:p-12 md:p-16 w-full max-w-5xl">
+        <div className="space-y-6">
+          <time dateTime={article.pubDate.toISOString()} className="text-xs uppercase tracking-[0.3em] text-white/60 font-black">
+            {article.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+          </time>
 
-        {/* Bottom Part: Main Content */}
-        <div className="space-y-6 max-w-5xl">
-          <div className="space-y-4">
-            <time dateTime={article.pubDate.toISOString()} className="block text-[10px] sm:text-[11px] uppercase tracking-[0.3em] text-white/50 font-medium">
-              {article.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-            </time>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight">
+            <a href={article.link} target="_blank" rel="noopener noreferrer" className="hover:text-white/90 transition-colors">
+              {article.title}
+            </a>
+          </h1>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-black text-white leading-[1.1] max-w-4xl tracking-tight">
-              <a
-                href={article.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white/90 transition-colors"
-              >
-                {article.title}
-              </a>
-            </h1>
-
-            {article.description && (
-              <p className="text-base sm:text-lg text-gray-200/90 max-w-3xl line-clamp-2 font-medium leading-relaxed">
-                {article.description}
-              </p>
-            )}
-          </div>
+          {article.description && (
+            <p className="text-base sm:text-lg md:text-xl text-gray-300/90 line-clamp-3 leading-relaxed max-w-3xl">
+              {article.description}
+            </p>
+          )}
 
           {hasContent && (
-            <button
-              onClick={onRead}
-              className="group/btn inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white text-black font-bold text-xs uppercase tracking-widest transition-all hover:bg-gray-200 active:scale-95"
-            >
-              Ler Artigo
-              <span className="transition-transform group-hover/btn:translate-x-1">→</span>
-            </button>
+            <div className="pt-4">
+              <button
+                onClick={onRead}
+                className="group/btn inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-bold text-xs uppercase tracking-widest transition-all hover:bg-gray-200 active:scale-95"
+              >
+                Ler Artigo
+                <span className="transition-transform group-hover/btn:translate-x-1">→</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -224,24 +213,22 @@ const ArticleCard: React.FC<{
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none" />
 
+      <FavoriteButton 
+        article={article} 
+        size="medium"
+        position="overlay"
+        className="top-4 right-4 z-20 bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+      />
+
       {/* Content Container */}
       <div className="relative z-10 h-full flex flex-col justify-between p-6 min-h-[inherit]">
         
         {/* Top Part */}
-        <div className="flex justify-between items-start w-full">
-          <div className="bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">
+        <div className="flex justify-start items-start w-full">
+          <div className="bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 min-w-0 max-w-[150px] sm:max-w-[200px]">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white/80 truncate block">
               {article.sourceTitle}
             </span>
-          </div>
-
-          <div className="absolute top-3 right-3 z-20">
-            <FavoriteButton 
-              article={article} 
-              size="medium"
-              position="overlay"
-              className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10"
-            />
           </div>
         </div>
 

@@ -5,7 +5,7 @@ import { DEFAULT_CATEGORIES } from '../constants/curatedFeeds';
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
-  createCategory: (name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position']) => FeedCategory;
+  createCategory: (name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position'], autoDiscovery?: boolean) => FeedCategory;
   updateCategory: (id: string, updates: Partial<FeedCategory>) => void;
   deleteCategory: (id: string) => void;
   reorderCategories: (categoryIds: string[]) => void;
@@ -26,10 +26,24 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     setCategories(prev => {
       const existingIds = new Set(prev.map(c => c.id));
       const missingDefaults = DEFAULT_CATEGORIES.filter(d => !existingIds.has(d.id));
+      
+      let hasChanges = missingDefaults.length > 0;
+      
+      // Also sync properties for existing default categories (like autoDiscovery)
+      const updatedExisting = prev.map(cat => {
+        if (cat.isDefault) {
+          const defaultCat = DEFAULT_CATEGORIES.find(d => d.id === cat.id);
+          if (defaultCat && cat.autoDiscovery !== defaultCat.autoDiscovery && defaultCat.autoDiscovery !== undefined) {
+            hasChanges = true;
+            return { ...cat, autoDiscovery: defaultCat.autoDiscovery };
+          }
+        }
+        return cat;
+      });
 
-      if (missingDefaults.length > 0) {
+      if (hasChanges) {
         // Add missing defaults while preserving existing order/customizations
-        return [...prev, ...missingDefaults].sort((a, b) => {
+        return [...updatedExisting, ...missingDefaults].sort((a, b) => {
           // Keep defaults at the top in their defined order, customs after
           const orderA = a.isDefault ? (DEFAULT_CATEGORIES.find(d => d.id === a.id)?.order ?? 999) : 999;
           const orderB = b.isDefault ? (DEFAULT_CATEGORIES.find(d => d.id === b.id)?.order ?? 999) : 999;
@@ -42,7 +56,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     });
   }, [setCategories]);
 
-  const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position']): FeedCategory => {
+  const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position'], autoDiscovery?: boolean): FeedCategory => {
     const newCategory: FeedCategory = {
       id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
@@ -52,6 +66,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       isDefault: false,
       layoutMode,
       headerPosition,
+      autoDiscovery: autoDiscovery ?? true, // Default to true
     };
 
     setCategories(prev => {

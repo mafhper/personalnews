@@ -1,6 +1,7 @@
 import React, { memo, useEffect, useCallback } from "react";
 import type { Article } from "../types";
 import { ArticleImage } from "./ArticleImage";
+import { FavoriteButton } from "./FavoriteButton";
 import { usePerformance } from "../hooks/usePerformance";
 import { useFavorites } from "../hooks/useFavorites";
 import { useArticleLayout } from "../hooks/useArticleLayout";
@@ -127,27 +128,12 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             </div>
 
             {/* Favorite button overlay */}
-            <button
-                onClick={handleToggleFavorite}
-                className={`absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm transition-all duration-200 z-10 opacity-0 group-hover:opacity-100 ${isFavorited
-                    ? "text-red-500 hover:text-red-400"
-                    : "text-white hover:text-red-500"
-                }`}
-                style={{
-                minWidth: "32px",
-                minHeight: "32px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "6px",
-                }}
-                aria-label={
-                isFavorited ? "Remove from favorites" : "Add to favorites"
-                }
-                title={isFavorited ? "Remove from favorites" : "Add to favorites"}
-            >
-                <HeartIcon filled={isFavorited} />
-            </button>
+            <FavoriteButton
+                article={article}
+                size="medium"
+                position="overlay"
+                className="top-2 right-2 z-10 opacity-0 group-hover:opacity-100"
+            />
         </div>
 
         {/* Article content */}
@@ -169,7 +155,7 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             {/* Source badge */}
             {contentConfig.showTags && (
               <div className="mb-2">
-                <span className="inline-block bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide">
+                <span className="inline-block bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide truncate max-w-full">
                   {article.sourceTitle}
                 </span>
               </div>
