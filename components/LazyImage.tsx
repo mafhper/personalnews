@@ -42,6 +42,10 @@ interface LazyImageProps {
   srcSet?: string;
   fallbacks?: string[];
   priority?: boolean; // If true, load immediately without waiting for intersection
+  // CLS Prevention: explicit dimensions
+  width?: number;
+  height?: number;
+  aspectRatio?: string; // e.g., '16/9', '4/3', '1/1'
 }
 
 const LazyImageComponent: React.FC<LazyImageProps> = ({
@@ -57,12 +61,15 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
   srcSet,
   fallbacks = [],
   priority = false,
+  width,
+  height,
+  aspectRatio = '16/9', // Default aspect ratio for content images
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority); // If priority, start as in view
   const [hasError, setHasError] = useState(false);
   const [currentAttempt, setCurrentAttempt] = useState(0);
-  const [currentSrcIndex, setCurrentSrcIndex] = useState(0); 
+  const [currentSrcIndex, setCurrentSrcIndex] = useState(0);
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -96,7 +103,7 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
         if (entry.isIntersecting) {
           setIsInView(true);
           observerRef.current?.disconnect();
-          
+
           if (process.env.NODE_ENV === 'development') {
             console.log('[LazyImage] Entered viewport', {
               src: src?.substring(0, 60) + '...'
@@ -120,14 +127,14 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
   const handleImageLoad = useCallback(() => {
     setIsLoaded(true);
     setHasError(false);
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('[LazyImage] Image loaded successfully', {
         src: sources[currentSrcIndex]?.substring(0, 60) + '...',
         srcIndex: currentSrcIndex
       });
     }
-    
+
     onLoad?.();
   }, [onLoad, sources, currentSrcIndex]);
 
@@ -178,7 +185,7 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
     if (hasError || sources.length === 0) {
       return DEFAULT_ERROR_PLACEHOLDER;
     }
-    
+
     // While loading or not in view, show placeholder
     if (!isInView && currentAttempt === 0 && currentSrcIndex === 0) {
       return placeholder || DEFAULT_PLACEHOLDER;
@@ -201,14 +208,23 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
   const currentSrc = getImageSrc();
   const shouldUseLazy = !priority; // Only use lazy loading if not priority
 
+  // Compute style for aspect-ratio based sizing (CLS prevention)
+  const imageStyle: React.CSSProperties = {
+    aspectRatio: aspectRatio,
+    ...(width ? { width } : {}),
+    ...(height ? { height } : {}),
+  };
+
   return (
     <img
       ref={imgRef}
       src={currentSrc}
       alt={hasError ? "" : alt}
-      className={`transition-opacity duration-500 ease-in-out ${
-        isLoaded ? 'opacity-100' : 'opacity-0'
-      } ${className} ${!isLoaded ? 'bg-gray-800 animate-pulse' : ''}`}
+      width={width}
+      height={height}
+      style={imageStyle}
+      className={`transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'
+        } ${className} ${!isLoaded ? 'bg-gray-800 animate-pulse' : ''}`}
       onLoad={handleImageLoad}
       onError={handleImageError}
       loading={shouldUseLazy ? "lazy" : "eager"}

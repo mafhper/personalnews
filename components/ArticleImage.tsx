@@ -32,10 +32,10 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
   // Only use Picsum as fallback if we had an original imageUrl that failed
   // Don't use Picsum if there was never an imageUrl to begin with
   const shouldUseFallback = article.imageUrl !== undefined && article.imageUrl !== null;
-  const fallbackUrl = shouldUseFallback 
+  const fallbackUrl = shouldUseFallback
     ? `https://picsum.photos/seed/${encodeURIComponent(article.link)}/${width || 1200}/${height || 800}`
     : null;
-  
+
   // Chain of sources to try in order
   const sourcesChain = [
     article.imageUrl,
@@ -60,7 +60,7 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
         fallbacksCount: remainingFallbacks.length,
         sourcesChain: sourcesChain.map(s => s.substring(0, 60) + '...')
       };
-      
+
       if (!article.imageUrl) {
         console.warn('[ArticleImage] No imageUrl found for article', logData);
       } else {
@@ -76,9 +76,9 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
         articleLink: article.link.substring(0, 60) + '...'
       });
     }
-    
+
     return (
-      <div 
+      <div
         className={`${className} bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center`}
         style={{ minHeight: height || 200, minWidth: width || 300 }}
       >
@@ -103,6 +103,9 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
       retryAttempts={2}
       retryDelay={500}
       priority={priority}
+      width={width}
+      height={height}
+      aspectRatio="16/9"
     />
   );
 });
