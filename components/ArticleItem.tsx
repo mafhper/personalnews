@@ -1,11 +1,11 @@
-import React, { memo, useEffect, useCallback } from "react";
+import React, { memo, useEffect } from "react";
 import type { Article } from "../types";
 import { ArticleImage } from "./ArticleImage";
 import { FavoriteButton } from "./FavoriteButton";
 import { usePerformance } from "../hooks/usePerformance";
-import { useFavorites } from "../hooks/useFavorites";
 import { useArticleLayout } from "../hooks/useArticleLayout";
 import { useAppearance } from "../hooks/useAppearance";
+import { ArticleItemLight } from "./ArticleItemLight";
 
 const ChatBubbleIcon: React.FC = memo(() => (
   <svg
@@ -46,20 +46,23 @@ interface ArticleItemProps {
   layoutMode?: string;
   density?: string;
   showImage?: boolean;
+  className?: string; // Added className support
   onClick?: (article: Article) => void;
+  renderMode?: "light" | "full";
 }
 
-const ArticleItemComponent: React.FC<ArticleItemProps> = ({
+const ArticleItemFull: React.FC<ArticleItemProps> = ({
   article,
   index = 0,
   timeFormat = "24h",
+  layoutMode,
+  className = "",
   onClick,
 }) => {
   const { startRenderTiming, endRenderTiming } = usePerformance();
-  const { isFavorite, toggleFavorite } = useFavorites();
   const { settings: layoutSettings } = useArticleLayout();
   const { contentConfig } = useAppearance();
-  
+
   // Start performance measurement
   useEffect(() => {
     startRenderTiming();
@@ -68,17 +71,6 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
     };
   }, [startRenderTiming, endRenderTiming]);
 
-  const isFavorited = isFavorite(article);
-
-  const handleToggleFavorite = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleFavorite(article);
-    },
-    [toggleFavorite, article]
-  );
-  
   const timeSince = (date: Date): string => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
     let interval = seconds / 31536000;
@@ -93,47 +85,49 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
     if (interval > 1) return Math.floor(interval) + " minutes ago";
     return Math.floor(seconds) + " seconds ago";
   };
-  
+
+  const isHorizontal = layoutMode === 'list' || layoutMode === 'minimal';
+
   return (
-    <article className="h-full flex flex-col">
+    <article className={`h-full flex flex-col ${className}`}>
       {/* Grid layout optimized for cards */}
-      <div className="flex flex-col h-full group">
+      <div className={`flex h-full group ${isHorizontal ? 'flex-row gap-4 border-b border-white/5 py-4' : 'flex-col'}`}>
         {/* Article image - Always render container */}
-        <div className="relative mb-4 bg-gray-800 rounded-lg overflow-hidden h-40 sm:h-32 lg:h-40">
-            <a
-                href={article.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => {
-                    if (onClick) {
-                        e.preventDefault();
-                        onClick(article);
-                    }
-                }}
-                className="block w-full h-full cursor-pointer"
-                aria-hidden="true" 
-                tabIndex={-1} 
-            >
-                <ArticleImage
-                    article={article}
-                    width={400}
-                    height={200}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-            </a>
-
-            {/* Article number overlay */}
-            <div className="absolute top-2 left-2 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold pointer-events-none z-10">
-                {index}
-            </div>
-
-            {/* Favorite button overlay */}
-            <FavoriteButton
-                article={article}
-                size="medium"
-                position="overlay"
-                className="top-2 right-2 z-10 opacity-0 group-hover:opacity-100"
+        <div className={`relative bg-gray-800 rounded-lg overflow-hidden ${isHorizontal ? 'w-32 sm:w-48 h-24 sm:h-32 shrink-0 mb-0' : 'h-40 sm:h-32 lg:h-40 mb-4'}`}>
+          <a
+            href={article.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (onClick) {
+                e.preventDefault();
+                onClick(article);
+              }
+            }}
+            className="block w-full h-full cursor-pointer"
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            <ArticleImage
+              article={article}
+              width={400}
+              height={200}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
+          </a>
+
+          {/* Article number overlay */}
+          <div className="absolute top-2 left-2 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold pointer-events-none z-10">
+            {index}
+          </div>
+
+          {/* Favorite button overlay */}
+          <FavoriteButton
+            article={article}
+            size="medium"
+            position="overlay"
+            className="top-2 right-2 z-10 opacity-0 group-hover:opacity-100"
+          />
         </div>
 
         {/* Article content */}
@@ -162,12 +156,18 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
             )}
 
             {/* Title with better text wrapping */}
-            <h4 className="font-bold text-base lg:text-lg leading-tight group-hover:underline text-gray-100 mb-3 line-clamp-3">
+            <h4 className="font-bold text-base lg:text-lg leading-tight group-hover:underline text-gray-100 mb-2 line-clamp-3">
               {article.title}
             </h4>
 
+            {article.description && (
+              <p className="text-gray-400 text-sm mt-1 mb-3 line-clamp-2 leading-snug">
+                {article.description}
+              </p>
+            )}
+
             {/* Article metadata */}
-            <div className="mt-auto space-y-2">
+            <div className={`space-y-2 ${isHorizontal ? '' : 'mt-auto'}`}>
               <div className="flex items-center justify-between text-xs text-gray-400">
                 {contentConfig.showAuthor && article.author && (
                   <span
@@ -201,6 +201,13 @@ const ArticleItemComponent: React.FC<ArticleItemProps> = ({
   );
 };
 
+const ArticleItemWrapper: React.FC<ArticleItemProps> = (props) => {
+  if (props.renderMode === "light") {
+    return <ArticleItemLight {...props} />;
+  }
+  return <ArticleItemFull {...props} />;
+};
+
 // Custom comparison function for React.memo
 const arePropsEqual = (
   prevProps: ArticleItemProps,
@@ -208,6 +215,10 @@ const arePropsEqual = (
 ): boolean => {
   // Compare index
   if (prevProps.index !== nextProps.index) {
+    return false;
+  }
+
+  if (prevProps.renderMode !== nextProps.renderMode) {
     return false;
   }
 
@@ -226,4 +237,4 @@ const arePropsEqual = (
 };
 
 // Export memoized component
-export const ArticleItem = memo(ArticleItemComponent, arePropsEqual);
+export const ArticleItem = memo(ArticleItemWrapper, arePropsEqual);
