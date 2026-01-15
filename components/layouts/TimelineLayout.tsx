@@ -17,11 +17,11 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
   // We use useMemo to avoid recalculating on every render
   const { groupedArticles, navigationList } = useMemo(() => {
     const groups = articles.reduce((acc, article) => {
-      const date = new Date(article.pubDate).toLocaleDateString(language, { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      const date = new Date(article.pubDate).toLocaleDateString(language, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
       if (!acc[date]) acc[date] = [];
       acc[date].push(article);
@@ -61,7 +61,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
   const hasPrev = currentNavIndex > 0;
 
   return (
-    <div className="max-w-3xl mx-auto relative animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto relative animate-in fade-in duration-500">
       {/* Vertical Line */}
       <div className="absolute left-4 md:left-8 top-0 bottom-0 w-0.5 bg-[rgb(var(--color-border))]" />
 
@@ -86,16 +86,16 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                       <span className="font-medium text-[rgb(var(--color-accent))] truncate max-w-[150px] sm:max-w-[200px]">{article.sourceTitle}</span>
                       <span className="flex-shrink-0">•</span>
                       <span>
-                        {new Date(article.pubDate).toLocaleTimeString(language, { 
-                          hour: '2-digit', 
+                        {new Date(article.pubDate).toLocaleTimeString(language, {
+                          hour: '2-digit',
                           minute: '2-digit',
                           hour12: timeFormat === '12h'
                         })}
                       </span>
                     </div>
                     <div className="flex-shrink-0">
-                      <FavoriteButton 
-                        article={article} 
+                      <FavoriteButton
+                        article={article}
                         size="small"
                         position="inline"
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -103,7 +103,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                     </div>
                   </div>
 
-                  <h3 
+                  <h3
                     className="text-xl font-bold text-[rgb(var(--color-text))] mb-3 leading-tight cursor-pointer hover:text-[rgb(var(--color-accent))] transition-colors"
                     onClick={() => handleOpenReader(article)}
                   >
@@ -111,9 +111,9 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                   </h3>
 
                   {article.imageUrl && (
-                    <div 
-                        className="mb-4 rounded-xl overflow-hidden h-48 cursor-pointer"
-                        onClick={() => handleOpenReader(article)}
+                    <div
+                      className="mb-4 rounded-xl overflow-hidden aspect-video h-auto cursor-pointer"
+                      onClick={() => handleOpenReader(article)}
                     >
                       <img src={article.imageUrl} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     </div>
@@ -121,22 +121,22 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
 
                   <div className="relative">
                     <p className="text-[rgb(var(--color-textSecondary))] text-sm line-clamp-6 mb-2 leading-relaxed">
-                        {article.description}
-                        {/* Simulate more text if description is short for visual balance request */}
-                        {(!article.description || article.description.length < 100) && (
-                            <span className="opacity-50"> {article.description} {article.description}</span>
-                        )}
+                      {article.description}
+                      {/* Simulate more text if description is short for visual balance request */}
+                      {(!article.description || article.description.length < 100) && (
+                        <span className="opacity-50"> {article.description} {article.description}</span>
+                      )}
                     </p>
-                    
+
                     {/* Overlay with Preview Button */}
                     <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgb(var(--color-surface))] to-transparent flex items-end justify-center pb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                         {/* Button needs pointer-events-auto to work inside pointer-events-none parent */}
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); handleOpenReader(article); }}
-                            className="pointer-events-auto bg-[rgb(var(--color-accent))] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg hover:scale-105 transition-transform"
-                        >
-                            {t('action.preview')}
-                        </button>
+                      {/* Button needs pointer-events-auto to work inside pointer-events-none parent */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleOpenReader(article); }}
+                        className="pointer-events-auto bg-[rgb(var(--color-accent))] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg hover:scale-105 transition-transform"
+                      >
+                        {t('action.preview')}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
       ))}
 
       {readingArticle && (
-        <ArticleReaderModal 
+        <ArticleReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
           onNext={handleNextArticle}

@@ -16,51 +16,52 @@ interface FeedDropdownProps {
 }
 
 // Layout options for dropdown (duplicated from FeedCategoryManager for now)
-const layoutOptions: { value: FeedCategory['layoutMode'] | '', labelKey: string }[] = [
-    { value: '', labelKey: 'layout.default' },
-    { value: 'bento', labelKey: 'layout.bento' },
-    { value: 'brutalist', labelKey: 'layout.brutalist' },
-    { value: 'compact', labelKey: 'layout.compact' },
-    { value: 'cyberpunk', labelKey: 'layout.cyberpunk' },
-    { value: 'focus', labelKey: 'layout.focus' },
-    { value: 'gallery', labelKey: 'layout.gallery' },
-    { value: 'immersive', labelKey: 'layout.immersive' },
-    { value: 'list', labelKey: 'layout.list' },
-    { value: 'grid', labelKey: 'layout.grid' },
-    { value: 'masonry', labelKey: 'layout.masonry' },
-    { value: 'minimal', labelKey: 'layout.minimal' },
-    { value: 'modern', labelKey: 'layout.modern' },
-    { value: 'newspaper', labelKey: 'layout.newspaper' },
-    { value: 'pocketfeeds', labelKey: 'layout.pocketfeeds' },
-    { value: 'split', labelKey: 'layout.split' },
-    { value: 'terminal', labelKey: 'layout.terminal' },
-    { value: 'timeline', labelKey: 'layout.timeline' },
+const layoutOptions: { value: FeedCategory['layoutMode'] | '', label: string }[] = [
+  { value: '', label: 'Default' },
+  { value: 'bento', label: 'Bento' },
+  { value: 'brutalist', label: 'Brutalist' },
+  { value: 'compact', label: 'Compact' },
+  { value: 'cyberpunk', label: 'Cyberpunk' },
+  { value: 'focus', label: 'Focus' },
+  { value: 'gallery', label: 'Gallery' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'immersive', label: 'Immersive' },
+  { value: 'list', label: 'List' },
+  { value: 'magazine', label: 'Magazine' },
+  { value: 'masonry', label: 'Masonry' },
+  { value: 'minimal', label: 'Minimal' },
+  { value: 'modern', label: 'Modern' },
+  { value: 'newspaper', label: 'Newspaper' },
+  { value: 'pocketfeeds', label: 'PocketFeeds' },
+  { value: 'split', label: 'Split' },
+  { value: 'terminal', label: 'Terminal' },
+  { value: 'timeline', label: 'Timeline' },
 ];
 
 const headerOptions: { value: FeedCategory['headerPosition'] | '', label: string }[] = [
-    { value: '', label: 'Padrão (Global)' },
-    { value: 'static', label: 'Estático' },
-    { value: 'sticky', label: 'Fixo (Sticky)' },
-    { value: 'floating', label: 'Flutuante' },
-    { value: 'hidden', label: 'Oculto' },
+  { value: '', label: 'Padrão (Global)' },
+  { value: 'static', label: 'Estático' },
+  { value: 'sticky', label: 'Fixo (Sticky)' },
+  { value: 'floating', label: 'Flutuante' },
+  { value: 'hidden', label: 'Oculto' },
 ];
 
 const getFaviconUrl = (url: string): string => {
-    try {
-      const domain = new URL(url).hostname;
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-    } catch {
-      return '';
-    }
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  } catch {
+    return '';
+  }
 };
 
 const getSiteName = (url: string): string => {
-    try {
-      const hostname = new URL(url).hostname;
-      return hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
 };
 
 const FeedDropdown: React.FC<FeedDropdownProps> = ({
@@ -82,7 +83,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    
+
     if (dropdownRef.current) {
       const rect = dropdownRef.current.getBoundingClientRect();
       setDropdownPos({
@@ -113,18 +114,18 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (await confirmDanger(t('confirm.category_delete') + ` "${category.name}"?`)) {
-        deleteCategory(category.id);
-        alertSuccess(t('alert.category_deleted_success'));
+      deleteCategory(category.id);
+      alertSuccess(t('alert.category_deleted_success'));
     }
   };
 
   const handleLayoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      updateCategory(category.id, { layoutMode: e.target.value as any });
+    updateCategory(category.id, { layoutMode: e.target.value as any });
   };
 
   const handleHeaderPositionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const val = e.target.value;
-      updateCategory(category.id, { headerPosition: val ? (val as any) : undefined });
+    const val = e.target.value;
+    updateCategory(category.id, { headerPosition: val ? (val as any) : undefined });
   };
 
   const isSelected = selectedCategory === category.id;
@@ -177,64 +178,64 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
           <div className="p-1.5">
             <div className="px-4 py-3 border-b border-[rgb(var(--color-border))]/10 mb-1 flex items-center justify-between bg-[rgb(var(--color-background))]/30">
               <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] uppercase tracking-widest">{t('feeds.tab.feeds')} de {category.name}</span>
-              
+
               <div className="flex items-center space-x-1">
-                 {/* Layout Selector */}
-                 <div className="relative group/layout">
-                    <button onClick={(e) => e.stopPropagation()} className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.layoutMode ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-textSecondary))]'}`} title="Alterar Layout da Categoria" aria-label="Alterar Layout da Categoria">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
-                    </button>
-                    <select 
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-black"
+                {/* Layout Selector */}
+                <div className="relative group/layout">
+                  <button onClick={(e) => e.stopPropagation()} className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.layoutMode ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-textSecondary))]'}`} title="Alterar Layout da Categoria" aria-label="Alterar Layout da Categoria">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
+                  </button>
+                  <select
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-black"
 
-                        value={category.layoutMode || ''}
-                        onChange={handleLayoutChange}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Alterar Layout da Categoria"
-                    >
-                        {layoutOptions.map((option) => (
-                          <option key={option.labelKey} value={option.value}>
-                            {t(option.labelKey)} {(category.layoutMode || '') === option.value ? ' ✓' : ''}
-                          </option>
-                        ))}
-                    </select>
-                 </div>
+                    value={category.layoutMode || ''}
+                    onChange={handleLayoutChange}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Alterar Layout da Categoria"
+                  >
+                    {layoutOptions.map((option) => (
+                      <option key={option.label} value={option.value}>
+                        {option.label} {(category.layoutMode || '') === option.value ? ' ✓' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                 {/* Header Position Selector */}
-                 <div className="relative group/header">
-                    <button onClick={(e) => e.stopPropagation()} className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.headerPosition ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-textSecondary))]'}`} title="Posição do Cabeçalho" aria-label="Posição do Cabeçalho">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                    </button>
-                    <select 
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-black"
-                        value={category.headerPosition || ''}
-                        onChange={handleHeaderPositionChange}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Posição do Cabeçalho"
-                    >
-                        {headerOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                    </select>
-                 </div>
+                {/* Header Position Selector */}
+                <div className="relative group/header">
+                  <button onClick={(e) => e.stopPropagation()} className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.headerPosition ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-textSecondary))]'}`} title="Posição do Cabeçalho" aria-label="Posição do Cabeçalho">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                  </button>
+                  <select
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-black"
+                    value={category.headerPosition || ''}
+                    onChange={handleHeaderPositionChange}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Posição do Cabeçalho"
+                  >
+                    {headerOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                 <button onClick={handlePin} className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.isPinned ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-textSecondary))]'}`} title={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"} aria-label={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"}>
-                    <svg className="w-3.5 h-3.5" fill={category.isPinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-                 </button>
+                <button onClick={handlePin} className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.isPinned ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-textSecondary))]'}`} title={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"} aria-label={category.isPinned ? "Desafixar Categoria" : "Fixar Categoria"}>
+                  <svg className="w-3.5 h-3.5" fill={category.isPinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                </button>
 
-                 {onEditCategory && (
-                    <button onClick={(e) => { e.stopPropagation(); onEditCategory(category.id); setIsOpen(false); }} className="p-2 rounded hover:bg-[rgb(var(--color-text))]/10 text-[rgb(var(--color-textSecondary))] min-w-[32px] min-h-[32px]" title="Editar Categoria" aria-label="Editar Categoria">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </button>
-                 )}
+                {onEditCategory && (
+                  <button onClick={(e) => { e.stopPropagation(); onEditCategory(category.id); setIsOpen(false); }} className="p-2 rounded hover:bg-[rgb(var(--color-text))]/10 text-[rgb(var(--color-textSecondary))] min-w-[32px] min-h-[32px]" title="Editar Categoria" aria-label="Editar Categoria">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  </button>
+                )}
 
-                 {!category.isDefault && (
-                    <button onClick={handleDelete} className="p-2 rounded hover:bg-red-500/20 text-[rgb(var(--color-textSecondary))] hover:text-red-400 min-w-[32px] min-h-[32px]" title="Excluir Categoria" aria-label="Excluir Categoria">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
-                 )}
+                {!category.isDefault && (
+                  <button onClick={handleDelete} className="p-2 rounded hover:bg-red-500/20 text-[rgb(var(--color-textSecondary))] hover:text-red-400 min-w-[32px] min-h-[32px]" title="Excluir Categoria" aria-label="Excluir Categoria">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -249,9 +250,9 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                   className="w-full text-left px-4 py-3 text-sm text-[rgb(var(--color-textSecondary))] hover:bg-[rgb(var(--color-text))]/10 hover:text-[rgb(var(--color-text))] transition-colors flex items-center space-x-3 group min-h-[44px]"
                   aria-label={`Select feed ${feed.customTitle || getSiteName(feed.url)}`}
                 >
-                  <img 
-                    src={getFaviconUrl(feed.url)} 
-                    alt="" 
+                  <img
+                    src={getFaviconUrl(feed.url)}
+                    alt=""
                     className="w-4 h-4 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';

@@ -56,7 +56,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
     } else {
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch(() => { });
       }
       setPlayingAudio(audioUrl);
     }
@@ -67,10 +67,10 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
   };
 
   return (
-    <div className="min-h-screen bg-[rgba(var(--color-background),0.5)] p-6 md:p-8">
+    <div className="container mx-auto bg-[rgba(var(--color-background),0.5)] p-6 md:p-8">
       {/* Hidden audio element for playback */}
-      <audio 
-        ref={audioRef} 
+      <audio
+        ref={audioRef}
         onEnded={() => setPlayingAudio(null)}
         className="hidden"
       />
@@ -97,12 +97,12 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
             const isExpanded = expandedPodcast === podcastName || podcastNames.length === 1;
 
             return (
-              <div 
-                key={podcastName} 
+              <div
+                key={podcastName}
                 className={`bg-[rgb(var(--color-surface))] rounded-xl border border-[rgb(var(--color-border))] overflow-hidden transition-all duration-300 ${isExpanded || podcastNames.length === 1 ? 'lg:col-span-2' : ''}`}
               >
                 {/* Podcast Header with large artwork */}
-                <div 
+                <div
                   className="flex items-start gap-4 p-5 cursor-pointer hover:bg-[rgba(var(--color-text),0.02)] transition-colors"
                   onClick={() => podcastNames.length > 1 && togglePodcast(podcastName)}
                 >
@@ -142,7 +142,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                 {(isExpanded || podcastNames.length === 1) && (
                   <div className="border-t border-[rgb(var(--color-border))]">
                     {episodes.slice(0, 10).map((episode, idx) => (
-                      <div 
+                      <div
                         key={idx}
                         className="flex items-center gap-4 p-4 hover:bg-[rgba(var(--color-text),0.03)] transition-colors border-b border-[rgb(var(--color-border))] last:border-b-0"
                       >
@@ -150,11 +150,10 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                         {episode.audioUrl ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); handlePlayPause(episode.audioUrl!); }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                              playingAudio === episode.audioUrl 
-                                ? 'bg-[rgb(var(--color-accent))] text-white' 
+                            className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${playingAudio === episode.audioUrl
+                                ? 'bg-[rgb(var(--color-accent))] text-white'
                                 : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-accent))] hover:text-white'
-                            }`}
+                              }`}
                           >
                             {playingAudio === episode.audioUrl ? (
                               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -175,7 +174,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                         )}
 
                         {/* Episode info */}
-                        <div 
+                        <div
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => setReadingArticle(episode)}
                         >
@@ -195,9 +194,9 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
 
                         {/* More options */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <FavoriteButton 
-                            article={episode} 
-                            size="small" 
+                          <FavoriteButton
+                            article={episode}
+                            size="small"
                             position="inline"
                             className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-accent))]"
                           />
@@ -213,7 +212,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                         </div>
                       </div>
                     ))}
-                    
+
                     {episodes.length > 10 && (
                       <div className="p-4 text-center text-sm text-[rgb(var(--color-textSecondary))]">
                         +{episodes.length - 10} {t('article.more_episodes') || 'mais episódios'}
@@ -238,7 +237,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
             }).length;
 
             return (
-              <div 
+              <div
                 key={podcastName}
                 className="group cursor-pointer"
                 onClick={() => {
@@ -256,7 +255,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                       </svg>
                     </div>
                   )}
-                  
+
                   {/* New episodes badge */}
                   {newCount > 0 && (
                     <div className="absolute top-2 right-2 bg-[rgb(var(--color-accent))] text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -289,11 +288,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
 
       {/* Expanded podcast modal for library mode */}
       {expandedPodcast && !hasFewPodcasts && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center"
           onClick={() => setExpandedPodcast(null)}
         >
-          <div 
+          <div
             className="bg-[rgb(var(--color-surface))] w-full max-w-2xl max-h-[90vh] rounded-t-2xl md:rounded-2xl overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
@@ -316,7 +315,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                   {podcastGroups[expandedPodcast].length} episódios
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setExpandedPodcast(null)}
                 className="p-2 hover:bg-[rgba(var(--color-text),0.1)] rounded-full transition-colors"
               >
@@ -329,18 +328,17 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
             {/* Episodes list */}
             <div className="overflow-y-auto max-h-[60vh]">
               {podcastGroups[expandedPodcast].map((episode, idx) => (
-                <div 
+                <div
                   key={idx}
                   className="flex items-center gap-4 p-4 hover:bg-[rgba(var(--color-text),0.03)] transition-colors border-b border-[rgb(var(--color-border))] last:border-b-0"
                 >
                   {episode.audioUrl ? (
                     <button
                       onClick={() => handlePlayPause(episode.audioUrl!)}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                        playingAudio === episode.audioUrl 
-                          ? 'bg-[rgb(var(--color-accent))] text-white' 
+                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${playingAudio === episode.audioUrl
+                          ? 'bg-[rgb(var(--color-accent))] text-white'
                           : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-accent))] hover:text-white'
-                      }`}
+                        }`}
                     >
                       {playingAudio === episode.audioUrl ? (
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -360,7 +358,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                     </div>
                   )}
 
-                  <div 
+                  <div
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => setReadingArticle(episode)}
                   >
@@ -379,9 +377,9 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                   </div>
 
                   {/* Favorite Button */}
-                  <FavoriteButton 
-                    article={episode} 
-                    size="small" 
+                  <FavoriteButton
+                    article={episode}
+                    size="small"
                     position="inline"
                     className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-accent))]"
                   />
@@ -396,8 +394,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
         <ArticleReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
-          onNext={() => {}}
-          onPrev={() => {}}
+          onNext={() => { }}
+          onPrev={() => { }}
           hasNext={false}
           hasPrev={false}
         />

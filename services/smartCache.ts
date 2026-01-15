@@ -42,7 +42,7 @@ export interface CacheStats {
 const DEFAULT_TTL = 10 * 60 * 1000; // 10 minutes (reduzido de 15)
 const DEFAULT_MAX_ENTRIES = 100; // Aumentado para mais feeds
 const DEFAULT_STALE_WHILE_REVALIDATE = 2 * 60 * 60 * 1000; // 2 horas (aumentado)
-const STORAGE_KEY = 'smart-feed-cache';
+const STORAGE_KEY = 'smart-feed-cache-v2';
 
 
 /**

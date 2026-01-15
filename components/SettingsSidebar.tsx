@@ -89,7 +89,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
       const keysToRemove = [
         'rss-feeds',           // IMPORTANT: This is the actual key used by App.tsx
         'feed-sources',        // Legacy key, keep for backwards compatibility
-        'feed-categories', 
+        'feed-categories',
         'appearance-header',
         'appearance-content',
         'appearance-background',
@@ -127,14 +127,14 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   return (
     <>
       {/* Overlay */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
       />
-      
+
       {/* Sidebar */}
       <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[rgb(var(--color-surface))] border-l border-[rgb(var(--color-border))] z-50 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))]">
           <h2 className="text-lg font-bold text-[rgb(var(--color-text))] flex items-center gap-2">
@@ -144,7 +144,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             </svg>
             Configurações
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors"
           >
@@ -156,12 +156,12 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          
+
           {/* Appearance Section */}
-          <AccordionSection 
-            title="Aparência" 
-            icon="🎨" 
-            isOpen={expandedSection === 'appearance'} 
+          <AccordionSection
+            title="Aparência"
+            icon="🎨"
+            isOpen={expandedSection === 'appearance'}
             onToggle={() => toggleSection('appearance')}
           >
             <div className="space-y-4">
@@ -185,12 +185,11 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                           updateThemeSettings({ autoDetectSystemTheme: false, systemThemeOverride: mode.id as 'light' | 'dark' });
                         }
                       }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        (mode.id === 'auto' && themeSettings.autoDetectSystemTheme) ||
-                        (mode.id !== 'auto' && !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === mode.id)
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${(mode.id === 'auto' && themeSettings.autoDetectSystemTheme) ||
+                          (mode.id !== 'auto' && !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === mode.id)
                           ? 'bg-[rgb(var(--color-accent))] text-white'
                           : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      }`}
+                        }`}
                     >
                       {mode.label}
                     </button>
@@ -210,59 +209,49 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           </AccordionSection>
 
           {/* Layouts Section */}
-          <AccordionSection 
-            title="Layouts" 
-            icon="📐" 
-            isOpen={expandedSection === 'layouts'} 
+          <AccordionSection
+            title="Layouts"
+            icon="📐"
+            isOpen={expandedSection === 'layouts'}
             onToggle={() => toggleSection('layouts')}
           >
             <div className="space-y-4">
               {/* Layout Mode */}
               <div>
                 <label className="block text-xs text-gray-400 mb-2">Estilo de Leitura</label>
-                <div className="grid grid-cols-3 gap-2 pr-1">
-                  {[
-                    { id: 'bento', label: 'Bento' },
-                    { id: 'brutalist', label: 'Brutalista' },
-                    { id: 'compact', label: 'Compacto' },
-                    { id: 'cyberpunk', label: 'Cyberpunk' },
-                    { id: 'split', label: 'Divisões' },
-                    { id: 'focus', label: 'Foco' },
-                    { id: 'gallery', label: 'Galeria' },
-                    { id: 'grid', label: 'Grade' },
-                    { id: 'immersive', label: 'Imersivo' },
-                    { id: 'newspaper', label: 'Jornal' },
-                    { id: 'timeline', label: 'Linha do Tempo' },
-                    { id: 'list', label: 'Lista' },
-                    { id: 'minimal', label: 'Mínimo' },
-                    { id: 'modern', label: 'Moderno' },
-                    { id: 'masonry', label: 'Mosaico' },
-                    { id: 'polaroid', label: 'Polaroid' },
-                    { id: 'magazine', label: 'Revista' },
-                    { id: 'terminal', label: 'Terminal' },
-                  ].map(mode => (
-                    <button
-                      key={mode.id}
-                      onClick={() => { 
-                        const preset = LAYOUT_PRESETS.find(p => p.id === mode.id);
-                        if (preset) {
-                          applyLayoutPreset(mode.id);
-                        } else {
-                          updateContentConfig({ layoutMode: mode.id as any }); 
-                        }
-                        resetCategoryLayouts(); 
-                      }}
-                      className={`py-2 px-2 rounded-lg text-[10px] font-medium transition-all flex items-center justify-center gap-1 ${
-                        contentConfig.layoutMode === mode.id
-                          ? 'bg-[rgb(var(--color-accent))] text-white shadow-lg ring-1 ring-white/20'
-                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      }`}
-                    >
-                      {contentConfig.layoutMode === mode.id && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>}
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
+                <select
+                  value={contentConfig.layoutMode}
+                  onChange={(e) => {
+                    const mode = e.target.value;
+                    const preset = LAYOUT_PRESETS.find(p => p.id === mode);
+                    if (preset) {
+                      applyLayoutPreset(mode);
+                    } else {
+                      updateContentConfig({ layoutMode: mode as any });
+                    }
+                    resetCategoryLayouts();
+                  }}
+                  className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
+                >
+                  <option value="bento">Bento</option>
+                  <option value="brutalist">Brutalist</option>
+                  <option value="compact">Compact</option>
+                  <option value="cyberpunk">Cyberpunk</option>
+                  <option value="focus">Focus</option>
+                  <option value="gallery">Gallery</option>
+                  <option value="grid">Grid</option>
+                  <option value="immersive">Immersive</option>
+                  <option value="list">List</option>
+                  <option value="magazine">Magazine</option>
+                  <option value="masonry">Masonry</option>
+                  <option value="minimal">Minimal</option>
+                  <option value="modern">Modern</option>
+                  <option value="newspaper">Newspaper</option>
+                  <option value="pocketfeeds">PocketFeeds</option>
+                  <option value="split">Split</option>
+                  <option value="terminal">Terminal</option>
+                  <option value="timeline">Timeline</option>
+                </select>
               </div>
 
               {/* Header Position */}
@@ -335,207 +324,207 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               {/* Advanced Identity Settings */}
               <div className="pt-4 border-t border-gray-800">
                 <h3 className="text-xs font-bold text-gray-300 mb-4 flex items-center gap-2">
-                    <span className="text-lg">🆔</span> Identidade Visual
+                  <span className="text-lg">🆔</span> Identidade Visual
                 </h3>
-                
+
                 {/* Custom Logo SVG */}
                 <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-2">Logo SVG</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => document.getElementById('logo-upload')?.click()}
+                        className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 px-3 rounded-lg text-xs font-medium transition-colors border border-gray-700 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                        {headerConfig.customLogoSvg ? 'Alterar Logo SVG' : 'Carregar Logo SVG'}
+                      </button>
+                      {headerConfig.customLogoSvg && (
+                        <button
+                          onClick={() => updateHeaderConfig({ customLogoSvg: undefined })}
+                          className="px-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg border border-red-800/50"
+                          title="Remover Logo"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept=".svg"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const content = ev.target?.result as string;
+                            // Simple sanitization to basic SVG tags if needed, or rely on pure DOMPurify if installed
+                            // Since we just installed it, let's use it. We need to import it though.
+                            // For now I'll use a dynamic import or assume global if not available, OR I will add the import in a separate tool call.
+                            // I'll add a helper logic here.
+                            import('dompurify').then(DOMPurify => {
+                              const sanitized = DOMPurify.default.sanitize(content);
+                              updateHeaderConfig({ customLogoSvg: sanitized });
+                            }).catch(err => {
+                              console.error("DOMPurify load failed, using raw", err);
+                              // Fallback or alert? For safety, maybe just basic check or fail.
+                              // But for this environment, dynamic import should work if installed.
+                              updateHeaderConfig({ customLogoSvg: content }); // Fallback for dev
+                            });
+                          };
+                          reader.readAsText(file);
+                        }
+                      }}
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      {headerConfig.customLogoSvg ? '✅ SVG personalizado ativo' : 'Selecione um arquivo .svg para usar como logo'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <label className="block text-xs text-gray-400 mb-2">Logo SVG</label>
-                        <div className="flex gap-2">
-                             <button
-                                onClick={() => document.getElementById('logo-upload')?.click()}
-                                className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 px-3 rounded-lg text-xs font-medium transition-colors border border-gray-700 flex items-center justify-center gap-2"
-                             >
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
-                                {headerConfig.customLogoSvg ? 'Alterar Logo SVG' : 'Carregar Logo SVG'}
-                             </button>
-                             {headerConfig.customLogoSvg && (
-                                <button
-                                    onClick={() => updateHeaderConfig({ customLogoSvg: undefined })}
-                                    className="px-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg border border-red-800/50"
-                                    title="Remover Logo"
-                                >
-                                    ✕
-                                </button>
-                             )}
-                        </div>
-                        <input 
-                            id="logo-upload"
-                            type="file" 
-                            accept=".svg"
-                            className="hidden"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    const reader = new FileReader();
-                                    reader.onload = (ev) => {
-                                        const content = ev.target?.result as string;
-                                        // Simple sanitization to basic SVG tags if needed, or rely on pure DOMPurify if installed
-                                        // Since we just installed it, let's use it. We need to import it though.
-                                        // For now I'll use a dynamic import or assume global if not available, OR I will add the import in a separate tool call.
-                                        // I'll add a helper logic here.
-                                        import('dompurify').then(DOMPurify => {
-                                            const sanitized = DOMPurify.default.sanitize(content);
-                                            updateHeaderConfig({ customLogoSvg: sanitized });
-                                        }).catch(err => {
-                                            console.error("DOMPurify load failed, using raw", err);
-                                            // Fallback or alert? For safety, maybe just basic check or fail.
-                                            // But for this environment, dynamic import should work if installed.
-                                            updateHeaderConfig({ customLogoSvg: content }); // Fallback for dev
-                                        });
-                                    };
-                                    reader.readAsText(file);
-                                }
-                            }}
-                        />
-                        <p className="text-[10px] text-gray-500 mt-1">
-                            {headerConfig.customLogoSvg ? '✅ SVG personalizado ativo' : 'Selecione um arquivo .svg para usar como logo'}
-                        </p>
+                      <label className="block text-xs text-gray-400 mb-2">Tamanho do Logo</label>
+                      <div className="flex bg-gray-800 rounded-lg p-1">
+                        {['sm', 'md', 'lg'].map((size) => (
+                          <button
+                            key={size}
+                            onClick={() => updateHeaderConfig({ logoSize: size as 'sm' | 'md' | 'lg' })}
+                            className={`flex-1 py-1 text-[10px] rounded ${headerConfig.logoSize === size ? 'bg-gray-600 text-white' : 'text-gray-400'}`}
+                          >
+                            {size.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-2">Tamanho do Logo</label>
-                            <div className="flex bg-gray-800 rounded-lg p-1">
-                                {['sm', 'md', 'lg'].map((size) => (
-                                    <button
-                                        key={size}
-                                        onClick={() => updateHeaderConfig({ logoSize: size as 'sm' | 'md' | 'lg' })}
-                                        className={`flex-1 py-1 text-[10px] rounded ${headerConfig.logoSize === size ? 'bg-gray-600 text-white' : 'text-gray-400'}`}
-                                    >
-                                        {size.toUpperCase()}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs text-gray-400 mb-2">Cor do Logo</label>
-                            <div className="flex items-center gap-2">
-                                <select 
-                                    value={headerConfig.logoColorMode || 'theme'}
-                                    onChange={(e) => updateHeaderConfig({ logoColorMode: e.target.value as 'theme' | 'custom' | 'original' })}
-                                    className="bg-gray-800 text-[10px] rounded h-8 px-2 border-none flex-1"
-                                >
-                                    <option value="theme">Tema</option>
-                                    <option value="custom">Fixa</option>
-                                    <option value="original">Original</option>
-                                </select>
-                                {headerConfig.logoColorMode === 'custom' && (
-                                    <input 
-                                        type="color" 
-                                        value={headerConfig.logoColor || '#ffffff'}
-                                        onChange={(e) => updateHeaderConfig({ logoColor: e.target.value })}
-                                        className="w-8 h-8 rounded bg-transparent cursor-pointer" 
-                                    />
-                                )}
-                            </div>
-                        </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-2">Cor do Logo</label>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={headerConfig.logoColorMode || 'theme'}
+                          onChange={(e) => updateHeaderConfig({ logoColorMode: e.target.value as 'theme' | 'custom' | 'original' })}
+                          className="bg-gray-800 text-[10px] rounded h-8 px-2 border-none flex-1"
+                        >
+                          <option value="theme">Tema</option>
+                          <option value="custom">Fixa</option>
+                          <option value="original">Original</option>
+                        </select>
+                        {headerConfig.logoColorMode === 'custom' && (
+                          <input
+                            type="color"
+                            value={headerConfig.logoColor || '#ffffff'}
+                            onChange={(e) => updateHeaderConfig({ logoColor: e.target.value })}
+                            className="w-8 h-8 rounded bg-transparent cursor-pointer"
+                          />
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400">Sincronizar Favicon</span>
-                        <Switch 
-                            checked={headerConfig.syncFavicon || false} 
-                            onChange={(c) => updateHeaderConfig({ syncFavicon: c })} 
-                            size="sm"
-                        />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400">Mostrar Logo</span>
-                        <Switch 
-                            checked={headerConfig.showLogo !== false} 
-                            onChange={(c) => updateHeaderConfig({ showLogo: c })} 
-                            size="sm"
-                        />
-                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Sincronizar Favicon</span>
+                    <Switch
+                      checked={headerConfig.syncFavicon || false}
+                      onChange={(c) => updateHeaderConfig({ syncFavicon: c })}
+                      size="sm"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Mostrar Logo</span>
+                    <Switch
+                      checked={headerConfig.showLogo !== false}
+                      onChange={(c) => updateHeaderConfig({ showLogo: c })}
+                      size="sm"
+                    />
+                  </div>
                 </div>
 
                 {/* Page Title Customization */}
                 <div className="space-y-4">
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                             <label className="block text-xs text-gray-400">Título da Página</label>
-                             <Switch 
-                                 checked={headerConfig.showTitle} 
-                                 onChange={(c) => updateHeaderConfig({ showTitle: c })} 
-                                 size="sm"
-                             />
-                        </div>
-                        {headerConfig.showTitle && (
-                            <input 
-                                type="text" 
-                                value={headerConfig.customTitle || ''}
-                                onChange={(e) => updateHeaderConfig({ customTitle: e.target.value })}
-                                className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
-                            />
-                        )}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs text-gray-400">Título da Página</label>
+                      <Switch
+                        checked={headerConfig.showTitle}
+                        onChange={(c) => updateHeaderConfig({ showTitle: c })}
+                        size="sm"
+                      />
                     </div>
-                    
-                    <div>
-                        <div className="flex justify-between items-center mb-2">
-                             <label className="block text-xs text-gray-400">Estilo do Texto</label>
-                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-gray-500">Gradiente</span>
-                                <Switch 
-                                    checked={headerConfig.titleGradient?.enabled || false}
-                                    onChange={(c) => updateHeaderConfig({ 
-                                        titleGradient: { 
-                                            ...(headerConfig.titleGradient || { from: '#fff', to: '#fff', direction: 'to right' }), 
-                                            enabled: c 
-                                        } 
-                                    })}
-                                    size="sm"
-                                />
-                             </div>
-                        </div>
+                    {headerConfig.showTitle && (
+                      <input
+                        type="text"
+                        value={headerConfig.customTitle || ''}
+                        onChange={(e) => updateHeaderConfig({ customTitle: e.target.value })}
+                        className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
+                      />
+                    )}
+                  </div>
 
-                        {headerConfig.titleGradient?.enabled ? (
-                             <div className="bg-gray-800/50 p-2 rounded-lg space-y-2 border border-white/5">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-400">Cores</span>
-                                    <div className="flex gap-2">
-                                        <input type="color" value={headerConfig.titleGradient.from} onChange={(e) => updateHeaderConfig({ titleGradient: { ...headerConfig.titleGradient!, from: e.target.value } })} className="w-6 h-6 rounded bg-transparent" />
-                                        <span className="text-gray-500">→</span>
-                                        <input type="color" value={headerConfig.titleGradient.to} onChange={(e) => updateHeaderConfig({ titleGradient: { ...headerConfig.titleGradient!, to: e.target.value } })} className="w-6 h-6 rounded bg-transparent" />
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center text-[10px]">
-                                     <span className="text-gray-400">Direção</span>
-                                     <select 
-                                        value={headerConfig.titleGradient.direction}
-                                        onChange={(e) => updateHeaderConfig({ titleGradient: { ...headerConfig.titleGradient!, direction: e.target.value } })}
-                                        className="bg-gray-900 border-none rounded h-6 px-1 text-gray-300"
-                                     >
-                                        <option value="to right">➡ Dir.</option>
-                                        <option value="to left">⬅ Esq.</option>
-                                        <option value="to bottom">⬇ Baixo</option>
-                                        <option value="to bottom right">↘ Diag.</option>
-                                     </select>
-                                </div>
-                             </div>
-                        ) : (
-                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-400">Cor do Texto</span>
-                                <input 
-                                    type="color" 
-                                    value={headerConfig.titleColor || '#ffffff'}
-                                    onChange={(e) => updateHeaderConfig({ titleColor: e.target.value })}
-                                    className="w-8 h-8 rounded bg-transparent cursor-pointer"
-                                />
-                             </div>
-                        )}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-xs text-gray-400">Estilo do Texto</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500">Gradiente</span>
+                        <Switch
+                          checked={headerConfig.titleGradient?.enabled || false}
+                          onChange={(c) => updateHeaderConfig({
+                            titleGradient: {
+                              ...(headerConfig.titleGradient || { from: '#fff', to: '#fff', direction: 'to right' }),
+                              enabled: c
+                            }
+                          })}
+                          size="sm"
+                        />
+                      </div>
                     </div>
+
+                    {headerConfig.titleGradient?.enabled ? (
+                      <div className="bg-gray-800/50 p-2 rounded-lg space-y-2 border border-white/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-gray-400">Cores</span>
+                          <div className="flex gap-2">
+                            <input type="color" value={headerConfig.titleGradient.from} onChange={(e) => updateHeaderConfig({ titleGradient: { ...headerConfig.titleGradient!, from: e.target.value } })} className="w-6 h-6 rounded bg-transparent" />
+                            <span className="text-gray-500">→</span>
+                            <input type="color" value={headerConfig.titleGradient.to} onChange={(e) => updateHeaderConfig({ titleGradient: { ...headerConfig.titleGradient!, to: e.target.value } })} className="w-6 h-6 rounded bg-transparent" />
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-gray-400">Direção</span>
+                          <select
+                            value={headerConfig.titleGradient.direction}
+                            onChange={(e) => updateHeaderConfig({ titleGradient: { ...headerConfig.titleGradient!, direction: e.target.value } })}
+                            className="bg-gray-900 border-none rounded h-6 px-1 text-gray-300"
+                          >
+                            <option value="to right">➡ Dir.</option>
+                            <option value="to left">⬅ Esq.</option>
+                            <option value="to bottom">⬇ Baixo</option>
+                            <option value="to bottom right">↘ Diag.</option>
+                          </select>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-400">Cor do Texto</span>
+                        <input
+                          type="color"
+                          value={headerConfig.titleColor || '#ffffff'}
+                          onChange={(e) => updateHeaderConfig({ titleColor: e.target.value })}
+                          className="w-8 h-8 rounded bg-transparent cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </AccordionSection>
 
           {/* Display Section */}
-          <AccordionSection 
-            title="Exibição" 
-            icon="👁" 
-            isOpen={expandedSection === 'display'} 
+          <AccordionSection
+            title="Exibição"
+            icon="👁"
+            isOpen={expandedSection === 'display'}
             onToggle={() => toggleSection('display')}
           >
             <div className="space-y-3">
@@ -573,10 +562,10 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           </AccordionSection>
 
           {/* System Section */}
-          <AccordionSection 
-            title="Sistema" 
-            icon="⚙️" 
-            isOpen={expandedSection === 'system'} 
+          <AccordionSection
+            title="Sistema"
+            icon="⚙️"
+            isOpen={expandedSection === 'system'}
             onToggle={() => toggleSection('system')}
           >
             <div className="space-y-3">
@@ -611,7 +600,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               {/* Reset Options */}
               <div className="space-y-2">
                 <label className="block text-xs text-gray-400 mb-2">Opções de Reset</label>
-                
+
                 <button
                   onClick={handleResetStyles}
                   className="w-full py-2 px-3 bg-yellow-900/20 hover:bg-yellow-900/40 text-yellow-400 text-xs rounded-lg transition-colors border border-yellow-800/30 text-left"
@@ -662,10 +651,10 @@ const AccordionSection: React.FC<{
         <span>{icon}</span>
         {title}
       </span>
-      <svg 
-        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-        fill="none" 
-        stroke="currentColor" 
+      <svg
+        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        fill="none"
+        stroke="currentColor"
         viewBox="0 0 24 24"
       >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

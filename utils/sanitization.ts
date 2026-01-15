@@ -11,7 +11,7 @@ import DOMPurify from 'dompurify';
 const purify = DOMPurify(typeof window !== 'undefined' ? window : undefined);
 
 // Add hooks for target="_blank" on links
-purify.addHook('afterSanitizeAttributes', function(node) {
+purify.addHook('afterSanitizeAttributes', function (node) {
   if ('target' in node && node.tagName === 'A') {
     node.setAttribute('target', '_blank');
     node.setAttribute('rel', 'noopener noreferrer');
@@ -27,10 +27,10 @@ purify.addHook('afterSanitizeAttributes', function(node) {
  */
 export function sanitizeWithDomPurify(content: string | null | undefined): string {
   if (!content) return "";
-  
+
   return purify.sanitize(content, {
     ALLOWED_TAGS: [
-      'p', 'br', 'b', 'i', 'em', 'strong', 'u', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+      'p', 'br', 'b', 'i', 'em', 'strong', 'u', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'td', 'th'
     ],
     ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel', 'width', 'height'],
@@ -46,9 +46,9 @@ export function sanitizeWithDomPurify(content: string | null | undefined): strin
  */
 export function sanitizeHtmlContent(text: string | null | undefined): string {
   if (!text) return "";
-  
+
   // Use DOMPurify to strip all tags if available, as it's more robust
-  const clean = purify.sanitize(text, { 
+  const clean = purify.sanitize(text, {
     ALLOWED_TAGS: [], // No tags allowed = plain text
     KEEP_CONTENT: true
   });
@@ -59,17 +59,17 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
     txt.innerHTML = clean;
     return txt.value;
   }
-  
+
   // Fallback to regex if needed (or if desired to keep original logic)
   let cleanText = text;
-  
+
   // Múltiplas passadas para garantir que todas as entidades codificadas sejam tratadas
   for (let i = 0; i < 5; i++) {
     const beforeClean = cleanText;
-    
+
     // Primeiro decodifica &amp; para & para lidar com entidades duplamente codificadas
     cleanText = cleanText.replace(/&amp;/g, "&");
-    
+
     // Decodifica entidades HTML para detectar tags codificadas
     cleanText = cleanText
       .replace(/&lt;/g, "<")
@@ -82,7 +82,7 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
       .replace(/&#x2F;/g, "/")
       .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
       .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-    
+
     // Remove todas as tags HTML (incluindo as decodificadas)
     cleanText = cleanText
       // Remove scripts e iframes primeiro (mais perigosos)
@@ -98,13 +98,13 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
       .replace(/<[^>]*>/g, "")
       // Remove fragmentos de tags HTML incompletos (como <img sem fechamento)
       .replace(/<[^<]*$/g, "");
-    
+
     // Se não houve mudanças, podemos parar
     if (cleanText === beforeClean) {
       break;
     }
   }
-  
+
   // Por último, decodifica entidades HTML restantes e limpa
   cleanText = cleanText
     .replace(/&nbsp;/g, " ")
@@ -113,7 +113,7 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
     // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
     .trim();
-    
+
   return cleanText;
 }
 
@@ -125,20 +125,23 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
  * @returns Descrição sanitizada e truncada
  */
 export function sanitizeArticleDescription(description: string | null | undefined, maxLength: number = 300): string {
-  const sanitized = sanitizeHtmlContent(description);
-  
+  let sanitized = sanitizeHtmlContent(description);
+
+  // Remove common RSS footer spam
+  sanitized = sanitized.replace(/The post .*? appeared first on .*?\.?/gi, "").trim();
+
   if (sanitized.length <= maxLength) {
     return sanitized;
   }
-  
+
   // Trunca no último espaço antes do limite para não cortar palavras
   const truncated = sanitized.substring(0, maxLength);
   const lastSpace = truncated.lastIndexOf(' ');
-  
+
   if (lastSpace > maxLength * 0.8) { // Se o último espaço está próximo do limite
     return truncated.substring(0, lastSpace) + '...';
   }
-  
+
   return truncated + '...';
 }
 
@@ -160,9 +163,9 @@ export function sanitizeTitle(title: string | null | undefined): string {
  */
 export function sanitizeUrl(url: string | null | undefined): string {
   if (!url) return "";
-  
+
   const cleanUrl = url.trim();
-  
+
   // Lista de protocolos perigosos
   const dangerousProtocols = [
     'javascript:',
@@ -171,15 +174,15 @@ export function sanitizeUrl(url: string | null | undefined): string {
     'data:application/javascript',
     'data:text/javascript'
   ];
-  
+
   const lowerUrl = cleanUrl.toLowerCase();
-  
+
   for (const protocol of dangerousProtocols) {
     if (lowerUrl.startsWith(protocol)) {
       return "";
     }
   }
-  
+
   // Permite apenas http, https, ftp e mailto
   if (!/^(https?|ftp|mailto):/i.test(cleanUrl)) {
     // Se não tem protocolo, assume https
@@ -188,7 +191,7 @@ export function sanitizeUrl(url: string | null | undefined): string {
     }
     return "";
   }
-  
+
   return cleanUrl;
 }
 
@@ -200,37 +203,37 @@ export function sanitizeUrl(url: string | null | undefined): string {
  */
 export function containsHtml(text: string | null | undefined): boolean {
   if (!text) return false;
-  
+
   // Verifica tags HTML diretas
   if (/<[^>]*>/g.test(text)) {
     return true;
   }
-  
+
   // Verifica entidades HTML codificadas que representam tags
   if (/&lt;[^&]*&gt;/g.test(text)) {
     return true;
   }
-  
+
   // Verifica entidades duplamente codificadas (&amp;lt; e &amp;gt;)
   if (/&amp;lt;[^&]*&amp;gt;/g.test(text)) {
     return true;
   }
-  
+
   // Verifica entidades duplamente codificadas incompletas (como &amp;lt; sem fechamento)
   if (/&amp;lt;/g.test(text)) {
     return true;
   }
-  
+
   // Verifica outras formas de codificação HTML numérica
   if (/&#60;[^&#]*&#62;/g.test(text)) {
     return true;
   }
-  
+
   // Verifica entidades numéricas incompletas
   if (/&#60;/g.test(text)) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -242,27 +245,27 @@ export function containsHtml(text: string | null | undefined): boolean {
  */
 export function sanitizeFeedContent<T extends Record<string, unknown>>(feedContent: T): T {
   const sanitized = { ...feedContent } as Record<string, unknown>;
-  
+
   // Sanitiza propriedades comuns de feeds
   if ('title' in sanitized && typeof sanitized.title === 'string') {
     sanitized.title = sanitizeTitle(sanitized.title);
   }
-  
+
   if ('description' in sanitized && typeof sanitized.description === 'string') {
     sanitized.description = sanitizeArticleDescription(sanitized.description);
   }
-  
+
   if ('link' in sanitized && typeof sanitized.link === 'string') {
     sanitized.link = sanitizeUrl(sanitized.link);
   }
-  
+
   if ('author' in sanitized && typeof sanitized.author === 'string') {
     sanitized.author = sanitizeHtmlContent(sanitized.author);
   }
-  
+
   if ('sourceTitle' in sanitized && typeof sanitized.sourceTitle === 'string') {
     sanitized.sourceTitle = sanitizeTitle(sanitized.sourceTitle);
   }
-  
+
   return sanitized as T;
 }

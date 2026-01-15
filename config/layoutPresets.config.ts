@@ -61,7 +61,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Layout padrão com grade dinâmica e header flutuante.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
             height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
             showTitle: false,           // Options: true | false
             showLogo: true,             // Options: true | false
@@ -121,7 +121,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Layout editorial moderno com hero sections e destaques visuais.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
             height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
             showTitle: false,           // Options: true | false
             showLogo: true,             // Options: true | false
@@ -181,7 +181,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Foco no conteúdo. Header flutuante transparente.',
         header: {
             style: 'minimal',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
             height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
             showTitle: false,           // Options: true | false
             showLogo: true,             // Options: true | false
@@ -331,7 +331,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Layout modular moderno.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
             height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
             showTitle: false,           // Options: true | false
             showLogo: true,             // Options: true | false

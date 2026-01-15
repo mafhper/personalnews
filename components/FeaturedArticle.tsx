@@ -24,9 +24,8 @@ export const FeaturedArticle: React.FC<{
           target="_blank"
           rel="noopener noreferrer"
           className="block relative h-full"
-          aria-label={`Read featured article: ${article.title} from ${
-            article.author || article.sourceTitle
-          }`}
+          aria-label={`Read featured article: ${article.title} from ${article.author || article.sourceTitle
+            }`}
         >
           <OptimizedImage
             src={article.imageUrl}
@@ -52,7 +51,7 @@ export const FeaturedArticle: React.FC<{
             article={article}
             size="large"
             position="overlay"
-            className="top-3 right-3 z-20 hover:scale-110 active:scale-95 transition-transform duration-200 ease-in-out"
+            className="top-3 right-3 z-20 hover:scale-110 active:scale-95 transition-all duration-200 ease-in-out opacity-0 group-hover:opacity-100"
           />
 
           <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 lg:p-8 xl:p-10 text-white">
@@ -88,13 +87,13 @@ export const FeaturedArticle: React.FC<{
                 {layoutSettings.showPublicationTime
                   ? timeFormat === "12h"
                     ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
-                        "pt-BR",
-                        { hour: "2-digit", minute: "2-digit", hour12: true }
-                      )}`
+                      "pt-BR",
+                      { hour: "2-digit", minute: "2-digit", hour12: true }
+                    )}`
                     : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
-                        "pt-BR",
-                        { hour: "2-digit", minute: "2-digit", hour12: false }
-                      )}`
+                      "pt-BR",
+                      { hour: "2-digit", minute: "2-digit", hour12: false }
+                    )}`
                   : article.pubDate.toLocaleDateString()}
               </time>
               {/* Comentários removidos conforme solicitado */}

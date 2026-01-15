@@ -18,7 +18,7 @@ import { getCachedArticles, setCachedArticles } from "./smartCache";
 import { parseSecureRssXml } from "./secureXmlParser";
 import { proxyManager } from "./proxyManager";
 import { getAlternativeUrls } from "./feedUrlMapper";
-import { sanitizeWithDomPurify } from "../utils/sanitization";
+import { sanitizeWithDomPurify, sanitizeHtmlContent, sanitizeArticleDescription } from "../utils/sanitization";
 
 // Configurações otimizadas
 const MAX_RETRY_ATTEMPTS = 2;
@@ -31,18 +31,17 @@ const logger = getLogger();
 
 function cleanDescription(text: string): string {
   if (!text) return "";
-  // Remove tags HTML básicas para o preview, mas mantém estrutura básica se necessário
-  return text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return sanitizeArticleDescription(text, 500);
 }
 
 function sanitizeTitle(title: string): string {
   if (!title) return "No Title";
-  return title.replace(/[\n\r]+/g, " ").trim();
+  return sanitizeHtmlContent(title).replace(/[\n\r]+/g, " ").trim();
 }
 
 function sanitizeAuthor(author: string): string {
   if (!author) return "";
-  return author.replace(/[\n\r]+/g, " ").trim();
+  return sanitizeHtmlContent(author).replace(/[\n\r]+/g, " ").trim();
 }
 
 /**
@@ -57,22 +56,22 @@ function getAttr(el: Element, name: string): string | null {
  */
 function normalizeImageUrl(url: string, baseUrl?: string): string | null {
   if (!url || url.trim().length === 0) return null;
-  
+
   let normalized = url.trim();
-  
+
   // Remove leading/trailing whitespace and quotes
   normalized = normalized.replace(/^["']|["']$/g, '');
-  
+
   // Skip data URIs and invalid patterns
   if (normalized.startsWith('data:') || normalized.startsWith('javascript:') || normalized.startsWith('#')) {
     return null;
   }
-  
+
   // Handle protocol-relative URLs (//example.com/image.jpg)
   if (normalized.startsWith('//')) {
     normalized = 'https:' + normalized;
   }
-  
+
   // Handle relative URLs if we have a base URL
   if (baseUrl && !normalized.startsWith('http://') && !normalized.startsWith('https://')) {
     try {
@@ -89,7 +88,7 @@ function normalizeImageUrl(url: string, baseUrl?: string): string | null {
       return null;
     }
   }
-  
+
   // Validate final URL
   try {
     const urlObj = new URL(normalized);
@@ -110,7 +109,7 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
   if (parent) {
     const parentClass = parent.getAttribute('class') || '';
     const parentTag = parent.tagName.toLowerCase();
-    
+
     // Common featured image patterns
     if (
       parentClass.includes('featured') ||
@@ -123,12 +122,12 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
       return true;
     }
   }
-  
+
   // Check image attributes
   const imgClass = img.getAttribute('class') || '';
   const imgId = img.getAttribute('id') || '';
   const fetchPriority = img.getAttribute('fetchpriority');
-  
+
   if (
     imgClass.includes('featured') ||
     imgClass.includes('hero') ||
@@ -140,14 +139,14 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
   ) {
     return true;
   }
-  
+
   // Check dimensions - large images are more likely to be featured
   const width = parseInt(img.getAttribute('width') || '0');
   const height = parseInt(img.getAttribute('height') || '0');
   if (width >= 800 || height >= 600) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -156,33 +155,33 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
  */
 function parseSrcset(srcset: string): { url: string; width: number } | null {
   if (!srcset || srcset.trim().length === 0) return null;
-  
+
   const sources = srcset.split(',').map(s => s.trim()).filter(s => s);
   if (sources.length === 0) return null;
-  
+
   const parsedSources: { url: string; width: number }[] = [];
-  
+
   for (const source of sources) {
     const parts = source.split(/\s+/);
     const url = parts[0];
-    
+
     // Look for width descriptor (e.g., "640w")
     const widthPart = parts.find(p => p.endsWith('w'));
     const width = widthPart ? parseInt(widthPart) : 0;
-    
+
     // Also check for pixel density (e.g., "2x")
     const densityPart = parts.find(p => p.endsWith('x'));
     const density = densityPart ? parseFloat(densityPart) : 1;
-    
+
     // Estimate width from density if no width specified
     const estimatedWidth = width || (density > 1 ? 800 * density : 800);
-    
+
     parsedSources.push({ url, width: estimatedWidth });
   }
-  
+
   // Sort by width descending and return the largest
   parsedSources.sort((a, b) => b.width - a.width);
-  
+
   return parsedSources.length > 0 ? parsedSources[0] : null;
 }
 
@@ -304,7 +303,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
 
       // Extract image from multiple possible sources
       const jsonImageCandidates: ImageCandidate[] = [];
-      
+
       // Check thumbnail
       if (item.thumbnail) {
         const normalized = normalizeImageUrl(item.thumbnail, link);
@@ -316,7 +315,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
           });
         }
       }
-      
+
       // Check enclosure
       if (item.enclosure?.link && item.enclosure?.type?.startsWith('image/')) {
         const normalized = normalizeImageUrl(item.enclosure.link, link);
@@ -329,7 +328,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
           });
         }
       }
-      
+
       // Extract from content/description HTML if available
       const htmlContent = item.content || item.description || "";
       if (htmlContent && typeof DOMParser !== 'undefined') {
@@ -337,18 +336,18 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
           const parser = new DOMParser();
           const doc = parser.parseFromString(htmlContent, 'text/html');
           const images = doc.getElementsByTagName('img');
-          
+
           for (let j = 0; j < Math.min(images.length, 5); j++) {
             const img = images[j];
             const src = img.getAttribute('src');
             const srcset = img.getAttribute('srcset');
-            const dataSrc = img.getAttribute('data-src') || 
-                          img.getAttribute('data-original') || 
-                          img.getAttribute('data-lazy-src');
-            
+            const dataSrc = img.getAttribute('data-src') ||
+              img.getAttribute('data-original') ||
+              img.getAttribute('data-lazy-src');
+
             const isFeatured = isFeaturedImage(img, img.parentElement);
             const width = parseInt(img.getAttribute('width') || '0');
-            
+
             if (srcset) {
               const parsed = parseSrcset(srcset);
               if (parsed) {
@@ -364,7 +363,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
                 }
               }
             }
-            
+
             if (dataSrc) {
               const normalized = normalizeImageUrl(dataSrc, link);
               if (normalized) {
@@ -377,7 +376,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
                 });
               }
             }
-            
+
             if (src) {
               const normalized = normalizeImageUrl(src, link);
               if (normalized) {
@@ -395,7 +394,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
           // Fallback to regex if DOMParser fails
         }
       }
-      
+
       const imageUrl = selectBestImage(jsonImageCandidates, link);
 
       // Log only if no image found (for debugging)
@@ -614,7 +613,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
 
       // 4. Extract from Content/Description HTML
       const htmlContent = contentRaw || descriptionRaw || "";
-      
+
       if (process.env.NODE_ENV === 'development') {
         console.log(`[ImageExtraction] Starting HTML extraction for: "${title.substring(0, 50)}..."`, {
           htmlContentLength: htmlContent.length,
@@ -622,13 +621,13 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           link: link.substring(0, 60) + '...'
         });
       }
-      
+
       try {
         // Use DOMParser if available (browser/jsdom)
         if (typeof DOMParser !== 'undefined') {
           const parser = new DOMParser();
           const doc = parser.parseFromString(htmlContent, 'text/html');
-          
+
           // First, try to find featured images in figure/picture elements
           const figures = doc.getElementsByTagName('figure');
           for (let f = 0; f < figures.length; f++) {
@@ -638,16 +637,16 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
               const img = figureImages[0];
               const src = img.getAttribute('src');
               const srcset = img.getAttribute('srcset');
-              const dataSrc = img.getAttribute('data-src') || 
-                            img.getAttribute('data-original') || 
-                            img.getAttribute('data-lazy-src') ||
-                            img.getAttribute('data-lazy') ||
-                            img.getAttribute('data-srcset');
-              
+              const dataSrc = img.getAttribute('data-src') ||
+                img.getAttribute('data-original') ||
+                img.getAttribute('data-lazy-src') ||
+                img.getAttribute('data-lazy') ||
+                img.getAttribute('data-srcset');
+
               const isFeatured = isFeaturedImage(img, figure);
               const width = parseInt(img.getAttribute('width') || '0');
               const height = parseInt(img.getAttribute('height') || '0');
-              
+
               // Handle srcset first (best quality)
               if (srcset) {
                 const parsed = parseSrcset(srcset);
@@ -665,7 +664,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                   }
                 }
               }
-              
+
               // Handle data-src (lazy loading) - often the actual high-res image
               if (dataSrc) {
                 const normalized = normalizeImageUrl(dataSrc, link);
@@ -680,7 +679,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                   });
                 }
               }
-              
+
               // Handle standard src
               if (src) {
                 const normalized = normalizeImageUrl(src, link);
@@ -697,12 +696,12 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
               }
             }
           }
-          
+
           // Then, process all other images
           const images = doc.getElementsByTagName('img');
           for (let j = 0; j < images.length; j++) {
             const img = images[j];
-            
+
             // Skip if already processed in figure
             let alreadyProcessed = false;
             let parent = img.parentElement;
@@ -714,19 +713,19 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
               parent = parent.parentElement;
             }
             if (alreadyProcessed) continue;
-            
+
             const src = img.getAttribute('src');
             const srcset = img.getAttribute('srcset');
-            const dataSrc = img.getAttribute('data-src') || 
-                          img.getAttribute('data-original') || 
-                          img.getAttribute('data-lazy-src') ||
-                          img.getAttribute('data-lazy') ||
-                          img.getAttribute('data-srcset');
-            
+            const dataSrc = img.getAttribute('data-src') ||
+              img.getAttribute('data-original') ||
+              img.getAttribute('data-lazy-src') ||
+              img.getAttribute('data-lazy') ||
+              img.getAttribute('data-srcset');
+
             const isFeatured = isFeaturedImage(img, img.parentElement);
             const width = parseInt(img.getAttribute('width') || '0');
             const height = parseInt(img.getAttribute('height') || '0');
-            
+
             // Handle srcset (often contains higher res versions)
             if (srcset) {
               const parsed = parseSrcset(srcset);
@@ -744,7 +743,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                 }
               }
             }
-            
+
             // Handle data-src (lazy loading)
             if (dataSrc) {
               const normalized = normalizeImageUrl(dataSrc, link);
@@ -759,7 +758,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                 });
               }
             }
-            
+
             // Handle standard src
             if (src) {
               const normalized = normalizeImageUrl(src, link);
@@ -774,7 +773,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                 });
               }
             }
-            
+
             if (imageCandidates.length > 20) break; // Limit processing
           }
         } else {
@@ -834,7 +833,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       if (imageUrl) {
         // Additional validation to filter out placeholders and invalid images
         const urlLower = imageUrl.toLowerCase();
-        
+
         // Skip common placeholder patterns
         if (
           urlLower.includes('?text=') ||
@@ -855,19 +854,19 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
               const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
               const hasImageIndicator = pathname.includes('image') || pathname.includes('img') || pathname.includes('photo') || pathname.includes('media');
               const hasImageParam = urlObj.searchParams.has('image') || urlObj.searchParams.has('img') || urlObj.searchParams.has('photo');
-              
+
               // More lenient validation - accept if it has extension, indicator, param, or is from known image CDNs
-              const isKnownImageCdn = urlObj.hostname.includes('cdn') || 
-                                     urlObj.hostname.includes('images') ||
-                                     urlObj.hostname.includes('media') ||
-                                     urlObj.hostname.includes('static') ||
-                                     urlObj.hostname.includes('assets') ||
-                                     urlObj.hostname.includes('uploads') ||
-                                     urlObj.hostname.includes('wp-content');
-              
+              const isKnownImageCdn = urlObj.hostname.includes('cdn') ||
+                urlObj.hostname.includes('images') ||
+                urlObj.hostname.includes('media') ||
+                urlObj.hostname.includes('static') ||
+                urlObj.hostname.includes('assets') ||
+                urlObj.hostname.includes('uploads') ||
+                urlObj.hostname.includes('wp-content');
+
               if (hasImageExtension || hasImageIndicator || hasImageParam || isKnownImageCdn) {
                 validImageUrl = imageUrl;
-                
+
                 if (process.env.NODE_ENV === 'development') {
                   console.log('[ImageValidation] ✅ Accepted image URL', {
                     url: imageUrl.substring(0, 80),
@@ -896,7 +895,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         }
       } else {
         if (process.env.NODE_ENV === 'development') {
-          console.warn('[ImageValidation] ⚠️ No image URL selected', { 
+          console.warn('[ImageValidation] ⚠️ No image URL selected', {
             candidatesCount: imageCandidates.length,
             articleTitle: title.substring(0, 50) + '...'
           });

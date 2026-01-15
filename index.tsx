@@ -2,11 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { NotificationProvider } from "./contexts/NotificationContext";
-import { NotificationContainer } from "./components/NotificationToast";
-import { ModalProvider } from "./contexts/ModalContext";
-import { FeedProvider } from "./contexts/FeedContext";
-import { UIProvider } from "./contexts/UIContext";
+
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -16,15 +12,6 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ModalProvider>
-      <NotificationProvider>
-        <FeedProvider>
-          <UIProvider>
-            <App />
-            <NotificationContainer />
-          </UIProvider>
-        </FeedProvider>
-      </NotificationProvider>
-    </ModalProvider>
+    <App />
   </React.StrictMode>
 );

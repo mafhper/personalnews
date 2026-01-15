@@ -72,7 +72,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
 
   return (
     <>
-      <div className="w-full p-4 md:p-6">
+      <div className="container mx-auto p-4 md:p-6">
         {/* Bento Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
           {articles.map((article, index) => {
@@ -100,18 +100,17 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
               >
                 {/* Background Image Layer */}
                 <div className="absolute inset-0">
-                  <ArticleImage 
+                  <ArticleImage
                     article={article}
                     width={isHero ? 1200 : 800}
                     height={isTall ? 1200 : 800}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   {/* Gradient Overlay */}
-                  <div className={`absolute inset-0 transition-opacity duration-500 ${
-                    isHero || isTall
+                  <div className={`absolute inset-0 transition-opacity duration-500 ${isHero || isTall
                       ? 'bg-gradient-to-t from-black via-black/60 to-transparent'
                       : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'
-                  }`} />
+                    }`} />
                 </div>
 
                 {/* Glassmorphism Overlay on Hover */}
@@ -119,7 +118,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
 
                 {/* Content Layer */}
                 <div className={`relative h-full flex flex-col justify-between p-5 md:p-6`}>
-                  
+
                   {/* Top Part: Source, Date and Favorite */}
                   <div className="flex justify-between items-start w-full gap-3">
                     <div className="flex flex-col gap-1.5 min-w-0 flex-1">
@@ -132,8 +131,8 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                     </div>
 
                     <div className="flex-shrink-0">
-                      <FavoriteButton 
-                        article={article} 
+                      <FavoriteButton
+                        article={article}
                         size="medium"
                         position="inline"
                         className="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
@@ -144,12 +143,11 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   {/* Bottom Part: Content Block */}
                   <div className={`transform transition-all duration-500`}>
                     {/* Title */}
-                    <h3 className={`font-bold text-white leading-tight mb-2 drop-shadow-xl ${
-                      isHero ? 'text-2xl md:text-4xl' :
-                      isTall ? 'text-xl md:text-2xl' :
-                      isWide ? 'text-xl md:text-2xl' :
-                      'text-lg'
-                    }`}>
+                    <h3 className={`font-bold text-white leading-tight mb-2 drop-shadow-xl ${isHero ? 'text-2xl md:text-4xl' :
+                        isTall ? 'text-xl md:text-2xl' :
+                          isWide ? 'text-xl md:text-2xl' :
+                            'text-lg'
+                      }`}>
                       <span className="group-hover:underline decoration-[rgb(var(--color-accent))] decoration-2 underline-offset-4">
                         {article.title}
                       </span>
@@ -157,17 +155,15 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
 
                     {/* Description (only on larger cards) */}
                     {style.showDescription && article.description && (
-                      <p className={`text-white/80 leading-relaxed drop-shadow-lg transition-all duration-500 ${
-                        isHero ? 'text-sm md:text-base line-clamp-3 opacity-90' : 'text-sm line-clamp-2 opacity-0 group-hover:opacity-90'
-                      }`}>
+                      <p className={`text-white/80 leading-relaxed drop-shadow-lg transition-all duration-500 ${isHero ? 'text-sm md:text-base line-clamp-3 opacity-90' : 'text-sm line-clamp-2 opacity-0 group-hover:opacity-90'
+                        }`}>
                         {article.description}
                       </p>
                     )}
 
                     {/* Read indicator */}
-                    <div className={`mt-4 flex items-center gap-2 text-xs font-medium text-white/70 ${
-                      isHero ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                    } transition-opacity duration-300`}>
+                    <div className={`mt-4 flex items-center gap-2 text-xs font-medium text-white/70 ${isHero ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      } transition-opacity duration-300`}>
                       <span className="w-8 h-0.5 bg-[rgb(var(--color-accent))] rounded-full group-hover:w-12 transition-all duration-500" />
                       <span className="uppercase tracking-widest">
                         {t('action.read') || 'Ler'}
@@ -186,8 +182,8 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
         <ArticleReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
-          onNext={() => {}}
-          onPrev={() => {}}
+          onNext={() => { }}
+          onPrev={() => { }}
           hasNext={false}
           hasPrev={false}
         />

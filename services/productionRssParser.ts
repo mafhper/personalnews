@@ -12,6 +12,7 @@ import type { Article } from "../types";
 import { getLogger } from "./logger";
 import { perfDebugger } from "./performanceUtils";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
+import { sanitizeHtmlContent, sanitizeArticleDescription } from "../utils/sanitization";
 
 // Import image extraction utilities from rssParser
 // These functions are shared between parsers
@@ -30,18 +31,18 @@ interface ImageCandidate {
  */
 function normalizeImageUrl(url: string, baseUrl?: string): string | null {
   if (!url || url.trim().length === 0) return null;
-  
+
   let normalized = url.trim();
   normalized = normalized.replace(/^["']|["']$/g, '');
-  
+
   if (normalized.startsWith('data:') || normalized.startsWith('javascript:') || normalized.startsWith('#')) {
     return null;
   }
-  
+
   if (normalized.startsWith('//')) {
     normalized = 'https:' + normalized;
   }
-  
+
   if (baseUrl && !normalized.startsWith('http://') && !normalized.startsWith('https://')) {
     try {
       const base = new URL(baseUrl);
@@ -54,7 +55,7 @@ function normalizeImageUrl(url: string, baseUrl?: string): string | null {
       return null;
     }
   }
-  
+
   try {
     const urlObj = new URL(normalized);
     if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
@@ -73,7 +74,7 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
   if (parent) {
     const parentClass = parent.getAttribute('class') || '';
     const parentTag = parent.tagName.toLowerCase();
-    
+
     if (
       parentClass.includes('featured') ||
       parentClass.includes('hero') ||
@@ -85,11 +86,11 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
       return true;
     }
   }
-  
+
   const imgClass = img.getAttribute('class') || '';
   const imgId = img.getAttribute('id') || '';
   const fetchPriority = img.getAttribute('fetchpriority');
-  
+
   if (
     imgClass.includes('featured') ||
     imgClass.includes('hero') ||
@@ -101,13 +102,13 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
   ) {
     return true;
   }
-  
+
   const width = parseInt(img.getAttribute('width') || '0');
   const height = parseInt(img.getAttribute('height') || '0');
   if (width >= 800 || height >= 600) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -116,12 +117,12 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
  */
 function parseSrcset(srcset: string): { url: string; width: number } | null {
   if (!srcset || srcset.trim().length === 0) return null;
-  
+
   const sources = srcset.split(',').map(s => s.trim()).filter(s => s);
   if (sources.length === 0) return null;
-  
+
   const parsedSources: { url: string; width: number }[] = [];
-  
+
   for (const source of sources) {
     const parts = source.split(/\s+/);
     const url = parts[0];
@@ -132,7 +133,7 @@ function parseSrcset(srcset: string): { url: string; width: number } | null {
     const estimatedWidth = width || (density > 1 ? 800 * density : 800);
     parsedSources.push({ url, width: estimatedWidth });
   }
-  
+
   parsedSources.sort((a, b) => b.width - a.width);
   return parsedSources.length > 0 ? parsedSources[0] : null;
 }
@@ -263,27 +264,27 @@ async function fetchWithTimeout(
  */
 async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
   const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
-  
+
   const response = await fetchWithTimeout(apiUrl);
-  
+
   if (!response.ok) {
     throw new Error(`RSS2JSON API failed: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
-  
+
   if (data.status !== 'ok') {
     throw new Error(`RSS2JSON API error: ${data.message || 'Unknown error'}`);
   }
 
   // Convert RSS2JSON format to our Article format with improved image extraction
   const articles: Article[] = [];
-  
+
   for (const item of data.items || []) {
     try {
       const link = item.link || '';
       const imageCandidates: ImageCandidate[] = [];
-      
+
       // Check thumbnail
       if (item.thumbnail) {
         const normalized = normalizeImageUrl(item.thumbnail, link);
@@ -295,7 +296,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
           });
         }
       }
-      
+
       // Check enclosure
       if (item.enclosure?.link && item.enclosure?.type?.startsWith('image/')) {
         const normalized = normalizeImageUrl(item.enclosure.link, link);
@@ -308,29 +309,29 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
           });
         }
       }
-      
+
       // Extract from content/description HTML if available (use RAW, not cleaned)
       // Note: RSS2JSON may already provide HTML in content/description fields
       const htmlContent = item.content || item.description || "";
-      
-      
+
+
       if (htmlContent && typeof DOMParser !== 'undefined') {
         try {
           const parser = new DOMParser();
           const doc = parser.parseFromString(htmlContent, 'text/html');
           const images = doc.getElementsByTagName('img');
-          
+
           for (let j = 0; j < Math.min(images.length, 5); j++) {
             const img = images[j];
             const src = img.getAttribute('src');
             const srcset = img.getAttribute('srcset');
-            const dataSrc = img.getAttribute('data-src') || 
-                          img.getAttribute('data-original') || 
-                          img.getAttribute('data-lazy-src');
-            
+            const dataSrc = img.getAttribute('data-src') ||
+              img.getAttribute('data-original') ||
+              img.getAttribute('data-lazy-src');
+
             const isFeatured = isFeaturedImage(img, img.parentElement);
             const width = parseInt(img.getAttribute('width') || '0');
-            
+
             if (srcset) {
               const parsed = parseSrcset(srcset);
               if (parsed) {
@@ -346,7 +347,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
                 }
               }
             }
-            
+
             if (dataSrc) {
               const normalized = normalizeImageUrl(dataSrc, link);
               if (normalized) {
@@ -359,7 +360,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
                 });
               }
             }
-            
+
             if (src) {
               const normalized = normalizeImageUrl(src, link);
               if (normalized) {
@@ -394,9 +395,9 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
           }
         }
       }
-      
+
       const imageUrl = selectBestImage(imageCandidates, link);
-      
+
       // Final validation
       let validImageUrl: string | undefined = undefined;
       if (imageUrl) {
@@ -414,14 +415,14 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
               const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
               const hasImageIndicator = pathname.includes('image') || pathname.includes('img') || pathname.includes('photo') || pathname.includes('media');
               const hasImageParam = urlObj.searchParams.has('image') || urlObj.searchParams.has('img') || urlObj.searchParams.has('photo');
-              const isKnownImageCdn = urlObj.hostname.includes('cdn') || 
-                                     urlObj.hostname.includes('images') ||
-                                     urlObj.hostname.includes('media') ||
-                                     urlObj.hostname.includes('static') ||
-                                     urlObj.hostname.includes('assets') ||
-                                     urlObj.hostname.includes('uploads') ||
-                                     urlObj.hostname.includes('wp-content');
-              
+              const isKnownImageCdn = urlObj.hostname.includes('cdn') ||
+                urlObj.hostname.includes('images') ||
+                urlObj.hostname.includes('media') ||
+                urlObj.hostname.includes('static') ||
+                urlObj.hostname.includes('assets') ||
+                urlObj.hostname.includes('uploads') ||
+                urlObj.hostname.includes('wp-content');
+
               if (hasImageExtension || hasImageIndicator || hasImageParam || isKnownImageCdn) {
                 validImageUrl = imageUrl;
               }
@@ -431,23 +432,23 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
           }
         }
       }
-      
+
       // Log only if no image found (for debugging)
       if (process.env.NODE_ENV === 'development' && !validImageUrl && imageCandidates.length === 0) {
         console.warn(`[ImageExtraction] No images found for: "${(item.title || 'No Title').substring(0, 50)}..."`, {
           link: link.substring(0, 60) + '...'
         });
       }
-      
+
       articles.push({
-    title: item.title || 'No Title',
+        title: sanitizeHtmlContent(item.title) || 'No Title',
         link: link,
-    pubDate: new Date(item.pubDate || Date.now()),
-    description: cleanDescription(item.description || ''),
+        pubDate: new Date(item.pubDate || Date.now()),
+        description: sanitizeArticleDescription(item.description || ''),
         imageUrl: validImageUrl,
-    author: item.author || undefined,
-    categories: item.categories || [],
-    sourceTitle: data.feed?.title || 'Unknown Feed',
+        author: sanitizeHtmlContent(item.author || '') || undefined,
+        categories: item.categories || [],
+        sourceTitle: sanitizeHtmlContent(data.feed?.title) || 'Unknown Feed',
       });
     } catch {
       // Skip invalid items
@@ -463,7 +464,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
  */
 async function parseRssWithProxy(feedUrl: string, proxyUrl: string): Promise<Article[]> {
   let fetchUrl: string;
-  
+
   if (proxyUrl.includes("allorigins.win")) {
     fetchUrl = `${proxyUrl}${encodeURIComponent(feedUrl)}`;
   } else {
@@ -471,7 +472,7 @@ async function parseRssWithProxy(feedUrl: string, proxyUrl: string): Promise<Art
   }
 
   const response = await fetchWithTimeout(fetchUrl);
-  
+
   if (!response.ok) {
     throw new Error(`Proxy failed: ${response.status} ${response.statusText}`);
   }
@@ -549,7 +550,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
     try {
       // Extract title
       const titleElements = item.getElementsByTagName("title");
-      const title = titleElements[0]?.textContent?.trim() || "No Title";
+      const title = sanitizeHtmlContent(titleElements[0]?.textContent?.trim()) || "No Title";
 
       // Extract link
       let link = "";
@@ -575,7 +576,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
       // Extract RAW content/description BEFORE cleaning (needed for image extraction)
       let descriptionRaw = "";
       let contentRaw = "";
-      
+
       const descElements = item.getElementsByTagName("description");
       const summaryElements = item.getElementsByTagName("summary");
       const contentElements = item.getElementsByTagName("content");
@@ -592,7 +593,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
       if (!contentRaw && descriptionRaw) contentRaw = descriptionRaw;
 
       // Clean description for final use (after image extraction)
-      const description = cleanDescription(descriptionRaw).substring(0, 300);
+      const description = sanitizeArticleDescription(descriptionRaw);
 
       // Extract author
       let author = "";
@@ -601,7 +602,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
 
       const authorElement = authorElements[0] || creatorElements[0];
       if (authorElement?.textContent) {
-        author = authorElement.textContent.trim();
+        author = sanitizeHtmlContent(authorElement.textContent.trim());
       }
 
       // Extract categories
@@ -683,14 +684,14 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
 
       // 4. Extract from Content/Description HTML (use RAW content, not cleaned)
       const htmlContent = contentRaw || descriptionRaw || "";
-      
-      
+
+
       if (htmlContent && typeof DOMParser !== 'undefined') {
         try {
           const parser = new DOMParser();
           const doc = parser.parseFromString(htmlContent, 'text/html');
           const figures = doc.getElementsByTagName('figure');
-          
+
           for (let f = 0; f < figures.length; f++) {
             const figure = figures[f];
             const figureImages = figure.getElementsByTagName('img');
@@ -698,14 +699,14 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
               const img = figureImages[0];
               const src = img.getAttribute('src');
               const srcset = img.getAttribute('srcset');
-              const dataSrc = img.getAttribute('data-src') || 
-                            img.getAttribute('data-original') || 
-                            img.getAttribute('data-lazy-src');
-              
+              const dataSrc = img.getAttribute('data-src') ||
+                img.getAttribute('data-original') ||
+                img.getAttribute('data-lazy-src');
+
               const isFeatured = isFeaturedImage(img, figure);
               const width = parseInt(img.getAttribute('width') || '0');
               const height = parseInt(img.getAttribute('height') || '0');
-              
+
               if (srcset) {
                 const parsed = parseSrcset(srcset);
                 if (parsed) {
@@ -722,7 +723,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
                   }
                 }
               }
-              
+
               if (dataSrc) {
                 const normalized = normalizeImageUrl(dataSrc, link);
                 if (normalized) {
@@ -736,7 +737,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
                   });
                 }
               }
-              
+
               if (src) {
                 const normalized = normalizeImageUrl(src, link);
                 if (normalized) {
@@ -752,7 +753,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
               }
             }
           }
-          
+
           const images = doc.getElementsByTagName('img');
           for (let j = 0; j < images.length; j++) {
             const img = images[j];
@@ -761,22 +762,22 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
             while (parent) {
               if (parent.tagName.toLowerCase() === 'figure') {
                 alreadyProcessed = true;
-          break;
+                break;
               }
               parent = parent.parentElement;
             }
             if (alreadyProcessed) continue;
-            
+
             const src = img.getAttribute('src');
             const srcset = img.getAttribute('srcset');
-            const dataSrc = img.getAttribute('data-src') || 
-                          img.getAttribute('data-original') || 
-                          img.getAttribute('data-lazy-src');
-            
+            const dataSrc = img.getAttribute('data-src') ||
+              img.getAttribute('data-original') ||
+              img.getAttribute('data-lazy-src');
+
             const isFeatured = isFeaturedImage(img, img.parentElement);
             const width = parseInt(img.getAttribute('width') || '0');
             const height = parseInt(img.getAttribute('height') || '0');
-            
+
             if (srcset) {
               const parsed = parseSrcset(srcset);
               if (parsed) {
@@ -793,7 +794,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
                 }
               }
             }
-            
+
             if (dataSrc) {
               const normalized = normalizeImageUrl(dataSrc, link);
               if (normalized) {
@@ -807,7 +808,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
                 });
               }
             }
-            
+
             if (src) {
               const normalized = normalizeImageUrl(src, link);
               if (normalized) {
@@ -821,7 +822,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
                 });
               }
             }
-            
+
             if (imageCandidates.length > 20) break;
           }
         } catch {
@@ -877,14 +878,14 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
               const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
               const hasImageIndicator = pathname.includes('image') || pathname.includes('img') || pathname.includes('photo') || pathname.includes('media');
               const hasImageParam = urlObj.searchParams.has('image') || urlObj.searchParams.has('img') || urlObj.searchParams.has('photo');
-              const isKnownImageCdn = urlObj.hostname.includes('cdn') || 
-                                     urlObj.hostname.includes('images') ||
-                                     urlObj.hostname.includes('media') ||
-                                     urlObj.hostname.includes('static') ||
-                                     urlObj.hostname.includes('assets') ||
-                                     urlObj.hostname.includes('uploads') ||
-                                     urlObj.hostname.includes('wp-content');
-              
+              const isKnownImageCdn = urlObj.hostname.includes('cdn') ||
+                urlObj.hostname.includes('images') ||
+                urlObj.hostname.includes('media') ||
+                urlObj.hostname.includes('static') ||
+                urlObj.hostname.includes('assets') ||
+                urlObj.hostname.includes('uploads') ||
+                urlObj.hostname.includes('wp-content');
+
               if (hasImageExtension || hasImageIndicator || hasImageParam || isKnownImageCdn) {
                 validImageUrl = imageUrl;
               }
@@ -928,7 +929,7 @@ function cleanDescription(description: string): string {
   if (!description) return "";
 
   let cleanText = description;
-  
+
   // Primeiro, decodifica entidades HTML para detectar tags codificadas
   cleanText = cleanText
     .replace(/&lt;/g, "<")
@@ -936,19 +937,19 @@ function cleanDescription(description: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'");
-  
+
   // Agora remove todas as tags HTML (incluindo as decodificadas)
   cleanText = cleanText
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove scripts
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "") // Remove iframes
     .replace(/<[^>]*>/g, ""); // Remove all HTML tags
-  
+
   // Por último, decodifica entidades restantes e limpa
   cleanText = cleanText
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .trim();
-    
+
   return cleanText;
 }
 
@@ -984,7 +985,7 @@ async function parseRssUrlWithFallback(
   // Try each RSS API/proxy in order
   for (let apiIndex = 0; apiIndex < RSS_APIS.length; apiIndex++) {
     const api = RSS_APIS[apiIndex];
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         logger.debug(`Trying ${api.name} (attempt ${attempt}/${maxRetries})`, {
@@ -1084,14 +1085,14 @@ export async function parseRssUrl(
   if (!skipCache) {
     const cachedArticles = getCachedArticles(url);
     if (cachedArticles && cachedArticles.length > 0) {
-          logger.debug(`Using cached articles for feed`, {
+      logger.debug(`Using cached articles for feed`, {
         component: "productionRssParser",
         additionalData: {
           feedUrl: url,
           cachedCount: cachedArticles.length,
         },
       });
-      
+
       return {
         title: cachedArticles[0].sourceTitle || "Cached Feed",
         articles: cachedArticles,

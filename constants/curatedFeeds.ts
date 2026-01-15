@@ -7,7 +7,7 @@ import { FeedSource, FeedCategory } from "../types";
 
 export const INITIAL_APP_CONFIG = {
   "theme": "dark-blue",
-  "layout": "modern",
+  "layout": "bento",
   "timeFormat": "24h",
   "header": "sticky",
   "weatherCity": "São Paulo"
@@ -123,7 +123,12 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   {
     "url": "https://www.polygon.com/feed/",
     "categoryId": "games",
-    "customTitle": "Polygon.com"
+    "customTitle": "Polygon"
+  },
+  {
+    "url": "https://www.pcgamer.com/feeds.xml",
+    "categoryId": "games",
+    "customTitle": "PC Gamer"
   },
   {
     "url": "https://g1.globo.com/rss/g1/politica/",
@@ -206,6 +211,11 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Tom's Guide"
   },
   {
+    "url": "https://www.tomshardware.com/feeds.xml",
+    "categoryId": "tech",
+    "customTitle": "Tom's Hardware"
+  },
+  {
     "url": "https://www.xda-developers.com/feed/",
     "categoryId": "tech",
     "customTitle": "XDA"
@@ -217,9 +227,27 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "hideFromAll": true
   },
   {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+    "categoryId": "youtube",
+    "customTitle": "Benn Jordan",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+    "categoryId": "youtube",
+    "customTitle": "Jimmy Diresta",
+    "hideFromAll": true
+  },
+  {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
     "categoryId": "youtube",
     "customTitle": "Corridor Crew",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+    "categoryId": "youtube",
+    "customTitle": "Diolinux",
     "hideFromAll": true
   },
   {
@@ -235,9 +263,9 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "hideFromAll": true
   },
   {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
     "categoryId": "youtube",
-    "customTitle": "Diolinux",
+    "customTitle": "The Spiffing Brit",
     "hideFromAll": true
   }
 ];
@@ -344,7 +372,12 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     {
       "url": "https://www.polygon.com/feed/",
       "categoryId": "games",
-      "customTitle": "Polygon.com"
+      "customTitle": "Polygon"
+    },
+    {
+      "url": "https://www.pcgamer.com/feeds.xml",
+      "categoryId": "games",
+      "customTitle": "PC Gamer"
     },
     {
       "url": "https://9to5google.com/feed/",
@@ -412,6 +445,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Tom's Guide"
     },
     {
+      "url": "https://www.tomshardware.com/feeds.xml",
+      "categoryId": "tech",
+      "customTitle": "Tom's Hardware"
+    },
+    {
       "url": "https://www.wired.com/feed/tag/ai/latest/rss",
       "categoryId": "tech",
       "customTitle": "WIRED AI"
@@ -434,7 +472,7 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
       "categoryId": "youtube",
-      "customTitle": "bizlychannel"
+      "customTitle": "Bizly"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
@@ -455,6 +493,21 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ",
       "categoryId": "youtube",
       "customTitle": "Stuff Made Here"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
+      "categoryId": "youtube",
+      "customTitle": "The Spiffing Brit"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+      "categoryId": "youtube",
+      "customTitle": "Benn Jordan"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+      "categoryId": "youtube",
+      "customTitle": "Jimmy Diresta"
     }
   ],
   "Pacote Mix Global": [
@@ -501,7 +554,12 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     {
       "url": "https://www.polygon.com/feed/",
       "categoryId": "games",
-      "customTitle": "Polygon.com"
+      "customTitle": "Polygon"
+    },
+    {
+      "url": "https://www.pcgamer.com/feeds.xml",
+      "categoryId": "games",
+      "customTitle": "PC Gamer"
     },
     {
       "url": "https://g1.globo.com/rss/g1/politica/",
@@ -609,6 +667,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Tom's Guide"
     },
     {
+      "url": "https://www.tomshardware.com/feeds.xml",
+      "categoryId": "tech",
+      "customTitle": "Tom's Hardware"
+    },
+    {
       "url": "https://www.wired.com/feed/tag/ai/latest/rss",
       "categoryId": "tech",
       "customTitle": "WIRED AI"
@@ -636,7 +699,7 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
       "categoryId": "youtube",
-      "customTitle": "bizlychannel"
+      "customTitle": "Bizly"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
@@ -667,6 +730,21 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ",
       "categoryId": "youtube",
       "customTitle": "Stuff Made Here"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
+      "categoryId": "youtube",
+      "customTitle": "The Spiffing Brit"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+      "categoryId": "youtube",
+      "customTitle": "Benn Jordan"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+      "categoryId": "youtube",
+      "customTitle": "Jimmy Diresta"
     }
   ]
 };

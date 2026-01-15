@@ -99,31 +99,32 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   const [importTargetCategory, setImportTargetCategory] = useState<string | null>(null);
 
   const categorizedFeeds = getCategorizedFeeds(feeds);
-  
+
   // Filter categories to show (first 2 if not showAllCategories)
-  const visibleCategories = showAllCategories 
-    ? categories 
+  const visibleCategories = showAllCategories
+    ? categories
     : categories.slice(0, 2);
   const hiddenCategoriesCount = categories.length - visibleCategories.length;
 
   // Layout options for dropdown
   const layoutOptions: { value: FeedCategory['layoutMode'] | '', label: string }[] = [
     { value: '', label: 'Default (Use Global Setting)' },
-    { value: 'bento', label: 'Bento Grid' },
+    { value: 'bento', label: 'Bento' },
     { value: 'brutalist', label: 'Brutalist' },
-    { value: 'compact', label: 'Compact (Data)' },
+    { value: 'compact', label: 'Compact' },
     { value: 'cyberpunk', label: 'Cyberpunk' },
-    { value: 'focus', label: 'Focus (Single)' },
-    { value: 'gallery', label: 'Gallery (Image)' },
-    { value: 'immersive', label: 'Immersive / Netflix' },
-    { value: 'list', label: 'List / Portal' },
-    { value: 'grid', label: 'Magazine Grid' },
-    { value: 'masonry', label: 'Masonry Cards' },
-    { value: 'minimal', label: 'Minimal Text' },
-    { value: 'modern', label: 'Modern Portal' },
-    { value: 'newspaper', label: 'Newspaper (Classic)' },
+    { value: 'focus', label: 'Focus' },
+    { value: 'gallery', label: 'Gallery' },
+    { value: 'grid', label: 'Grid' },
+    { value: 'immersive', label: 'Immersive' },
+    { value: 'list', label: 'List' },
+    { value: 'magazine', label: 'Magazine' },
+    { value: 'masonry', label: 'Masonry' },
+    { value: 'minimal', label: 'Minimal' },
+    { value: 'modern', label: 'Modern' },
+    { value: 'newspaper', label: 'Newspaper' },
     { value: 'pocketfeeds', label: 'PocketFeeds' },
-    { value: 'split', label: 'Split (ZigZag)' },
+    { value: 'split', label: 'Split' },
     { value: 'terminal', label: 'Terminal' },
     { value: 'timeline', label: 'Timeline' },
   ];
@@ -389,7 +390,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         // Note: We don't sanitize OPML with DOMPurify as it removes xmlUrl attributes
         // parseOpml safely extracts only URL strings from the XML structure
         const opmlFeeds = parseOpml(content);
-        
+
         if (opmlFeeds.length === 0) {
           await alertError("No feeds found in this OPML file.");
           return;
@@ -704,9 +705,9 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 <span className="text-sm font-medium text-gray-300">Auto-Descoberta</span>
                 <span className="text-xs text-gray-500">Agrega artigos de outros feeds com temas relacionados</span>
               </div>
-              <Switch 
-                checked={newCategoryForm.autoDiscovery ?? true} 
-                onChange={(checked) => setNewCategoryForm(prev => ({ ...prev, autoDiscovery: checked }))} 
+              <Switch
+                checked={newCategoryForm.autoDiscovery ?? true}
+                onChange={(checked) => setNewCategoryForm(prev => ({ ...prev, autoDiscovery: checked }))}
               />
             </div>
             <div>
@@ -867,9 +868,9 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 <span className="text-sm font-medium text-gray-300">Auto-Descoberta</span>
                 <span className="text-xs text-gray-500">Agrega artigos de outros feeds com temas relacionados</span>
               </div>
-              <Switch 
-                checked={editingCategoryForm.autoDiscovery ?? true} 
-                onChange={(checked) => setEditingCategoryForm(prev => ({ ...prev, autoDiscovery: checked }))} 
+              <Switch
+                checked={editingCategoryForm.autoDiscovery ?? true}
+                onChange={(checked) => setEditingCategoryForm(prev => ({ ...prev, autoDiscovery: checked }))}
               />
             </div>
             <div>
@@ -915,272 +916,268 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar pr-2 pb-6 flex-grow">
         {visibleCategories.map((category) => {
           return (
-          <div
-            key={category.id}
-            className={`bg-gray-800/40 backdrop-blur-sm border rounded-xl p-4 transition-all duration-300 flex flex-col h-full ${dragState.dragOverCategory === category.id
+            <div
+              key={category.id}
+              className={`bg-gray-800/40 backdrop-blur-sm border rounded-xl p-4 transition-all duration-300 flex flex-col h-full ${dragState.dragOverCategory === category.id
                 ? "border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 shadow-[0_0_30px_rgba(var(--color-accent),0.1)] scale-[1.02]"
                 : "border-white/5 hover:border-white/10 hover:bg-gray-800/60"
-              }`}
-            onDragOver={(e) => handleDragOver(e, category.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, category.id)}
-          >
-            {/* Category header */}
-            <div
-              className="flex items-center justify-between mb-4 cursor-move group"
-              draggable={true}
-              onDragStart={(e) =>
-                handleDragStart(e, "category", category.id, category)
-              }
+                }`}
+              onDragOver={(e) => handleDragOver(e, category.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, category.id)}
             >
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-4 h-4 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.3)] ring-2 ring-white/10"
-                  style={{ backgroundColor: category.color }}
-                />
-                <h3 className="font-bold text-white text-lg tracking-tight group-hover:text-[rgb(var(--color-accent))] transition-colors">
-                  {category.name}
-                </h3>
-                {category.isDefault && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">
-                    Default
-                  </span>
-                )}
-              </div>
+              {/* Category header */}
+              <div
+                className="flex items-center justify-between mb-4 cursor-move group"
+                draggable={true}
+                onDragStart={(e) =>
+                  handleDragStart(e, "category", category.id, category)
+                }
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-4 h-4 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.3)] ring-2 ring-white/10"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <h3 className="font-bold text-white text-lg tracking-tight group-hover:text-[rgb(var(--color-accent))] transition-colors">
+                    {category.name}
+                  </h3>
+                  {category.isDefault && (
+                    <span className="text-[10px] uppercase tracking-wider font-semibold bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">
+                      Default
+                    </span>
+                  )}
+                </div>
 
-              <div className="flex space-x-1 transition-opacity">
-                {/* Layout Quick Switcher */}
-                <div className="relative" key={category.id + '-layout-switcher'}>
+                <div className="flex space-x-1 transition-opacity">
+                  {/* Layout Quick Switcher */}
+                  <div className="relative" key={category.id + '-layout-switcher'}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (openLayoutDropdownFor === category.id) {
+                          setOpenLayoutDropdownFor(null);
+                        } else {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setDropdownPos({ top: rect.bottom + 5, left: rect.left });
+                          setOpenLayoutDropdownFor(category.id);
+                        }
+                      }}
+                      className={`p-1.5 rounded-lg transition-colors ${category.layoutMode
+                          ? "text-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 hover:bg-[rgb(var(--color-accent))]/20"
+                          : "text-gray-400 hover:text-white hover:bg-white/10"
+                        }`}
+                      title={`Layout: ${layoutOptions.find(o => o.value === (category.layoutMode || ''))?.label || 'Default'}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                      </svg>
+                    </button>
+
+                    {openLayoutDropdownFor === category.id && dropdownPos && createPortal(
+                      <div
+                        ref={(el) => { layoutDropdownRefs.current[category.id] = el; }}
+                        className="fixed w-48 bg-[#0a0a0c] border border-white/10 rounded-lg shadow-2xl py-1 z-[9999] animate-in fade-in zoom-in-95 duration-100 max-h-[300px] overflow-y-auto custom-scrollbar"
+                        style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {layoutOptions.map((option) => (
+                          <button
+                            key={option.label}
+                            onClick={() => {
+                              updateCategory(category.id, { layoutMode: option.value as any });
+                              setOpenLayoutDropdownFor(null);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm transition-colors ${(category.layoutMode || '') === option.value
+                                ? 'text-[rgb(var(--color-accent))] bg-white/5 font-medium'
+                                : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                              }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>,
+                      document.body
+                    )}
+                  </div>
+
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (openLayoutDropdownFor === category.id) {
-                        setOpenLayoutDropdownFor(null);
-                      } else {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setDropdownPos({ top: rect.bottom + 5, left: rect.left });
-                        setOpenLayoutDropdownFor(category.id);
-                      }
-                    }}
-                    className={`p-1.5 rounded-lg transition-colors ${
-                      category.layoutMode
+                    onClick={() => updateCategory(category.id, { isPinned: !category.isPinned })}
+                    className={`p-1.5 rounded-lg transition-colors ${category.isPinned
                         ? "text-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 hover:bg-[rgb(var(--color-accent))]/20"
                         : "text-gray-400 hover:text-white hover:bg-white/10"
-                    }`}
-                    title={`Layout: ${layoutOptions.find(o => o.value === (category.layoutMode || ''))?.label || 'Default'}`}
+                      }`}
+                    title={category.isPinned ? `Unpin ${category.name}` : `Pin ${category.name}`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                    <svg className="w-4 h-4" fill={category.isPinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                     </svg>
                   </button>
+                  <button
+                    onClick={() => {
+                      setImportTargetCategory(category.id);
+                      opmlFileInputRef.current?.click();
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
+                    title={`Import OPML to ${category.name}`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleStartEditCategory(category)}
+                    className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    title={`Edit ${category.name}`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCategory(category.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title={`Delete ${category.name}`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
-                  {openLayoutDropdownFor === category.id && dropdownPos && createPortal(
-                    <div
-                      ref={(el) => { layoutDropdownRefs.current[category.id] = el; }}
-                      className="fixed w-48 bg-[#0a0a0c] border border-white/10 rounded-lg shadow-2xl py-1 z-[9999] animate-in fade-in zoom-in-95 duration-100 max-h-[300px] overflow-y-auto custom-scrollbar"
-                      style={{ top: dropdownPos.top, left: dropdownPos.left }}
-                      onClick={(e) => e.stopPropagation()} 
-                    >
-                      {layoutOptions.map((option) => (
-                        <button
-                          key={option.label}
-                          onClick={() => {
-                            updateCategory(category.id, { layoutMode: option.value as any });
-                            setOpenLayoutDropdownFor(null);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                            (category.layoutMode || '') === option.value
-                              ? 'text-[rgb(var(--color-accent))] bg-white/5 font-medium'
-                              : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>,
-                    document.body
+              {category.description && (
+                <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
+                  {sanitizeHtmlContent(category.description)}
+                </p>
+              )}
+
+              {/* Feeds in category */}
+              <div className="space-y-2 min-h-[100px] flex-grow bg-black/20 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {categorizedFeeds[category.id]?.length || 0} feeds
+                  </span>
+                  {(categorizedFeeds[category.id]?.length || 0) > 0 && (
+                    <span className="text-[10px] text-gray-600 flex items-center">
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                      Arraste para reordenar
+                    </span>
                   )}
                 </div>
 
-                <button
-                  onClick={() => updateCategory(category.id, { isPinned: !category.isPinned })}
-                  className={`p-1.5 rounded-lg transition-colors ${
-                    category.isPinned
-                      ? "text-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 hover:bg-[rgb(var(--color-accent))]/20"
-                      : "text-gray-400 hover:text-white hover:bg-white/10"
-                  }`}
-                  title={category.isPinned ? `Unpin ${category.name}` : `Pin ${category.name}`}
-                >
-                  <svg className="w-4 h-4" fill={category.isPinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => {
-                    setImportTargetCategory(category.id);
-                    opmlFileInputRef.current?.click();
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
-                  title={`Import OPML to ${category.name}`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => handleStartEditCategory(category)}
-                  className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                  title={`Edit ${category.name}`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(category.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                  title={`Delete ${category.name}`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+                {(expandedCategories[category.id] ? (categorizedFeeds[category.id] || []) : (categorizedFeeds[category.id] || []).slice(0, 2)).map((feed) => (
+                  <div
+                    key={feed.url}
+                    className={`bg-gray-800/50 p-3 rounded-lg cursor-move transition-all duration-200 border border-white/5 group ${editingFeedId === feed.url ? 'ring-2 ring-[rgb(var(--color-accent))]' : 'hover:bg-gray-700 hover:border-[rgb(var(--color-accent))]/50'
+                      }`}
+                    draggable={editingFeedId !== feed.url}
+                    onDragStart={(e) =>
+                      !editingFeedId && handleDragStart(e, "feed", feed.url, feed)
+                    }
+                  >
+                    {editingFeedId === feed.url ? (
+                      <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={editFeedTitle}
+                          onChange={(e) => setEditFeedTitle(e.target.value)}
+                          className="w-full bg-black/30 text-white rounded px-2 py-1 text-sm border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                          placeholder="Nome do feed"
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={saveFeedEdit}
+                            className="text-xs bg-[rgb(var(--color-accent))] text-white px-2 py-1 rounded hover:opacity-90"
+                          >
+                            Salvar
+                          </button>
+                          <button
+                            onClick={cancelFeedEdit}
+                            className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-gray-600"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-1 h-8 rounded-full bg-gray-700 group-hover:bg-[rgb(var(--color-accent))] transition-colors"></div>
+                        <div className="flex-grow min-w-0">
+                          <div
+                            className="text-sm text-white font-medium truncate mb-0.5 group-hover:text-[rgb(var(--color-accent))] transition-colors"
+                            title={feed.customTitle || feed.url}
+                          >
+                            {feed.customTitle || feed.url}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate font-mono opacity-60">
+                            {feed.url}
+                          </div>
+                        </div>
 
-            {category.description && (
-              <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
-                {sanitizeHtmlContent(category.description)}
-              </p>
-            )}
+                        {/* Action Buttons */}
+                        <div className="flex items-center space-x-1 transition-opacity">
+                          <button
+                            onClick={() => startEditingFeed(feed)}
+                            className="p-1 text-gray-400 hover:text-white hover:bg-white/10 rounded"
+                            title="Editar nome"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFeed(feed.url, feed.customTitle)}
+                            className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded"
+                            title="Excluir feed"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                          <div className="cursor-move p-1 text-gray-600 hover:text-gray-400">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
 
-            {/* Feeds in category */}
-            <div className="space-y-2 min-h-[100px] flex-grow bg-black/20 rounded-xl p-3 border border-white/5">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {categorizedFeeds[category.id]?.length || 0} feeds
-                </span>
-                {(categorizedFeeds[category.id]?.length || 0) > 0 && (
-                  <span className="text-[10px] text-gray-600 flex items-center">
-                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
-                    Arraste para reordenar
-                  </span>
+                {/* Show More / Show Less Button */}
+                {(categorizedFeeds[category.id]?.length || 0) > 2 && (
+                  <button
+                    onClick={() => setExpandedCategories(prev => ({ ...prev, [category.id]: !prev[category.id] }))}
+                    className="w-full py-2 text-xs text-center text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors mt-2 flex items-center justify-center gap-1"
+                  >
+                    {expandedCategories[category.id] ? (
+                      <>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                        Mostrar Menos
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        Mostrar mais {(categorizedFeeds[category.id]?.length || 0) - 2}
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {(categorizedFeeds[category.id] || []).length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-600 text-xs py-8 border-2 border-dashed border-white/5 rounded-lg">
+                    <span className="mb-1">Categoria Vazia</span>
+                    <span>Arraste feeds aqui</span>
+                  </div>
                 )}
               </div>
-
-              {(expandedCategories[category.id] ? (categorizedFeeds[category.id] || []) : (categorizedFeeds[category.id] || []).slice(0, 2)).map((feed) => (
-                <div
-                  key={feed.url}
-                  className={`bg-gray-800/50 p-3 rounded-lg cursor-move transition-all duration-200 border border-white/5 group ${
-                    editingFeedId === feed.url ? 'ring-2 ring-[rgb(var(--color-accent))]' : 'hover:bg-gray-700 hover:border-[rgb(var(--color-accent))]/50'
-                  }`}
-                  draggable={editingFeedId !== feed.url}
-                  onDragStart={(e) =>
-                    !editingFeedId && handleDragStart(e, "feed", feed.url, feed)
-                  }
-                >
-                  {editingFeedId === feed.url ? (
-                    <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        value={editFeedTitle}
-                        onChange={(e) => setEditFeedTitle(e.target.value)}
-                        className="w-full bg-black/30 text-white rounded px-2 py-1 text-sm border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
-                        placeholder="Nome do feed"
-                        autoFocus
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={saveFeedEdit}
-                          className="text-xs bg-[rgb(var(--color-accent))] text-white px-2 py-1 rounded hover:opacity-90"
-                        >
-                          Salvar
-                        </button>
-                        <button 
-                          onClick={cancelFeedEdit}
-                          className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-gray-600"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-1 h-8 rounded-full bg-gray-700 group-hover:bg-[rgb(var(--color-accent))] transition-colors"></div>
-                      <div className="flex-grow min-w-0">
-                        <div
-                          className="text-sm text-white font-medium truncate mb-0.5 group-hover:text-[rgb(var(--color-accent))] transition-colors"
-                          title={feed.customTitle || feed.url}
-                        >
-                          {feed.customTitle || feed.url}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate font-mono opacity-60">
-                          {feed.url}
-                        </div>
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex items-center space-x-1 transition-opacity">
-                        <button
-                          onClick={() => startEditingFeed(feed)}
-                          className="p-1 text-gray-400 hover:text-white hover:bg-white/10 rounded"
-                          title="Editar nome"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteFeed(feed.url, feed.customTitle)}
-                          className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded"
-                          title="Excluir feed"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                        <div className="cursor-move p-1 text-gray-600 hover:text-gray-400">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {/* Show More / Show Less Button */}
-              {(categorizedFeeds[category.id]?.length || 0) > 2 && (
-                <button
-                  onClick={() => setExpandedCategories(prev => ({ ...prev, [category.id]: !prev[category.id] }))}
-                  className="w-full py-2 text-xs text-center text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors mt-2 flex items-center justify-center gap-1"
-                >
-                    {expandedCategories[category.id] ? (
-                        <>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                            Mostrar Menos
-                        </>
-                    ) : (
-                        <>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            Mostrar mais { (categorizedFeeds[category.id]?.length || 0) - 2 }
-                        </>
-                    )}
-                </button>
-              )}
-
-              {(categorizedFeeds[category.id] || []).length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-gray-600 text-xs py-8 border-2 border-dashed border-white/5 rounded-lg">
-                  <span className="mb-1">Categoria Vazia</span>
-                  <span>Arraste feeds aqui</span>
-                </div>
-              )}
             </div>
-          </div>
-        );
+          );
         })}
 
         {/* Show more categories button */}
@@ -1195,7 +1192,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
             Ver mais {hiddenCategoriesCount} categorias
           </button>
         )}
-        
+
         {/* Show less categories button */}
         {showAllCategories && categories.length > 2 && (
           <button
@@ -1213,8 +1210,8 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         {(categorizedFeeds.uncategorized || []).length > 0 && (
           <div
             className={`bg-gray-800/40 backdrop-blur-sm border-2 border-dashed rounded-xl p-4 transition-all duration-300 flex flex-col h-full ${dragState.dragOverCategory === "uncategorized"
-                ? "border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 shadow-[0_0_30px_rgba(var(--color-accent),0.1)] scale-[1.02]"
-                : "border-yellow-500/30 hover:border-yellow-500/50 hover:bg-gray-800/60"
+              ? "border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10 shadow-[0_0_30px_rgba(var(--color-accent),0.1)] scale-[1.02]"
+              : "border-yellow-500/30 hover:border-yellow-500/50 hover:bg-gray-800/60"
               }`}
             onDragOver={(e) => handleDragOver(e, "uncategorized")}
             onDragLeave={handleDragLeave}
@@ -1240,9 +1237,8 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               {(categorizedFeeds.uncategorized || []).map((feed) => (
                 <div
                   key={feed.url}
-                  className={`bg-gray-800/50 p-3 rounded-lg cursor-move transition-all duration-200 border border-white/5 group ${
-                    editingFeedId === feed.url ? 'ring-2 ring-[rgb(var(--color-accent))]' : 'hover:bg-gray-700 hover:border-yellow-500/50'
-                  }`}
+                  className={`bg-gray-800/50 p-3 rounded-lg cursor-move transition-all duration-200 border border-white/5 group ${editingFeedId === feed.url ? 'ring-2 ring-[rgb(var(--color-accent))]' : 'hover:bg-gray-700 hover:border-yellow-500/50'
+                    }`}
                   draggable={editingFeedId !== feed.url}
                   onDragStart={(e) =>
                     !editingFeedId && handleDragStart(e, "feed", feed.url, feed)
@@ -1259,13 +1255,13 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                         autoFocus
                       />
                       <div className="flex justify-end gap-2">
-                        <button 
+                        <button
                           onClick={saveFeedEdit}
                           className="text-xs bg-[rgb(var(--color-accent))] text-white px-2 py-1 rounded hover:opacity-90"
                         >
                           Salvar
                         </button>
-                        <button 
+                        <button
                           onClick={cancelFeedEdit}
                           className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-gray-600"
                         >
@@ -1287,7 +1283,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                           {feed.url}
                         </div>
                       </div>
-                      
+
                       {/* Action Buttons */}
                       <div className="flex items-center space-x-1 transition-opacity">
                         <button
@@ -1318,7 +1314,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                   )}
                 </div>
               ))}
-              
+
               {/* Show More / Show Less Button */}
 
             </div>

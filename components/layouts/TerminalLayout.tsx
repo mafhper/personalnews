@@ -82,7 +82,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                         fallbackText="NO_IMG"
                         width={200}
                         height={150}
-                        className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 uppercase tracking-widest">
@@ -104,9 +104,9 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                         </span>
                       </div>
                       <span className="ml-2 inline-flex">
-                        <FavoriteButton 
-                          article={article} 
-                          size="small" 
+                        <FavoriteButton
+                          article={article}
+                          size="small"
                           position="inline"
                           className="opacity-40 group-hover:opacity-100 transition-opacity grayscale hover:grayscale-0 p-0"
                         />
@@ -156,7 +156,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
           {/* Cursor */}
           <div className="mt-12 pt-8 border-t border-white/5">
             <span className="text-blue-400 font-bold">user@news</span>
-            :<span className="text-blue-300">~</span>$ 
+            :<span className="text-blue-300">~</span>$
             <span className="w-2.5 h-5 bg-gray-500/50 inline-block align-middle animate-pulse ml-1" />
           </div>
 
@@ -167,8 +167,8 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
         <ArticleReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
-          onNext={() => {}}
-          onPrev={() => {}}
+          onNext={() => { }}
+          onPrev={() => { }}
           hasNext={false}
           hasPrev={false}
         />

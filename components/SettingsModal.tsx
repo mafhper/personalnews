@@ -59,7 +59,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 try {
                     const content = event.target?.result as string;
                     const backup = JSON.parse(content);
-                    
+
                     if (restoreBackup(backup)) {
                         await alertSuccess('Backup restaurado com sucesso! A página será recarregada.');
                         setTimeout(() => window.location.reload(), 1500);
@@ -73,7 +73,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             };
             reader.readAsText(file);
         }
-        
+
         // Reset input
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -102,29 +102,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     ];
 
     const allLayouts = [
-      { category: 'Clássico', modes: [
-        { value: 'magazine', label: 'Magazine' },
-        { value: 'newspaper', label: 'Newspaper' },
-        { value: 'minimal', label: 'Minimal' },
-        { value: 'compact', label: 'Compact' },
-      ]},
-      { category: 'Visual', modes: [
-        { value: 'gallery', label: 'Gallery' },
-        { value: 'polaroid', label: 'Polaroid' },
-        { value: 'masonry', label: 'Masonry' },
-        { value: 'immersive', label: 'Immersive' },
-      ]},
-      { category: 'Moderno', modes: [
-        { value: 'bento', label: 'Bento Grid' },
-        { value: 'timeline', label: 'Timeline' },
-        { value: 'split', label: 'Split View' },
-        { value: 'focus', label: 'Focus' },
-      ]},
-      { category: 'Experimental', modes: [
-        { value: 'cyberpunk', label: 'Cyberpunk' },
-        { value: 'terminal', label: 'Terminal' },
-        { value: 'brutalist', label: 'Brutalist' },
-      ]}
+        {
+            category: 'Standard', modes: [
+                { value: 'list', label: 'List' },
+                { value: 'compact', label: 'Compact' },
+                { value: 'magazine', label: 'Magazine' },
+                { value: 'newspaper', label: 'Newspaper' },
+                { value: 'minimal', label: 'Minimal' },
+            ]
+        },
+        {
+            category: 'Grid & Visual', modes: [
+                { value: 'grid', label: 'Grid' },
+                { value: 'masonry', label: 'Masonry' },
+                { value: 'gallery', label: 'Gallery' },
+                { value: 'bento', label: 'Bento' },
+                { value: 'immersive', label: 'Immersive' },
+            ]
+        },
+        {
+            category: 'Modern', modes: [
+                { value: 'modern', label: 'Modern' },
+                { value: 'split', label: 'Split' },
+                { value: 'timeline', label: 'Timeline' },
+                { value: 'focus', label: 'Focus' },
+                { value: 'pocketfeeds', label: 'PocketFeeds' },
+            ]
+        },
+        {
+            category: 'Creative', modes: [
+                { value: 'brutalist', label: 'Brutalist' },
+                { value: 'cyberpunk', label: 'Cyberpunk' },
+                { value: 'terminal', label: 'Terminal' },
+            ]
+        }
     ];
 
     return (
@@ -134,12 +145,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="border-b border-white/10 pb-4 flex items-center justify-between sticky top-0 bg-[#0a0a0c] z-10 pt-2">
                     <h2 id="settings-modal-title" className="text-2xl font-bold text-white flex items-center gap-3" tabIndex={-1}>
                         <svg className="w-6 h-6 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         {t('settings.title')}
                     </h2>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                         aria-label={t('action.back')}
@@ -157,45 +168,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="min-h-[400px]">
                     {activeTab === 'appearance' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                            
+
                             {/* Premium Theme Selector (Auto/Light/Dark) */}
                             <section>
                                 <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider mb-3">Tema Principal</h3>
                                 <div className="grid grid-cols-3 gap-4">
-                                  {[
-                                    { id: 'auto', label: 'Automatico', desc: 'Sincronizado com o sistema', active: themeSettings.autoDetectSystemTheme },
-                                    { id: 'dark', label: 'Escuro', desc: 'Confortavel para a noite', active: !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === 'dark' },
-                                    { id: 'light', label: 'Claro', desc: 'Ideal para ambientes claros', active: !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === 'light' },
-                                  ].map((mode) => (
-                                    <button
-                                      key={mode.id}
-                                      onClick={() => {
-                                        if (mode.id === 'auto') {
-                                          updateThemeSettings({ autoDetectSystemTheme: true, systemThemeOverride: null });
-                                        } else {
-                                          // Find a matching theme preset for the selected mode
-                                          const matchingPreset = defaultPresets.find(p => p.category === mode.id);
-                                          if (matchingPreset) {
-                                            setCurrentTheme(matchingPreset.theme);
-                                          }
-                                          updateThemeSettings({ autoDetectSystemTheme: false, systemThemeOverride: mode.id as 'light' | 'dark' });
-                                        }
-                                      }}
-                                      className={`relative group p-4 rounded-xl border transition-all duration-300 flex flex-col items-center text-center gap-2
-                                        ${mode.active 
-                                          ? 'bg-[rgb(var(--color-accent))]/10 border-[rgb(var(--color-accent))] shadow-[0_0_20px_rgba(var(--color-accent),0.2)]' 
-                                          : 'bg-gray-800/30 border-white/5 hover:bg-gray-800/60 hover:border-white/20'
-                                        }
+                                    {[
+                                        { id: 'auto', label: 'Automatico', desc: 'Sincronizado com o sistema', active: themeSettings.autoDetectSystemTheme },
+                                        { id: 'dark', label: 'Escuro', desc: 'Confortavel para a noite', active: !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === 'dark' },
+                                        { id: 'light', label: 'Claro', desc: 'Ideal para ambientes claros', active: !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === 'light' },
+                                    ].map((mode) => (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => {
+                                                if (mode.id === 'auto') {
+                                                    updateThemeSettings({ autoDetectSystemTheme: true, systemThemeOverride: null });
+                                                } else {
+                                                    // Find a matching theme preset for the selected mode
+                                                    const matchingPreset = defaultPresets.find(p => p.category === mode.id);
+                                                    if (matchingPreset) {
+                                                        setCurrentTheme(matchingPreset.theme);
+                                                    }
+                                                    updateThemeSettings({ autoDetectSystemTheme: false, systemThemeOverride: mode.id as 'light' | 'dark' });
+                                                }
+                                            }}
+                                            className={`relative group p-4 rounded-xl border transition-all duration-300 flex flex-col items-center text-center gap-2
+                                        ${mode.active
+                                                    ? 'bg-[rgb(var(--color-accent))]/10 border-[rgb(var(--color-accent))] shadow-[0_0_20px_rgba(var(--color-accent),0.2)]'
+                                                    : 'bg-gray-800/30 border-white/5 hover:bg-gray-800/60 hover:border-white/20'
+                                                }
                                       `}
-                                    >
-                                      <span className={`font-bold text-sm ${mode.active ? 'text-[rgb(var(--color-accent))]' : 'text-gray-200'}`}>{mode.label}</span>
-                                      <span className="text-[10px] text-gray-400 leading-tight mt-1">{mode.desc}</span>
-                                      
-                                      {mode.active && (
-                                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[rgb(var(--color-accent))]" />
-                                      )}
-                                    </button>
-                                  ))}
+                                        >
+                                            <span className={`font-bold text-sm ${mode.active ? 'text-[rgb(var(--color-accent))]' : 'text-gray-200'}`}>{mode.label}</span>
+                                            <span className="text-[10px] text-gray-400 leading-tight mt-1">{mode.desc}</span>
+
+                                            {mode.active && (
+                                                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[rgb(var(--color-accent))]" />
+                                            )}
+                                        </button>
+                                    ))}
                                 </div>
                             </section>
 
@@ -203,44 +214,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <section>
                                 <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider mb-3">Plano de Fundo</h3>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                  <BackgroundCreator config={backgroundConfig} onChange={updateBackgroundConfig} />
-                                  
-                                  {/* Live Preview Box */}
-                                  <div className="space-y-2">
-                                    <h4 className="text-[10px] text-gray-400 uppercase tracking-wider">Preview</h4>
-                                    <div 
-                                      className="h-full min-h-[200px] rounded-xl border border-white/10 relative overflow-hidden shadow-2xl transition-all duration-500"
-                                      style={{
-                                        backgroundImage: backgroundConfig.type !== 'solid' ? backgroundConfig.value : undefined,
-                                        backgroundColor: backgroundConfig.type === 'solid' ? backgroundConfig.value : `rgb(${currentTheme.colors.background})`,
-                                        backgroundSize: backgroundConfig.type === 'pattern' ? 'auto' : 'cover',
-                                        backgroundRepeat: backgroundConfig.type === 'pattern' ? 'repeat' : 'no-repeat',
-                                        backgroundPosition: 'center',
-                                      }}
-                                    >
-                                      {/* Content Overlay Simulation */}
-                                      <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
-                                      
-                                      <div className="relative z-10 p-6 space-y-4">
-                                        {/* Mock Header */}
-                                        <div className="h-4 w-1/3 bg-white/20 rounded-full mb-6" />
-                                        
-                                        {/* Mock Cards */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                          <div className="bg-[rgb(var(--color-surface))] rounded-lg p-3 shadow-lg border border-[rgb(var(--color-border))]">
-                                            <div className="h-20 bg-[rgb(var(--color-background))] rounded mb-2 opacity-50" />
-                                            <div className="h-3 w-3/4 bg-[rgb(var(--color-text))]/20 rounded mb-1" />
-                                            <div className="h-2 w-1/2 bg-[rgb(var(--color-text))]/10 rounded" />
-                                          </div>
-                                           <div className="bg-[rgb(var(--color-surface))] rounded-lg p-3 shadow-lg border border-[rgb(var(--color-border))]">
-                                            <div className="h-20 bg-[rgb(var(--color-background))] rounded mb-2 opacity-50" />
-                                            <div className="h-3 w-3/4 bg-[rgb(var(--color-text))]/20 rounded mb-1" />
-                                            <div className="h-2 w-1/2 bg-[rgb(var(--color-text))]/10 rounded" />
-                                          </div>
+                                    <BackgroundCreator config={backgroundConfig} onChange={updateBackgroundConfig} />
+
+                                    {/* Live Preview Box */}
+                                    <div className="space-y-2">
+                                        <h4 className="text-[10px] text-gray-400 uppercase tracking-wider">Preview</h4>
+                                        <div
+                                            className="h-full min-h-[200px] rounded-xl border border-white/10 relative overflow-hidden shadow-2xl transition-all duration-500"
+                                            style={{
+                                                backgroundImage: backgroundConfig.type !== 'solid' ? backgroundConfig.value : undefined,
+                                                backgroundColor: backgroundConfig.type === 'solid' ? backgroundConfig.value : `rgb(${currentTheme.colors.background})`,
+                                                backgroundSize: backgroundConfig.type === 'pattern' ? 'auto' : 'cover',
+                                                backgroundRepeat: backgroundConfig.type === 'pattern' ? 'repeat' : 'no-repeat',
+                                                backgroundPosition: 'center',
+                                            }}
+                                        >
+                                            {/* Content Overlay Simulation */}
+                                            <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
+
+                                            <div className="relative z-10 p-6 space-y-4">
+                                                {/* Mock Header */}
+                                                <div className="h-4 w-1/3 bg-white/20 rounded-full mb-6" />
+
+                                                {/* Mock Cards */}
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-[rgb(var(--color-surface))] rounded-lg p-3 shadow-lg border border-[rgb(var(--color-border))]">
+                                                        <div className="h-20 bg-[rgb(var(--color-background))] rounded mb-2 opacity-50" />
+                                                        <div className="h-3 w-3/4 bg-[rgb(var(--color-text))]/20 rounded mb-1" />
+                                                        <div className="h-2 w-1/2 bg-[rgb(var(--color-text))]/10 rounded" />
+                                                    </div>
+                                                    <div className="bg-[rgb(var(--color-surface))] rounded-lg p-3 shadow-lg border border-[rgb(var(--color-border))]">
+                                                        <div className="h-20 bg-[rgb(var(--color-background))] rounded mb-2 opacity-50" />
+                                                        <div className="h-3 w-3/4 bg-[rgb(var(--color-text))]/20 rounded mb-1" />
+                                                        <div className="h-2 w-1/2 bg-[rgb(var(--color-text))]/10 rounded" />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                      </div>
                                     </div>
-                                  </div>
                                 </div>
                             </section>
 
@@ -254,13 +265,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     {activeTab === 'layouts' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                             {/* Header Config */}
-                             <Card variant="glass" className="p-4 space-y-4">
+                            {/* Header Config */}
+                            <Card variant="glass" className="p-4 space-y-4">
                                 <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                  Cabeçalho (Header)
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                    Cabeçalho (Header)
                                 </h3>
-                                
+
                                 {/* Row 1: Basic Info */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
@@ -294,7 +305,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                                 {/* Row 2: Position & Style */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                  <div>
+                                    <div>
                                         <label className="block text-[10px] text-gray-400 mb-1">Posição</label>
                                         <select
                                             value={headerConfig.position}
@@ -353,8 +364,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div>
                                         <label className="block text-[10px] text-gray-400 mb-1">Cor de Fundo</label>
                                         <div className="flex gap-2">
-                                            <input 
-                                                type="color" 
+                                            <input
+                                                type="color"
                                                 value={headerConfig.backgroundColor || '#0a0a0c'}
                                                 onChange={(e) => updateHeaderConfig({ backgroundColor: e.target.value })}
                                                 className="w-8 h-8 rounded-lg border border-gray-700 cursor-pointer bg-transparent"
@@ -368,9 +379,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </div>
                                     <div>
                                         <label className="block text-[10px] text-gray-400 mb-1">Opacidade: {headerConfig.backgroundOpacity ?? 95}%</label>
-                                        <input 
-                                            type="range" 
-                                            min="0" max="100" 
+                                        <input
+                                            type="range"
+                                            min="0" max="100"
                                             value={headerConfig.backgroundOpacity ?? 95}
                                             onChange={(e) => updateHeaderConfig({ backgroundOpacity: parseInt(e.target.value) })}
                                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-accent))]"
@@ -379,8 +390,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div>
                                         <label className="block text-[10px] text-gray-400 mb-1">Cor da Borda</label>
                                         <div className="flex gap-2">
-                                            <input 
-                                                type="color" 
+                                            <input
+                                                type="color"
                                                 value={headerConfig.borderColor || '#ffffff'}
                                                 onChange={(e) => updateHeaderConfig({ borderColor: e.target.value })}
                                                 className="w-8 h-8 rounded-lg border border-gray-700 cursor-pointer bg-transparent"
@@ -394,9 +405,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </div>
                                     <div>
                                         <label className="block text-[10px] text-gray-400 mb-1">Borda Opac: {headerConfig.borderOpacity ?? 8}%</label>
-                                        <input 
-                                            type="range" 
-                                            min="0" max="100" 
+                                        <input
+                                            type="range"
+                                            min="0" max="100"
                                             value={headerConfig.borderOpacity ?? 8}
                                             onChange={(e) => updateHeaderConfig({ borderOpacity: parseInt(e.target.value) })}
                                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-accent))]"
@@ -415,45 +426,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <Switch checked={headerConfig.showTitle !== false} onChange={(c) => updateHeaderConfig({ showTitle: c })} size="sm" />
                                     </div>
                                 </div>
-                             </Card>
+                            </Card>
 
-                             {/* Layout Selection Grid */}
-                             <div className="space-y-4">
+                            {/* Layout Selection Grid */}
+                            <div className="space-y-4">
                                 <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider flex items-center gap-2">
-                                  <span>📰</span> Estilo de Leitura
+                                    <span>📰</span> Estilo de Leitura
                                 </h3>
-                                
+
                                 {allLayouts.map((group) => (
-                                  <div key={group.category}>
-                                    <h4 className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2 ml-1">{group.category}</h4>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                      {group.modes.map((mode) => (
-                                        <button
-                                          key={mode.value}
-                                          onClick={() => {
-                                            updateContentConfig({ layoutMode: mode.value as any });
-                                            resetCategoryLayouts(); // Reset category-specific layouts
-                                          }}
-                                          className={`relative p-3 rounded-lg text-left transition-all duration-200 border ${
-                                            contentConfig.layoutMode === mode.value
-                                              ? 'bg-[rgb(var(--color-accent))]/20 border-[rgb(var(--color-accent))] ring-1 ring-[rgb(var(--color-accent))]'
-                                              : 'bg-gray-800/40 border-white/5 hover:bg-gray-800 hover:border-white/10'
-                                          }`}
-                                        >
-                                            <span className={`text-sm font-medium block ${
-                                              contentConfig.layoutMode === mode.value ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'
-                                            }`}>
-                                              {mode.label}
-                                            </span>
-                                            {contentConfig.layoutMode === mode.value && (
-                                              <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-accent))]" />
-                                            )}
-                                        </button>
-                                      ))}
+                                    <div key={group.category}>
+                                        <h4 className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2 ml-1">{group.category}</h4>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                            {group.modes.map((mode) => (
+                                                <button
+                                                    key={mode.value}
+                                                    onClick={() => {
+                                                        updateContentConfig({ layoutMode: mode.value as any });
+                                                        resetCategoryLayouts(); // Reset category-specific layouts
+                                                    }}
+                                                    className={`relative p-3 rounded-lg text-left transition-all duration-200 border ${contentConfig.layoutMode === mode.value
+                                                            ? 'bg-[rgb(var(--color-accent))]/20 border-[rgb(var(--color-accent))] ring-1 ring-[rgb(var(--color-accent))]'
+                                                            : 'bg-gray-800/40 border-white/5 hover:bg-gray-800 hover:border-white/10'
+                                                        }`}
+                                                >
+                                                    <span className={`text-sm font-medium block ${contentConfig.layoutMode === mode.value ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'
+                                                        }`}>
+                                                        {mode.label}
+                                                    </span>
+                                                    {contentConfig.layoutMode === mode.value && (
+                                                        <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-accent))]" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                  </div>
                                 ))}
-                             </div>
+                            </div>
                         </div>
                     )}
 
@@ -468,11 +477,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             <button
                                                 key={count}
                                                 onClick={() => updateLayoutSettings({ topStoriesCount: count as any })}
-                                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
-                                                    layoutSettings.topStoriesCount === count
+                                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${layoutSettings.topStoriesCount === count
                                                         ? 'bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20'
                                                         : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                                                }`}
+                                                    }`}
                                             >
                                                 {count === 0 ? 'Off' : count}
                                             </button>
@@ -493,11 +501,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             <button
                                                 key={option.value}
                                                 onClick={() => updateLayoutSettings({ autoRefreshInterval: option.value })}
-                                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
-                                                    layoutSettings.autoRefreshInterval === option.value
+                                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${layoutSettings.autoRefreshInterval === option.value
                                                         ? 'bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20'
                                                         : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                                                }`}
+                                                    }`}
                                             >
                                                 {option.label}
                                             </button>
@@ -514,11 +521,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 <button
                                                     key={format}
                                                     onClick={() => setTimeFormat(format as any)}
-                                                    className={`flex-1 py-1.5 rounded text-xs font-medium transition-all ${
-                                                        timeFormat === format
+                                                    className={`flex-1 py-1.5 rounded text-xs font-medium transition-all ${timeFormat === format
                                                             ? 'bg-[rgb(var(--color-accent))] text-white shadow-sm'
                                                             : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {format}
                                                 </button>
@@ -527,9 +533,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </div>
                                     {/* Language */}
                                     <div>
-                                       <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2">{t('settings.language')}</h3>
-                                       <select 
-                                            value={language} 
+                                        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2">{t('settings.language')}</h3>
+                                        <select
+                                            value={language}
                                             onChange={(e) => setLanguage(e.target.value as Language)}
                                             className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-8 px-2 focus:ring-[rgb(var(--color-accent))] focus:border-[rgb(var(--color-accent))]"
                                         >
@@ -549,8 +555,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     {activeTab === 'system' && (
                         <div className="space-y-4 animate-in fade-in duration-200">
-                             {/* Backup & Restore */}
-                             <Card variant="glass" className="p-4">
+                            {/* Backup & Restore */}
+                            <Card variant="glass" className="p-4">
                                 <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-3">{t('settings.backup')}</h3>
                                 <div className="flex gap-3">
                                     <button
@@ -559,18 +565,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     >
                                         <span className="text-lg group-hover:-translate-y-0.5 transition-transform">📤</span>
                                         <div className="text-left">
-                                          <span className="block font-bold">Exportar</span>
-                                          <span className="text-[10px] text-gray-400">Salvar configurações</span>
+                                            <span className="block font-bold">Exportar</span>
+                                            <span className="text-[10px] text-gray-400">Salvar configurações</span>
                                         </div>
                                     </button>
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
                                         className="flex-1 px-4 py-3 bg-[rgb(var(--color-accent))]/10 hover:bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] rounded-xl transition-all text-xs flex items-center justify-center gap-2 border border-[rgb(var(--color-accent))]/30 group"
                                     >
-                                         <span className="text-lg group-hover:-translate-y-0.5 transition-transform">📥</span>
+                                        <span className="text-lg group-hover:-translate-y-0.5 transition-transform">📥</span>
                                         <div className="text-left">
-                                          <span className="block font-bold">Importar</span>
-                                          <span className="text-[10px] opacity-70">Restaurar backup</span>
+                                            <span className="block font-bold">Importar</span>
+                                            <span className="text-[10px] opacity-70">Restaurar backup</span>
                                         </div>
                                     </button>
                                     <input

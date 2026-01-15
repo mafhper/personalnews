@@ -37,15 +37,15 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
   return (
     <>
       <div className="max-w-[1400px] mx-auto px-6 py-12 md:py-20 animate-in fade-in duration-1000">
-        
+
         {/* Integrated Hero Section */}
         {heroArticle && (
-          <section 
+          <section
             className="mb-32 group cursor-pointer relative"
             onClick={() => setReadingIndex(0)}
           >
             <div className="flex flex-col lg:grid lg:grid-cols-12 gap-0 items-stretch border border-[rgb(var(--color-border))]/30 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/20">
-              
+
               {/* Vertical Side Header */}
               <div className="lg:col-span-1 flex lg:flex-col items-center justify-between py-6 lg:py-10 border-b lg:border-b-0 lg:border-r border-[rgb(var(--color-border))]/30 px-4">
                 <span className="text-[9px] font-black uppercase tracking-[0.5em] text-[rgb(var(--color-accent))] lg:[writing-mode:vertical-lr] lg:rotate-180">
@@ -76,7 +76,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
               </div>
 
               {/* Hero Content Side */}
-                <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-white/5 backdrop-blur-sm order-last lg:order-none min-w-0">
+              <div className="lg:col-span-5 flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-white/5 backdrop-blur-sm order-last lg:order-none min-w-0">
                 <div className="space-y-8 min-w-0">
                   <div className="flex items-center gap-4 text-[10px] tracking-[0.4em] uppercase text-[rgb(var(--color-textSecondary))] font-black min-w-0">
                     <span className="text-[rgb(var(--color-accent))] truncate max-w-[150px] md:max-w-[250px]">{heroArticle.sourceTitle}</span>
@@ -84,13 +84,12 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                     <time className="flex-shrink-0">{formatTimeAgo(heroArticle.pubDate)}</time>
                   </div>
 
-                  <h1 className={`font-serif font-black text-[rgb(var(--color-text))] leading-[1.05] tracking-tighter group-hover:text-[rgb(var(--color-accent))] transition-colors duration-500 break-words line-clamp-4 ${
-                    heroArticle.title.length > 100 
-                      ? 'text-3xl md:text-5xl xl:text-6xl' 
+                  <h1 className={`font-serif font-black text-[rgb(var(--color-text))] leading-[1.05] tracking-tighter group-hover:text-[rgb(var(--color-accent))] transition-colors duration-500 break-words line-clamp-4 ${heroArticle.title.length > 100
+                      ? 'text-3xl md:text-5xl xl:text-6xl'
                       : heroArticle.title.length > 60
                         ? 'text-4xl md:text-6xl xl:text-7xl'
                         : 'text-5xl md:text-7xl xl:text-8xl'
-                  }`}>
+                    }`}>
                     {heroArticle.title}
                   </h1>
 
@@ -103,9 +102,9 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       {t('action.read_article') || 'Ler artigo'}
                       <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[rgb(var(--color-accent))] transform origin-left scale-x-50 group-hover/btn:scale-x-100 transition-transform duration-500" />
                     </button>
-                    
-                    <FavoriteButton 
-                      article={heroArticle} 
+
+                    <FavoriteButton
+                      article={heroArticle}
                       size="large"
                       position="inline"
                       className="bg-white/10 hover:bg-[rgb(var(--color-accent))]/10 border border-white/10 transition-all duration-500 opacity-0 group-hover:opacity-100"
@@ -129,14 +128,14 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                 onClick={() => setReadingIndex(index + 1)}
               >
                 <div className={`flex flex-col ${isFullWidth ? '' : 'md:flex-row'} items-stretch border border-[rgb(var(--color-border))]/20 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/10 hover:bg-[rgb(var(--color-surface))]/30 transition-colors duration-500`}>
-                  
+
                   {/* Small Vertical Indicator/Source */}
                   <div className={`flex ${isFullWidth ? 'flex-row' : 'md:flex-col'} items-center justify-between p-3 md:p-4 border-b ${isFullWidth ? '' : 'md:border-b-0 md:border-r'} border-[rgb(var(--color-border))]/20 bg-white/5 min-w-0 max-w-full overflow-hidden`}>
                     <span className={`text-[8px] font-black uppercase tracking-[0.3em] text-[rgb(var(--color-accent))] truncate ${isFullWidth ? 'max-w-[150px]' : 'md:max-h-[120px] md:[writing-mode:vertical-lr] md:rotate-180'}`}>
                       {article.sourceTitle}
                     </span>
-                    <FavoriteButton 
-                      article={article} 
+                    <FavoriteButton
+                      article={article}
                       size="small"
                       position="inline"
                       className="opacity-0 group-hover:opacity-100 transition-opacity"

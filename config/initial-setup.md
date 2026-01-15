@@ -28,7 +28,7 @@ Opções:
 
 ### Layout Global - Define como os artigos são organizados na grade
 
-- Layout Global: modern;
+- Layout Global: bento;
 
 Opções:
 
@@ -166,7 +166,8 @@ Opções:
 - Adrenaline: <https://adrenaline.com.br/feed/>
 - Jogabilidade (Não Games): <https://naogames.jogabilida.de/>
 - Kotaku: <https://kotaku.com/rss>
-- Polygon.com: <https://www.polygon.com/feed/>
+- Polygon: <https://www.polygon.com/feed/>
+- PC Gamer: <https://www.pcgamer.com/feeds.xml>
 
 ### politics
 
@@ -189,15 +190,19 @@ Opções:
 - The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - Tom's Guide: <https://www.tomsguide.com/feeds.xml>
+- Tom's Hardware: <https://www.tomshardware.com/feeds.xml>
 - XDA: <https://www.xda-developers.com/feed/>
 
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
+- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
+- Jimmy Diresta: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA> | Hide-from-All: true
 - NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw> | Hide-from-All: true
-- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
+- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ> | Hide-from-All: true
 
 # Listas Curadas
 
@@ -247,7 +252,8 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### games
 
 - Kotaku: <https://kotaku.com/rss>
-- Polygon.com: <https://www.polygon.com/feed/>
+- Polygon: <https://www.polygon.com/feed/>
+- PC Gamer: <https://www.pcgamer.com/feeds.xml>
 
 ### tech
 
@@ -264,6 +270,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - Tom's Guide: <https://www.tomsguide.com/feeds.xml>
+- Tom's Hardware: <https://www.tomshardware.com/feeds.xml>
 - WIRED AI: <https://www.wired.com/feed/tag/ai/latest/rss>
 - WIRED Guides: <https://www.wired.com/feed/tag/wired-guide/latest/rss>
 - WIRED Ideas: <https://www.wired.com/feed/category/ideas/latest/rss>
@@ -271,11 +278,14 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### youtube
 
-- bizlychannel: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
+- Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
 - GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
 - Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ>
+- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ>
+- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
+- Jimmy Diresta: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
 
 ## Pacote Mix Global
 
@@ -292,7 +302,9 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - IGN Brasil: <https://br.ign.com/feed.xml>
 - Jogabilidade (Não Games): <https://naogames.jogabilida.de/>
 - Kotaku: <https://kotaku.com/rss>
-- Polygon.com: <https://www.polygon.com/feed/>
+- Polygon: <https://www.polygon.com/feed/>
+- PC Gamer: <https://www.pcgamer.com/feeds.xml>
+
 
 ### politics
 
@@ -320,6 +332,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - Tom's Guide: <https://www.tomsguide.com/feeds.xml>
+- Tom's Hardware: <https://www.tomshardware.com/feeds.xml>
 - WIRED AI: <https://www.wired.com/feed/tag/ai/latest/rss>
 - WIRED Guides: <https://www.wired.com/feed/tag/wired-guide/latest/rss>
 - WIRED Ideas: <https://www.wired.com/feed/category/ideas/latest/rss>
@@ -328,10 +341,13 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
-- bizlychannel: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
+- Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
 - Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
 - GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
 - NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
 - Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ>
+- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ>
+- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
+- Jimmy Diresta: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
