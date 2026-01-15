@@ -125,13 +125,14 @@ const HeroArticle: React.FC<{
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
       <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 opacity-80">
-          <ArticleImage 
-            article={article}
-            width={1200}
-            height={800}
-            className="w-full h-full object-cover"
-            priority={true}
-          />
+        <ArticleImage
+          article={article}
+          width={1200}
+          height={800}
+          fill={true}
+          className="w-full h-full object-cover object-center"
+          priority={true}
+        />
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/10 pointer-events-none" />
@@ -143,8 +144,8 @@ const HeroArticle: React.FC<{
             {article.sourceTitle}
           </span>
         </div>
-        <FavoriteButton 
-          article={article} 
+        <FavoriteButton
+          article={article}
           size="large"
           position="overlay"
           className="!static bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300"
@@ -203,18 +204,19 @@ const ArticleCard: React.FC<{
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
       <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 opacity-80">
-          <ArticleImage 
-            article={article}
-            width={800}
-            height={600}
-            className="w-full h-full object-cover"
-          />
+        <ArticleImage
+          article={article}
+          width={800}
+          height={600}
+          fill={true}
+          className="w-full h-full object-cover object-center"
+        />
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none" />
 
-      <FavoriteButton 
-        article={article} 
+      <FavoriteButton
+        article={article}
         size="medium"
         position="overlay"
         className="top-4 right-4 z-20 bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
@@ -222,7 +224,7 @@ const ArticleCard: React.FC<{
 
       {/* Content Container */}
       <div className="relative z-10 h-full flex flex-col justify-between p-6 min-h-[inherit]">
-        
+
         {/* Top Part */}
         <div className="flex justify-start items-start w-full">
           <div className="bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 min-w-0 max-w-[150px] sm:max-w-[200px]">

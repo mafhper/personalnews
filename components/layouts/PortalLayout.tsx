@@ -62,50 +62,67 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
         <div className="lg:col-span-8 space-y-4">
           <h3 className="text-xl font-bold text-[rgb(var(--color-accent))] uppercase tracking-wider mb-6 border-b border-[rgb(var(--color-accent))]/30 pb-2 inline-block">Últimas Notícias</h3>
           {feed.map((article, idx) => (
-            <article key={idx} className="flex gap-4 p-4 bg-gray-800/20 rounded-lg hover:bg-gray-800/40 transition-colors border border-white/5 relative group">
-              <div className="w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden">
-                <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" fallbackText={article.sourceTitle} size={200} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs font-bold text-[rgb(var(--color-accent))] truncate max-w-[120px] sm:max-w-[200px]">{article.sourceTitle}</span>
-                    <span className="text-xs text-gray-500 flex-shrink-0">•</span>
-                    <time className="text-xs text-gray-500 flex-shrink-0">{article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</time>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <FavoriteButton
-                      article={article}
-                      size="small"
-                      position="inline"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </div>
+            <article key={idx} className="flex gap-4 p-5 bg-[rgb(var(--color-surface))]/70 backdrop-blur-xl rounded-2xl hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))]/40 transition-all border border-white/10 relative group shadow-md">
+              <div className="flex flex-col gap-3 w-32 sm:w-40 flex-shrink-0">
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
+                  <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" fallbackText={article.sourceTitle} size={200} />
+
+                  {/* Favorite Button (Over image, hover-only) */}
+                  <FavoriteButton
+                    article={article}
+                    size="small"
+                    position="overlay"
+                    className="top-2 right-2 z-20 bg-black/40 hover:bg-black/60 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
                 </div>
-                <h4 className="text-lg font-bold text-gray-200 leading-tight mb-2 hover:text-[rgb(var(--color-accent))] cursor-pointer">
-                  <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
-                </h4>
-                {article.description && (
-                  <p className="text-sm text-gray-400 line-clamp-2 mb-2">{article.description}</p>
+
+                {/* Preview Button (Under image, hover-only) */}
+                {(!!article.content || (article.description && article.description.length > 200)) && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setReadingArticle(article);
+                    }}
+                    className="w-full text-[10px] bg-[rgb(var(--color-accent))] text-white px-2 py-1.5 rounded-lg hover:bg-[rgb(var(--color-accent))]/80 transition-all shadow-xl font-black uppercase tracking-widest border border-white/10 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
+                  >
+                    {t('action.preview')}
+                  </button>
                 )}
-                {article.author && (
-                  <p className="text-sm text-gray-500">{`Por ${article.author}`}</p>
+              </div>
+
+              <div className="flex-1 flex flex-col p-1 relative">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-tighter bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded shadow-sm">
+                    {article.sourceTitle}
+                  </span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center">
+                    <span className="mx-1.5 opacity-30">•</span>
+                    {article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+
+                <a
+                  href={article.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group/title block"
+                >
+                  <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-2 group-hover/title:text-[rgb(var(--color-accent))] transition-colors line-clamp-2">
+                    {article.title}
+                  </h3>
+                </a>
+
+                {article.description && (
+                  <p className="text-gray-400 text-sm line-clamp-3 mb-4">
+                    {article.description}
+                  </p>
                 )}
 
-                {/* Preview Button (Only if content available) */}
-                {(!!article.content || (article.description && article.description.length > 200)) && (
-                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setReadingArticle(article);
-                      }}
-                      className="text-xs bg-[rgb(var(--color-accent))] text-white px-3 py-1 rounded hover:bg-[rgb(var(--color-accent))]/80 transition-colors shadow-lg font-bold uppercase tracking-wider"
-                    >
-                      {t('action.preview')}
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center justify-between mt-auto">
+                  {article.author && (
+                    <p className="text-xs font-bold text-white/60 italic bg-white/5 px-2 py-0.5 rounded">{`Por ${article.author}`}</p>
+                  )}
+                </div>
               </div>
             </article>
           ))}
@@ -118,22 +135,24 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
               <span className="w-2 h-2 bg-[rgb(var(--color-accent))] rounded-full mr-2"></span>
               Em Alta
             </h3>
-            <div className="bg-gray-800/30 rounded-xl p-4 border border-white/5 space-y-4">
+            <div className="bg-[rgb(var(--color-surface))]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 space-y-4 shadow-xl">
               {sidebar.map((article, idx) => (
-                <div className="group cursor-pointer border-b border-white/5 last:border-0 pb-4 last:pb-0">
-                  <div className="flex justify-between items-start gap-2">
-                    <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
-                      <span className="text-xs text-gray-500 mb-1 block truncate max-w-full">{idx + 1}. {article.sourceTitle}</span>
-                      <h4 className="text-sm font-medium text-gray-200 group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2">
+                <div key={idx} className="group cursor-pointer border-b border-white/10 last:border-0 pb-4 last:pb-0">
+                  <div className="flex justify-between items-start gap-3">
+                    <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0" onClick={(e) => { e.preventDefault(); setReadingArticle(article); }}>
+                      <span className="text-[10px] font-black text-[rgb(var(--color-accent))] mb-1 block uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-all">
+                        {idx + 1}. {article.sourceTitle}
+                      </span>
+                      <h4 className="text-sm font-bold text-white group-hover:text-white group-hover:underline transition-all line-clamp-2 leading-tight">
                         {article.title}
                       </h4>
                     </a>
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <FavoriteButton
                         article={article}
                         size="small"
                         position="inline"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity mt-1"
+                        className="opacity-100 text-[rgb(var(--color-accent))] hover:scale-110 transition-all"
                       />
                     </div>
                   </div>

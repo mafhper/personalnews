@@ -12,6 +12,9 @@ export const FeaturedArticle: React.FC<{
   timeFormat?: "12h" | "24h";
 }> = ({ article, timeFormat = "24h" }) => {
   const { settings: layoutSettings } = useArticleLayout();
+
+  if (!article) return null;
+
   return (
     <article
       className="h-full"
@@ -24,8 +27,7 @@ export const FeaturedArticle: React.FC<{
           target="_blank"
           rel="noopener noreferrer"
           className="block relative h-full"
-          aria-label={`Read featured article: ${article.title} from ${article.author || article.sourceTitle
-            }`}
+          aria-label={`Read featured article: ${article.title} from ${article.author || article.sourceTitle}`}
         >
           <OptimizedImage
             src={article.imageUrl}
@@ -70,17 +72,18 @@ export const FeaturedArticle: React.FC<{
             <p className="mt-2 lg:mt-6 text-sm md:text-base lg:text-lg xl:text-xl text-gray-200 drop-shadow-md block leading-relaxed max-w-4xl line-clamp-2 md:line-clamp-none">
               {sanitizeArticleDescription(article.description || "")}
             </p>
-            <footer className="mt-2 lg:mt-6 flex items-center space-x-4 lg:space-x-6 text-xs lg:text-sm font-bold uppercase text-gray-300 min-w-0">
+            <footer className="mt-4 lg:mt-8 flex flex-wrap items-center gap-4 lg:gap-6 text-xs lg:text-sm font-black uppercase text-white min-w-0">
               <span
-                className="truncate max-w-[150px] sm:max-w-[250px]"
+                className="truncate max-w-[200px] sm:max-w-[300px] bg-black/40 px-2 py-1 rounded"
                 aria-label={`Author: ${article.author || article.sourceTitle}`}
               >
                 {article.author || article.sourceTitle}
               </span>
-              <span className="text-gray-500" aria-hidden="true">
+              <span className="text-white/40 font-normal" aria-hidden="true">
                 |
               </span>
               <time
+                className="text-white drop-shadow-md bg-white/10 px-2 py-1 rounded"
                 dateTime={article.pubDate.toISOString()}
                 aria-label={`Published on ${article.pubDate.toLocaleDateString()}`}
               >
@@ -96,7 +99,6 @@ export const FeaturedArticle: React.FC<{
                     )}`
                   : article.pubDate.toLocaleDateString()}
               </time>
-              {/* Comentários removidos conforme solicitado */}
             </footer>
           </div>
         </a>

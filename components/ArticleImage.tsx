@@ -9,6 +9,7 @@ interface ArticleImageProps {
   width?: number;
   height?: number;
   priority?: boolean;
+  fill?: boolean; // When true, image fills parent container
 }
 
 /**
@@ -27,7 +28,8 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
   alt = '',
   width,
   height,
-  priority = false
+  priority = false,
+  fill = false
 }) => {
   // Only use Picsum as fallback if we had an original imageUrl that failed
   // Don't use Picsum if there was never an imageUrl to begin with
@@ -105,7 +107,8 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
       priority={priority}
       width={width}
       height={height}
-      aspectRatio="16/9"
+      aspectRatio={fill ? undefined : "16/9"}
+      fill={fill}
     />
   );
 });

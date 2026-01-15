@@ -93,19 +93,20 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
         >
           <div className="grid md:grid-cols-2 gap-0">
             {/* Hero Image */}
-            <div className="relative aspect-[4/3] md:aspect-auto md:h-[400px] overflow-hidden">
+            <div className="relative aspect-[4/3] md:aspect-auto md:h-auto md:min-h-[450px] overflow-hidden flex-1">
               <ArticleImage
                 article={heroArticle}
                 width={1200}
                 height={800}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                fill={true}
+                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent md:hidden" />
-              
+
               {/* Favorite Button */}
-              <FavoriteButton 
-                article={heroArticle} 
-                size="medium" 
+              <FavoriteButton
+                article={heroArticle}
+                size="medium"
                 position="overlay"
                 className="top-4 right-4 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
               />
@@ -114,10 +115,10 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             {/* Hero Content */}
             <div className="flex flex-col justify-center p-6 md:p-10 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))]">
               <div className="flex items-center gap-3 mb-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[rgb(var(--color-accent))] text-white truncate max-w-[150px] md:max-w-[200px]">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-[rgb(var(--color-accent))] text-white shadow-sm shadow-black/20">
                   {heroArticle.sourceTitle}
                 </span>
-                <span className="text-sm text-[rgb(var(--color-textSecondary))]">
+                <span className="text-sm font-bold text-[rgb(var(--color-textSecondary))] bg-black/10 px-2 py-0.5 rounded">
                   {formatTimeAgo(heroArticle.pubDate)}
                 </span>
               </div>
@@ -159,38 +160,38 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             {featuredArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer"
+                className="group cursor-pointer bg-[rgb(var(--color-surface))]/30 backdrop-blur-md rounded-2xl p-5 border border-white/5 hover:bg-[rgb(var(--color-surface))]/50 hover:border-[rgb(var(--color-accent))]/30 transition-all duration-300 shadow-sm"
                 onClick={() => handleOpenReader(article)}
               >
-                <div className="relative aspect-[16/10] overflow-hidden rounded-xl mb-4 bg-[rgb(var(--color-surface))]">
+                <div className="relative aspect-video sm:aspect-[4/3] overflow-hidden rounded-xl mb-5 bg-[rgb(var(--color-background))]">
                   <ArticleImage
                     article={article}
                     width={600}
                     height={400}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    fill={true}
+                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-40 group-hover:opacity-60 transition-opacity" />
+
                   {/* Favorite Button */}
-                  <FavoriteButton 
-                    article={article} 
-                    size="small" 
+                  <FavoriteButton
+                    article={article}
+                    size="medium"
                     position="overlay"
-                    className="top-3 right-3 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    className="top-3 right-3 z-10 bg-black/40 hover:bg-black/60 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))] truncate max-w-[120px]">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-black uppercase tracking-[0.1em] bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded shadow-sm shadow-black/20">
                     {article.sourceTitle}
                   </span>
-                  <span className="text-xs text-[rgb(var(--color-textSecondary))]">•</span>
-                  <span className="text-xs text-[rgb(var(--color-textSecondary))]">
+                  <span className="text-[10px] font-bold text-white/80 group-hover:text-white transition-colors bg-black/20 px-1.5 py-0.5 rounded">
                     {formatTimeAgo(article.pubDate)}
                   </span>
                 </div>
 
-                <h3 className="font-bold text-lg text-[rgb(var(--color-text))] leading-snug group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2">
+                <h3 className="font-serif font-bold text-lg lg:text-xl text-white leading-tight group-hover:text-white group-hover:underline transition-all line-clamp-2 drop-shadow-sm">
                   {article.title}
                 </h3>
               </article>
@@ -221,7 +222,8 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                     article={article}
                     width={200}
                     height={200}
-                    className="w-full h-full object-cover"
+                    fill={true}
+                    className="w-full h-full object-cover object-center"
                   />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -235,9 +237,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                       </span>
                     </div>
                     <div className="relative">
-                      <FavoriteButton 
-                        article={article} 
-                        size="small" 
+                      <FavoriteButton
+                        article={article}
+                        size="small"
                         position="inline"
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                       />
@@ -263,22 +265,43 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {listArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer flex items-center gap-4 p-3 rounded-lg hover:bg-[rgb(var(--color-surface))] transition-colors border-b border-[rgb(var(--color-border))] last:border-0"
+                className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl bg-[rgb(var(--color-surface))]/80 backdrop-blur-xl border border-white/20 hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))] transition-all duration-300 shadow-lg"
                 onClick={() => handleOpenReader(article)}
               >
-                <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))] w-24 flex-shrink-0 truncate">
-                  {article.sourceTitle}
-                </span>
-                <h4 className="flex-1 font-medium text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-1">
-                  {article.title}
-                </h4>
-                <span className="text-xs text-[rgb(var(--color-textSecondary))] flex-shrink-0">
-                  {formatTimeAgo(article.pubDate)}
-                </span>
+                <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl bg-[rgb(var(--color-background))] shadow-inner border border-white/10">
+                  <ArticleImage
+                    article={article}
+                    width={150}
+                    height={150}
+                    fill={true}
+                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.1em] bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded shadow-sm shadow-black/20">
+                      {article.sourceTitle}
+                    </span>
+                    <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] bg-black/5 px-2 py-0.5 rounded">
+                      {formatTimeAgo(article.pubDate)}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-base text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-text))] group-hover:underline transition-all line-clamp-2 leading-tight">
+                    {article.title}
+                  </h4>
+                </div>
+                <div className="flex-shrink-0">
+                  <FavoriteButton
+                    article={article}
+                    size="medium"
+                    position="inline"
+                    className="text-[rgb(var(--color-accent))] opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                </div>
               </article>
             ))}
           </div>

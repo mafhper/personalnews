@@ -41,11 +41,8 @@ const PerformanceDebugger = lazy(
 
 import { useFeeds } from "../contexts/FeedContextState";
 
-interface AppContentProps {
-    // isFirstPaint: boolean; // Removed as per instruction
-}
-
-const AppContent: React.FC<AppContentProps> = () => { // Removed isFirstPaint from destructuring
+// AppContent component doesn't require props for now
+const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
     // Use FeedContext
     const {
         feeds,
@@ -581,6 +578,7 @@ const AppContent: React.FC<AppContentProps> = () => { // Removed isFirstPaint fr
                             currentFeeds={feeds}
                             setFeeds={setFeeds}
                             closeModal={closeFeedManager}
+                            articles={articles}
                             onRefreshFeeds={() => loadFeeds(true)}
                         />
                     </Modal>

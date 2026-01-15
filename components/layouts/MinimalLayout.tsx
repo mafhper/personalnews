@@ -44,7 +44,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
             className="mb-32 group cursor-pointer relative"
             onClick={() => setReadingIndex(0)}
           >
-            <div className="flex flex-col lg:grid lg:grid-cols-12 gap-0 items-stretch border border-[rgb(var(--color-border))]/30 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/20">
+            <div className="flex flex-col lg:grid lg:grid-cols-12 gap-0 items-stretch border border-[rgb(var(--color-border))]/40 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/40 backdrop-blur-xl">
 
               {/* Vertical Side Header */}
               <div className="lg:col-span-1 flex lg:flex-col items-center justify-between py-6 lg:py-10 border-b lg:border-b-0 lg:border-r border-[rgb(var(--color-border))]/30 px-4">
@@ -85,10 +85,10 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                   </div>
 
                   <h1 className={`font-serif font-black text-[rgb(var(--color-text))] leading-[1.05] tracking-tighter group-hover:text-[rgb(var(--color-accent))] transition-colors duration-500 break-words line-clamp-4 ${heroArticle.title.length > 100
-                      ? 'text-3xl md:text-5xl xl:text-6xl'
-                      : heroArticle.title.length > 60
-                        ? 'text-4xl md:text-6xl xl:text-7xl'
-                        : 'text-5xl md:text-7xl xl:text-8xl'
+                    ? 'text-3xl md:text-5xl xl:text-6xl'
+                    : heroArticle.title.length > 60
+                      ? 'text-4xl md:text-6xl xl:text-7xl'
+                      : 'text-5xl md:text-7xl xl:text-8xl'
                     }`}>
                     {heroArticle.title}
                   </h1>
@@ -127,7 +127,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                 className="group cursor-pointer relative"
                 onClick={() => setReadingIndex(index + 1)}
               >
-                <div className={`flex flex-col ${isFullWidth ? '' : 'md:flex-row'} items-stretch border border-[rgb(var(--color-border))]/20 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/10 hover:bg-[rgb(var(--color-surface))]/30 transition-colors duration-500`}>
+                <div className={`flex flex-col ${isFullWidth ? '' : 'md:flex-row'} items-stretch border border-[rgb(var(--color-border))]/30 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/40 backdrop-blur-md hover:bg-[rgb(var(--color-surface))]/60 transition-colors duration-500`}>
 
                   {/* Small Vertical Indicator/Source */}
                   <div className={`flex ${isFullWidth ? 'flex-row' : 'md:flex-col'} items-center justify-between p-3 md:p-4 border-b ${isFullWidth ? '' : 'md:border-b-0 md:border-r'} border-[rgb(var(--color-border))]/20 bg-white/5 min-w-0 max-w-full overflow-hidden`}>

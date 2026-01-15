@@ -104,12 +104,13 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                     article={article}
                     width={isHero ? 1200 : 800}
                     height={isTall ? 1200 : 800}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    fill={true}
+                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
                   />
                   {/* Gradient Overlay */}
                   <div className={`absolute inset-0 transition-opacity duration-500 ${isHero || isTall
-                      ? 'bg-gradient-to-t from-black via-black/60 to-transparent'
-                      : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'
+                    ? 'bg-gradient-to-t from-black via-black/60 to-transparent'
+                    : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'
                     }`} />
                 </div>
 
@@ -144,9 +145,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   <div className={`transform transition-all duration-500`}>
                     {/* Title */}
                     <h3 className={`font-bold text-white leading-tight mb-2 drop-shadow-xl ${isHero ? 'text-2xl md:text-4xl' :
-                        isTall ? 'text-xl md:text-2xl' :
-                          isWide ? 'text-xl md:text-2xl' :
-                            'text-lg'
+                      isTall ? 'text-xl md:text-2xl' :
+                        isWide ? 'text-xl md:text-2xl' :
+                          'text-lg'
                       }`}>
                       <span className="group-hover:underline decoration-[rgb(var(--color-accent))] decoration-2 underline-offset-4">
                         {article.title}

@@ -62,14 +62,14 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
             article={heroArticle}
             size="large"
             position="overlay"
-            className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            className="top-4 right-4 z-20 bg-black/40 hover:bg-black/60 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
           />
 
           <div className="absolute bottom-0 left-0 p-6 lg:p-10 max-w-3xl">
-            <span className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-widest text-white uppercase bg-[rgb(var(--color-primary))] rounded-full">
+            <span className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-widest text-white uppercase bg-[rgb(var(--color-primary))] rounded-full shadow-lg shadow-black/40">
               Top Story
             </span>
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-md">
+            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-xl">
               <a
                 href={heroArticle.link}
                 target="_blank"
@@ -80,13 +80,13 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 {heroArticle.title}
               </a>
             </h1>
-            <p className="hidden md:block text-lg text-gray-200 line-clamp-2 mb-4 max-w-2xl">
+            <p className="hidden md:block text-lg text-gray-100 line-clamp-2 mb-4 max-w-2xl drop-shadow-sm">
               {heroArticle.description}
             </p>
-            <div className="flex items-center text-sm text-gray-300 font-medium min-w-0">
-              <span className="text-white truncate max-w-[150px] sm:max-w-[250px]">{heroArticle.sourceTitle}</span>
-              <span className="mx-2 flex-shrink-0">•</span>
-              <span className="truncate">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <div className="flex items-center text-sm font-bold min-w-0">
+              <span className="bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/20">{heroArticle.sourceTitle}</span>
+              <span className="mx-2 flex-shrink-0 text-white">•</span>
+              <span className="truncate text-white font-black">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
           </div>
         </div>
@@ -108,10 +108,10 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 article={article}
                 size="medium"
                 position="overlay"
-                className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 border border-white/20 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                className="top-4 right-4 z-20 bg-black/40 hover:bg-black/60 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
               />
-              <div className="absolute bottom-0 left-0 p-5">
-                <h2 className="text-lg font-bold text-white leading-snug mb-2">
+              <div className="absolute bottom-0 left-0 p-5 w-full">
+                <h2 className="text-lg font-bold text-white leading-snug mb-2 drop-shadow-lg">
                   <a
                     href={article.link}
                     target="_blank"
@@ -122,10 +122,10 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                     {article.title}
                   </a>
                 </h2>
-                <div className="flex items-center text-xs text-gray-400 min-w-0">
-                  <span className="truncate max-w-[120px]">{article.sourceTitle}</span>
-                  <span className="mx-2 flex-shrink-0">•</span>
-                  <span>{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <div className="flex items-center text-xs font-bold min-w-0">
+                  <span className="bg-[rgb(var(--color-accent))] text-white px-1.5 py-0.5 rounded truncate max-w-[120px] shadow-sm shadow-black/20">{article.sourceTitle}</span>
+                  <span className="mx-2 flex-shrink-0 text-white">•</span>
+                  <span className="text-gray-200">{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               </div>
             </div>
@@ -134,11 +134,15 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
       </section>
 
       {/* SECTION 2: VISUAL STRIP (4 cols) */}
-      <section className="border-y border-white/5 py-8">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))] mb-6 px-1">
-          Trending Analysis
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="border-y border-white/5 py-12 bg-[rgb(var(--color-surface))]/10 backdrop-blur-sm rounded-3xl px-4 md:px-8 shadow-inner">
+        <div className="flex items-center gap-4 mb-8">
+          <span className="w-1.5 h-6 bg-[rgb(var(--color-accent))] rounded-full"></span>
+          <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-[rgb(var(--color-accent))]">
+            Trending Analysis
+          </h3>
+          <div className="h-px flex-1 bg-gradient-to-r from-[rgb(var(--color-accent))]/30 to-transparent"></div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {featuredStrip.map((article) => (
             <ArticleItem
               key={article.link}
@@ -157,8 +161,10 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
 
         {/* Main Feed (Left 8 cols) */}
         <div className="lg:col-span-8">
-          <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
-            <h3 className="text-xl font-bold text-[rgb(var(--color-text))]">Latest News</h3>
+          <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
+            <span className="w-1.5 h-6 bg-[rgb(var(--color-primary))] rounded-full"></span>
+            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Latest News</h3>
+            <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
           </div>
 
           <div className="space-y-8">
@@ -169,6 +175,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 layoutMode="newspaper"
                 density="comfortable"
                 onClick={handleOpenReader}
+                className="[&_.relative.mb-4]:!h-96"
               />
             )}
 
@@ -196,39 +203,37 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
               <span className="w-2 h-6 bg-[rgb(var(--color-accent))] rounded-sm"></span>
               In Case You Missed It
             </h4>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {sidebarFeed.slice(0, 8).map((article, index) => (
                 <div
                   key={article.link}
-                  className="group cursor-pointer"
+                  className="group cursor-pointer bg-[rgb(var(--color-surface))]/70 backdrop-blur-xl rounded-xl p-4 border border-white/10 hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))]/50 transition-all duration-300 shadow-lg"
                   onClick={() => handleOpenReader(article)}
                 >
                   <div className="flex gap-4 items-start">
-                    <span className="text-2xl font-bold text-[rgb(var(--color-textSecondary))] opacity-20 font-serif">
+                    <span className="text-2xl font-black text-[rgb(var(--color-accent))] opacity-40 font-serif group-hover:opacity-100 transition-opacity">
                       {index + 1}
                     </span>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2">
-                        <h5 className="font-semibold text-[rgb(var(--color-text))] leading-tight group-hover:text-[rgb(var(--color-primary))] transition-colors text-sm mb-1">
-                          <a
-                            href={article.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
-                          >
-                            {article.title}
-                          </a>
+                        <h5 className="font-bold text-[rgb(var(--color-text))] leading-tight group-hover:text-white group-hover:underline transition-all text-sm mb-2 line-clamp-2">
+                          {article.title}
                         </h5>
                         <FavoriteButton
                           article={article}
                           size="small"
                           position="inline"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="opacity-100 text-[rgb(var(--color-textSecondary))] hover:text-white"
                         />
                       </div>
-                      <span className="text-xs text-[rgb(var(--color-textSecondary))] truncate block max-w-full">
-                        {article.sourceTitle}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[rgb(var(--color-accent))] bg-black/20 px-1.5 py-0.5 rounded truncate max-w-full">
+                          {article.sourceTitle}
+                        </span>
+                        <span className="text-[10px] font-bold text-white/60 group-hover:text-white transition-colors">
+                          {new Date(article.pubDate).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -89,11 +89,18 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
   const isHorizontal = layoutMode === 'list' || layoutMode === 'minimal';
 
   return (
-    <article className={`h-full flex flex-col ${className}`}>
+    <article className={`h-full flex flex-col transition-all duration-300 ${className}`}>
       {/* Grid layout optimized for cards */}
-      <div className={`flex h-full group ${isHorizontal ? 'flex-row gap-4 border-b border-white/5 py-4' : 'flex-col'}`}>
+      <div className={`
+        flex h-full group transition-all duration-300
+        ${isHorizontal ? 'flex-row gap-6 p-5 bg-[rgb(var(--color-surface))]/80' : 'flex-col p-5 bg-[rgb(var(--color-surface))]/40'}
+        backdrop-blur-xl
+        rounded-2xl border border-white/20
+        hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))]/40
+        hover:shadow-2xl hover:shadow-black/60
+      `}>
         {/* Article image - Always render container */}
-        <div className={`relative bg-gray-800 rounded-lg overflow-hidden ${isHorizontal ? 'w-32 sm:w-48 h-24 sm:h-32 shrink-0 mb-0' : 'h-40 sm:h-32 lg:h-40 mb-4'}`}>
+        <div className={`relative bg-gray-800/50 rounded-xl overflow-hidden ${isHorizontal ? 'w-28 sm:w-40 h-20 sm:h-28 shrink-0 mb-0' : 'h-40 sm:h-32 lg:h-44 mb-4'}`}>
           <a
             href={article.link}
             target="_blank"
@@ -112,7 +119,8 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
               article={article}
               width={400}
               height={200}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill={true}
+              className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </a>
 
@@ -126,7 +134,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
             article={article}
             size="medium"
             position="overlay"
-            className="top-2 right-2 z-10 opacity-0 group-hover:opacity-100"
+            className="top-2 right-2 z-10 opacity-0 group-hover:opacity-100 shadow-lg bg-black/20 hover:bg-black/40 transition-all"
           />
         </div>
 
@@ -149,39 +157,39 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
             {/* Source badge */}
             {contentConfig.showTags && (
               <div className="mb-2">
-                <span className="inline-block bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide truncate max-w-full">
+                <span className="inline-block bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-[0.1em] truncate max-w-full shadow-md shadow-black/40">
                   {article.sourceTitle}
                 </span>
               </div>
             )}
 
             {/* Title with better text wrapping */}
-            <h4 className="font-bold text-base lg:text-lg leading-tight group-hover:underline text-gray-100 mb-2 line-clamp-3">
+            <h4 className="font-bold text-base lg:text-lg leading-snug group-hover:text-white text-gray-100 mb-2 line-clamp-3 transition-colors">
               {article.title}
             </h4>
 
             {article.description && (
-              <p className="text-gray-400 text-sm mt-1 mb-3 line-clamp-2 leading-snug">
+              <p className="text-gray-300/90 group-hover:text-gray-100 text-sm mt-1 mb-3 line-clamp-2 leading-relaxed font-medium transition-colors">
                 {article.description}
               </p>
             )}
 
             {/* Article metadata */}
             <div className={`space-y-2 ${isHorizontal ? '' : 'mt-auto'}`}>
-              <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center justify-between text-xs font-bold text-white transition-colors">
                 {contentConfig.showAuthor && article.author && (
                   <span
-                    className="truncate max-w-[120px]"
+                    className="truncate max-w-[150px] bg-black/40 px-2 py-0.5 rounded shadow-sm"
                     aria-label={`Author: ${article.author}`}
                     title={article.author}
                   >
-                    {article.author}
+                    Por {article.author}
                   </span>
                 )}
               </div>
               {(contentConfig.showDate || contentConfig.showTime) && (
                 <time
-                  className="text-gray-500 text-xs block"
+                  className="text-white/80 font-bold text-[10px] block group-hover:text-white transition-colors bg-white/5 self-start px-2 py-0.5 rounded italic"
                   dateTime={article.pubDate.toISOString()}
                   aria-label={`Published ${timeSince(article.pubDate)}`}
                 >

@@ -104,17 +104,18 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 bg-[rgb(var(--color-background))]
               "
             >
-              <ArticleImage 
-                article={main} 
-                className="absolute inset-0 w-full h-full object-cover" 
+              <ArticleImage
+                article={main}
+                fill={true}
+                className="absolute inset-0 w-full h-full object-cover object-center"
                 width={1600}
                 height={900}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-              
-              <FavoriteButton 
-                article={main} 
-                size="medium" 
+
+              <FavoriteButton
+                article={main}
+                size="medium"
                 position="overlay"
                 className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 backdrop-blur-sm border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
               />
@@ -170,9 +171,10 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 className="flex gap-5 cursor-pointer group"
               >
                 <div className="relative w-40 h-28 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] flex-shrink-0">
-                  <ArticleImage 
-                    article={article} 
-                    className="absolute inset-0 w-full h-full object-cover" 
+                  <ArticleImage
+                    article={article}
+                    fill={true}
+                    className="absolute inset-0 w-full h-full object-cover object-center"
                     width={400}
                     height={300}
                   />
@@ -184,9 +186,9 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                       {article.sourceTitle}
                     </span>
                     <div className="flex-shrink-0">
-                      <FavoriteButton 
-                        article={article} 
-                        size="small" 
+                      <FavoriteButton
+                        article={article}
+                        size="small"
                         position="inline"
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                       />
@@ -215,9 +217,10 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               className="cursor-pointer group border-t border-[rgb(var(--color-border))] pt-4"
             >
               <div className="relative h-40 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
-                <ArticleImage 
-                  article={article} 
-                  className="absolute inset-0 w-full h-full object-cover" 
+                <ArticleImage
+                  article={article}
+                  fill={true}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                   width={600}
                   height={400}
                 />
@@ -228,9 +231,9 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                   {article.sourceTitle}
                 </span>
                 <div className="flex-shrink-0">
-                  <FavoriteButton 
-                    article={article} 
-                    size="small" 
+                  <FavoriteButton
+                    article={article}
+                    size="small"
                     position="inline"
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   />
@@ -265,8 +268,8 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
         <ArticleReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
-          onNext={() => {}}
-          onPrev={() => {}}
+          onNext={() => { }}
+          onPrev={() => { }}
           hasNext={false}
           hasPrev={false}
         />

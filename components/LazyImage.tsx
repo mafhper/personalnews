@@ -46,6 +46,7 @@ interface LazyImageProps {
   width?: number;
   height?: number;
   aspectRatio?: string; // e.g., '16/9', '4/3', '1/1'
+  fill?: boolean; // If true, image fills parent container (disables aspectRatio)
 }
 
 const LazyImageComponent: React.FC<LazyImageProps> = ({
@@ -64,6 +65,7 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
   width,
   height,
   aspectRatio = '16/9', // Default aspect ratio for content images
+  fill = false, // When true, image fills parent (ignores aspectRatio)
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority); // If priority, start as in view
@@ -209,10 +211,12 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
   const shouldUseLazy = !priority; // Only use lazy loading if not priority
 
   // Compute style for aspect-ratio based sizing (CLS prevention)
+  // When fill is true, skip aspectRatio to let parent container control dimensions
   const imageStyle: React.CSSProperties = {
-    aspectRatio: aspectRatio,
-    ...(width ? { width } : {}),
-    ...(height ? { height } : {}),
+    ...(fill ? {} : { aspectRatio }),
+    ...(width && !fill ? { width } : {}),
+    ...(height && !fill ? { height } : {}),
+    objectPosition: 'center', // Always center the image
   };
 
   return (
@@ -220,11 +224,11 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
       ref={imgRef}
       src={currentSrc}
       alt={hasError ? "" : alt}
-      width={width}
-      height={height}
+      width={fill ? undefined : width}
+      height={fill ? undefined : height}
       style={imageStyle}
-      className={`transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'
-        } ${className} ${!isLoaded ? 'bg-gray-800 animate-pulse' : ''}`}
+      className={`transition-opacity duration-300 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-80'
+        } ${className} ${!isLoaded ? 'bg-gray-800' : ''}`}
       onLoad={handleImageLoad}
       onError={handleImageError}
       loading={shouldUseLazy ? "lazy" : "eager"}
