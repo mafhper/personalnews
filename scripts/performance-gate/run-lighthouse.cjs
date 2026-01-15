@@ -14,7 +14,7 @@ const http = require('http');
 
 // Configuracao
 const CONFIG = {
-    port: 5173,
+    port: 5502, // Safe port to avoid conflict with user's running dev server
     getUrl: () => `http://localhost:${CONFIG.port}`,
     outputDir: path.resolve(__dirname, '../../performance-reports/lighthouse'),
     categories: ['performance', 'accessibility', 'best-practices', 'seo'],
@@ -60,7 +60,7 @@ async function waitForServer(url) {
         try {
             await new Promise((resolve, reject) => {
                 http.get(url, (res) => {
-                    if ((res.statusCode >= 200 && res.statusCode < 300) || res.statusCode === 404) resolve();
+                    if ((res.statusCode >= 200 && res.statusCode < 400) || res.statusCode === 404) resolve();
                     else reject();
                 }).on('error', reject);
             });
@@ -78,7 +78,7 @@ function startServer() {
     log(`Iniciando servidor na porta ${CONFIG.port}...`, 'wait');
     // Usar npm run dev com host explicito para evitar abrir browser ou mudar porta silenciosamente
     const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    const child = spawn(npmCmd, ['run', 'dev', '--', '--port', String(CONFIG.port), '--strictPort'], {
+    const child = spawn(npmCmd, ['run', 'preview', '--', '--port', String(CONFIG.port), '--strictPort'], {
         cwd: path.resolve(__dirname, '../../'),
         stdio: 'ignore', // nao poluir output
         shell: true,
@@ -113,8 +113,11 @@ function runLighthouse(url, formFactor) {
             args.push('--throttling.cpuSlowdownMultiplier=1');
         }
 
+        const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+        const finalArgs = ['lighthouse', ...args];
+
         let stderr = '';
-        const child = spawn(/^win/.test(process.platform) ? 'lighthouse.cmd' : 'lighthouse', args, {
+        const child = spawn(command, finalArgs, {
             shell: true,
             stdio: ['ignore', 'ignore', 'pipe'], // Capture stderr
         });
