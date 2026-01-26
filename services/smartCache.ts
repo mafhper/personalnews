@@ -456,18 +456,20 @@ export class SmartCache {
         }
       }
 
-      logger.info(`Loaded cache from storage`, {
+      // Use console instead of logger during initialization to avoid circular dependency/TDZ issues
+      // when SmartCache is instantiated before LoggerService
+      const stats = {
         component: 'SmartCache',
-        additionalData: {
-          loadedEntries: this.cache.size,
-          totalStored: data.entries?.length || 0,
-        }
-      });
+        loadedEntries: this.cache.size,
+        totalStored: data.entries?.length || 0,
+      };
+      
+      if (import.meta.env.DEV) {
+        console.debug(`[SmartCache] Loaded cache from storage`, stats);
+      }
 
     } catch (error) {
-      logger.error('Failed to load cache from storage', error as Error, {
-        component: 'SmartCache'
-      });
+      console.error('[SmartCache] Failed to load cache from storage', error);
 
       // Clear corrupted storage
       localStorage.removeItem(STORAGE_KEY);
