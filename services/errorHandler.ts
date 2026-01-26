@@ -217,7 +217,9 @@ export class ErrorHandler {
    */
   public registerRecoveryStrategy(errorType: string, strategy: RecoveryStrategy): void {
     this.recoveryStrategies.set(errorType, strategy);
-    logger.debug(`Recovery strategy registered for ${errorType}`);
+    if (import.meta.env.DEV) {
+      console.debug(`[ErrorHandler] Recovery strategy registered for ${errorType}`);
+    }
   }
 
   /**

@@ -467,7 +467,10 @@ class PerformanceMonitor {
       hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
     };
 
-    logger.debugTag('PERF', 'System info', info);
+    // Use console instead of logger during initialization to avoid circular dependency/TDZ issues
+    if (import.meta.env.DEV) {
+      console.debug('[PERF-DEBUG] System info', info);
+    }
   }
 
   private getMemoryUsage(): number {
