@@ -9,6 +9,35 @@ interface TimelineLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
+
+export const TimelineSkeleton: React.FC = () => {
+  return (
+    <div className="max-w-5xl mx-auto relative py-10">
+      <div className="absolute left-4 md:left-8 top-0 bottom-0 w-0.5 bg-white/5" />
+      {[1, 2].map(day => (
+        <div key={day} className="mb-12 relative">
+          <div className="mb-8 ml-10 md:ml-16">
+            <div className="w-48 h-10 bg-white/5 rounded-full animate-pulse" />
+          </div>
+          <div className="space-y-8">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="relative pl-10 md:pl-16">
+                <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-white/10" />
+                <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4">
+                  <Bone className="h-4 w-32" />
+                  <Bone className="h-8 w-3/4" />
+                  <Bone className="h-40 w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { t, language } = useLanguage();

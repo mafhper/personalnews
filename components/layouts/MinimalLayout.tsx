@@ -10,6 +10,41 @@ interface MinimalLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`bg-white/5 animate-pulse rounded ${className}`} />
+);
+
+export const MinimalSkeleton: React.FC = () => {
+  return (
+    <div className="max-w-[1400px] mx-auto px-6 py-12 md:py-20">
+      {/* HERO SKELETON */}
+      <div className="mb-32 flex flex-col lg:grid lg:grid-cols-12 h-[500px] border border-white/5 rounded overflow-hidden">
+        <div className="lg:col-span-1 border-r border-white/5 bg-white/5 animate-pulse" />
+        <div className="lg:col-span-6 bg-white/10 animate-pulse" />
+        <div className="lg:col-span-5 p-16 flex flex-col justify-center space-y-8">
+          <Bone className="h-4 w-32" />
+          <Bone className="h-20 w-full" />
+          <Bone className="h-12 w-full" />
+        </div>
+      </div>
+
+      {/* LIST SKELETON */}
+      <div className="max-w-6xl mx-auto space-y-16">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex flex-col md:flex-row h-64 border border-white/5 rounded overflow-hidden">
+            <div className="md:w-2/5 bg-white/5 animate-pulse" />
+            <div className="flex-1 p-8 space-y-4">
+              <Bone className="h-3 w-24" />
+              <Bone className="h-8 w-full" />
+              <Bone className="h-4 w-3/4" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
   const [readingIndex, setReadingIndex] = useState<number | null>(null);
   const { t } = useLanguage();

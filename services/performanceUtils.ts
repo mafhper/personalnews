@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { performanceMonitor } from './performanceMonitor';
+import { logger } from './logger';
 
 interface PerformanceMemory {
   usedJSHeapSize: number;
@@ -332,24 +333,22 @@ export const PerformanceLogger = {
    */
   logPerformanceTrends: () => {
     const summary = performanceMonitor.getPerformanceSummary();
+    const memoryTrend = summary.application.memoryTrend;
+    const memoryChange = memoryTrend.length > 0 ? memoryTrend[memoryTrend.length - 1] - memoryTrend[0] : 0;
 
-    console.group('📈 Performance Trends');
-
-    if (summary.feeds.total > 0) {
-      console.log(`Feed loading trend: ${summary.feeds.averageLoadTime.toFixed(2)}ms avg, ${summary.feeds.cacheHitRate.toFixed(1)}% cache hit rate`);
-    }
-
-    if (summary.pagination.total > 0) {
-      console.log(`Pagination trend: ${summary.pagination.averageNavigationTime.toFixed(2)}ms avg navigation time`);
-    }
-
-    if (summary.application.memoryTrend.length > 0) {
-      const memoryTrend = summary.application.memoryTrend;
-      const memoryChange = memoryTrend[memoryTrend.length - 1] - memoryTrend[0];
-      console.log(`Memory trend: ${memoryChange > 0 ? '+' : ''}${memoryChange.toFixed(2)}MB over last ${memoryTrend.length} operations`);
-    }
-
-    console.groupEnd();
+    logger.debugTag('PERF', 'Performance Trends', {
+        feedLoading: {
+            avgLoadTime: summary.feeds.averageLoadTime.toFixed(2) + 'ms',
+            cacheHitRate: summary.feeds.cacheHitRate.toFixed(1) + '%'
+        },
+        pagination: {
+            avgNavTime: summary.pagination.averageNavigationTime.toFixed(2) + 'ms'
+        },
+        memory: {
+            change: (memoryChange > 0 ? '+' : '') + memoryChange.toFixed(2) + 'MB',
+            operations: memoryTrend.length
+        }
+    });
   },
 
   /**
@@ -382,7 +381,7 @@ export const PerformanceLogger = {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log('📊 Performance data exported');
+    logger.debugTag('PERF', 'Performance data exported');
   }
 };
 

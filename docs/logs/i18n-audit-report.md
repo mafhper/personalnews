@@ -1,15 +1,15 @@
 # Relatorio de Auditoria i18n
 
-> Gerado em: 17/12/2025, 13:47:11
+> Gerado em: 25/01/2026, 22:20:37
 
 ## Resumo
 
 | Categoria | Problemas |
 |-----------|----------|
 | Paridade de Idiomas | 199 |
-| Strings Hardcoded | 95 |
-| Chaves Indefinidas/Nao Usadas | 85 |
-| **Total** | **379** |
+| Strings Hardcoded | 105 |
+| Chaves Indefinidas/Nao Usadas | 100 |
+| **Total** | **404** |
 
 ## Paridade de Idiomas
 
@@ -44,10 +44,23 @@
 
 ## Strings Hardcoded
 
+### components\AppContent.tsx
+
+- `new URLSearchParams(window.location.search).get('category') ...`
+- `Clear Search`
+- `No search results found`
+- `Clear Search`
+- `Add Your First Feed`
+
 ### components\AppearanceCustomizer.tsx
 
 - `Adjust colors individually`
 - `Edit Colors`
+
+### components\ArticleImage.tsx
+
+- `Secondary (if available) -> Picsum Fallback
+ * - Lazy loadin...`
 
 ### components\BackgroundCreator.tsx
 
@@ -149,6 +162,13 @@
   discoveredFeeds: Discovered...`
 - `Cancel`
 
+### components\FeedDuplicateModal.tsx
+
+- `void;
+  onReplace: () => void;
+  onAddAnyway: () => void;
+  ...`
+
 ### components\FeedItem.tsx
 
 - `void;
@@ -158,20 +178,40 @@
   onRetry: (url: string) => void;
   onEdit: (url: st...`
 - `onShowError(feed.url)}
-                        className="t...`
+                  className="text-[1...`
 - `onShowError(feed.url)}
-                        className="t...`
+                  className="text-[1...`
+
+### components\FeedManager\FeedAddTab.tsx
+
+- `void;
+  newFeedCategory: string;
+  setNewFeedCategory: (id...`
+- `Adicionar Novo Feed`
+
+### components\FeedManager\FeedListTab.tsx
+
+- `void;
+  onRetry: (url: string) => void;
+  onEdit: (url: st...`
+- `void;
+  onRetry: (url: string) => void;
+  onEdit: (url: st...`
+- `Todos`
+
+### components\FeedManager\FeedToolsTab.tsx
+
+- `void;
+  variant?: 'default' | 'danger' | 'warning' | 'succes...`
 
 ### components\FeedManager.tsx
 
-- `Limpar Erros`
-- `Excluir Tudo`
-- `Todos`
+- `void;
+  articles?: Article[];
+  onRefreshFeeds?: () => voi...`
+- `setShowImportModal(false)} className="w-full mt-2 text-gray-...`
+- `setShowImportModal(false)} className="w-full mt-2 text-gray-...`
 - `Detalhes do Erro`
-- `setShowErrorModal(false)}
-                    className="px-...`
-- `setShowErrorModal(false)}
-                    className="px-...`
 
 ### components\FeedManagerControls.tsx
 
@@ -205,7 +245,7 @@
 
 - `void;
   articles: Article[];
-  onSearch: (query: string, fil...`
+  onSearch: (query: string, f...`
 
 ### components\KeyboardShortcutsModal.tsx
 
@@ -217,16 +257,14 @@
 
 ### components\LazyImage.tsx
 
-- `Image Error`
-- `Image Error`
 - `void;
   onError?: () => void;
   retryAttempts?: number;
- ...`
+  re...`
 - `void;
   onError?: () => void;
   retryAttempts?: number;
- ...`
+  re...`
 
 ### components\LoadingStates.tsx
 
@@ -298,32 +336,33 @@ export c...`
 
 ### components\SettingsSidebar.tsx
 
+- `Gallery`
 - `Remove categorias personalizadas`
 
 ## Problemas de Chaves
 
 ### Chaves Indefinidas (usadas mas nao existem)
 
+- `./Header` em components\AppContent.tsx
+- `./Modal` em components\AppContent.tsx
+- `./FeedManager` em components\AppContent.tsx
+- `./SettingsSidebar` em components\AppContent.tsx
+- `./KeyboardShortcutsModal` em components\AppContent.tsx
+- `./FavoritesModal` em components\AppContent.tsx
+- `./PerformanceDebugger` em components\AppContent.tsx
+- `category` em components\AppContent.tsx
 - ` ` em components\AppearanceCustomizer.tsx
 - `a` em components\BackgroundCreator.tsx
 - `canvas` em components\BackgroundCreator.tsx
 - `2d` em components\BackgroundCreator.tsx
 - `a` em components\BackgroundCreator.tsx
+- `./AuraWallpaperRenderer` em components\BackgroundLayer.tsx
 - `a` em components\FavoritesModal.tsx
 - `T` em components\FavoritesModal.tsx
 - `a` em components\FeedCategoryManager.tsx
 - `T` em components\FeedCategoryManager.tsx
-- `a` em components\FeedCategoryManager.tsx
-- `T` em components\FeedCategoryManager.tsx
 - `confirm.category_delete` em components\FeedDropdown.tsx
 - `alert.category_deleted_success` em components\FeedDropdown.tsx
-- `a` em components\FeedManager.tsx
-- `T` em components\FeedManager.tsx
-- `link` em components\Header.tsx
-- `/` em components\layouts\FocusLayout.tsx
-- `feeds.empty` em components\layouts\MagazineLayout.tsx
-- `layout.featured` em components\layouts\MagazineLayout.tsx
-- `layout.more_news` em components\layouts\MagazineLayout.tsx
 
 ### Chaves Nao Usadas (definidas mas sem uso)
 
@@ -337,6 +376,8 @@ export c...`
 - `action.delete`
 - `action.close`
 - `action.remove`
+- `feeds.live`
+- `feeds.articles`
 - `header.settings`
 - `settings.tab.appearance`
 - `settings.tab.display`
@@ -356,11 +397,9 @@ export c...`
 - `settings.system.detect_theme`
 - `settings.backup.desc`
 - `settings.reset.desc`
-- `feeds.category.pin`
-- `feeds.category.unpin`
-- `analytics.total_articles`
-- ... e mais 25 chaves
+- `feeds.add.placeholder`
+- ... e mais 34 chaves
 
 ## Status: ATENCAO
 
-379 problema(s) encontrado(s). Recomenda-se revisao.
+404 problema(s) encontrado(s). Recomenda-se revisao.

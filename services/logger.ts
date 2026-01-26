@@ -106,13 +106,32 @@ class LoggerService {
   }
 
   public debug(...args: unknown[]) {
-    // Debug logs might not need to go to console in production, but for now we'll log them
+    // Debug logs only in development
+    if (import.meta.env.PROD) return;
+
     this.addLog('debug', args);
     // Use log for debug if debug doesn't exist on console (it usually does)
     if (this.originalConsole.debug) {
         this.originalConsole.debug(...args);
     } else {
-        this.originalConsole.log('[DEBUG]', ...args);
+        this.originalConsole.log('[GENERAL-DEBUG]', ...args);
+    }
+  }
+
+  /**
+   * Logs a debug message with a specific subject tag: [SUBJECT-DEBUG]
+   */
+  public debugTag(subject: string, ...args: unknown[]) {
+    // Debug logs only in development
+    if (import.meta.env.PROD) return;
+
+    const tag = `[${subject.toUpperCase()}-DEBUG]`;
+    this.addLog('debug', [tag, ...args]);
+    
+    if (this.originalConsole.debug) {
+      this.originalConsole.debug(tag, ...args);
+    } else {
+      this.originalConsole.log(tag, ...args);
     }
   }
 

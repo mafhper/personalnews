@@ -9,6 +9,29 @@ interface CyberpunkLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+export const CyberpunkSkeleton: React.FC = () => {
+  return (
+    <div className="container mx-auto p-4 font-mono">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+          <div key={i} className="relative border border-[#00ff41]/30 bg-[#001100]/40 p-4 shadow-[0_0_10px_rgba(0,255,65,0.1)] flex flex-col space-y-4">
+            <div className="flex justify-between border-b border-[#00ff41]/20 pb-2">
+              <div className="w-24 h-3 bg-[#00ff41]/10 animate-pulse" />
+              <div className="w-16 h-3 bg-[#00ff41]/10 animate-pulse" />
+            </div>
+            <div className="h-40 border border-[#00ff41]/20 bg-white/5 animate-pulse" />
+            <div className="h-4 w-full bg-[#00ff41]/10 animate-pulse" />
+            <div className="h-12 w-full border-l border-[#00ff41]/20 pl-2 bg-[#00ff41]/5 animate-pulse" />
+            <div className="flex justify-end pt-2">
+              <div className="w-24 h-6 bg-[#00ff41]/20 animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const CyberpunkLayout: React.FC<CyberpunkLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 

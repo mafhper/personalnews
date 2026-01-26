@@ -1,6 +1,7 @@
 import React, { memo, useEffect } from 'react';
 import type { Article } from '../types';
 import { LazyImage } from './LazyImage';
+import { logger } from '../services/logger';
 
 interface ArticleImageProps {
   article: Article;
@@ -64,17 +65,17 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
       };
 
       if (!article.imageUrl) {
-        console.warn('[ArticleImage] No imageUrl found for article', logData);
+        logger.debugTag('SYSTEM', 'No imageUrl found for article', logData);
       } else {
-        console.log('[ArticleImage] Rendering image', logData);
+        logger.debugTag('SYSTEM', 'Rendering image', logData);
       }
     }
-  }, [article.link, primarySrc, article.imageUrl, priority, remainingFallbacks.length, sourcesChain]);
+  }, [article.link, primarySrc, article.imageUrl, priority, remainingFallbacks.length, sourcesChain, logger]);
 
   // If no image URL at all, return a placeholder div instead of trying to load Picsum
   if (!article.imageUrl && sourcesChain.length === 0) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[ArticleImage] No image sources available, rendering placeholder', {
+      logger.debugTag('SYSTEM', 'No image sources available, rendering placeholder', {
         articleLink: article.link.substring(0, 60) + '...'
       });
     }

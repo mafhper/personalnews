@@ -9,6 +9,29 @@ interface CompactLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+export const CompactSkeleton: React.FC = () => {
+  const Bone = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded ${className}`} />;
+  
+  return (
+    <div className="min-h-screen font-mono text-sm p-2 sm:p-4">
+      <div className="max-w-5xl mx-auto bg-[rgb(var(--color-surface))] border border-white/5 rounded-lg overflow-hidden">
+        <div className="bg-white/5 h-10 px-4 flex items-center animate-pulse" />
+        <div className="p-4 space-y-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div key={i} className="flex gap-3 py-2 border-b border-white/5">
+              <Bone className="w-20 h-14 flex-shrink-0" />
+              <div className="flex-1 space-y-3">
+                <Bone className="h-4 w-3/4" />
+                <Bone className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { t } = useLanguage();

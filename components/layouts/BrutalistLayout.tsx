@@ -9,6 +9,21 @@ interface BrutalistLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+export const BrutalistSkeleton: React.FC = () => {
+  return (
+    <div className="min-h-screen p-4 md:p-8 font-mono">
+      <div className="container mx-auto">
+        <div className="mb-8 border-b-4 border-black dark:border-white pb-2 h-16 bg-white/5 animate-pulse" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div key={i} className="border-4 border-black dark:border-white h-[450px] bg-white/5 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article, index }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const embedUrl = getVideoEmbed(article.link);

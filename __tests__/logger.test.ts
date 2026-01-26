@@ -53,6 +53,14 @@ describe('Logger Service', () => {
     expect(logs.map(l => l.type)).toContain('debug');
   });
 
+  it('should support debug tags with [SUBJECT-DEBUG] format', () => {
+    logger.debugTag('STATE', 'Status changed', { status: 'loading' });
+    const logs = logger.getLogs();
+    expect(logs.length).toBe(1);
+    expect(logs[0].message).toContain('[STATE-DEBUG] Status changed');
+    expect(logs[0].type).toBe('debug');
+  });
+
   it('should return the same instance from getLogger and logger', () => {
     expect(getLogger()).toBe(logger);
   });

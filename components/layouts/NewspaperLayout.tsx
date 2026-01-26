@@ -11,6 +11,44 @@ interface NewspaperLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`bg-white/5 animate-pulse rounded ${className}`} />
+);
+
+export const NewspaperSkeleton: React.FC = () => {
+  return (
+    <div className="min-h-screen px-6 md:px-10 py-8 max-w-[1400px] 2xl:max-w-[1680px] mx-auto border border-white/5 rounded-2xl">
+      {/* Masthead Skeleton */}
+      <div className="border-b border-white/5 pb-6 mb-10 flex justify-between">
+        <Bone className="h-4 w-24" />
+        <Bone className="h-4 w-32" />
+        <Bone className="h-4 w-24" />
+      </div>
+
+      {/* Hero Skeleton */}
+      <div className="grid lg:grid-cols-12 gap-8 mb-16 h-[450px]">
+        <div className="lg:col-span-7 2xl:col-span-8 bg-white/5 rounded-xl animate-pulse" />
+        <div className="lg:col-span-5 2xl:col-span-4 flex flex-col justify-center space-y-6">
+          <Bone className="h-4 w-32" />
+          <Bone className="h-12 w-full" />
+          <Bone className="h-24 w-full" />
+        </div>
+      </div>
+
+      {/* Grid Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-10">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="space-y-4 border-t border-white/5 pt-4">
+            <Bone className="h-40 w-full" />
+            <Bone className="h-4 w-3/4" />
+            <Bone className="h-6 w-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { data: weatherData, city, getWeatherIcon, isLoading, changeCity } = useWeather();

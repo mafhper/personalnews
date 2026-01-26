@@ -3,6 +3,8 @@
  * Implements requirements 7.1, 7.2, 7.3, 7.4
  */
 
+import { logger } from './logger';
+
 export interface PerformanceMetric {
   id: string;
   name: string;
@@ -71,7 +73,7 @@ class PerformanceMonitor {
     this.metrics.set(id, metric);
 
     if (this.logToConsole) {
-      console.log(`🚀 [Performance] Started: ${name}`, metadata);
+      logger.debugTag('PERF', `Started: ${name}`, metadata);
     }
   }
 
@@ -102,7 +104,7 @@ class PerformanceMonitor {
     this.metrics.set(id, completedMetric);
 
     if (this.logToConsole) {
-      console.log(`✅ [Performance] Completed: ${metric.name} (${duration.toFixed(2)}ms)`, completedMetric.metadata);
+      logger.debugTag('PERF', `Completed: ${metric.name} (${duration.toFixed(2)}ms)`, completedMetric.metadata);
     }
 
     return completedMetric;
@@ -363,35 +365,27 @@ class PerformanceMonitor {
    * Log performance summary to console
    * Requirement 7.4: Provide performance metrics via console
    */
-  logPerformanceSummary(): void {
-    if (!this.isEnabled) return;
-
+  public logPerformanceSummary(): void {
     const summary = this.getPerformanceSummary();
 
-    console.group('📊 Performance Summary');
-
-    console.group('🌐 Feed Loading');
-    console.log(`Total feeds loaded: ${summary.feeds.total}`);
-    console.log(`Success rate: ${summary.feeds.total > 0 ? ((summary.feeds.successful / summary.feeds.total) * 100).toFixed(1) : 0}%`);
-    console.log(`Average load time: ${summary.feeds.averageLoadTime.toFixed(2)}ms`);
-    console.log(`Cache hit rate: ${summary.feeds.cacheHitRate.toFixed(1)}%`);
-    if (summary.feeds.slowestFeed) {
-      console.log(`Slowest feed: ${summary.feeds.slowestFeed.feedUrl} (${summary.feeds.slowestFeed.duration?.toFixed(2)}ms)`);
-    }
-    console.groupEnd();
-
-    console.group('📄 Pagination');
-    console.log(`Total navigations: ${summary.pagination.total}`);
-    console.log(`Average navigation time: ${summary.pagination.averageNavigationTime.toFixed(2)}ms`);
-    console.groupEnd();
-
-    console.group('🚀 Application');
-    console.log(`Total operations: ${summary.application.total}`);
-    console.log(`Average operation time: ${summary.application.averageLoadTime.toFixed(2)}ms`);
-    console.log(`Current memory usage: ${this.getMemoryUsage().toFixed(2)}MB`);
-    console.groupEnd();
-
-    console.groupEnd();
+    logger.debugTag('PERF', 'Performance Summary', {
+        feeds: {
+            total: summary.feeds.total,
+            successRate: summary.feeds.total > 0 ? ((summary.feeds.successful / summary.feeds.total) * 100).toFixed(1) + '%' : '0%',
+            avgLoadTime: summary.feeds.averageLoadTime.toFixed(2) + 'ms',
+            cacheHitRate: summary.feeds.cacheHitRate.toFixed(1) + '%',
+            slowestFeed: summary.feeds.slowestFeed
+        },
+        pagination: {
+            total: summary.pagination.total,
+            avgNavTime: summary.pagination.averageNavigationTime.toFixed(2) + 'ms'
+        },
+        application: {
+            total: summary.application.total,
+            avgOpTime: summary.application.averageLoadTime.toFixed(2) + 'ms',
+            currentMemory: this.getMemoryUsage().toFixed(2) + 'MB'
+        }
+    });
   }
 
   /**
@@ -415,14 +409,13 @@ class PerformanceMonitor {
   /**
    * Clear all metrics
    */
-  clearMetrics(): void {
+  public clearMetrics(): void {
     this.metrics.clear();
-    this.feedMetrics.length = 0;
-    this.paginationMetrics.length = 0;
-    this.applicationMetrics.length = 0;
-
+    this.feedMetrics = [];
+    this.paginationMetrics = [];
+    this.applicationMetrics = [];
     if (this.logToConsole) {
-      console.log('🧹 [Performance] All metrics cleared');
+      logger.debugTag('PERF', 'All metrics cleared');
     }
   }
 
@@ -474,7 +467,7 @@ class PerformanceMonitor {
       hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
     };
 
-    console.log('💻 [Performance] System info:', info);
+    logger.debugTag('PERF', 'System info', info);
   }
 
   private getMemoryUsage(): number {

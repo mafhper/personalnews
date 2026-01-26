@@ -10,6 +10,22 @@ interface MasonryLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+export const MasonrySkeleton: React.FC = () => {
+  return (
+    <div className="max-w-[1800px] mx-auto space-y-8">
+      {/* Featured Hero Skeleton */}
+      <div className="h-[60vh] min-h-[400px] rounded-2xl bg-white/5 animate-pulse" />
+      
+      {/* Masonry Columns Skeleton */}
+      <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+          <div key={i} className="break-inside-avoid mb-6 bg-white/5 animate-pulse rounded-2xl h-[300px]" />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { t } = useLanguage();

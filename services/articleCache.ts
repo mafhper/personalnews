@@ -1,10 +1,11 @@
 import { Article } from '../types';
+import { logger as serviceLogger } from './logger';
 
-// Simple logger to avoid circular dependency with performanceUtils
+// Simple logger wrapper to match existing usage but use standardized system
 const logger = {
   log: (message: string) => {
     if (import.meta.env.DEV) {
-      console.log(`[PERF] ${message}`);
+      serviceLogger.debugTag('PERF', message);
     }
   }
 };

@@ -11,6 +11,50 @@ interface MagazineLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />
+);
+
+export const MagazineSkeleton: React.FC = () => {
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+      {/* HERO SKELETON */}
+      <div className="grid md:grid-cols-2 gap-0 bg-white/5 rounded-2xl overflow-hidden h-[450px]">
+        <div className="bg-white/10 animate-pulse h-full" />
+        <div className="p-10 flex flex-col justify-center space-y-6">
+          <Bone className="h-4 w-32" />
+          <Bone className="h-10 w-full" />
+          <Bone className="h-20 w-full" />
+        </div>
+      </div>
+
+      {/* FEATURED SKELETON */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="space-y-4">
+            <Bone className="aspect-video" />
+            <Bone className="h-4 w-1/2" />
+            <Bone className="h-6 w-full" />
+          </div>
+        ))}
+      </div>
+
+      {/* GRID SKELETON */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <div key={i} className="flex gap-4 items-center">
+            <Bone className="w-24 h-24 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Bone className="h-3 w-1/2" />
+              <Bone className="h-4 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { contentConfig } = useAppearance();

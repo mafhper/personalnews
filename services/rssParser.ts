@@ -615,7 +615,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       const htmlContent = contentRaw || descriptionRaw || "";
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[ImageExtraction] Starting HTML extraction for: "${title.substring(0, 50)}..."`, {
+        logger.debugTag('FEED', `Starting HTML extraction for: "${title.substring(0, 50)}..."`, {
           htmlContentLength: htmlContent.length,
           hasDOMParser: typeof DOMParser !== 'undefined',
           link: link.substring(0, 60) + '...'
@@ -868,17 +868,17 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                 validImageUrl = imageUrl;
 
                 if (process.env.NODE_ENV === 'development') {
-                  console.log('[ImageValidation] ✅ Accepted image URL', {
+                  logger.debugTag('FEED', 'Accepted image URL', {
                     url: imageUrl.substring(0, 80),
-                    hasExtension: hasImageExtension,
-                    hasIndicator: hasImageIndicator,
-                    hasParam: hasImageParam,
-                    isKnownCdn: isKnownImageCdn
+                    hasImageExtension,
+                    hasImageIndicator,
+                    hasImageParam,
+                    isKnownImageCdn
                   });
                 }
               } else {
                 if (process.env.NODE_ENV === 'development') {
-                  console.warn('[ImageValidation] ❌ Rejected - no image indicators', {
+                  logger.debugTag('FEED', 'Rejected - no image indicators', {
                     url: imageUrl.substring(0, 80),
                     pathname: pathname.substring(0, 50)
                   });

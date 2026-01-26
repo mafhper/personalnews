@@ -10,6 +10,33 @@ interface PocketFeedsLayoutProps {
   timeFormat?: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
+
+export const PocketFeedsSkeleton: React.FC = () => {
+  return (
+    <div className="container mx-auto p-6 md:p-8 space-y-8">
+      <div className="flex items-center justify-between border-b border-white/5 pb-4">
+        <div className="flex gap-3">
+          <div className="w-6 h-6 bg-white/5 rounded animate-pulse" />
+          <div className="w-32 h-6 bg-white/5 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[1, 2].map(i => (
+          <div key={i} className="bg-white/5 rounded-xl border border-white/5 p-5 flex gap-4 h-[160px]">
+            <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 rounded-xl animate-pulse flex-shrink-0" />
+            <div className="flex-1 space-y-4">
+              <Bone className="h-6 w-3/4" />
+              <Bone className="h-4 w-1/2" />
+              <Bone className="h-3 w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /* 8. PocketFeeds Layout - Podcast-focused with inline audio player */
 export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);

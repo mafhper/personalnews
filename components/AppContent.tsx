@@ -5,11 +5,10 @@ import React, {
     useMemo,
     Suspense,
     lazy,
-    useDeferredValue,
 } from "react";
 // Lazy load components
 const Header = lazy(() => import("./Header"));
-const FeedContent = lazy(() => import("./FeedContent").then(module => ({ default: module.FeedContent })));
+import { FeedContent } from "./FeedContent";
 const Modal = lazy(() => import("./Modal").then(module => ({ default: module.Modal })));
 const FeedManager = lazy(() => import("./FeedManager").then(module => ({ default: module.FeedManager })));
 const SettingsSidebar = lazy(() => import("./SettingsSidebar").then(module => ({ default: module.SettingsSidebar })));
@@ -26,6 +25,7 @@ import { useUI } from "../contexts/UIContext";
 
 import { useKeyboardNavigation } from "../hooks/useKeyboardNavigation";
 import { useAppearance } from "../hooks/useAppearance";
+import { BUILT_LAYOUT_PRESETS } from "../config/layoutPresets.config";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { usePagination } from "../hooks/usePagination";
 import { useSwipeGestures } from "../hooks/useSwipeGestures";
@@ -33,6 +33,8 @@ import { useArticleLayout } from "../hooks/useArticleLayout";
 import type { Article } from "../types";
 import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
 import { BackgroundLayer } from "./BackgroundLayer";
+import { useLogger } from "../services/logger";
+import { areUrlsEqual } from "../utils/urlUtils";
 
 // Lazy load non-critical components
 const PerformanceDebugger = lazy(
@@ -43,6 +45,7 @@ import { useFeeds } from "../contexts/FeedContextState";
 
 // AppContent component doesn't require props for now
 const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
+    const logger = useLogger('AppContent');
     // Use FeedContext
     const {
         feeds,
@@ -54,6 +57,25 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
         retryFailedFeeds,
         cancelLoading
     } = useFeeds();
+
+    // App Shell removal logic
+    useEffect(() => {
+        const removeShell = () => {
+            const shell = document.getElementById('app-shell');
+            if (shell) {
+                shell.style.opacity = '0';
+                setTimeout(() => shell.remove(), 400);
+            }
+        };
+
+        if (loadingState.isResolved) {
+            removeShell();
+        } else {
+            // Fallback: original timer if resolution takes too long
+            const timer = setTimeout(removeShell, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [loadingState.isResolved]);
 
     // Use UIContext
     const {
@@ -74,15 +96,35 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
     // State from ModalContext for global modal visibility (internal logic)
     const { isModalOpen: isAnyModalOpenGlobally } = useModal();
 
-    // Legacy loading state for backward compatibility
-    const isLoading =
-        loadingState.status === "loading" && !loadingState.isBackgroundRefresh;
+    // T35: Atomic Layout Lock - frozen layout during transition
+    const [activeTransitionLayout, setActiveTransitionLayout] = useState<string | null>(null);
 
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    // Transition state for category navigation
+    const [isNavigating, setIsNavigating] = useState(false);
+    const [targetSkeleton, setTargetSkeleton] = useState<string | null>(null);
+
+    // T2 & T13: Simplified loading state - depends on status, navigation, AND resolution
+    const showSkeleton =
+        (loadingState.status === "loading" && !loadingState.isBackgroundRefresh) || 
+        !loadingState.isResolved ||
+        isNavigating;
+
+    const [selectedCategory, setSelectedCategory] = useState<string>(
+      () => new URLSearchParams(window.location.search).get('category') || 'all'
+    );
     const [selectedFeedUrl, setSelectedFeedUrl] = useState<string | null>(null);
 
     // Extended theme system
-    const { currentTheme, themeSettings, backgroundConfig, applyLayoutPreset, updateHeaderConfig, refreshAppearance } = useAppearance();
+    const { 
+        currentTheme, 
+        themeSettings, 
+        backgroundConfig, 
+        applyLayoutPreset, 
+        updateHeaderConfig, 
+        refreshAppearance,
+        contentConfig,
+        activeLayoutId 
+    } = useAppearance();
 
     // Feed categories system
     const { categories, getCategorizedFeeds } = useFeedCategories();
@@ -106,6 +148,32 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
     // Theme change animation
     const [isThemeChanging, setIsThemeChanging] = useState<boolean>(false);
 
+    // T35: SMART LAYOUT DETECTION - ATOMIC & EQUALITARIAN
+    const currentLayoutMode = useMemo(() => {
+        // 1. HIGHEST PRIORITY: The Lock (Frozen during transition)
+        if (activeTransitionLayout) {
+            return activeTransitionLayout;
+        }
+
+        // 2. Category Priority (from Context)
+        const categoryId = selectedCategory || 'all';
+        const activeCatObj = categories.find(c => c.id === categoryId);
+        if (activeCatObj?.layoutMode) {
+            return activeCatObj.layoutMode;
+        }
+
+        // 3. Global Preset Priority
+        if (activeLayoutId) {
+            const preset = BUILT_LAYOUT_PRESETS.find(p => p.id === activeLayoutId);
+            if (preset?.content.layoutMode) {
+                return preset.content.layoutMode;
+            }
+        }
+        
+        // 4. Default System Fallback (No intelligent inference allowed)
+        return INITIAL_APP_CONFIG.layout || 'modern';
+    }, [activeTransitionLayout, selectedCategory, categories, activeLayoutId]);
+
     // Handle theme changes with animation
     useEffect(() => {
         if (themeSettings.themeTransitions) {
@@ -125,21 +193,29 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
     useEffect(() => {
         if (layoutSettings.autoRefreshInterval > 0 && feeds.length > 0) {
             const intervalMs = layoutSettings.autoRefreshInterval * 60 * 1000;
-            console.log(`Setting up auto-refresh every ${layoutSettings.autoRefreshInterval} minutes`);
+            logger.debugTag('SYSTEM', `Setting up auto-refresh every ${layoutSettings.autoRefreshInterval} minutes`);
 
             const id = setInterval(() => {
-                console.log('Triggering auto-refresh...');
+                logger.debugTag('SYSTEM', 'Triggering auto-refresh...');
                 refreshFeeds();
             }, intervalMs);
 
             return () => clearInterval(id);
         }
-    }, [layoutSettings.autoRefreshInterval, feeds.length, refreshFeeds]);
+    }, [layoutSettings.autoRefreshInterval, feeds.length, refreshFeeds, logger]);
 
     // Pass selectedCategory to prioritize feeds from the current category
     const handleRefresh = useCallback(() => {
         refreshFeeds(selectedCategory);
     }, [refreshFeeds, selectedCategory]);
+
+    // T36: Release the lock once content is confirmed to be on screen
+    const handleContentMounted = useCallback(() => {
+        logger.debugTag('APPEARANCE', 'Handshake Received: Releasing layout lock');
+        setActiveTransitionLayout(null);
+        setIsNavigating(false);
+        setTargetSkeleton(null);
+    }, [logger]);
 
     // Search handlers
     const handleSearch = useCallback((query: string, filters: SearchFilters) => {
@@ -178,56 +254,61 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
         }
     }, []);
 
-    // ---------------------------------------------------------------------------
-    // 4. DEFERRED RENDERING STRATEGY
-    // Isolate heavy filtering/mapping from the main thread during interactions.
-    // ---------------------------------------------------------------------------
-    const deferredArticles = useDeferredValue(articles);
-
     // Determine which articles to display based on search state and read status filter
     const displayArticles = useMemo(() => {
-        // If somehow we are here but data is stale/deferred is lagging
-        const sourceArticles = deferredArticles;
+        const sourceArticles = articles;
+
+        // T12: Do NOT filter until data is resolved and we have items
+        if (!loadingState.isResolved || sourceArticles.length === 0) {
+            return [];
+        }
+
+        // DEBUG: Track incoming data volume
+        logger.debugTag('FEED', `Component processing ${sourceArticles.length} articles for category: ${selectedCategory}`);
 
         let filteredArticles: Article[];
 
         if (selectedFeedUrl) {
-            filteredArticles = sourceArticles.filter((article) => article.feedUrl === selectedFeedUrl);
+            filteredArticles = sourceArticles.filter((article) => (article.feedUrl && areUrlsEqual(article.feedUrl, selectedFeedUrl)) || article.sourceTitle === selectedFeedUrl);
         } else if (isSearchActive && searchResults.length >= 0) {
             filteredArticles = searchResults;
         } else {
             if (selectedCategory === "all" || selectedCategory === "All") {
-                const allowedFeeds = categorizedFeeds['all'] || [];
-                // Optimization: Only filter if we actually have hidden feeds
-                if (allowedFeeds.length === feeds.length) {
-                    filteredArticles = sourceArticles;
-                } else {
-                    const allowedUrls = new Set(allowedFeeds.map(f => f.url));
-                    filteredArticles = sourceArticles.filter((article) =>
-                        article.feedUrl && allowedUrls.has(article.feedUrl)
+                // "All" category logic: show all feeds unless they are explicitly hidden from all
+                filteredArticles = sourceArticles.filter((a: Article) => {
+                    const feed = feeds.find(f => 
+                        (a.feedUrl && areUrlsEqual(f.url, a.feedUrl)) || 
+                        (a.sourceTitle && f.customTitle === a.sourceTitle)
                     );
-                }
+                    // If no feed found, show it anyway in 'all' to avoid blackout
+                    if (!feed) return true;
+                    return !feed.hideFromAll;
+                });
             } else {
                 const selectedCategoryObj = categories.find(
                     (cat) => cat.id === selectedCategory
                 );
                 if (selectedCategoryObj) {
-                    const feedsInCategory = categorizedFeeds[selectedCategory] || [];
-                    const feedUrlsInCategory = new Set(feedsInCategory.map(f => f.url));
-
                     filteredArticles = sourceArticles.filter((article) => {
-                        const isFromCategorizedFeed = article.feedUrl && feedUrlsInCategory.has(article.feedUrl);
-
+                        // 1. Try to find the originating feed
+                        const feed = feeds.find(f => 
+                            (article.feedUrl && areUrlsEqual(f.url, article.feedUrl)) || 
+                            (article.sourceTitle && f.customTitle === article.sourceTitle)
+                        );
+                        
+                        if (feed) {
+                            return feed.categoryId === selectedCategory;
+                        }
+                        
                         if (selectedCategoryObj.autoDiscovery === false) {
-                            return isFromCategorizedFeed;
+                            return false;
                         }
 
-                        const hasMatchingCategory = article.categories?.some(
+                        // 2. Fallback: check article tags if feed metadata is missing
+                        return article.categories?.some(
                             (cat) =>
                                 cat.toLowerCase() === selectedCategoryObj.name.toLowerCase()
                         );
-
-                        return isFromCategorizedFeed || hasMatchingCategory;
                     });
                 } else {
                     // Fallback matching by category name if ID not found (e.g. for legacy or external categories)
@@ -240,16 +321,33 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
             }
         }
 
-        return filteredArticles;
+        const filtered = filteredArticles;
+        if (filtered.length > 0) {
+            logger.debugTag('FEED', `FILTER SUCCESS: Displaying ${filtered.length} articles for ${selectedCategory}`);
+        } else if (sourceArticles.length > 0) {
+            logger.debugTag('FEED', `FILTER BLACKOUT: 0 articles after filter`, {
+                selectedCategory,
+                sourceCount: sourceArticles.length,
+                firstArticle: {
+                    title: sourceArticles[0].title,
+                    feedUrl: sourceArticles[0].feedUrl,
+                    sourceTitle: sourceArticles[0].sourceTitle
+                },
+                feedsInCategory: categories.find(c => c.id === selectedCategory)?.name || 'none'
+            });
+        }
+
+        return filtered;
     }, [
         isSearchActive,
         searchResults,
-        deferredArticles, // Use deferred source
+        articles,
         selectedCategory,
         categories,
-        categorizedFeeds,
         feeds,
-        selectedFeedUrl
+        selectedFeedUrl,
+        loadingState.isResolved,
+        logger
     ]);
 
     // Enhanced pagination system with URL persistence and reset triggers
@@ -263,10 +361,31 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
     });
 
     const handleNavigation = useCallback((category: string, feedUrl?: string) => {
-        refreshAppearance();
-        setSelectedCategory(category);
-
+        logger.debugTag('APPEARANCE', 'handleNavigation called', { toCategory: category });
+        
+        // T37: ATOMIC LOCK - Find target layout FIRST
         const categoryObj = categories.find(c => c.id === category);
+        let targetMode: string = INITIAL_APP_CONFIG.layout || 'modern';
+
+        if (categoryObj?.layoutMode) {
+            targetMode = categoryObj.layoutMode;
+        } else if (activeLayoutId) {
+            const preset = BUILT_LAYOUT_PRESETS.find(p => p.id === activeLayoutId);
+            if (preset?.content.layoutMode) targetMode = preset.content.layoutMode;
+        }
+
+        // T37: Apply lock BEFORE changing category or loading
+        setActiveTransitionLayout(targetMode);
+        setTargetSkeleton(targetMode); // Still used for internal logic
+        setIsNavigating(true);
+        
+        setSelectedCategory(category);
+        setSelectedFeedUrl(feedUrl || null);
+
+        // TRIGGER CONTENT LOAD
+        loadFeeds(false, category);
+
+        // Apply visual updates through context
         if (categoryObj) {
             if (categoryObj.layoutMode) {
                 applyLayoutPreset(categoryObj.layoutMode, false);
@@ -274,12 +393,21 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
             if (categoryObj.headerPosition) {
                 updateHeaderConfig({ position: categoryObj.headerPosition }, false);
             }
+        } else if (category === 'all') {
+            refreshAppearance();
         }
 
-        setSelectedFeedUrl(feedUrl || null);
         pagination.resetPagination();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [categories, pagination, applyLayoutPreset, updateHeaderConfig, refreshAppearance]);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+
+        // Backup timer to release lock if mount fails
+        const timer = setTimeout(() => {
+            setIsNavigating(false);
+            setTargetSkeleton(null);
+            setActiveTransitionLayout(null);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [categories, pagination, applyLayoutPreset, updateHeaderConfig, activeLayoutId, refreshAppearance, loadFeeds, logger]);
 
     // Keyboard shortcuts configuration
     const keyboardShortcuts = useMemo(
@@ -496,31 +624,50 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
                         </div>
                     )}
 
-                    {isLoading && articles.length === 0 && (
+                    {showSkeleton ? (
                         <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-                            <FeedSkeleton count={layoutSettings.articlesPerPage} />
+                            <FeedSkeleton count={layoutSettings.articlesPerPage} layoutMode={currentLayoutMode as any} />
                         </div>
-                    )}
-
-                    {paginatedArticles.length > 0 && (
-                        <>
-                            {/* Insert LCP Hero (First Item) if we are on page 1 and have items */}
-                            {/* We hide the first item from the list below if it's rendered as hero to avoid dupes */}
-                            {/* For legacy reasons we might keep it simple for now and just duplicate or let virtualization handle it later */}
-
-                            <Suspense fallback={
+                    ) : (
+                                                <>
+                                                    {paginatedArticles.length > 0 ? (
+                                                        <FeedContent
+                                                            key={selectedCategory + (selectedFeedUrl || '')}
+                                                            articles={paginatedArticles}
+                                                            timeFormat={timeFormat}
+                                                            selectedCategory={selectedCategory}
+                                                            layoutMode={currentLayoutMode as any}
+                                                            onMounted={handleContentMounted}
+                                                        />
+                                                    ) : (
+                        
                                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-                                    <FeedSkeleton count={3} />
+                                    {isSearchActive ? (
+                                        <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
+                                            <div className="mb-4">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-[rgb(var(--color-textSecondary))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                            <h3 className="text-xl font-semibold mb-2 text-[rgb(var(--color-text))]">No search results found</h3>
+                                            <p className="mb-4">No articles match your search for "{searchQuery}"</p>
+                                            <button onClick={clearSearch} className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent-dark))] text-white font-bold py-2 px-4 rounded-lg transition-colors">Clear Search</button>
+                                        </div>
+                                    ) : articles.length > 0 ? (
+                                        <p className="text-center text-[rgb(var(--color-textSecondary))]">No articles found for the category "{selectedCategory}".</p>
+                                    ) : feeds.length > 0 ? (
+                                        <p className="text-center text-[rgb(var(--color-textSecondary))]">No articles found from the provided feeds. Check your network or the feed URLs.</p>
+                                    ) : (
+                                        <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
+                                            <h2 className="text-2xl font-bold mb-4">Welcome to your News Dashboard!</h2>
+                                            <p className="mb-6">You don't have any RSS feeds yet.</p>
+                                            <button onClick={openFeedManager} className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent-dark))] text-white font-bold py-2 px-4 rounded-lg transition-colors">Add Your First Feed</button>
+                                        </div>
+                                    )}
                                 </div>
-                            }>
-                                <FeedContent
-                                    articles={paginatedArticles}
-                                    timeFormat={timeFormat}
-                                    selectedCategory={selectedCategory}
-                                />
-                            </Suspense>
+                            )}
 
-                            {pagination.totalPages > 1 && (
+                            {!showSkeleton && pagination.totalPages > 1 && (
                                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 mt-8 flex flex-col items-center space-y-4">
                                     <PaginationControls
                                         currentPage={pagination.currentPage}
@@ -543,33 +690,6 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
                                 </div>
                             )}
                         </>
-                    )}
-
-                    {!isLoading && loadingState.status !== "loading" && paginatedArticles.length === 0 && displayArticles.length === 0 && (
-                        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-                            {isSearchActive ? (
-                                <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
-                                    <div className="mb-4">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-[rgb(var(--color-textSecondary))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2 text-[rgb(var(--color-text))]">No search results found</h3>
-                                    <p className="mb-4">No articles match your search for "{searchQuery}"</p>
-                                    <button onClick={openFeedManager} className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent-dark))] text-white font-bold py-2 px-4 rounded-lg transition-colors">Clear Search</button>
-                                </div>
-                            ) : articles.length > 0 ? (
-                                <p className="text-center text-[rgb(var(--color-textSecondary))]">No articles found for the category "{selectedCategory}".</p>
-                            ) : feeds.length > 0 ? (
-                                <p className="text-center text-[rgb(var(--color-textSecondary))]">No articles found from the provided feeds. Check your network or the feed URLs.</p>
-                            ) : (
-                                <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
-                                    <h2 className="text-2xl font-bold mb-4">Welcome to your News Dashboard!</h2>
-                                    <p className="mb-6">You don't have any RSS feeds yet.</p>
-                                    <button onClick={openFeedManager} className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent-dark))] text-white font-bold py-2 px-4 rounded-lg transition-colors">Add Your First Feed</button>
-                                </div>
-                            )}
-                        </div>
                     )}
                 </main>
                 <Suspense fallback={null}>

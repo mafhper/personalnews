@@ -5,6 +5,7 @@ import { useExtendedTheme } from './useExtendedTheme';
 import { DEFAULT_CONFIG } from '../services/auraWallpaperService';
 import { BUILT_LAYOUT_PRESETS } from '../config/layoutPresets.config';
 import { INITIAL_APP_CONFIG } from '../constants/curatedFeeds';
+import { useLogger } from '../services/logger';
 
 const defaultHeaderConfig: HeaderConfig = {
   style: 'default',
@@ -57,6 +58,7 @@ interface UserOverrides {
 }
 
 export const useAppearance = () => {
+  const logger = useLogger('useAppearance');
   const { themeSettings, updateThemeSettings, currentTheme, customThemes, defaultPresets, setCurrentTheme, removeCustomTheme } = useExtendedTheme();
 
   const [headerConfig, setHeaderConfig] = useLocalStorage<HeaderConfig>(
@@ -86,6 +88,7 @@ export const useAppearance = () => {
   );
 
   const updateHeaderConfig = useCallback((updates: Partial<HeaderConfig>, persistOverride: boolean = true) => {
+    logger.debugTag('APPEARANCE', 'Header Update Call:', { updates, persistOverride });
     setHeaderConfig((prev) => ({ ...prev, ...updates }));
     if (persistOverride) {
       setActiveLayoutId(null);
@@ -101,9 +104,10 @@ export const useAppearance = () => {
         };
       });
     }
-  }, [setHeaderConfig, setUserOverrides, setActiveLayoutId]);
+  }, [setHeaderConfig, setUserOverrides, setActiveLayoutId, logger]);
 
   const updateContentConfig = useCallback((updates: Partial<ContentConfig>, persistOverride: boolean = true) => {
+    logger.debugTag('APPEARANCE', 'Content Update Call:', { updates, persistOverride });
     setContentConfig((prev) => ({ ...prev, ...updates }));
     if (persistOverride) {
       setActiveLayoutId(null);
@@ -119,7 +123,7 @@ export const useAppearance = () => {
         };
       });
     }
-  }, [setContentConfig, setUserOverrides, setActiveLayoutId]);
+  }, [setContentConfig, setUserOverrides, setActiveLayoutId, logger]);
 
   const updateBackgroundConfig = useCallback((updates: Partial<BackgroundConfig>) => {
     setBackgroundConfig((prev) => ({ ...prev, ...updates }));
@@ -142,12 +146,9 @@ export const useAppearance = () => {
    * @param clearContentOverrides - Whether to clear content overrides (default: true)
    */
   const applyLayoutPreset = useCallback((presetId: string, persist: boolean = true, clearContentOverrides: boolean = true) => {
+    logger.debugTag('APPEARANCE', 'Applying Layout Preset:', { presetId, persist });
     const preset = LAYOUT_PRESETS.find(p => p.id === presetId);
     if (preset) {
-      console.log(`Applying layout preset: ${presetId} (persist: ${persist})`, {
-        presetContent: preset.content
-      });
-
       // IMPORTANT: Preserve header overrides! User configured these in Settings.
       // Only clear content overrides to prevent layout settings from bleeding.
       if (clearContentOverrides) {
@@ -174,9 +175,10 @@ export const useAppearance = () => {
         setActiveLayoutId(presetId);
       }
     }
-  }, [setContentConfig, setActiveLayoutId, userOverrides, setUserOverrides]);
+  }, [setContentConfig, setActiveLayoutId, userOverrides, setUserOverrides, logger]);
 
   const refreshAppearance = useCallback(() => {
+    logger.debugTag('APPEARANCE', 'Refresh Triggered (Restoring State)');
     // Re-applies the current configuration based on active preset and user overrides.
     // Useful to clear temporary overrides (like category-specific headers).
     const headerOverrides = userOverrides?.header || {};
@@ -197,6 +199,7 @@ export const useAppearance = () => {
         };
         setHeaderConfig(mergedHeader);
         setContentConfig(mergedContent);
+        logger.debugTag('APPEARANCE', 'State Restored from Preset:', activeLayoutId);
         return;
       }
     }
@@ -206,7 +209,7 @@ export const useAppearance = () => {
     if (activeLayoutId) {
       applyLayoutPreset(activeLayoutId);
     }
-  }, [activeLayoutId, applyLayoutPreset, setContentConfig, setHeaderConfig, userOverrides?.content, userOverrides?.header]);
+  }, [activeLayoutId, applyLayoutPreset, setContentConfig, setHeaderConfig, userOverrides?.content, userOverrides?.header, logger]);
 
   const resetAppearance = useCallback(() => {
     setHeaderConfig(defaultHeaderConfig);

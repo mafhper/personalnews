@@ -140,30 +140,19 @@ export function getCorsProxies(): string[] {
 /**
  * Log environment information for debugging
  */
-export function logEnvironmentInfo() {
+import { logger } from './logger';
+
+export const logEnvironmentInfo = () => {
   const env = detectEnvironment();
   const config = getRssParserConfig();
 
-  console.group('🌍 Environment Detection');
-  console.log('Environment:', {
-    isDevelopment: env.isDevelopment,
-    isProduction: env.isProduction,
-    isGitHubPages: env.isGitHubPages,
-    isLocalhost: env.isLocalhost,
-    corsMode: env.corsMode,
-    useProductionParser: env.useProductionParser,
+  logger.debugTag('SYSTEM', 'Environment Detection', {
+    environment: env,
+    rssParserConfig: config,
+    availableProxies: getCorsProxies(),
+    localProxyUrl: env.proxyUrl
   });
-
-  console.log('RSS Parser Config:', config);
-
-  console.log('Available Proxies:', getCorsProxies());
-
-  if (env.proxyUrl) {
-    console.log('🔗 Local proxy URL:', env.proxyUrl);
-  }
-
-  console.groupEnd();
-}
+};
 
 // Auto-log environment info in development
 if (typeof window !== 'undefined' && detectEnvironment().isDevelopment) {

@@ -10,6 +10,23 @@ interface FocusLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+export const FocusSkeleton: React.FC = () => {
+  return (
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col justify-center px-8 md:px-24">
+      <div className="max-w-6xl mx-auto w-full space-y-8">
+        <div className="flex gap-4">
+          <div className="w-32 h-6 bg-white/5 rounded animate-pulse" />
+          <div className="w-24 h-6 bg-white/5 rounded animate-pulse" />
+        </div>
+        <div className="h-24 md:h-32 lg:h-40 w-full bg-white/5 rounded-2xl animate-pulse" />
+        <div className="h-8 w-3/4 bg-white/5 rounded-xl animate-pulse" />
+        <div className="h-8 w-1/2 bg-white/5 rounded-xl animate-pulse" />
+        <div className="w-40 h-10 bg-white/5 rounded-lg animate-pulse mt-12" />
+      </div>
+    </div>
+  );
+};
+
 export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);

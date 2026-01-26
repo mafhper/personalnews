@@ -9,6 +9,18 @@ interface GalleryLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+export const GallerySkeleton: React.FC = () => {
+  return (
+    <div className="min-h-screen">
+      <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1 p-1">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(i => (
+          <div key={i} className="aspect-square bg-white/5 animate-pulse rounded-sm" />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 

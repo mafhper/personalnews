@@ -22,7 +22,8 @@ export default defineConfig({
       
       // Utilidades e serviços essenciais
       '__tests__/searchUtils.test.ts',
-      '__tests__/feedValidator.test.ts'
+      '__tests__/feedValidator.test.ts',
+      '__tests__/logger.test.ts'
     ],
     exclude: [
       'node_modules/**',
@@ -36,7 +37,6 @@ export default defineConfig({
       '**/debug-proxy*.test.ts',
       '**/configuration*.test.ts',
       '**/feedDiscovery*.test.ts',
-      '**/logger*.test.ts',
       '**/ErrorBoundary*.test.tsx',
       '**/securityFixes*.test.ts',
       '**/themeUtils*.test.ts',

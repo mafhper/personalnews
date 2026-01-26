@@ -76,6 +76,15 @@ const CONFIG = {
         /import\.meta\.env\./,
         /getSettings\(\)/,
         /localStorage/,
+        // Regras do próprio script de scan
+        /pattern:\s*\/.*\/g,/,
+        // URLs seguras sem credenciais
+        /https?:\/\/(?!.*:.*@)[^'"\s]+/,
+        // Protocolo customizado do terminal
+        /terminal:\/\/rss-stream/,
+        // Script tags de CDNs comuns
+        /<script src=["']https:\/\/cdn\..*["']><\/script>/,
+        /<script src=["']https:\/\/cdnjs\..*["']><\/script>/,
     ]
 };
 

@@ -11,6 +11,35 @@ interface PortalLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
+
+export const PortalSkeleton: React.FC = () => {
+  return (
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* HERO SECTION SKELETON */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 h-[500px] bg-white/5 rounded-xl animate-pulse" />
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="flex-1 bg-white/5 rounded-xl animate-pulse" />
+          <div className="flex-1 bg-white/5 rounded-xl animate-pulse" />
+        </div>
+      </div>
+
+      {/* FEED SECTION SKELETON */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-white/5 pt-8">
+        <div className="lg:col-span-8 space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex gap-4 p-5 bg-white/5 rounded-2xl h-40 animate-pulse" />
+          ))}
+        </div>
+        <div className="lg:col-span-4 space-y-4">
+          <div className="bg-white/5 rounded-2xl p-6 h-64 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { t } = useLanguage();

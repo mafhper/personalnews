@@ -13,7 +13,13 @@ vi.mock('../utils/feedMigration', () => ({
 }));
 
 vi.mock('../services/logger', () => {
-  const mockLogger = { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() };
+  const mockLogger = { 
+    info: vi.fn(), 
+    error: vi.fn(), 
+    warn: vi.fn(), 
+    debug: vi.fn(),
+    debugTag: vi.fn()
+  };
   return {
     logger: mockLogger,
     getLogger: () => mockLogger,

@@ -10,6 +10,30 @@ interface SplitLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`bg-white/5 animate-pulse rounded ${className}`} />
+);
+
+export const SplitSkeleton: React.FC = () => {
+  return (
+    <div className="container mx-auto flex flex-col min-h-screen">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className={`flex flex-col md:flex-row h-auto md:h-[50vh] min-h-[400px] ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+          <div className="w-full md:w-1/2 h-64 md:h-full bg-white/5 animate-pulse" />
+          <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center border-b border-white/5">
+            <div className="max-w-xl mx-auto md:mx-0 space-y-6">
+              <Bone className="h-4 w-32" />
+              <Bone className="h-10 w-full" />
+              <Bone className="h-24 w-full" />
+              <Bone className="h-4 w-48" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { t } = useLanguage();

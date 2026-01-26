@@ -3,18 +3,20 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useProgressiveFeedLoading } from '../hooks/useProgressiveFeedLoading';
 import { useNotification } from './NotificationContext';
 import { getDefaultFeeds, migrateFeeds } from '../utils/feedMigration';
-import type { FeedSource } from '../types';
+import { FeedSource } from '../types';
 import { FeedContext } from './FeedContextState';
+import { useLogger } from '../services/logger';
 
 export const FeedProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [feeds, setFeeds] = useLocalStorage<FeedSource[]>('rss-feeds', getDefaultFeeds());
   const { showNotification } = useNotification();
+  const logger = useLogger('FeedProvider');
 
   // Feed migration logic
   useEffect(() => {
     const migrationResult = migrateFeeds(feeds);
     if (migrationResult.migrated) {
-      console.log('Feed migration:', migrationResult.reason);
+      logger.debugTag('STATE', 'Feed migration triggered:', migrationResult.reason);
       setFeeds(migrationResult.feeds);
 
       if (migrationResult.reason?.includes('Upgraded from legacy')) {
@@ -35,13 +37,31 @@ export const FeedProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { articles, loadingState, loadFeeds, retryFailedFeeds, cancelLoading } =
     useProgressiveFeedLoading(feeds);
 
-  // Initialize loading on mount if feeds exist
+  const isInitialized = React.useRef(false);
+
+  // Track state changes for debugging
   useEffect(() => {
+    logger.debugTag('STATE', `Loading Status changed: ${loadingState.status}`, {
+      progress: loadingState.progress,
+      action: loadingState.currentAction,
+      articlesCount: articles.length,
+      isResolved: loadingState.isResolved
+    });
+  }, [loadingState.status, loadingState.currentAction, loadingState.isResolved, articles.length, logger]);
+
+  // Initialize loading on first mount ONLY
+  useEffect(() => {
+    if (isInitialized.current) return;
+    
     if (feeds.length > 0) {
-      loadFeeds();
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentCategory = urlParams.get('category') || 'all';
+      logger.debugTag('STATE', 'FeedContext: Initial mount loading triggered', { currentCategory });
+      loadFeeds(false, currentCategory);
+      isInitialized.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feeds.length]); // Only re-run if feed count changes (naive check, but avoids infinite loops)
+  }, []); // Run ONLY once on mount. Navigation is handled by AppContent.
 
   const refreshFeeds = useCallback((categoryFilter?: string) => {
     loadFeeds(true, categoryFilter);

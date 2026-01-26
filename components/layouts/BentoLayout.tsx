@@ -10,6 +10,22 @@ interface BentoLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+export const BentoSkeleton: React.FC = () => {
+  return (
+    <div className="container mx-auto p-4 md:p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
+        {/* Pattern positions consistent with actual layout */}
+        <div className="sm:col-span-2 sm:row-span-2 min-h-[400px] md:min-h-[500px] bg-white/5 animate-pulse rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-2 min-h-[400px] md:min-h-[500px] bg-white/5 animate-pulse rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
+        <div className="sm:col-span-2 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
+      </div>
+    </div>
+  );
+};
+
 export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { t } = useLanguage();

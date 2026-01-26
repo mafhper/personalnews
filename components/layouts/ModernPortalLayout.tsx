@@ -9,6 +9,54 @@ interface ModernPortalLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
+
+export const ModernPortalSkeleton: React.FC = () => {
+  return (
+    <div className="container mx-auto flex flex-col gap-8 pb-12">
+      {/* HERO SECTION SKELETON */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 h-[500px] bg-white/5 rounded-2xl animate-pulse" />
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="flex-1 h-[240px] bg-white/5 rounded-2xl animate-pulse" />
+          <div className="flex-1 h-[240px] bg-white/5 rounded-2xl animate-pulse" />
+        </div>
+      </section>
+
+      {/* STRIP SKELETON */}
+      <section className="py-12 border-y border-white/5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="space-y-4">
+            <Bone className="aspect-video" />
+            <Bone className="h-4 w-3/4" />
+            <Bone className="h-3 w-1/2" />
+          </div>
+        ))}
+      </section>
+
+      {/* MAIN FEED SKELETON */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+        <div className="lg:col-span-8 space-y-8">
+          <div className="h-[400px] bg-white/5 rounded-2xl animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="space-y-4">
+                <Bone className="h-48" />
+                <Bone className="h-4 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="lg:col-span-4 space-y-6">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-24 bg-white/5 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};
+
 export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 

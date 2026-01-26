@@ -8,7 +8,7 @@
  * @version 3.0.0
  */
 
-import React, { Suspense, lazy, useState, useCallback } from "react";
+import React, { Suspense, lazy, useState, useCallback, useEffect } from "react";
 import { Virtuoso, VirtuosoGrid } from "react-virtuoso";
 import type { Article } from "../types";
 import { withPerformanceTracking } from "../services/performanceUtils";
@@ -20,6 +20,25 @@ import { ArticleItemLight } from "./ArticleItemLight";
 import { MagazineItem } from "./layouts/MagazineItem";
 import { MagazineHeader } from "./layouts/MagazineHeader";
 import { MagazineReaderModal } from "./MagazineReaderModal";
+import { useLogger } from "../services/logger";
+
+// Direct imports for instant category switching (No more code-splitting jumps)
+import { MasonryLayout } from "./layouts/MasonryLayout";
+import { MinimalLayout } from './layouts/MinimalLayout';
+import { PortalLayout } from './layouts/PortalLayout';
+import { ImmersiveLayout } from "./layouts/ImmersiveLayout";
+import { BrutalistLayout } from "./layouts/BrutalistLayout";
+import { TimelineLayout } from "./layouts/TimelineLayout";
+import { BentoLayout } from "./layouts/BentoLayout";
+import { ModernPortalLayout } from "./layouts/ModernPortalLayout";
+import { NewspaperLayout } from "./layouts/NewspaperLayout";
+import { FocusLayout } from "./layouts/FocusLayout";
+import { GalleryLayout } from "./layouts/GalleryLayout";
+import { CompactLayout } from "./layouts/CompactLayout";
+import { SplitLayout } from "./layouts/SplitLayout";
+import { CyberpunkLayout } from "./layouts/CyberpunkLayout";
+import { TerminalLayout } from "./layouts/TerminalLayout";
+import { PocketFeedsLayout } from "./layouts/PocketFeedsLayout";
 
 // Grid Virtualizer Components
 const GridList = React.forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<'div'>>((props, ref) => (
@@ -35,39 +54,44 @@ const GridItemContainer = React.forwardRef<HTMLDivElement, React.ComponentPropsW
   <div ref={ref} {...props} className="h-full" />
 ));
 
-// Lazy load complex layouts that handle their own virtualization or structure
-// Ideally, all would be unified, but for Phase 2 we target the main lists
-const MasonryLayout = lazy(() => import("./layouts/MasonryLayout").then(m => ({ default: m.MasonryLayout })));
-const MinimalLayout = lazy(() => import('./layouts/MinimalLayout').then(module => ({ default: module.MinimalLayout })));
-const PortalLayout = lazy(() => import('./layouts/PortalLayout').then(module => ({ default: module.PortalLayout })));
-const ImmersiveLayout = lazy(() => import("./layouts/ImmersiveLayout").then(m => ({ default: m.ImmersiveLayout })));
-const BrutalistLayout = lazy(() => import("./layouts/BrutalistLayout").then(m => ({ default: m.BrutalistLayout })));
-const TimelineLayout = lazy(() => import("./layouts/TimelineLayout").then(m => ({ default: m.TimelineLayout })));
-const BentoLayout = lazy(() => import("./layouts/BentoLayout").then(m => ({ default: m.BentoLayout })));
-const ModernPortalLayout = lazy(() => import("./layouts/ModernPortalLayout").then(m => ({ default: m.ModernPortalLayout })));
-const NewspaperLayout = lazy(() => import("./layouts/NewspaperLayout").then(m => ({ default: m.NewspaperLayout })));
-const FocusLayout = lazy(() => import("./layouts/FocusLayout").then(m => ({ default: m.FocusLayout })));
-const GalleryLayout = lazy(() => import("./layouts/GalleryLayout").then(m => ({ default: m.GalleryLayout })));
-const CompactLayout = lazy(() => import("./layouts/CompactLayout").then(m => ({ default: m.CompactLayout })));
-const SplitLayout = lazy(() => import("./layouts/SplitLayout").then(m => ({ default: m.SplitLayout })));
-const CyberpunkLayout = lazy(() => import("./layouts/CyberpunkLayout").then(m => ({ default: m.CyberpunkLayout })));
-const TerminalLayout = lazy(() => import("./layouts/TerminalLayout").then(m => ({ default: m.TerminalLayout })));
-const PocketFeedsLayout = lazy(() => import("./layouts/PocketFeedsLayout").then(m => ({ default: m.PocketFeedsLayout })));
-
 interface FeedContentProps {
   articles: Article[];
   timeFormat: "12h" | "24h";
   selectedCategory?: string;
+  layoutMode?: string;
+  onMounted?: () => void;
 }
 
 const FeedContentComponent: React.FC<FeedContentProps> = ({
   articles,
   timeFormat,
   selectedCategory,
+  layoutMode,
+  onMounted,
 }) => {
+  const logger = useLogger('FeedContent');
   const { contentConfig } = useAppearance();
   const { getCategoryById } = useFeedCategories();
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+
+  // T4 & T10 & T36: Log articles arriving and trigger mount handshake
+  useEffect(() => {
+    logger.debugTag('STATE', `FeedContent MOUNTED for category: ${selectedCategory || 'all'}`, { 
+        articlesCount: articles.length,
+        effectiveLayout: layoutMode || contentConfig.layoutMode 
+    });
+    
+    // T36: Atomic Handshake - tell parent we are ready to take over the screen
+    onMounted?.();
+
+    return () => {
+      logger.debugTag('STATE', `FeedContent UNMOUNTED for category: ${selectedCategory || 'all'}`);
+    };
+  }, [selectedCategory, logger, layoutMode, contentConfig.layoutMode, onMounted]);
+
+  useEffect(() => {
+    logger.debugTag('STATE', `FeedContent rendering ${articles.length} articles`);
+  }, [articles.length, logger]);
 
   // Reader Handlers - Define these BEFORE any early return
   const handleOpenReader = useCallback((article: Article) => {
@@ -90,9 +114,10 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     }
   }, [articles, readingArticle]);
 
-  // Resolve effective layout
-  let effectiveLayout = contentConfig.layoutMode;
-  if (selectedCategory) {
+  // Resolve effective layout - PRIORITIZE prop layoutMode
+  let effectiveLayout = layoutMode || contentConfig.layoutMode;
+  
+  if (!layoutMode && selectedCategory) {
     const category = getCategoryById(selectedCategory);
     if (category?.layoutMode) {
       effectiveLayout = category.layoutMode;
@@ -104,6 +129,9 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   // Generic Item Renderer (for List/Minimal/Default) - Defined Unconditionally
   const genericItemContent = useCallback((index: number, article: Article) => {
+    if (index === 0) {
+        logger.debugTag('FEED', 'Virtuoso started rendering list items');
+    }
     if (effectiveLayout === 'minimal') {
       return <ArticleItemLight article={article} index={index} onClick={handleOpenReader} />;
     }
@@ -116,25 +144,33 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
         renderMode="light"
       />
     );
-  }, [effectiveLayout, timeFormat, handleOpenReader]);
+  }, [effectiveLayout, timeFormat, handleOpenReader, logger]);
 
   // Magazine Item Renderer - Memoized to reduce closure recreation
-  const magazineItemContent = useCallback((_: number, article: Article) => (
-    <MagazineItem article={article} onClick={handleOpenReader} />
-  ), [handleOpenReader]);
+  const magazineItemContent = useCallback((index: number, article: Article) => {
+    if (index === 0) {
+        logger.debugTag('FEED', 'Virtuoso started rendering magazine items');
+    }
+    return <MagazineItem article={article} onClick={handleOpenReader} />;
+  }, [handleOpenReader, logger]);
 
   // Grid Item Renderer - Memoized to reduce closure recreation
-  const gridItemContent = useCallback((index: number) => (
-    <ArticleItem
-      article={articles[index]}
-      index={index}
-      timeFormat={timeFormat}
-      onClick={handleOpenReader}
-      showImage={true}
-      renderMode="full"
-      layoutMode="grid"
-    />
-  ), [articles, timeFormat, handleOpenReader]);
+  const gridItemContent = useCallback((index: number) => {
+    if (index === 0) {
+        logger.debugTag('FEED', 'Virtuoso started rendering grid items');
+    }
+    return (
+      <ArticleItem
+        article={articles[index]}
+        index={index}
+        timeFormat={timeFormat}
+        onClick={handleOpenReader}
+        showImage={true}
+        renderMode="full"
+        layoutMode="grid"
+      />
+    );
+  }, [articles, timeFormat, handleOpenReader, logger]);
 
   // Layouts that manage their own container/virtualization for now
   const complexLayouts = [
@@ -186,7 +222,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
     return (
       <>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
           <Virtuoso
             useWindowScroll
             data={listArticles}
@@ -204,7 +240,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   if (effectiveLayout === 'grid') {
     return (
       <>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
           <VirtuosoGrid
             useWindowScroll
             totalCount={articles.length}
@@ -221,7 +257,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   // Default / List Fallback
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
         <Virtuoso
           useWindowScroll
           data={articles}

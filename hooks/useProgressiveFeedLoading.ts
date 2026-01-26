@@ -28,6 +28,7 @@ export interface FeedLoadingState {
   isBackgroundRefresh: boolean;
   currentAction?: string;
   priorityFeedsLoaded?: boolean;  // True when priority feeds (category + healthy) are loaded
+  isResolved: boolean; // NEW: True when data is consistent and ready for UI filtering
 }
 
 export interface FeedError {
@@ -66,6 +67,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     errors: [],
     isBackgroundRefresh: false,
     currentAction: '', // New field for granular status
+    isResolved: false,
   });
 
   const [articles, setArticles] = useState<Article[]>([]);
@@ -81,7 +83,12 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       feedsRef.current.forEach(feed => {
         const cachedArticles = getCachedArticles(feed.url);
         if (cachedArticles && cachedArticles.length > 0) {
-          allCachedArticles.push(...cachedArticles);
+          // Ensure feedUrl is present for filtering later
+          const articlesWithUrl = cachedArticles.map(a => ({
+            ...a,
+            feedUrl: a.feedUrl || feed.url
+          }));
+          allCachedArticles.push(...articlesWithUrl);
         }
       });
 
@@ -160,7 +167,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         // Ensure each article has its source feedUrl for precise filtering
         const articlesWithFeedUrl = result.articles.map(article => ({
           ...article,
-          feedUrl: result.url
+          feedUrl: article.feedUrl || result.url
         }));
         allArticles.push(...articlesWithFeedUrl);
       }
@@ -199,6 +206,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         errors: [],
         isBackgroundRefresh: false,
         currentAction: 'No feeds configured',
+        isResolved: true,
       });
       return;
     }
@@ -227,6 +235,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             errors: [],
             isBackgroundRefresh: true,
             currentAction: 'Updating feeds in background...',
+            isResolved: true,
           });
 
           logger.info(`Displaying ${cachedArticles.length} cached articles while refreshing`, {
@@ -246,6 +255,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         errors: [],
         isBackgroundRefresh: false,
         currentAction: 'Initializing feed engine...',
+        isResolved: false,
       });
     }
 
@@ -464,6 +474,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         isBackgroundRefresh: false,
         currentAction: 'All feeds loaded',
         priorityFeedsLoaded: true,
+        isResolved: true,
       });
 
       const successfulFeeds = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
@@ -523,6 +534,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         errors,
         isBackgroundRefresh: false,
         currentAction: 'Error during loading process',
+        isResolved: true,
       });
     }
   }, [getCachedArticlesFromSmartCache, loadSingleFeedWithTimeout, updateArticlesFromFeedResults, logger]);

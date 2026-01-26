@@ -15,6 +15,31 @@ interface ImmersiveLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-full ${className}`} />;
+
+export const ImmersiveSkeleton: React.FC = () => {
+  return (
+    <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-12 pb-20 px-4">
+      {/* HERO SKELETON */}
+      <div className="relative w-full rounded-3xl overflow-hidden min-h-[60vh] md:min-h-[70vh] xl:min-h-[75vh] bg-white/5 animate-pulse flex flex-col justify-end p-16 space-y-6">
+        <div className="w-48 h-6 bg-white/10 rounded-full" />
+        <div className="w-3/4 h-20 bg-white/10 rounded-2xl" />
+        <div className="w-1/2 h-8 bg-white/10 rounded-xl" />
+      </div>
+
+      {/* GRID SKELETON */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="relative w-full rounded-3xl overflow-hidden min-h-[45vh] bg-white/5 animate-pulse flex flex-col justify-end p-8 space-y-4">
+            <div className="w-32 h-4 bg-white/10 rounded-full" />
+            <div className="w-full h-10 bg-white/10 rounded-xl" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /* =========================
    Utils
 ========================= */
