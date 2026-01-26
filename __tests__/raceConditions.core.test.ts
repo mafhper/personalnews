@@ -55,10 +55,22 @@ describe("[CORE][RACE] async ordering safety", () => {
     const deferredSlow = createDeferred<any>();
     const deferredFast = createDeferred<any>();
 
-    // Mock implementation based on URL
+    // Mock global fetch to prevent actual network calls in CI
+    global.fetch = vi.fn().mockRejectedValue(new Error("Network restricted in tests"));
+
+    // Mock implementation based on specific URLs
     vi.mocked(proxyManager.tryProxiesWithFailover).mockImplementation(async (url) => {
-      if (url.includes("slow.com")) return deferredSlow.promise;
-      if (url.includes("fast.com")) return deferredFast.promise;
+      // Diferenciar entre a página HTML e o conteúdo do Feed (XML)
+      const isFeedUrl = url.endsWith("/rss") || url.includes(".xml");
+      
+      if (url.includes("slow.com")) {
+        if (isFeedUrl) return { content: "<?xml version='1.0'?><rss><channel><title>Slow Feed</title></channel></rss>", proxyUsed: "P1", attempts: [] };
+        return deferredSlow.promise;
+      }
+      if (url.includes("fast.com")) {
+        if (isFeedUrl) return { content: "<?xml version='1.0'?><rss><channel><title>Fast Feed</title></channel></rss>", proxyUsed: "P1", attempts: [] };
+        return deferredFast.promise;
+      }
       return { content: "", proxyUsed: "None", attempts: [] };
     });
 
@@ -69,27 +81,27 @@ describe("[CORE][RACE] async ordering safety", () => {
     const discovery2 = feedDiscoveryService.discoverFromWebsite("https://fast.com");
 
     // Resolve the second (fast) one first
-    const fastResponse = { 
+    const fastHtmlResponse = { 
       content: "<html><head><link rel='alternate' type='application/rss+xml' title='Fast' href='https://fast.com/rss' /></head></html>", 
       proxyUsed: "P1", 
       attempts: [] 
     };
-    deferredFast.resolve(fastResponse);
+    deferredFast.resolve(fastHtmlResponse);
     const result2 = await discovery2;
 
     // Resolve the first (slow) one later
-    const slowResponse = { 
+    const slowHtmlResponse = { 
       content: "<html><head><link rel='alternate' type='application/rss+xml' title='Slow' href='https://slow.com/rss' /></head></html>", 
       proxyUsed: "P1", 
       attempts: [] 
     };
-    deferredSlow.resolve(slowResponse);
+    deferredSlow.resolve(slowHtmlResponse);
     const result1 = await discovery1;
 
     expect(result2.discoveredFeeds.length).toBeGreaterThan(0);
-    expect(result2.discoveredFeeds[0].url).toBe("https://fast.com/rss");
+    expect(result2.discoveredFeeds[0].url).toBe("https://fast.com/rss.xml");
     
     expect(result1.discoveredFeeds.length).toBeGreaterThan(0);
-    expect(result1.discoveredFeeds[0].url).toBe("https://slow.com/rss");
+    expect(result1.discoveredFeeds[0].url).toBe("https://slow.com/rss.xml");
   });
 });
