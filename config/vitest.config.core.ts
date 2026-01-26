@@ -7,24 +7,12 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     globals: true,
-    // Apenas testes core que sempre devem passar
+    // Whitelist semântica (Contrato Core)
     include: [
-      // Componentes essenciais
-      '__tests__/SearchBar.test.tsx',
-      '__tests__/FavoriteButton.test.tsx',
-      '__tests__/ProgressIndicator.test.tsx',
-      '__tests__/SkeletonLoader.test.tsx',
-      '__tests__/FeedContext.test.tsx',
-      
-      // Hooks básicos
-      '__tests__/useSearch.test.ts',
-      '__tests__/usePagination.test.ts',
-      
-      // Utilidades e serviços essenciais
-      '__tests__/searchUtils.test.ts',
-      '__tests__/feedValidator.test.ts',
-      '__tests__/logger.test.ts'
+      '**/*.core.test.ts',
+      '**/*.core.test.tsx'
     ],
+    // Tudo que NÃO é core ou que não deve bloquear produção
     exclude: [
       'node_modules/**',
       'dist/**',
@@ -35,12 +23,9 @@ export default defineConfig({
       '**/*benchmark*.test.ts',
       '**/proxy*.test.ts',
       '**/debug-proxy*.test.ts',
-      '**/configuration*.test.ts',
-      '**/feedDiscovery*.test.ts',
-      '**/ErrorBoundary*.test.tsx',
-      '**/securityFixes*.test.ts',
-      '**/themeUtils*.test.ts',
-      '**/useFavorites*.test.ts'
+      // Excluir testes que NÃO seguem explicitamente a nova convenção core
+      '__tests__/**/!(*.core).test.ts',
+      '__tests__/**/!(*.core).test.tsx'
     ]
   }
 });

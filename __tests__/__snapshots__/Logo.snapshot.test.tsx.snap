@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`[SNAPSHOT] Logo Component > should match current snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="w-7 h-7  flex items-center justify-center  "
+  >
+    <img
+      alt="Personal News Logo"
+      class="w-full h-full object-contain"
+      src="/assets/logo.svg"
+    />
+  </div>
+</DocumentFragment>
+`;
+
+exports[`[SNAPSHOT] Logo Component > should match snapshot with custom className 1`] = `
+<DocumentFragment>
+  <div
+    class="w-7 h-7  flex items-center justify-center custom-test-logo "
+  >
+    <img
+      alt="Personal News Logo"
+      class="w-full h-full object-contain"
+      src="/assets/logo.svg"
+    />
+  </div>
+</DocumentFragment>
+`;

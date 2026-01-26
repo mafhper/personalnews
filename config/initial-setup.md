@@ -96,7 +96,7 @@ Opções:
 - Nome: Design;
 - ID: design;
 - Cor: #F0EEE9;
-- Layout: gallery;
+- Layout: immersive;
 - Header: sticky;
 - Pinned: false;
 - Auto-Discovery: true;
@@ -108,7 +108,7 @@ Opções:
 - Nome: Games;
 - ID: games;
 - Cor: #F59E0B;
-- Layout: masonry;
+- Layout: immersive;
 - Header: sticky;
 - Pinned: false;
 - Auto-Discovery: true;
@@ -120,7 +120,7 @@ Opções:
 - Nome: Tecnologia;
 - ID: tech;
 - Cor: #3B82F6;
-- Layout: modern;
+- Layout: list;
 - Header: sticky;
 - Pinned: false;
 - Auto-Discovery: true;

@@ -17,9 +17,9 @@ import type { HeaderConfig, ContentConfig } from '../types';
 // ============================================================================
 export const DEFAULT_HEADER: Partial<HeaderConfig> = {
     style: 'default',
-    position: 'floating',      // 'floating' | 'sticky' | 'static' | 'hidden'
-    height: 'compact',         // 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-    showTitle: false,
+    position: 'sticky',      // 'floating' | 'sticky' | 'static' | 'hidden'
+    height: 'normal',         // 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+    showTitle: true,
     showLogo: true,
     backgroundColor: '#0a0a0c',
     backgroundOpacity: 95,
@@ -61,9 +61,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Layout padrão com grade dinâmica e header flutuante.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#1F1F1F', // Hex color
             backgroundOpacity: 60,      // Range: 0-100
@@ -76,7 +76,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
             density: 'comfortable',     // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
+            showTime: true,            // Options: true | false
             showTags: true,             // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
@@ -106,7 +106,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
             density: 'comfortable',     // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
+            showTime: true,            // Options: true | false
             showTags: true,             // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
@@ -121,9 +121,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Layout editorial moderno com hero sections e destaques visuais.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#1F1F1F', // Hex color
             backgroundOpacity: 60,      // Range: 0-100
@@ -136,7 +136,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
             density: 'comfortable',     // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
+            showTime: true,            // Options: true | false
             showTags: true,             // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
@@ -151,9 +151,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Estilo jornal clássico, denso e informativo.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#111827', // Hex color
             backgroundOpacity: 100,     // Range: 0-100
@@ -163,11 +163,11 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         },
         content: {
             layoutMode: 'newspaper',    // Options: 'masonry' | 'magazine' | 'modern' | 'newspaper' | 'minimal' | 'focus' | 'immersive' | 'timeline' | 'bento' | 'pocketfeeds'
-            density: 'compact',         // Options: 'compact' | 'comfortable' | 'spacious'
+            density: 'comfortable',         // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
-            showTags: false,            // Options: true | false
+            showTime: true,            // Options: true | false
+            showTags: true,            // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
     },
@@ -181,9 +181,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Foco no conteúdo. Header flutuante transparente.',
         header: {
             style: 'minimal',           // Options: 'default' | 'centered' | 'minimal'
-            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#000000', // Hex color
             backgroundOpacity: 40,      // Range: 0-100
@@ -193,11 +193,11 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         },
         content: {
             layoutMode: 'minimal',      // Options: 'masonry' | 'magazine' | 'modern' | 'newspaper' | 'minimal' | 'focus' | 'immersive' | 'timeline' | 'bento' | 'pocketfeeds'
-            density: 'spacious',        // Options: 'compact' | 'comfortable' | 'spacious'
+            density: 'comfortable',        // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
-            showDate: false,            // Options: true | false
-            showTime: false,            // Options: true | false
-            showTags: false,            // Options: true | false
+            showDate: true,            // Options: true | false
+            showTime: true,            // Options: true | false
+            showTags: true,            // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
     },
@@ -211,9 +211,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Leitura sem distrações. Header oculto e layout de coluna única.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#1F1F1F', // Hex color
             backgroundOpacity: 60,      // Range: 0-100
@@ -226,7 +226,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
             density: 'comfortable',     // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
+            showTime: true,            // Options: true | false
             showTags: true,             // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
@@ -241,9 +241,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Experiência full-screen com header ultra-discreto.',
         header: {
             style: 'minimal',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
             height: 'normal',           // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#000000', // Hex color
             backgroundOpacity: 0,       // Range: 0-100
@@ -253,11 +253,11 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         },
         content: {
             layoutMode: 'immersive',    // Options: 'masonry' | 'magazine' | 'modern' | 'newspaper' | 'minimal' | 'focus' | 'immersive' | 'timeline' | 'bento' | 'pocketfeeds'
-            density: 'spacious',        // Options: 'compact' | 'comfortable' | 'spacious'
+            density: 'comfortable',        // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
-            showTags: false,            // Options: true | false
+            showTime: true,            // Options: true | false
+            showTags: true,            // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
     },
@@ -271,8 +271,8 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Bordas fortes, alto contraste e tipografia marcante.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
             showTitle: true,            // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#000000', // Hex color
@@ -283,10 +283,10 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         },
         content: {
             layoutMode: 'brutalist',    // Options: 'masonry' | 'magazine' | 'modern' | 'newspaper' | 'minimal' | 'focus' | 'immersive' | 'timeline' | 'bento' | 'pocketfeeds'
-            density: 'compact',         // Options: 'compact' | 'comfortable' | 'spacious'
+            density: 'comfortable',         // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
+            showTime: true,            // Options: true | false
             showTags: true,             // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
@@ -301,9 +301,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Navegação por tempo. Header sticky compacto.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#1f2937', // Hex color
             backgroundOpacity: 90,      // Range: 0-100
@@ -316,7 +316,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
             density: 'comfortable',     // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
+            showTime: true,            // Options: true | false
             showTags: true,             // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
@@ -331,9 +331,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Layout modular moderno.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            // position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#1a1a1a', // Hex color
             backgroundOpacity: 60,      // Range: 0-100
@@ -343,11 +343,11 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         },
         content: {
             layoutMode: 'bento',        // Options: 'masonry' | 'magazine' | 'modern' | 'newspaper' | 'minimal' | 'focus' | 'immersive' | 'timeline' | 'bento' | 'pocketfeeds'
-            density: 'compact',         // Options: 'compact' | 'comfortable' | 'spacious'
-            showAuthor: false,          // Options: true | false
+            density: 'comfortable',         // Options: 'compact' | 'comfortable' | 'spacious'
+            showAuthor: true,          // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
-            showTags: false,            // Options: true | false
+            showTime: true,            // Options: true | false
+            showTags: true,            // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },
     },
@@ -361,9 +361,9 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
         description: 'Layout focado em podcasts com player de áudio integrado.',
         header: {
             style: 'default',           // Options: 'default' | 'centered' | 'minimal'
-            position: 'floating',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
-            height: 'compact',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
-            showTitle: false,           // Options: true | false
+            position: 'sticky',       // Options: 'static' | 'sticky' | 'floating' | 'hidden'
+            height: 'normal',          // Options: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious'
+            showTitle: true,           // Options: true | false
             showLogo: true,             // Options: true | false
             backgroundColor: '#1F1F1F', // Hex color
             backgroundOpacity: 50,      // Range: 0-100
@@ -376,7 +376,7 @@ export const LAYOUT_PRESETS_CONFIG: LayoutPresetConfig[] = [
             density: 'comfortable',     // Options: 'compact' | 'comfortable' | 'spacious'
             showAuthor: true,           // Options: true | false
             showDate: true,             // Options: true | false
-            showTime: false,            // Options: true | false
+            showTime: true,            // Options: true | false
             showTags: true,             // Options: true | false
             paginationType: 'numbered', // Options: 'numbered' | 'loadMore' | 'infinite'
         },

@@ -31,6 +31,12 @@ jobs:
       - name: Type check
         run: bun tsc --noEmit -p tsconfig.json
 
+      - name: Run core tests
+        run: bun run test
+
+      - name: Run security scan
+        run: bun run security:scan
+
       - name: Clean dist
         run: rm -rf dist
 

@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "dev": "bun vite",
-    "build": "npm run promo:changelog && bunx tsc --noEmit && bun vite build",
+    "build": "npm run promo:changelog && bun run config:sync && bunx tsc --noEmit && bun vite build",
     "preview": "bun vite preview",
     "test": "bun vitest run --config config/vitest.config.core.ts",
     "test:all": "bun vitest run --config config/vitest.config.minimal.ts",
@@ -36,7 +36,8 @@
     "perf:analyze": "node scripts/performance-gate/analyze.cjs",
     "dashboard": "node scripts/dashboard/server.cjs",
     "lint": "bunx eslint . --ext .ts,.tsx",
-    "security:scan": "node scripts/security-scan.cjs"
+    "security:scan": "node scripts/security-scan.cjs",
+    "audit:full": "node scripts/full-quality-audit.cjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

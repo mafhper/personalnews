@@ -1,7 +1,11 @@
-
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/** @vitest-environment jsdom */
+import { render, screen, waitFor, fireEvent, act, cleanup } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
 import { LazyImage } from '../components/LazyImage';
+
+// Estender expect com matchers do jest-dom
+expect.extend(matchers);
 
 // Mock IntersectionObserver
 const mockIntersectionObserver = vi.fn();
@@ -27,6 +31,7 @@ const createMockEntry = (target: Element, isIntersecting: boolean): Intersection
 });
 
 beforeEach(() => {
+  vi.useFakeTimers();
   mockIntersectionObserver.mockClear();
   mockIntersectionObserver.mockImplementation((callback) => {
     intersectionCallback = callback;
@@ -36,6 +41,12 @@ beforeEach(() => {
       disconnect: vi.fn(),
     };
   });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllTimers();
+  vi.useRealTimers();
 });
 
 describe('LazyImage', () => {
@@ -62,9 +73,12 @@ describe('LazyImage', () => {
       intersectionCallback([createMockEntry(img, true)]);
     });
 
-    await waitFor(() => {
-      expect(img.getAttribute('src')).toBe(defaultProps.src);
+    // Avançar microtasks para que o estado isInView dispare a mudança de src
+    await act(async () => {
+      vi.runOnlyPendingTimers();
     });
+
+    expect(img.getAttribute('src')).toBe(defaultProps.src);
   });
 
   it('calls onLoad callback when image loads successfully', async () => {
@@ -77,14 +91,16 @@ describe('LazyImage', () => {
       intersectionCallback([createMockEntry(img, true)]);
     });
 
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+
     // Simulate successful image load
     await act(async () => {
       fireEvent.load(img);
     });
 
-    await waitFor(() => {
-      expect(onLoad).toHaveBeenCalledTimes(1);
-    });
+    expect(onLoad).toHaveBeenCalledTimes(1);
   });
 
   it('handles image load errors with retry logic', async () => {
@@ -93,20 +109,30 @@ describe('LazyImage', () => {
     const img = screen.getByRole('img');
 
     // Simulate intersection observer triggering
-    act(() => {
+    await act(async () => {
       intersectionCallback([createMockEntry(img, true)]);
     });
 
-    // Simulate multiple image load errors to exhaust retries
-    act(() => {
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+
+    // Simulate first image load error
+    await act(async () => {
       fireEvent.error(img);
     });
 
-    // Wait for retry timeout and final error
-    await waitFor(() => {
+    // Avançar o tempo do retryDelay (10ms)
+    await act(async () => {
+      vi.advanceTimersByTime(15);
+    });
+
+    // Simulate second error (after retry)
+    await act(async () => {
       fireEvent.error(img);
-      expect(onError).toHaveBeenCalledTimes(1);
-    }, { timeout: 100 });
+    });
+
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 
   it('shows error placeholder after all retries fail', async () => {
@@ -114,26 +140,28 @@ describe('LazyImage', () => {
     const img = screen.getByRole('img');
 
     // Simulate intersection observer triggering
-    act(() => {
+    await act(async () => {
       intersectionCallback([createMockEntry(img, true)]);
     });
 
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+
     // Simulate image load error (no retries, should fail immediately)
-    act(() => {
+    await act(async () => {
       fireEvent.error(img);
     });
 
     // Check that error placeholder is shown
-    await waitFor(() => {
-      const src = img.getAttribute('src');
-      expect(src).toContain('data:image/svg+xml');
-      // Decode base64 to check content
-      if (src && src.includes('base64,')) {
-        const base64Content = src.split('base64,')[1];
-        const decodedContent = atob(base64Content);
-        expect(decodedContent).toContain('gradError');
-      }
-    });
+    const src = img.getAttribute('src');
+    expect(src).toContain('data:image/svg+xml');
+    // Decode base64 to check content
+    if (src && src.includes('base64,')) {
+      const base64Content = src.split('base64,')[1];
+      const decodedContent = atob(base64Content);
+      expect(decodedContent).toContain('gradError');
+    }
   });
 
   it('uses custom placeholder when provided', () => {

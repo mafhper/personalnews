@@ -1,9 +1,4 @@
-/**
- * Error Handler Tests
- *
- * Comprehensive tests for the error handling system
- */
-
+/** @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { ErrorHandler, ErrorType, ErrorSeverity } from '../services/errorHandler';
 
@@ -28,11 +23,14 @@ Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
 });
 
+// Mock location reload
+const mockReload = vi.fn();
 Object.defineProperty(window, 'location', {
   value: {
     href: 'http://localhost:3000/test',
-    reload: vi.fn(),
+    reload: mockReload,
   },
+  writable: true,
 });
 
 Object.defineProperty(navigator, 'userAgent', {
@@ -45,6 +43,7 @@ describe('ErrorHandler', () => {
   let consoleWarnSpy: Mock;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     errorHandler = new ErrorHandler();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -54,6 +53,8 @@ describe('ErrorHandler', () => {
   afterEach(() => {
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   describe('Error Classification', () => {
@@ -137,6 +138,7 @@ describe('ErrorHandler', () => {
 
   describe('Recovery Strategies', () => {
     it('should attempt network error recovery with retry', async () => {
+      vi.useRealTimers();
       const networkError = new Error('fetch failed');
       networkError.name = 'NetworkError';
 
@@ -184,6 +186,7 @@ describe('ErrorHandler', () => {
     });
 
     it('should handle recovery failures gracefully', async () => {
+      vi.useRealTimers();
       const error = new Error('fetch failed');
       error.name = 'NetworkError';
       const failingRetryFunction = vi.fn().mockRejectedValue(new Error('Retry failed'));

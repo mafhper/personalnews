@@ -29,9 +29,9 @@ import { INITIAL_APP_CONFIG, DEFAULT_CATEGORIES as GEN_CATEGORIES, DEFAULT_FEEDS
  */
 export const DEFAULT_HEADER_CONFIG: HeaderConfig = {
     style: 'default',           // 'default' | 'minimal' | 'centered' | 'transparent'
-    position: 'floating',       // 'floating' | 'fixed' | 'sticky' | 'relative'
-    height: 'compact',          // 'compact' | 'medium' | 'large'
-    showTitle: false,           // Mostrar título no header
+    position: 'sticky',       // 'floating' | 'fixed' | 'sticky' | 'relative'
+    height: 'normal',          // "ultra-compact" | "tiny" | "compact" | "normal" | "spacious"
+    showTitle: true,           // Mostrar título no header
     showLogo: true,             // Mostrar logo no header
     customTitle: 'Personal News',
     logoUrl: null,              // URL do logo customizado
@@ -56,7 +56,7 @@ export const DEFAULT_HEADER_CONFIG: HeaderConfig = {
 export const DEFAULT_CONTENT_CONFIG: ContentConfig = {
     showAuthor: true,           // Mostrar nome do autor
     showDate: true,             // Mostrar data de publicação
-    showTime: false,            // Mostrar hora de publicação
+    showTime: true,            // Mostrar hora de publicação
     showTags: true,             // Mostrar tags/categorias
     layoutMode: INITIAL_APP_CONFIG.layout as ContentConfig['layoutMode'],       // Layout padrão dos artigos
     density: 'comfortable',     // 'compact' | 'comfortable' | 'spacious'
@@ -105,7 +105,7 @@ export const DEFAULT_WEATHER_CITY = INITIAL_APP_CONFIG.weatherCity;
  * Configurações de performance
  */
 export const DEFAULT_PERFORMANCE_CONFIG = {
-    enabled: false,              // Monitoramento de performance (apenas em dev)
+    enabled: true,              // Monitoramento de performance (apenas em dev)
     sampleRate: 1.0,             // Taxa de amostragem
     maxMetrics: 100,             // Máximo de métricas armazenadas
     backgroundCleanup: true,     // Limpeza automática em background

@@ -1,13 +1,8 @@
-/**
- * ErrorRecovery.test.tsx
- *
- * Tests for error recovery components to ensure they handle various
- * error scenarios correctly and provide appropriate recovery options.
- */
-
+/** @vitest-environment jsdom */
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as matchers from '@testing-library/jest-dom/matchers';
 import {
   ErrorDisplay,
   ErrorSummary,
@@ -18,7 +13,19 @@ import {
   type FeedError,
 } from "../components/ErrorRecovery";
 
+// Estender expect com matchers do jest-dom
+expect.extend(matchers);
+
 describe("ErrorRecovery Components", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
   const mockError: FeedError = {
     url: "https://example.com/feed.xml",
     error: "Network timeout",
@@ -281,12 +288,14 @@ describe("ErrorRecovery Components", () => {
       expect(screen.getByText("Something went wrong")).toBeInTheDocument();
 
       const retryButton = screen.getByText("Try Again");
-      fireEvent.click(retryButton);
+      
+      await act(async () => {
+        fireEvent.click(retryButton);
+        vi.advanceTimersByTime(0);
+      });
 
       // The component should attempt to re-render
-      await waitFor(() => {
-        expect(screen.queryByText("Something went wrong")).toBeInTheDocument();
-      });
+      expect(screen.queryByText("Something went wrong")).toBeInTheDocument();
 
       consoleSpy.mockRestore();
     });

@@ -1,4 +1,4 @@
-import { expect, afterEach, vi } from 'vitest';
+import { expect, afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import '@testing-library/jest-dom';
@@ -6,9 +6,24 @@ import '@testing-library/jest-dom';
 // Estende o expect do Vitest com os matchers do jest-dom
 expect.extend(matchers);
 
-// Limpa o DOM apÃ³s cada teste para evitar vazamento de estado
-afterEach(() => {
+// Configuração global para determinismo e isolamento
+beforeEach(() => {
+  // Restaurar mocks para o estado original
+  vi.restoreAllMocks();
+  
+  // Garantir timers reais por padrão para evitar timeouts em testes assíncronos
+  vi.useRealTimers();
+});
+
+// Limpeza após cada teste
+afterEach(async () => {
+  // Limpar DOM para evitar vazamento de estado
   cleanup();
+  
+  // Limpeza de segurança
+  vi.clearAllMocks();
+  vi.clearAllTimers();
+  vi.useRealTimers();
 });
 
 // Mock bÃ¡sico para localStorage

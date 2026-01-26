@@ -1,16 +1,11 @@
-/**
- * usePagination.test.ts
- *
- * Tests for the enhanced pagination hook to ensure proper state management,
- * URL persistence, and keyboard navigation functionality.
- *
- * @author Matheus Pereira
- * @version 1.0.0
- */
-
-import { renderHook, act, waitFor } from "@testing-library/react";
-import { vi } from "vitest";
+/** @vitest-environment jsdom */
+import { renderHook, act, waitFor, cleanup } from "@testing-library/react";
+import { vi, expect } from "vitest";
+import * as matchers from '@testing-library/jest-dom/matchers';
 import { usePagination } from "../hooks/usePagination";
+
+// Estender expect com matchers do jest-dom
+expect.extend(matchers);
 
 // Mock window.history for URL persistence tests
 const mockReplaceState = vi.fn();
@@ -30,8 +25,14 @@ window.location = {
 
 describe("usePagination", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     mockReplaceState.mockClear();
     window.location.search = "";
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   describe("Basic functionality", () => {
@@ -187,21 +188,26 @@ describe("usePagination", () => {
 
       // Change trigger
       trigger = "changed";
-      rerender({ triggerValue: trigger });
-
-      await waitFor(() => {
-        expect(result.current.currentPage).toBe(0);
+      await act(async () => {
+        rerender({ triggerValue: trigger });
       });
+
+      // Avançar o setTimeout(() => resetPagination(), 0)
+      await act(async () => {
+        vi.advanceTimersByTime(0);
+      });
+
+      expect(result.current.currentPage).toBe(0);
     });
   });
 
   describe("URL persistence", () => {
-    it("should update URL when persistInUrl is enabled", () => {
+    it("should update URL when persistInUrl is enabled", async () => {
       const { result } = renderHook(() =>
         usePagination(100, 10, { persistInUrl: true })
       );
 
-      act(() => {
+      await act(async () => {
         result.current.setPage(3);
       });
 
@@ -212,18 +218,18 @@ describe("usePagination", () => {
       );
     });
 
-    it("should remove page parameter for first page", () => {
+    it("should remove page parameter for first page", async () => {
       const { result } = renderHook(() =>
         usePagination(100, 10, { persistInUrl: true })
       );
 
       // Go to page 3
-      act(() => {
+      await act(async () => {
         result.current.setPage(3);
       });
 
       // Go back to first page
-      act(() => {
+      await act(async () => {
         result.current.setPage(0);
       });
 
@@ -234,12 +240,12 @@ describe("usePagination", () => {
       );
     });
 
-    it("should use custom URL parameter name", () => {
+    it("should use custom URL parameter name", async () => {
       const { result } = renderHook(() =>
         usePagination(100, 10, { persistInUrl: true, urlParamName: "p" })
       );
 
-      act(() => {
+      await act(async () => {
         result.current.setPage(2);
       });
 
@@ -296,11 +302,16 @@ describe("usePagination", () => {
       expect(result.current.currentPage).toBe(9);
 
       // Reduce total items
-      rerender({ totalItems: 25 }); // Now only 3 pages
-
-      await waitFor(() => {
-        expect(result.current.currentPage).toBe(2); // Should adjust to last valid page
+      await act(async () => {
+        rerender({ totalItems: 25 }); // Now only 3 pages
       });
+
+      // Avançar o setTimeout(() => setPage(totalPages - 1), 0)
+      await act(async () => {
+        vi.advanceTimersByTime(0);
+      });
+
+      expect(result.current.currentPage).toBe(2); // Should adjust to last valid page
       expect(result.current.totalPages).toBe(3);
     });
 
@@ -329,15 +340,16 @@ describe("usePagination", () => {
     it("should set isNavigating during page changes", async () => {
       const { result } = renderHook(() => usePagination(100, 10));
 
-      act(() => {
+      await act(async () => {
         result.current.setPage(3);
       });
 
+      // Deve ser true imediatamente após o setPage
       expect(result.current.isNavigating).toBe(true);
 
-      // Wait for navigation state to reset
+      // Wait for navigation state to reset (150ms)
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        vi.advanceTimersByTime(200);
       });
 
       expect(result.current.isNavigating).toBe(false);
