@@ -83,7 +83,8 @@ interface FeedLoadingProgressProps {
   onCancel?: () => void;
   onRetryErrors?: () => void;
   className?: string;
-  priorityFeedsLoaded?: boolean; // When true, show a more subtle progress indicator
+  priorityFeedsLoaded?: boolean; // Deprecated in favor of mode, but kept for compatibility
+  mode?: 'overlay' | 'inline';
 }
 
 /**
@@ -101,21 +102,24 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   onRetryErrors,
   className = "",
   priorityFeedsLoaded = false,
+  mode = priorityFeedsLoaded ? 'overlay' : 'inline',
 }) => {
   const hasErrors = errors.length > 0;
   const isComplete = loadedFeeds >= totalFeeds;
+  const statusText = currentAction || (isBackgroundRefresh ? "Atualizando feeds..." : "Carregando feeds...");
 
-  // Subtle compact version when priority feeds are loaded but still loading others
-  if (priorityFeedsLoaded && !isComplete) {
+  // Overlay / Floating Mode
+  // Used for non-intrusive loading updates (initial load or background refresh)
+  if (mode === 'overlay' && !isComplete) {
     return (
-      <div className={`fixed top-0 left-0 right-0 z-[60] flex justify-center pt-4 pointer-events-none ${className}`}>
+      <div className={`fixed top-16 left-0 right-0 z-[60] flex justify-center pt-4 pointer-events-none ${className}`}>
         <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-gray-900/90 border border-white/10 backdrop-blur-md shadow-xl transform transition-all duration-300 animate-in slide-in-from-top-4">
           {/* Small spinner */}
           <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-t-transparent border-[rgb(var(--color-accent))]" />
           
-          {/* Compact text */}
+          {/* Dynamic text */}
           <span className="text-xs font-medium text-gray-200">
-            Atualizando feeds...
+            {statusText}
           </span>
           
           {/* Tiny progress bar */}
@@ -147,7 +151,8 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
     );
   }
 
-  // Full loading indicator (original design)
+  // Full loading indicator (Inline Mode)
+  // Kept for specific UI contexts where a block element is desired
   return (
     <div className={`w-full max-w-md ${className}`}>
       {/* Main compact bar */}

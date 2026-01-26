@@ -566,35 +566,17 @@ const AppContent: React.FC = () => { // Removed isFirstPaint from destructuring
                     tabIndex={-1}
                 >
                     {loadingState.status === "loading" && (
-                        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-                            {loadingState.priorityFeedsLoaded ? (
-                                <FeedLoadingProgress
-                                    loadedFeeds={loadingState.loadedFeeds}
-                                    totalFeeds={loadingState.totalFeeds}
-                                    progress={loadingState.progress}
-                                    isBackgroundRefresh={loadingState.isBackgroundRefresh}
-                                    errors={loadingState.errors}
-                                    currentAction={loadingState.currentAction}
-                                    onCancel={cancelLoading}
-                                    onRetryErrors={retryFailedFeeds}
-                                    priorityFeedsLoaded={true}
-                                />
-                            ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[40vh] w-full max-w-2xl mx-auto">
-                                    <FeedLoadingProgress
-                                        loadedFeeds={loadingState.loadedFeeds}
-                                        totalFeeds={loadingState.totalFeeds}
-                                        progress={loadingState.progress}
-                                        isBackgroundRefresh={loadingState.isBackgroundRefresh}
-                                        errors={loadingState.errors}
-                                        currentAction={loadingState.currentAction}
-                                        onCancel={cancelLoading}
-                                        onRetryErrors={retryFailedFeeds}
-                                        className="w-full"
-                                    />
-                                </div>
-                            )}
-                        </div>
+                        <FeedLoadingProgress
+                            loadedFeeds={loadingState.loadedFeeds}
+                            totalFeeds={loadingState.totalFeeds}
+                            progress={loadingState.progress}
+                            isBackgroundRefresh={loadingState.isBackgroundRefresh}
+                            errors={loadingState.errors}
+                            currentAction={loadingState.currentAction}
+                            onCancel={cancelLoading}
+                            onRetryErrors={retryFailedFeeds}
+                            mode="overlay"
+                        />
                     )}
 
                     {isSearchActive && (
