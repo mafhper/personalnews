@@ -32,10 +32,16 @@ jobs:
         run: bun tsc --noEmit -p tsconfig.json
 
       - name: Run core tests
-        run: bun run test
+        run: |
+          echo "START: Running Core Tests"
+          bun run test -- --reporter=verbose
+          echo "END: Core Tests Completed"
 
       - name: Run security scan
-        run: bun run security:scan
+        run: |
+          echo "START: Running Security Scan"
+          bun run security:scan
+          echo "END: Security Scan Completed"
 
       - name: Clean dist
         run: rm -rf dist
