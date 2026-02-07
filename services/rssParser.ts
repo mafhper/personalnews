@@ -947,7 +947,60 @@ async function fetchRssFeed(
 
   for (const currentUrl of urlsToTry) {
     try {
-      // Use ProxyManager for robust fetching with failover
+      const shouldTryDirectFetch = (() => {
+        if (typeof window === 'undefined') return true;
+        try {
+          const parsed = new URL(currentUrl, window.location.href);
+          return parsed.origin === window.location.origin;
+        } catch {
+          return false;
+        }
+      })();
+
+      if (shouldTryDirectFetch) {
+        // First try direct fetch (some feeds provide CORS headers).
+        try {
+          const controller = new AbortController();
+          const timeout = 8000;
+          const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+          const directResp = await fetch(currentUrl, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Personal News Dashboard/1.0',
+              Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+            },
+          });
+
+          clearTimeout(timeoutId);
+
+          if (directResp.ok) {
+            const directContent = await directResp.text();
+            if (validateResponse(directContent)) {
+              // Try JSON first
+              if (directContent.trim().startsWith('{')) {
+                try {
+                  const jsonResult = parseRss2JsonResponse(directContent, currentUrl);
+                  if (jsonResult.articles.length > 0) return jsonResult;
+                } catch {
+                  // fall through to XML parsing
+                }
+              }
+
+              const xmlResultDirect = parseXmlResponse(directContent, currentUrl);
+              if (xmlResultDirect.articles.length > 0) return xmlResultDirect;
+            }
+          }
+        } catch (directError) {
+          logger.debug(`Direct fetch failed for ${currentUrl}`, {
+            component: 'rssParser',
+            additionalData: { error: directError instanceof Error ? directError.message : String(directError) },
+          });
+        }
+      }
+
+      // If direct fetch didn't succeed, use ProxyManager for robust fetching with failover
       const result = await proxyManager.tryProxiesWithFailover(currentUrl);
 
       // Parse the content returned by the proxy
@@ -964,7 +1017,6 @@ async function fetchRssFeed(
           const jsonResult = parseRss2JsonResponse(content, currentUrl);
           if (jsonResult.articles.length > 0) return jsonResult;
         } catch {
-          // Identify if it was just a failed JSON parse or if content is actually XML
           // proceed to XML parsing
         }
       }
@@ -1030,6 +1082,20 @@ async function parseRssUrlWithRetry(
     component: "rssParser",
     additionalData: { feedUrl: url },
   });
+
+  // Try to use cached content before failing completely
+  const cachedArticles = getCachedArticles(url);
+  if (cachedArticles && cachedArticles.length > 0) {
+    logger.warn(`Using stale cache as fallback for ${url}`, {
+      component: "rssParser",
+      additionalData: { cachedCount: cachedArticles.length },
+    });
+
+    return {
+      title: cachedArticles[0].sourceTitle || "Cached Feed",
+      articles: cachedArticles,
+    };
+  }
 
   throw lastError;
 }
