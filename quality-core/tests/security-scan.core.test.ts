@@ -18,16 +18,20 @@ function tempFile(content: string) {
   return { dir, file };
 }
 
+function fakeGoogleApiKey() {
+  return `AIzaSy${'A'.repeat(33)}`;
+}
+
 describe('quality-core security scan', () => {
   it('detects obvious secrets in files', () => {
-    const { dir, file } = tempFile("const key = 'AIzaSy123456789012345678901234567890123';\n");
+    const { dir, file } = tempFile(`const key = '${fakeGoogleApiKey()}';\n`);
     const findings = security.scanFile(file);
     expect(findings.length).toBeGreaterThan(0);
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
   it('ignores safe patterns like process.env', () => {
-    const { dir, file } = tempFile("const key = process.env.API_KEY || 'AIzaSy123456789012345678901234567890123';\n");
+    const { dir, file } = tempFile(`const key = process.env.API_KEY || '${fakeGoogleApiKey()}';\n`);
     const findings = security.scanFile(file);
     expect(findings.length).toBe(0);
     fs.rmSync(dir, { recursive: true, force: true });
