@@ -8,6 +8,9 @@
  * - URLs sensíveis
  * 
  * Deve ser executado como parte do quality gate.
+ * 
+ * Flags:
+ * - --repo-wide / --repo / --full: inclui tests e arquivos normalmente ignorados
  */
 
 const fs = require('fs');
@@ -18,13 +21,14 @@ const { refreshDashboardCache } = require('../cli/dashboard-cache.cjs');
 const args = process.argv.slice(2);
 const isSilent = args.includes('--silent') || args.includes('-s');
 const isQuiet = args.includes('--quiet') || args.includes('-q');
+const isRepoWide = args.includes('--repo-wide') || args.includes('--repo') || args.includes('--full');
 const log = UI.createLogger({ tag: 'SECURITY', silent: isSilent, quiet: isQuiet });
 
 // ============================================================================
 // CONFIGURAÇÃO
 // ============================================================================
 
-const CONFIG = {
+const BASE_CONFIG = {
     // Diretórios para escanear
     scanDirs: [
         'src',
@@ -41,7 +45,7 @@ const CONFIG = {
     // Diretórios para ignorar
     ignoreDirs: ['node_modules', '.git', 'dist', 'build', 'coverage', '_dev', '.vite'],
 
-    // Arquivos para ignorar
+    // Arquivos para ignorar (padrao)
     ignoreFiles: ['package-lock.json', 'yarn.lock', 'security-scan.core.test.ts', 'security-scan.core.test.tsx'],
 
     // Padrões de secrets (regex)
@@ -103,6 +107,20 @@ const CONFIG = {
         /<script src=["']https:\/\/cdnjs\..*["']><\/script>/,
     ]
 };
+
+function buildConfig(options = {}) {
+    const { repoWide = false } = options;
+    const ignoreFiles = repoWide
+        ? BASE_CONFIG.ignoreFiles.filter(name => !name.startsWith('security-scan.core.test.'))
+        : BASE_CONFIG.ignoreFiles.slice();
+    return {
+        ...BASE_CONFIG,
+        ignoreFiles,
+        repoWide,
+    };
+}
+
+const CONFIG = buildConfig({ repoWide: isRepoWide });
 
 // ============================================================================
 // FUNÇÕES
@@ -330,6 +348,9 @@ function main() {
         UI.printQuietStepStart('security scan', 1, 1);
     }
     log.info('Starting security scan...');
+    if (CONFIG.repoWide) {
+        log.info('Repo-wide mode enabled (includes tests and normally ignored files).');
+    }
 
     const allFindings = [];
 
@@ -425,4 +446,4 @@ if (require.main === module) {
     process.exit(result.success ? 0 : 1);
 }
 
-module.exports = { main, scanFile, checkEnvFiles };
+module.exports = { main, scanFile, checkEnvFiles, buildConfig };

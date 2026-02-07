@@ -36,4 +36,11 @@ describe('quality-core security scan', () => {
     expect(findings.length).toBe(0);
     fs.rmSync(dir, { recursive: true, force: true });
   });
+
+  it('supports repo-wide config without ignoring security-scan tests', () => {
+    const defaultConfig = security.buildConfig();
+    const repoWideConfig = security.buildConfig({ repoWide: true });
+    expect(defaultConfig.ignoreFiles).toContain('security-scan.core.test.ts');
+    expect(repoWideConfig.ignoreFiles).not.toContain('security-scan.core.test.ts');
+  });
 });

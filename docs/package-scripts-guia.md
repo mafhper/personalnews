@@ -169,7 +169,8 @@ Observacao de seguranca operacional:
 | `lint:components` | eslint pasta components | lint focado em UI | ao alterar componentes | erros/warnings de lint nessa area |
 | `lint:services` | eslint services/hooks/utils/config | lint focado em logica/core | ao alterar servicos/hooks | erros/warnings de lint nessa area |
 | `lint:quality-core` | eslint quality-core | lint da suite quality-core | ao alterar scripts/CLI/dashboard quality-core | erros/warnings de lint nessa area |
-| `security:scan` | `node quality-core/scripts/security-scan.cjs` | varredura de padroes de segredo/vuln | pre-PR, pre-release | achados `critical/high/medium`, segredos expostos, warnings de risco |
+| `security:scan` | `node quality-core/scripts/security-scan.cjs --repo-wide` | varredura repo-wide de segredos (inclui tests) | pre-PR, pre-release | achados `critical/high/medium`, segredos expostos, warnings de risco |
+| `security:scan:app` | `node quality-core/scripts/security-scan.cjs` | varredura padrao (exclui alguns arquivos de teste) | checagens locais pontuais | mesmos achados do scan principal |
 | `i18n:audit` | `node quality-core/scripts/i18n-audit.cjs` | auditoria de traducao e hardcoded strings | ao mexer em textos/traducoes | chaves faltantes/sobrando, texto hardcoded, warnings criticos i18n |
 | `i18n:sync` | `node quality-core/scripts/i18n-sync.cjs` | sincroniza arquivos de traducao | ao adicionar/remover chaves | inconsistencias de dicionario |
 
@@ -283,6 +284,7 @@ Observacao de seguranca operacional:
 ### `security:scan`
 - padroes de segredo e risco
 - Saida: severidade (`critical/high/medium`) + arquivo/linha
+- Observacao: `security:scan` roda em modo repo-wide (inclui `tests/`). Para varredura padrao, use `security:scan:app`.
 
 ### `quality:*`, `analysis*`, `perf:*`
 - thresholds, bundle size, lighthouse score, regras semanticas de auditoria

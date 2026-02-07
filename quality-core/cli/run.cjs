@@ -228,7 +228,8 @@ const TASKS = [
         return { success: true, skipped: true, message: 'Script missing' };
 
       const res = await runCommand('node', [
-        path.relative(config.paths.root, path.join(config.paths.scripts, 'security-scan.cjs'))
+        path.relative(config.paths.root, path.join(config.paths.scripts, 'security-scan.cjs')),
+        '--repo-wide',
       ]);
       const crit = res.output.includes('CRITICAL') && res.exitCode !== 0;
       const high = res.output.includes('HIGH');

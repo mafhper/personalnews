@@ -104,7 +104,7 @@ async function main() {
   runStep('Build & Bundle', 'bun run build', 'BLOQUEANTE', 'Verificação de sucesso do build e tamanho do bundle.');
 
   // 2. ALTO IMPACTO
-  runStep('Segurança (Secrets)', 'node quality-core/scripts/security-scan.cjs', 'ALTO RISCO', 'Busca por API Keys e segredos expostos.');
+  runStep('Segurança (Secrets)', 'node quality-core/scripts/security-scan.cjs --repo-wide', 'ALTO RISCO', 'Busca por API Keys e segredos expostos.');
   runStep('Segurança (Audit)', 'npm audit --audit-level=high', 'ALTO RISCO', 'Vulnerabilidades conhecidas em dependências.');
   runStep('Cobertura', 'bun vitest run --environment jsdom --config quality-core/config/vitest.config.core.ts --coverage.enabled=true --coverage.reporter=text-summary --coverage.reportsDirectory=performance-reports/coverage --passWithNoTests', 'ALTO RISCO', 'Percentual de código testado.');
 

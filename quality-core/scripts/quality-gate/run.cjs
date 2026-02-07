@@ -174,7 +174,7 @@ async function checkSecrets() {
         };
     }
 
-    const result = await runCommand('node', ['quality-core/scripts/security-scan.cjs']);
+    const result = await runCommand('node', ['quality-core/scripts/security-scan.cjs', '--repo-wide']);
 
     // Verificar se encontrou problemas criticos
     const hasCritical = result.output.includes('CRITICAL') && result.exitCode !== 0;
