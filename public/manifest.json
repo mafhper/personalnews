@@ -1,7 +1,8 @@
 {
   "name": "Personal News",
   "short_name": "Personal News",
-  "start_url": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#e96e3d",
