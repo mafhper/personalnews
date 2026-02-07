@@ -82,7 +82,7 @@ describe("[CORE][RACE] async ordering safety", () => {
 
     // Resolve the second (fast) one first
     const fastHtmlResponse = { 
-      content: "<html><head><link rel='alternate' type='application/rss+xml' title='Fast' href='https://fast.com/rss' /></head></html>", 
+      content: "<html><head><link rel='alternate' type='application/rss+xml' title='Fast' href='https://fast.com/rss.xml' /></head></html>", 
       proxyUsed: "P1", 
       attempts: [] 
     };
@@ -91,7 +91,7 @@ describe("[CORE][RACE] async ordering safety", () => {
 
     // Resolve the first (slow) one later
     const slowHtmlResponse = { 
-      content: "<html><head><link rel='alternate' type='application/rss+xml' title='Slow' href='https://slow.com/rss' /></head></html>", 
+      content: "<html><head><link rel='alternate' type='application/rss+xml' title='Slow' href='https://slow.com/rss.xml' /></head></html>", 
       proxyUsed: "P1", 
       attempts: [] 
     };

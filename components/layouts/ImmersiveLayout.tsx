@@ -15,24 +15,22 @@ interface ImmersiveLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
-const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-full ${className}`} />;
-
 export const ImmersiveSkeleton: React.FC = () => {
   return (
     <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-12 pb-20 px-4">
       {/* HERO SKELETON */}
-      <div className="relative w-full rounded-3xl overflow-hidden min-h-[60vh] md:min-h-[70vh] xl:min-h-[75vh] bg-white/5 animate-pulse flex flex-col justify-end p-16 space-y-6">
-        <div className="w-48 h-6 bg-white/10 rounded-full" />
-        <div className="w-3/4 h-20 bg-white/10 rounded-2xl" />
-        <div className="w-1/2 h-8 bg-white/10 rounded-xl" />
+      <div className="relative w-full rounded-3xl overflow-hidden min-h-[60vh] md:min-h-[70vh] xl:min-h-[75vh] feed-skeleton-block flex flex-col justify-end p-16 space-y-6">
+        <div className="w-48 h-6 feed-skeleton-block rounded-full" />
+        <div className="w-3/4 h-20 feed-skeleton-block rounded-2xl" />
+        <div className="w-1/2 h-8 feed-skeleton-block rounded-xl" />
       </div>
 
       {/* GRID SKELETON */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="relative w-full rounded-3xl overflow-hidden min-h-[45vh] bg-white/5 animate-pulse flex flex-col justify-end p-8 space-y-4">
-            <div className="w-32 h-4 bg-white/10 rounded-full" />
-            <div className="w-full h-10 bg-white/10 rounded-xl" />
+          <div key={i} className="relative w-full rounded-3xl overflow-hidden min-h-[45vh] feed-skeleton-block flex flex-col justify-end p-8 space-y-4">
+            <div className="w-32 h-4 feed-skeleton-block rounded-full" />
+            <div className="w-full h-10 feed-skeleton-block rounded-xl" />
           </div>
         ))}
       </div>
@@ -146,7 +144,7 @@ const HeroArticle: React.FC<{
   const gradient = getGradientFromString(article.title);
 
   return (
-    <section className="relative w-full rounded-3xl overflow-hidden min-h-[60vh] md:min-h-[70vh] xl:min-h-[75vh] shadow-2xl group flex flex-col">
+    <section className="relative w-full rounded-3xl overflow-hidden min-h-[60vh] md:min-h-[70vh] xl:min-h-[75vh] shadow-xl group flex flex-col">
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
       <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 opacity-80">
@@ -164,7 +162,7 @@ const HeroArticle: React.FC<{
 
       {/* Top Controls: Site name and FavoriteButton aligned */}
       <div className="absolute top-0 left-0 right-0 p-6 sm:p-8 md:p-10 flex justify-between items-start z-20">
-        <div className="bg-black/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+        <div className="feed-chip backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
           <span className="text-xs font-bold uppercase tracking-widest text-white/90">
             {article.sourceTitle}
           </span>
@@ -173,7 +171,7 @@ const HeroArticle: React.FC<{
           article={article}
           size="large"
           position="overlay"
-          className="!static bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300"
+          className="!static bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300"
         />
       </div>
 

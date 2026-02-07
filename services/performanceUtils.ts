@@ -23,7 +23,7 @@ interface NetworkRequestBatch {
   startTime: number;
   endTime?: number;
   status: string;
-  results: any[];
+  results: unknown[];
 }
 
 
@@ -97,11 +97,11 @@ export function usePerformanceTracking(componentName: string, dependencies?: Rea
         });
       }, 0);
     }
-  }, [componentName, renderCount, ...deps]);
+  }, [componentName, renderCount, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     renderCount,
-    trackCustomEvent: (eventName: string, metadata?: Record<string, any>) => {
+    trackCustomEvent: (eventName: string, metadata?: Record<string, unknown>) => {
       const id = performanceMonitor.trackApplication('app-load', `${componentName}: ${eventName}`);
 
       setTimeout(() => {
@@ -122,7 +122,7 @@ export function usePerformanceTracking(componentName: string, dependencies?: Rea
 export async function performanceFetch(
   url: string,
   options?: RequestInit,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<Response> {
   const id = performanceMonitor.trackFeedLoading(url, {
     cacheHit: false,
@@ -361,12 +361,12 @@ export const PerformanceLogger = {
       metrics: performanceMonitor.getAllMetrics(),
       systemInfo: {
         userAgent: navigator.userAgent,
-        memory: (performance as any).memory ? {
-          used: (performance as any).memory.usedJSHeapSize,
-          total: (performance as any).memory.totalJSHeapSize,
-          limit: (performance as any).memory.jsHeapSizeLimit
+        memory: (performance as ExtendedPerformance).memory ? {
+          used: (performance as ExtendedPerformance).memory!.usedJSHeapSize,
+          total: (performance as ExtendedPerformance).memory!.totalJSHeapSize,
+          limit: (performance as ExtendedPerformance).memory!.jsHeapSizeLimit
         } : null,
-        connection: (navigator as any).connection?.effectiveType || 'unknown',
+        connection: (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType || 'unknown',
         hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
       }
     };
@@ -386,7 +386,7 @@ export const PerformanceLogger = {
 };
 
 export const perfDebugger = {
-  log: (message: string, data?: any) => {
+  log: (message: string, data?: unknown) => {
     if (import.meta.env.DEV) {
       console.log(`[PerfDebug] ${message}`, data);
     }
@@ -461,7 +461,7 @@ export const performanceUtils = {
     return batchId;
   },
 
-  completeNetworkRequestBatch: (batchId: string, results: any[], status: string) => {
+  completeNetworkRequestBatch: (batchId: string, results: unknown[], status: string) => {
     const batch = networkRequestBatches.find((b) => b.id === batchId);
     if (batch) {
       batch.endTime = Date.now();
@@ -587,7 +587,7 @@ export default performanceUtils;
  * Development-only performance debugging commands
  */
 if (import.meta.env.DEV) {
-  (window as any).perf = {
+  (window as Window & typeof globalThis & { perf?: unknown }).perf = {
     monitor: performanceMonitor,
     logger: PerformanceLogger,
     summary: () => performanceMonitor.logPerformanceSummary(),

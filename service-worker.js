@@ -80,8 +80,56 @@ self.addEventListener("fetch", (event) => {
         return cache.match(request).then((cachedResponse) => {
           const fetchPromise = fetch(request)
             .then((networkResponse) => {
+              // Validate response before caching
               if (networkResponse && networkResponse.status === 200) {
-                cache.put(request, networkResponse.clone());
+                // Check security headers
+                const contentType = networkResponse.headers.get('content-type') || '';
+                const xContentTypeOptions = networkResponse.headers.get('x-content-type-options');
+                
+                // Validate content type
+                const allowedTypes = [
+                  'application/json',
+                  'application/xml',
+                  'text/xml',
+                  'application/rss+xml',
+                  'application/atom+xml',
+                  'text/plain',
+                  'application/font',
+                  'font/',
+                ];
+                
+                const isValidType = allowedTypes.some(type => 
+                  contentType.toLowerCase().includes(type)
+                );
+                
+                // Reject suspicious content types
+                const suspiciousTypes = [
+                  'application/javascript',
+                  'text/javascript',
+                  'application/x-executable',
+                ];
+                
+                const isSuspicious = suspiciousTypes.some(type => 
+                  contentType.toLowerCase().includes(type)
+                );
+                
+                // Only cache if content type is valid and not suspicious
+                if (isValidType && !isSuspicious) {
+                  // Additional validation: check content length
+                  const contentLength = networkResponse.headers.get('content-length');
+                  if (contentLength) {
+                    const size = parseInt(contentLength, 10);
+                    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+                    if (size > MAX_SIZE) {
+                      console.warn('Response too large to cache:', request.url, size);
+                      return networkResponse; // Return but don't cache
+                    }
+                  }
+                  
+                  cache.put(request, networkResponse.clone());
+                } else {
+                  console.warn('Invalid or suspicious content type, not caching:', contentType, request.url);
+                }
               }
               return networkResponse;
             })
@@ -109,7 +157,28 @@ self.addEventListener("fetch", (event) => {
         fetch(request).then((fetchResponse) => {
           return caches.open(STATIC_CACHE_NAME).then((cache) => {
             if (fetchResponse && fetchResponse.status === 200) {
-              cache.put(request, fetchResponse.clone());
+              // Validate static assets before caching
+              const contentType = fetchResponse.headers.get('content-type') || '';
+              const allowedStaticTypes = [
+                'text/html',
+                'text/css',
+                'application/javascript',
+                'text/javascript',
+                'application/json',
+                'image/',
+                'font/',
+                'application/font',
+              ];
+              
+              const isValidStaticType = allowedStaticTypes.some(type => 
+                contentType.toLowerCase().includes(type)
+              );
+              
+              if (isValidStaticType) {
+                cache.put(request, fetchResponse.clone());
+              } else {
+                console.warn('Invalid static asset type, not caching:', contentType, request.url);
+              }
             }
             return fetchResponse;
           });

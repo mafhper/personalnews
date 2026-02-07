@@ -50,6 +50,36 @@ interface FeedResult {
 const FEED_TIMEOUT_MS = 6000; // 6 seconds per feed (reduzido para mais velocidade)
 const BATCH_SIZE = 8; // Aumentado para 8 feeds por batch
 const BATCH_DELAY_MS = 500; // Reduzido para 500ms entre batches
+const BATCH_DELAY_BACKGROUND_MS = 50; // Delay menor em abas inativas (o navegador vai limitar a 1s de qualquer forma)
+
+/**
+ * Helper function to wait for batch delay with visibility awareness
+ * In background tabs, setTimeout is throttled to 1 second, so we use a shorter delay
+ * to avoid additional delays on top of the browser's throttling
+ */
+const waitForBatchDelay = (delayMs: number, backgroundDelayMs: number): Promise<void> => {
+  return new Promise((resolve) => {
+    const isVisible = !document.hidden;
+    const actualDelay = isVisible ? delayMs : backgroundDelayMs;
+    
+    // Listen for visibility changes to resolve early when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, resolve immediately
+        clearTimeout(timeoutId);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        resolve();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    const timeoutId = setTimeout(() => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      resolve();
+    }, actualDelay);
+  });
+};
 
 /**
  * Custom hook for progressive feed loading with enhanced performance
@@ -308,26 +338,34 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       // Ignore parse errors
     }
 
-    // Reorder feeds: priority category first, then healthy feeds, then problematic feeds
-    const isHealthy = (feed: FeedSource) => !problematicUrls.has(feed.url);
+    // Reorder feeds: prioritize selected category, then healthy feeds, then problematic feeds
     const isPriority = (feed: FeedSource) =>
       priorityCategoryId && priorityCategoryId !== 'all' && feed.categoryId === priorityCategoryId;
 
-    // Sort feeds into 4 groups:
-    // 1. Priority category + healthy
-    // 2. Other healthy feeds
-    // 3. Priority category + problematic
-    // 4. Other problematic feeds
-    const priorityHealthy = currentFeeds.filter(f => isPriority(f) && isHealthy(f));
-    const otherHealthy = currentFeeds.filter(f => !isPriority(f) && isHealthy(f));
-    const priorityProblematic = currentFeeds.filter(f => isPriority(f) && !isHealthy(f));
-    const otherProblematic = currentFeeds.filter(f => !isPriority(f) && !isHealthy(f));
+    const getHealthScore = (feed: FeedSource) => {
+      const history = errorHistory.get(feed.url);
+      if (!history) return 0;
+      const hoursSinceLastError = (Date.now() - history.lastError) / (1000 * 60 * 60);
+      const recencyPenalty = Math.max(0, 48 - hoursSinceLastError); // errors in last 2 days are more costly
+      return history.failures * 10 + recencyPenalty;
+    };
 
-    const orderedFeeds = [...priorityHealthy, ...otherHealthy, ...priorityProblematic, ...otherProblematic];
-    const priorityFeedCount = priorityHealthy.length + otherHealthy.length;
+    const priorityFeeds = currentFeeds.filter(f => isPriority(f));
+    const otherFeeds = currentFeeds.filter(f => !isPriority(f));
+
+    const sortByHealth = (a: FeedSource, b: FeedSource) => getHealthScore(a) - getHealthScore(b);
+
+    const prioritySorted = priorityFeeds.slice().sort(sortByHealth);
+    const otherSorted = otherFeeds.slice().sort(sortByHealth);
+
+    const orderedFeeds = prioritySorted.length > 0
+      ? [...prioritySorted, ...otherSorted]
+      : otherSorted;
+
+    const priorityFeedCount = prioritySorted.length;
 
     if (problematicUrls.size > 0) {
-      logger.info(`Feed ordering: ${priorityHealthy.length} priority+healthy, ${otherHealthy.length} other healthy, ${priorityProblematic.length + otherProblematic.length} problematic`, {
+      logger.info(`Feed ordering: ${prioritySorted.length} priority, ${otherSorted.length} other (sorted by health)`, {
         additionalData: {
           priorityCategory: priorityCategoryId,
           problematicCount: problematicUrls.size
@@ -335,123 +373,153 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       });
     }
 
-    // Load feeds in batches to avoid overwhelming proxies
-    const feedBatches: FeedSource[][] = [];
-    for (let i = 0; i < orderedFeeds.length; i += BATCH_SIZE) {
-      feedBatches.push(orderedFeeds.slice(i, i + BATCH_SIZE));
-    }
+    const hasPriorityPhase =
+      prioritySorted.length > 0 && priorityCategoryId && priorityCategoryId !== 'all';
 
-    logger.info(`Loading ${currentFeeds.length} feeds in ${feedBatches.length} batches of ${BATCH_SIZE}`, {
-      additionalData: { totalFeeds: currentFeeds.length, batchCount: feedBatches.length }
+    const feedPhases: { name: 'priority' | 'secondary' | 'default'; feeds: FeedSource[] }[] = hasPriorityPhase
+      ? [
+          { name: 'priority', feeds: prioritySorted },
+          { name: 'secondary', feeds: otherSorted },
+        ]
+      : [{ name: 'default', feeds: orderedFeeds }];
+
+    const totalBatches = feedPhases.reduce((sum, phase) => sum + Math.ceil(phase.feeds.length / BATCH_SIZE), 0);
+
+    logger.info(`Loading ${currentFeeds.length} feeds in ${totalBatches} batches of ${BATCH_SIZE}`, {
+      additionalData: { totalFeeds: currentFeeds.length, batchCount: totalBatches }
     });
 
     const allResults: Promise<FeedResult>[] = [];
+    let batchCounter = 0;
 
-    // Process batches sequentially with delay
-    for (let batchIndex = 0; batchIndex < feedBatches.length; batchIndex++) {
-      const batch = feedBatches[batchIndex];
+    // Process phases sequentially with delay
+    for (const phase of feedPhases) {
+      const phaseBatches: FeedSource[][] = [];
+      for (let i = 0; i < phase.feeds.length; i += BATCH_SIZE) {
+        phaseBatches.push(phase.feeds.slice(i, i + BATCH_SIZE));
+      }
 
-      logger.debug(`Processing batch ${batchIndex + 1}/${feedBatches.length} with ${batch.length} feeds`);
+      for (let batchIndex = 0; batchIndex < phaseBatches.length; batchIndex++) {
+        const batch = phaseBatches[batchIndex];
+        batchCounter += 1;
 
-      // Update status for user
-      setLoadingState(prev => ({
-        ...prev,
-        currentAction: `Carregando lote ${batchIndex + 1} de ${feedBatches.length}...`
-      }));
+        logger.debug(`Processing batch ${batchCounter}/${totalBatches} with ${batch.length} feeds`, {
+          phase: phase.name
+        });
 
-      // Process feeds in current batch concurrently
-      const batchPromises = batch.map(async (feed) => {
-        try {
-          // Update granular status for single feed start (optional, might flicker too fast)
-          // setLoadingState(prev => ({ ...prev, currentAction: `Contacting ${new URL(feed.url).hostname}...` }));
+        // Update status for user
+        setLoadingState(prev => ({
+          ...prev,
+          currentAction: phase.name === 'priority'
+            ? `Carregando feeds da categoria atual (${batchIndex + 1}/${phaseBatches.length})...`
+            : `Carregando lote ${batchCounter} de ${totalBatches}...`
+        }));
 
-          const result = await loadSingleFeedWithTimeout(feed, abortControllerRef.current?.signal);
+        // Process feeds in current batch concurrently
+        const batchPromises = batch.map(async (feed) => {
+          try {
+            // Update granular status for single feed start (optional, might flicker too fast)
+            // setLoadingState(prev => ({ ...prev, currentAction: `Contacting ${new URL(feed.url).hostname}...` }));
 
-          // Update progress immediately when each feed completes
-          loadedCount++;
-          const progress = (loadedCount / currentFeeds.length) * 100;
+            const result = await loadSingleFeedWithTimeout(feed, abortControllerRef.current?.signal);
 
-          // Check if all priority (healthy) feeds have been loaded
-          const priorityComplete = loadedCount >= priorityFeedCount;
+            // Update progress immediately when each feed completes
+            loadedCount++;
+            const progress = (loadedCount / currentFeeds.length) * 100;
 
-          setLoadingState(prev => ({
-            ...prev,
-            loadedFeeds: loadedCount,
-            progress,
-            priorityFeedsLoaded: priorityComplete,
-            // Show what we just finished or generic progress
-            currentAction: priorityComplete && loadedCount < currentFeeds.length
-              ? `Carregando feeds restantes... (${currentFeeds.length - loadedCount} faltam)`
-              : `Processado ${feed.customTitle || new URL(feed.url).hostname}`
-          }));
+            // Check if all priority feeds have been loaded
+            const priorityComplete = priorityFeedCount === 0
+              ? true
+              : loadedCount >= priorityFeedCount;
 
-          // Add result to map
-          newFeedResults.set(feed.url, result);
+            setLoadingState(prev => ({
+              ...prev,
+              loadedFeeds: loadedCount,
+              progress,
+              priorityFeedsLoaded: priorityComplete,
+              // Show what we just finished or generic progress
+              currentAction: priorityComplete && loadedCount < currentFeeds.length
+                ? `Carregando feeds restantes... (${currentFeeds.length - loadedCount} faltam)`
+                : `Processado ${feed.customTitle || new URL(feed.url).hostname}`
+            }));
 
-          if (!result.success) {
-            // Track error with categorization
-            const errorMessage = result.error || 'Unknown error';
-            const errorType = categorizeError(errorMessage);
+            // Add result to map
+            newFeedResults.set(feed.url, result);
+
+            if (!result.success) {
+              // Track error with categorization
+              const errorMessage = result.error || 'Unknown error';
+              const errorType = categorizeError(errorMessage);
+              errors.push({
+                url: feed.url,
+                error: errorMessage,
+                timestamp: Date.now(),
+                feedTitle: result.title,
+                errorType: errorType,
+              });
+            }
+
+            return result;
+          } catch (error) {
+            loadedCount++;
+            const progress = (loadedCount / currentFeeds.length) * 100;
+
+            setLoadingState(prev => ({
+              ...prev,
+              loadedFeeds: loadedCount,
+              progress,
+              currentAction: `Error processing ${feed.customTitle || 'feed'}`
+            }));
+
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             errors.push({
               url: feed.url,
               error: errorMessage,
               timestamp: Date.now(),
-              feedTitle: result.title,
-              errorType: errorType,
             });
+
+            return {
+              url: feed.url,
+              articles: [],
+              title: feed.customTitle || feed.url,
+              success: false,
+              error: errorMessage,
+            };
           }
-
-          return result;
-        } catch (error) {
-          loadedCount++;
-          const progress = (loadedCount / currentFeeds.length) * 100;
-
-          setLoadingState(prev => ({
-            ...prev,
-            loadedFeeds: loadedCount,
-            progress,
-            currentAction: `Error processing ${feed.customTitle || 'feed'}`
-          }));
-
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          errors.push({
-            url: feed.url,
-            error: errorMessage,
-            timestamp: Date.now(),
-          });
-
-          return {
-            url: feed.url,
-            articles: [],
-            title: feed.customTitle || feed.url,
-            success: false,
-            error: errorMessage,
-          };
-        }
-      });
-
-      // Add batch promises to all results
-      allResults.push(...batchPromises);
-
-      // Wait for current batch to complete before starting next batch
-      await Promise.allSettled(batchPromises);
-
-      // Update articles AFTER the batch completes to reduce re-renders and layout shifts
-      setFeedResults(prev => {
-        const updated = new Map(prev);
-        // Merge new results from this batch into the map
-        newFeedResults.forEach((result, url) => {
-             updated.set(url, result);
         });
-        // Update the articles state with the accumulated results
-        updateArticlesFromFeedResults(updated);
-        return updated;
-      });
 
-      // Add delay between batches (except for the last batch)
-      if (batchIndex < feedBatches.length - 1) {
-        logger.debug(`Waiting ${BATCH_DELAY_MS}ms before next batch`);
-        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+        // Add batch promises to all results
+        allResults.push(...batchPromises);
+
+        // Wait for current batch to complete before starting next batch
+        await Promise.allSettled(batchPromises);
+
+        // Update articles AFTER the batch completes to reduce re-renders and layout shifts
+        setFeedResults(prev => {
+          const updated = new Map(prev);
+          // Merge new results from this batch into the map
+          newFeedResults.forEach((result, url) => {
+            updated.set(url, result);
+          });
+          // Update the articles state with the accumulated results
+          updateArticlesFromFeedResults(updated);
+          return updated;
+        });
+
+        // Add delay between batches (except for the last batch)
+        const isLastBatch = batchCounter >= totalBatches;
+        if (!isLastBatch) {
+          const delayMs = phase.name === 'priority' ? 0 : BATCH_DELAY_MS;
+          if (delayMs > 0) {
+            const isVisible = !document.hidden;
+            logger.debugTag('PERF', `Waiting before next batch`, {
+              batchIndex,
+              isPageVisible: isVisible,
+              delayMs: isVisible ? delayMs : BATCH_DELAY_BACKGROUND_MS
+            });
+            await waitForBatchDelay(delayMs, BATCH_DELAY_BACKGROUND_MS);
+          }
+        }
       }
     }
 

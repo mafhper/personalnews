@@ -28,7 +28,8 @@ async function withPage(context, fn) {
         // await browserContext.route('**/*', route => route.continue());
 
         const page = await browserContext.newPage();
-        await page.goto(context.url, { waitUntil: 'load' }); // or 'networkidle'
+        const navTimeoutMs = Number.parseInt(process.env.QC_PAGE_GOTO_TIMEOUT_MS || '', 10) || 60_000;
+        await page.goto(context.url, { waitUntil: 'domcontentloaded', timeout: navTimeoutMs });
 
         const result = await fn(page);
         return result;

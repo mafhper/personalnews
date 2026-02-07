@@ -4,43 +4,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src * data: blob:; connect-src *;" />
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src * data: blob:; connect-src 'self' http://localhost:* https://api.github.com https://api.rss2json.com https://api.allorigins.win https://corsproxy.io https://api.codetabs.com https://api.open-meteo.com https://nominatim.openstreetmap.org https://esm.sh https://fonts.googleapis.com https://fonts.gstatic.com https://whatever-origin.herokuapp.com https://textproxy.io https://cors-anywhere.herokuapp.com;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Personal News</title>
   <meta name="description" content="Your personal news dashboard aggregating RSS, Weather, and System Status." />
-  <link rel="icon" type="image/svg+xml" href="/personalnews/assets/logo.svg" />
-  <link rel="icon" type="image/svg+xml" sizes="32x32" href="/personalnews/assets/logo.svg" />
-  <link rel="apple-touch-icon" href="/personalnews/assets/logo.svg" />
+
+  <!-- Favicons (Light/Dark support) -->
+  <link rel="icon" href="/personalnews/icons/light/favicon.ico" sizes="any" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="/personalnews/icons/light/favicon.svg" type="image/svg+xml" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="/personalnews/icons/dark/favicon.ico" sizes="any" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/personalnews/icons/dark/favicon.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+
+  <!-- Default Fallback -->
+  <link rel="icon" href="/personalnews/icons/light/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/personalnews/icons/light/apple-touch-icon.png">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/personalnews/manifest.json">
+
+  <!-- Social Media -->
+  <meta property="og:image" content="/personalnews/og-image.png">
+  <meta name="twitter:image" content="/personalnews/twitter-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
-  <!-- Custom styles to override Tailwind - loaded LAST for priority -->
-  <style>
-    body {
-      background: linear-gradient(135deg,
-          rgb(10, 10, 12) 0%,
-          rgb(17, 17, 20) 25%,
-          rgb(20, 20, 26) 50%,
-          rgb(15, 15, 18) 75%,
-          rgb(10, 10, 12) 100%) !important;
-      background-attachment: fixed !important;
-      background-size: 400% 400% !important;
-      min-height: 100vh !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-  </style>
-  <script type="module" crossorigin src="/personalnews/assets/index-CINmAJFQ.js"></script>
-  <link rel="modulepreload" crossorigin href="/personalnews/assets/react-vendor-Cgg2GOmP.js">
+  <!-- Custom styles moved to index.css for better CSP compliance -->
+  <script type="module" crossorigin src="/personalnews/assets/index-BWqvD9HB.js"></script>
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/vendor-CLiumT_y.js">
   <link rel="modulepreload" crossorigin href="/personalnews/assets/core-services-MbVCwdt9.js">
-  <link rel="modulepreload" crossorigin href="/personalnews/assets/services-DlzVzAUL.js">
-  <link rel="modulepreload" crossorigin href="/personalnews/assets/performance-CYMss3Z-.js">
-  <link rel="stylesheet" crossorigin href="/personalnews/assets/index-CBP2cyHL.css">
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/feed-cache-COU8aBpt.js">
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/performance-Cm-9TY-Y.js">
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/feed-layouts-DDO90psi.js">
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/proxy-core-Aynsnv11.js">
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/feed-network-CFNgXRgP.js">
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/feed-tools-B7jmcIUp.js">
+  <link rel="modulepreload" crossorigin href="/personalnews/assets/landing-CDfqawp0.js">
+  <link rel="stylesheet" crossorigin href="/personalnews/assets/feed-tools-D-Nrq88m.css">
+  <link rel="stylesheet" crossorigin href="/personalnews/assets/index-BFdWrRip.css">
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root"></div>
 </body>
 
 </html>

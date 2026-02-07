@@ -168,7 +168,7 @@ export const FeedProgressIndicator: React.FC<FeedProgressIndicatorProps> = ({
                       {step.label}
                     </span>
                     <Badge
-                      variant={getStepBadgeVariant(step.status) as any}
+                      variant={getStepBadgeVariant(step.status) as "gray" | "green" | "red" | "blue"}
                       className="text-xs"
                     >
                       {step.status}

@@ -922,36 +922,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
   return articles;
 }
 
-/**
- * Clean HTML description text (simplified for production)
- */
-function cleanDescription(description: string): string {
-  if (!description) return "";
 
-  let cleanText = description;
-
-  // Primeiro, decodifica entidades HTML para detectar tags codificadas
-  cleanText = cleanText
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
-
-  // Agora remove todas as tags HTML (incluindo as decodificadas)
-  cleanText = cleanText
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove scripts
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "") // Remove iframes
-    .replace(/<[^>]*>/g, ""); // Remove all HTML tags
-
-  // Por último, decodifica entidades restantes e limpa
-  cleanText = cleanText
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .trim();
-
-  return cleanText;
-}
 
 /**
  * Sleep utility for retry delays

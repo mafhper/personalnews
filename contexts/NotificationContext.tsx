@@ -1,36 +1,12 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  ReactNode,
-} from "react";
+import React, { useState, useCallback, ReactNode } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { AlertDialog } from "../components/AlertDialog";
-import { NotificationOptions, Notification, ConfirmDialogOptions } from "../types";
-
-interface NotificationContextType {
-  notifications: Notification[];
-  showNotification: (message: string, options?: NotificationOptions) => void;
-  removeNotification: (id: string) => void;
-  clearAllNotifications: () => void;
-  showConfirm: (options: ConfirmDialogOptions) => Promise<boolean>;
-  showAlert: (message: string, options?: NotificationOptions) => Promise<void>;
-}
-
-const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined
-);
-
-export const useNotification = () => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error(
-      "useNotification must be used within a NotificationProvider"
-    );
-  }
-  return context;
-};
+import {
+  NotificationOptions,
+  Notification,
+  ConfirmDialogOptions,
+} from "../types";
+import { NotificationContext } from "./NotificationContextState";
 
 interface NotificationProviderProps {
   children: ReactNode;
@@ -54,7 +30,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const removeNotification = useCallback((id: string) => {
     setNotifications((prev) =>
-      prev.filter((notification) => notification.id !== id)
+      prev.filter((notification) => notification.id !== id),
     );
   }, []);
 
@@ -80,7 +56,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         }, notification.duration);
       }
     },
-    [removeNotification]
+    [removeNotification],
   );
 
   const clearAllNotifications = useCallback(() => {
@@ -97,7 +73,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         });
       });
     },
-    []
+    [],
   );
 
   const showAlert = useCallback(
@@ -111,7 +87,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         });
       });
     },
-    []
+    [],
   );
 
   const handleConfirmClose = useCallback(
@@ -121,7 +97,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         setConfirmDialog(null);
       }
     },
-    [confirmDialog]
+    [confirmDialog],
   );
 
   const handleAlertClose = useCallback(() => {
@@ -131,7 +107,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     }
   }, [alertDialog]);
 
-  const value: NotificationContextType = {
+  const value = {
     notifications,
     showNotification,
     removeNotification,

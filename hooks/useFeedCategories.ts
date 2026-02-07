@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import type { FeedCategory, FeedSource, HeaderConfig } from '../types';
+import type { FeedCategory, FeedSource } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants/curatedFeeds';
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
-  createCategory: (name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position'], autoDiscovery?: boolean) => FeedCategory;
+  createCategory: (name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], autoDiscovery?: boolean) => FeedCategory;
   updateCategory: (id: string, updates: Partial<FeedCategory>) => void;
   deleteCategory: (id: string) => void;
   reorderCategories: (categoryIds: string[]) => void;
@@ -38,6 +38,12 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
             return { ...cat, autoDiscovery: defaultCat.autoDiscovery };
           }
         }
+        // Migration: Remove headerPosition from all categories (now global only)
+        if ('headerPosition' in cat) {
+          hasChanges = true;
+          const { headerPosition: _, ...rest } = cat as FeedCategory & { headerPosition?: unknown };
+          return rest;
+        }
         return cat;
       });
 
@@ -56,7 +62,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     });
   }, [setCategories]);
 
-  const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], headerPosition?: HeaderConfig['position'], autoDiscovery?: boolean): FeedCategory => {
+  const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], autoDiscovery?: boolean): FeedCategory => {
     const newCategory: FeedCategory = {
       id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
@@ -65,7 +71,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       order: 0, // Will be updated in the setter function
       isDefault: false,
       layoutMode,
-      headerPosition,
+      // headerPosition is no longer stored - global setting only
       autoDiscovery: autoDiscovery ?? true, // Default to true
     };
 
@@ -174,7 +180,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
         return false;
       }
 
-      const validCategories = importData.categories.filter((cat: any) =>
+      const validCategories = importData.categories.filter((cat: Record<string, unknown>) =>
         cat.id && cat.name && cat.color && typeof cat.order === 'number'
       );
 

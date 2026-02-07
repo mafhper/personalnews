@@ -7,7 +7,8 @@ import { useFeedCategories } from '../hooks/useFeedCategories';
 import { Switch } from './ui/Switch';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../hooks/useLanguage';
+import { HeaderConfig, ContentConfig, Language } from '../types';
 
 interface SettingsSidebarProps {
   isOpen: boolean;
@@ -128,15 +129,15 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Sidebar */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[rgb(var(--color-surface))] border-l border-[rgb(var(--color-border))] z-50 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[rgb(var(--color-background))]/92 border-l border-[rgb(var(--color-border))] z-50 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col backdrop-blur-xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))]">
+        <div className="flex items-center justify-between p-4 border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))]/70 backdrop-blur-xl">
           <h2 className="text-lg font-bold text-[rgb(var(--color-text))] flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -146,7 +147,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors"
+            className="p-2 rounded-lg hover:bg-white/5 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -155,7 +156,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
 
           {/* Appearance Section */}
           <AccordionSection
@@ -185,10 +186,11 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                           updateThemeSettings({ autoDetectSystemTheme: false, systemThemeOverride: mode.id as 'light' | 'dark' });
                         }
                       }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${(mode.id === 'auto' && themeSettings.autoDetectSystemTheme) ||
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all border ${
+                          (mode.id === 'auto' && themeSettings.autoDetectSystemTheme) ||
                           (mode.id !== 'auto' && !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === mode.id)
-                          ? 'bg-[rgb(var(--color-accent))] text-white'
-                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                          ? 'bg-[rgba(var(--color-accent),0.1)] text-white border-[rgba(var(--color-accent),0.25)]'
+                          : 'bg-black/25 text-gray-400 border-white/10 hover:bg-white/5'
                         }`}
                     >
                       {mode.label}
@@ -227,11 +229,11 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                     if (preset) {
                       applyLayoutPreset(mode);
                     } else {
-                      updateContentConfig({ layoutMode: mode as any });
+                      updateContentConfig({ layoutMode: mode as ContentConfig['layoutMode'] });
                     }
                     resetCategoryLayouts();
                   }}
-                  className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
+                  className="w-full bg-black/20 border-white/10 text-gray-300 text-xs rounded-lg h-9 px-3"
                 >
                   <option value="bento">Bento</option>
                   <option value="brutalist">Brutalist</option>
@@ -259,8 +261,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 <label className="block text-xs text-gray-400 mb-2">Posição do Cabeçalho</label>
                 <select
                   value={headerConfig.position}
-                  onChange={(e) => updateHeaderConfig({ position: e.target.value as any })}
-                  className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
+                  onChange={(e) => updateHeaderConfig({ position: e.target.value as HeaderConfig['position'] })}
+                  className="w-full bg-black/20 border-white/10 text-gray-300 text-xs rounded-lg h-9 px-3"
                 >
                   <option value="sticky">Fixo no Topo (Sticky)</option>
                   <option value="static">Estático</option>
@@ -274,8 +276,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 <label className="block text-xs text-gray-400 mb-2">Altura</label>
                 <select
                   value={headerConfig.height}
-                  onChange={(e) => updateHeaderConfig({ height: e.target.value as any })}
-                  className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
+                  onChange={(e) => updateHeaderConfig({ height: e.target.value as HeaderConfig['height'] })}
+                  className="w-full bg-black/20 border-white/10 text-gray-300 text-xs rounded-lg h-9 px-3"
                 >
                   <option value="ultra-compact">Mínima (Ultra)</option>
                   <option value="tiny">Extra Compacto</option>
@@ -550,7 +552,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 <label className="block text-xs text-gray-400 mb-2">Paginação</label>
                 <select
                   value={contentConfig.paginationType || 'numbered'}
-                  onChange={(e) => updateContentConfig({ paginationType: e.target.value as any })}
+                  onChange={(e) => updateContentConfig({ paginationType: e.target.value as ContentConfig['paginationType'] })}
                   className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
                 >
                   <option value="numbered">Páginas (Numerada)</option>
@@ -574,7 +576,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 <label className="block text-xs text-gray-400 mb-2">Idioma</label>
                 <select
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value as any)}
+                  onChange={(e) => setLanguage(e.target.value as Language)}
                   className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-9 px-3"
                 >
                   <option value="pt-BR">Português (BR)</option>
@@ -642,26 +644,29 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
 }> = ({ title, icon, isOpen, onToggle, children }) => (
-  <div className="border border-[rgb(var(--color-border))] rounded-lg overflow-hidden">
+  <div className="border border-white/10 rounded-xl overflow-hidden bg-[rgba(var(--color-surface),0.45)]">
     <button
       onClick={onToggle}
-      className="w-full flex items-center justify-between p-3 bg-[rgb(var(--color-background))] hover:bg-gray-800/50 transition-colors"
+      className="w-full flex items-center justify-between p-3 bg-[rgba(var(--color-background),0.5)] hover:bg-[rgba(var(--color-background),0.7)] transition-colors"
     >
       <span className="flex items-center gap-2 text-sm font-medium text-[rgb(var(--color-text))]">
         <span>{icon}</span>
         {title}
       </span>
-      <svg
-        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
+      <div className="flex items-center gap-2">
+        {isOpen && <span className="w-2 h-2 rounded-full bg-[rgba(var(--color-accent),0.28)]" />}
+        <svg
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
     </button>
     {isOpen && (
-      <div className="p-4 bg-[rgb(var(--color-surface))] animate-in slide-in-from-top-2 duration-200">
+      <div className="p-4 bg-[rgba(var(--color-surface),0.6)] animate-in slide-in-from-top-2 duration-200">
         {children}
       </div>
     )}

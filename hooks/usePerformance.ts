@@ -110,7 +110,7 @@ export const usePerformance = (config: Partial<PerformanceConfig> = {}) => {
   }, [finalConfig.enabled]);
 
   // Complete a network request batch
-  const completeNetworkBatch = useCallback((batchId: string, results: any[], status: 'complete' | 'error' = 'complete') => {
+  const completeNetworkBatch = useCallback((batchId: string, results: unknown[], status: 'complete' | 'error' = 'complete') => {
     if (!finalConfig.enabled) return;
     performanceUtils.completeNetworkRequestBatch(batchId, results, status);
   }, [finalConfig.enabled]);

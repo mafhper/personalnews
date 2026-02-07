@@ -12,9 +12,7 @@ O formato é rigoroso para permitir a sincronização automática.
 ### Tema Padrão - Define a paleta de cores inicial da interface
 
 - Tema Padrão: dark-blue;
-
-Opções:
-
+  Opções:
 - `dark-blue`: Azul Escuro (Padrão Dark)
 - `dark-green`: Verde Escuro (Nature)
 - `dark-purple`: Roxo Escuro (Cyber)
@@ -29,9 +27,7 @@ Opções:
 ### Layout Global - Define como os artigos são organizados na grade
 
 - Layout Global: bento;
-
-Opções:
-
+  Opções:
 - `grid`: Grade de revista clássica
 - `list`: Lista limpa estilo portal
 - `masonry`: Cards com alturas variáveis
@@ -57,10 +53,8 @@ Opções:
 
 ### Header Global - Define o comportamento do cabeçalho de navegação
 
-- Header Global: sticky;
-
-Opções:
-
+- Header Global: floating;
+  Opções:
 - `static`: Move junto com o scroll (topo da página)
 - `sticky`: Fixado no topo enquanto você navega
 - `floating`: Flutuante com transparência e desfoque
@@ -73,9 +67,7 @@ Opções:
 ### Formato Hora - Define como as datas e horas são exibidas
 
 - Formato Hora: 24h;
-
-Opções:
-
+  Opções:
 - `12h`: Formato AM/PM
 - `24h`: Formato militar/europeu
 
@@ -97,55 +89,54 @@ Opções:
 - ID: design;
 - Cor: #F0EEE9;
 - Layout: immersive;
-- Header: sticky;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Inspiração visual, UX/UI e tendências de design.;
 
 ---
+
 ---
 
 - Nome: Games;
 - ID: games;
 - Cor: #F59E0B;
 - Layout: immersive;
-- Header: sticky;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Lançamentos, reviews e cultura gamer.;
 
 ---
+
 ---
 
 - Nome: Tecnologia;
 - ID: tech;
 - Cor: #3B82F6;
 - Layout: list;
-- Header: sticky;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
 
 ---
+
 ---
 
 - Nome: Política;
 - ID: politics;
 - Cor: #EF4444;
 - Layout: list;
-- Header: sticky;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Cobertura política nacional e internacional.;
 
 ---
+
 ---
 
 - Nome: Vídeos;
 - ID: youtube;
 - Cor: #C4302B;
 - Layout: brutalist;
-- Header: sticky;
 - Pinned: false;
 - Auto-Discovery: false;
 - Descrição: Canais preferidos do Youtube.;
@@ -164,10 +155,10 @@ Opções:
 ### games
 
 - Adrenaline: <https://adrenaline.com.br/feed/>
-- Jogabilidade (Não Games): <https://naogames.jogabilida.de/>
+- Jogabilidade: <https://jogabilida.de/feed/>
 - Kotaku: <https://kotaku.com/rss>
-- Polygon: <https://www.polygon.com/feed/>
 - PC Gamer: <https://www.pcgamer.com/feeds.xml>
+- Polygon: <https://www.polygon.com/feed/>
 
 ### politics
 
@@ -178,31 +169,19 @@ Opções:
 
 ### tech
 
-- 9to5Google: <https://9to5google.com/feed/>
-- 9to5Linux: <https://9to5linux.com/feed/>
-- 9to5Mac: <https://9to5mac.com/feed/>
-- Ars Technica: <https://arstechnica.com/feed/>
+- AdaFruit: <https://blog.adafruit.com/rss>
 - CNET: <http://www.cnet.com/rss/news/>
 - Diolinux: <https://diolinux.com.br/feed>
-- MacMagazine: <https://macmagazine.com.br/feed/>
-- Meio Bit: <https://meiobit.com/feed/>
 - Tecnoblog: <https://tecnoblog.net/feed/>
-- The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
-- Tom's Guide: <https://www.tomsguide.com/feeds.xml>
-- Tom's Hardware: <https://www.tomshardware.com/feeds.xml>
 - XDA: <https://www.xda-developers.com/feed/>
 
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
 - Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
-- Jimmy Diresta: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
 - Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
-- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA> | Hide-from-All: true
-- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw> | Hide-from-All: true
-- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ> | Hide-from-All: true
 
 # Listas Curadas
 
@@ -219,7 +198,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - Adrenaline: <https://adrenaline.com.br/feed/>
 - IGN Brasil: <https://br.ign.com/feed.xml>
-- Jogabilidade (Não Games): <https://naogames.jogabilida.de/>
+- Jogabilidade: <https://jogabilida.de/feed/>
 
 ### politics
 
@@ -238,8 +217,10 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
-- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
 - Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
+- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
+- Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg>
+- Gamera: <https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw>
 
 ## International Mix
 
@@ -252,14 +233,15 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### games
 
 - Kotaku: <https://kotaku.com/rss>
-- Polygon: <https://www.polygon.com/feed/>
 - PC Gamer: <https://www.pcgamer.com/feeds.xml>
+- Polygon: <https://www.polygon.com/feed/>
 
 ### tech
 
 - 9to5Google: <https://9to5google.com/feed/>
 - 9to5Linux: <https://9to5linux.com/feed/>
 - 9to5Mac: <https://9to5mac.com/feed/>
+- AdaFruit: <https://blog.adafruit.com/rss>
 - Ars Technica: <https://arstechnica.com/feed/>
 - CNET: <http://www.cnet.com/rss/news/>
 - Digital Trends: <https://www.digitaltrends.com/feed/>
@@ -278,14 +260,16 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### youtube
 
+- Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug>
+- Alberta Tech: <https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw>
+- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
 - Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
 - GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
+- Macho Nacho: <https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ>
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
 - Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ>
 - The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ>
-- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
-- Jimmy Diresta: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
 
 ## Pacote Mix Global
 
@@ -301,10 +285,10 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - Adrenaline: <https://adrenaline.com.br/feed/>
 - IGN Brasil: <https://br.ign.com/feed.xml>
 - Jogabilidade (Não Games): <https://naogames.jogabilida.de/>
+- Jogabilidade: <https://jogabilida.de/feed/>
 - Kotaku: <https://kotaku.com/rss>
-- Polygon: <https://www.polygon.com/feed/>
 - PC Gamer: <https://www.pcgamer.com/feeds.xml>
-
+- Polygon: <https://www.polygon.com/feed/>
 
 ### politics
 
@@ -318,6 +302,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - 9to5Google: <https://9to5google.com/feed/>
 - 9to5Linux: <https://9to5linux.com/feed/>
 - 9to5Mac: <https://9to5mac.com/feed/>
+- AdaFruit: <https://blog.adafruit.com/rss>
 - Ars Technica: <https://arstechnica.com/feed/>
 - CNET: <http://www.cnet.com/rss/news/>
 - Digital Trends: <https://www.digitaltrends.com/feed/>
@@ -341,13 +326,17 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
+- Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug>
+- Alberta Tech: <https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw>
+- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
 - Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
 - Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
+- Gamera: <https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw>
 - GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
+- Macho Nacho: <https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ>
 - News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
 - NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
 - Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ>
+- Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg>
 - The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ>
-- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
-- Jimmy Diresta: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>

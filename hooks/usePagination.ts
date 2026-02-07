@@ -13,7 +13,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 
 interface PaginationOptions {
   persistInUrl?: boolean;
-  resetTriggers?: any[];
+  resetTriggers?: unknown[];
   urlParamName?: string;
 }
 

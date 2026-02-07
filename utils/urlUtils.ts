@@ -41,7 +41,7 @@ export const normalizeUrl = (url: string): string => {
     }
 
     return normalized;
-  } catch (e) {
+  } catch {
     // Fallback for invalid URLs
     return url.trim().toLowerCase().replace(/\/$/, '');
   }

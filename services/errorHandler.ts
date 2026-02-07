@@ -5,7 +5,7 @@
  * error reporting, and context management.
  */
 
-import { logger } from './logger';
+import { logger } from "./logger";
 
 // Error types and interfaces
 export interface ErrorContext {
@@ -15,7 +15,7 @@ export interface ErrorContext {
   userAgent?: string;
   url?: string;
   timestamp?: number;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface SerializedError {
@@ -30,7 +30,7 @@ export interface ErrorReport {
   timestamp: number;
   error: SerializedError;
   context: ErrorContext;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   recovered: boolean;
 }
 
@@ -42,21 +42,21 @@ export interface RecoveryStrategy {
 
 // Error classification
 export enum ErrorType {
-  NETWORK_ERROR = 'NetworkError',
-  CACHE_ERROR = 'CacheError',
-  COMPONENT_ERROR = 'ComponentError',
-  VALIDATION_ERROR = 'ValidationError',
-  SECURITY_ERROR = 'SecurityError',
-  PERFORMANCE_ERROR = 'PerformanceError',
-  UNKNOWN_ERROR = 'UnknownError',
+  NETWORK_ERROR = "NetworkError",
+  CACHE_ERROR = "CacheError",
+  COMPONENT_ERROR = "ComponentError",
+  VALIDATION_ERROR = "ValidationError",
+  SECURITY_ERROR = "SecurityError",
+  PERFORMANCE_ERROR = "PerformanceError",
+  UNKNOWN_ERROR = "UnknownError",
 }
 
 // Error severity levels
 export enum ErrorSeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  CRITICAL = "critical",
 }
 
 /**
@@ -87,10 +87,11 @@ export class ErrorHandler {
   private setupDefaultRecoveryStrategies(): void {
     // Network error recovery
     this.registerRecoveryStrategy(ErrorType.NETWORK_ERROR, {
-      canRecover: (error) => error.name === 'NetworkError' || error.message.includes('fetch'),
+      canRecover: (error) =>
+        error.name === "NetworkError" || error.message.includes("fetch"),
       recover: async (error, context) => {
-        logger.info('Attempting network error recovery', {
-          additionalData: { error: error.message, context }
+        logger.info("Attempting network error recovery", {
+          additionalData: { error: error.message, context },
         });
 
         // Retry with exponential backoff
@@ -102,8 +103,13 @@ export class ErrorHandler {
             await this.delay(Math.pow(2, attempt) * 1000); // Exponential backoff
 
             // If the error has a retry function in context, use it
-            if (context.additionalData?.retryFunction) {
-              await context.additionalData.retryFunction();
+            if (
+              context.additionalData?.retryFunction &&
+              typeof context.additionalData.retryFunction === "function"
+            ) {
+              await (
+                context.additionalData.retryFunction as () => Promise<void>
+              )();
               return true;
             }
 
@@ -111,8 +117,11 @@ export class ErrorHandler {
           } catch (retryError) {
             logger.warn(`Network retry attempt ${attempt + 1} failed`, {
               additionalData: {
-                error: retryError instanceof Error ? retryError.message : String(retryError)
-              }
+                error:
+                  retryError instanceof Error
+                    ? retryError.message
+                    : String(retryError),
+              },
             });
             attempt++;
           }
@@ -125,30 +134,36 @@ export class ErrorHandler {
 
     // Cache error recovery
     this.registerRecoveryStrategy(ErrorType.CACHE_ERROR, {
-      canRecover: (error) => error.message.includes('cache') || error.message.includes('storage'),
+      canRecover: (error) =>
+        error.message.includes("cache") || error.message.includes("storage"),
       recover: async (error, context) => {
-        logger.info('Attempting cache error recovery', {
-          additionalData: { error: error.message, context }
+        logger.info("Attempting cache error recovery", {
+          additionalData: { error: error.message, context },
         });
 
         try {
           // Clear potentially corrupted cache
-          if (typeof localStorage !== 'undefined') {
-            const keysToRemove = Object.keys(localStorage).filter(key =>
-              key.startsWith('rss-') || key.startsWith('cache-')
+          if (typeof localStorage !== "undefined") {
+            const keysToRemove = Object.keys(localStorage).filter(
+              (key) => key.startsWith("rss-") || key.startsWith("cache-"),
             );
-            keysToRemove.forEach(key => localStorage.removeItem(key));
+            keysToRemove.forEach((key) => localStorage.removeItem(key));
           }
 
           // Clear IndexedDB cache if available
-          if ('indexedDB' in window) {
+          if ("indexedDB" in window) {
             // This would be implemented based on your IndexedDB usage
-            logger.info('IndexedDB cache cleared');
+            logger.info("IndexedDB cache cleared");
           }
 
           return true;
         } catch (clearError) {
-          logger.error('Failed to clear cache during recovery', clearError instanceof Error ? clearError : new Error(String(clearError)));
+          logger.error(
+            "Failed to clear cache during recovery",
+            clearError instanceof Error
+              ? clearError
+              : new Error(String(clearError)),
+          );
           return false;
         }
       },
@@ -156,28 +171,38 @@ export class ErrorHandler {
 
     // Component error recovery
     this.registerRecoveryStrategy(ErrorType.COMPONENT_ERROR, {
-      canRecover: (error) => error.name === 'ChunkLoadError' || error.message.includes('Loading chunk'),
+      canRecover: (error) =>
+        error.name === "ChunkLoadError" ||
+        error.message.includes("Loading chunk"),
       recover: async (error, context) => {
-        logger.info('Attempting component error recovery', {
-          additionalData: { error: error.message, context }
+        logger.info("Attempting component error recovery", {
+          additionalData: { error: error.message, context },
         });
 
         try {
           // For chunk load errors, reload the page
-          if (error.name === 'ChunkLoadError') {
+          if (error.name === "ChunkLoadError") {
             window.location.reload();
             return true;
           }
 
           // For other component errors, try to reset component state
-          if (context.additionalData?.resetFunction) {
-            context.additionalData.resetFunction();
+          if (
+            context.additionalData?.resetFunction &&
+            typeof context.additionalData.resetFunction === "function"
+          ) {
+            (context.additionalData.resetFunction as () => void)();
             return true;
           }
 
           return false;
         } catch (recoveryError) {
-          logger.error('Component recovery failed', recoveryError instanceof Error ? recoveryError : new Error(String(recoveryError)));
+          logger.error(
+            "Component recovery failed",
+            recoveryError instanceof Error
+              ? recoveryError
+              : new Error(String(recoveryError)),
+          );
           return false;
         }
       },
@@ -189,22 +214,25 @@ export class ErrorHandler {
    */
   private setupGlobalErrorHandlers(): void {
     // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+    window.addEventListener("unhandledrejection", (event) => {
+      const error =
+        event.reason instanceof Error
+          ? event.reason
+          : new Error(String(event.reason));
       this.handleError(error, {
-        component: 'global',
-        additionalData: { type: 'unhandledrejection' },
+        component: "global",
+        additionalData: { type: "unhandledrejection" },
       });
     });
 
     // Handle global JavaScript errors
-    window.addEventListener('error', (event) => {
+    window.addEventListener("error", (event) => {
       const error = event.error || new Error(event.message);
       this.handleError(error, {
-        component: 'global',
+        component: "global",
         url: event.filename,
         additionalData: {
-          type: 'javascript',
+          type: "javascript",
           lineno: event.lineno,
           colno: event.colno,
         },
@@ -215,10 +243,15 @@ export class ErrorHandler {
   /**
    * Register a recovery strategy for a specific error type
    */
-  public registerRecoveryStrategy(errorType: string, strategy: RecoveryStrategy): void {
+  public registerRecoveryStrategy(
+    errorType: string,
+    strategy: RecoveryStrategy,
+  ): void {
     this.recoveryStrategies.set(errorType, strategy);
     if (import.meta.env.DEV) {
-      console.debug(`[ErrorHandler] Recovery strategy registered for ${errorType}`);
+      console.debug(
+        `[ErrorHandler] Recovery strategy registered for ${errorType}`,
+      );
     }
   }
 
@@ -228,7 +261,7 @@ export class ErrorHandler {
   public async handleError(
     error: Error,
     context: ErrorContext = {},
-    attemptRecovery = true
+    attemptRecovery = true,
   ): Promise<boolean> {
     const enhancedContext = this.enhanceContext(context);
     const errorType = this.classifyError(error);
@@ -274,27 +307,35 @@ export class ErrorHandler {
     const message = error.message.toLowerCase();
     const name = error.name.toLowerCase();
 
-    if (name.includes('network') || message.includes('fetch') || message.includes('network')) {
+    if (
+      name.includes("network") ||
+      message.includes("fetch") ||
+      message.includes("network")
+    ) {
       return ErrorType.NETWORK_ERROR;
     }
 
-    if (message.includes('cache') || message.includes('storage')) {
+    if (message.includes("cache") || message.includes("storage")) {
       return ErrorType.CACHE_ERROR;
     }
 
-    if (name.includes('chunk') || message.includes('loading chunk')) {
+    if (name.includes("chunk") || message.includes("loading chunk")) {
       return ErrorType.COMPONENT_ERROR;
     }
 
-    if (message.includes('validation') || message.includes('invalid')) {
+    if (message.includes("validation") || message.includes("invalid")) {
       return ErrorType.VALIDATION_ERROR;
     }
 
-    if (message.includes('security') || message.includes('csp') || message.includes('cors')) {
+    if (
+      message.includes("security") ||
+      message.includes("csp") ||
+      message.includes("cors")
+    ) {
       return ErrorType.SECURITY_ERROR;
     }
 
-    if (message.includes('performance') || message.includes('timeout')) {
+    if (message.includes("performance") || message.includes("timeout")) {
       return ErrorType.PERFORMANCE_ERROR;
     }
 
@@ -306,21 +347,27 @@ export class ErrorHandler {
    */
   private determineSeverity(error: Error, errorType: ErrorType): ErrorSeverity {
     // Critical errors that break core functionality
-    if (errorType === ErrorType.SECURITY_ERROR ||
-        error.name === 'ChunkLoadError' ||
-        error.message.includes('Cannot read properties of undefined')) {
+    if (
+      errorType === ErrorType.SECURITY_ERROR ||
+      error.name === "ChunkLoadError" ||
+      error.message.includes("Cannot read properties of undefined")
+    ) {
       return ErrorSeverity.CRITICAL;
     }
 
     // High severity errors that impact user experience
-    if (errorType === ErrorType.NETWORK_ERROR ||
-        errorType === ErrorType.COMPONENT_ERROR) {
+    if (
+      errorType === ErrorType.NETWORK_ERROR ||
+      errorType === ErrorType.COMPONENT_ERROR
+    ) {
       return ErrorSeverity.HIGH;
     }
 
     // Medium severity errors that cause minor issues
-    if (errorType === ErrorType.CACHE_ERROR ||
-        errorType === ErrorType.VALIDATION_ERROR) {
+    if (
+      errorType === ErrorType.CACHE_ERROR ||
+      errorType === ErrorType.VALIDATION_ERROR
+    ) {
       return ErrorSeverity.MEDIUM;
     }
 
@@ -334,7 +381,7 @@ export class ErrorHandler {
   private createErrorReport(
     error: Error,
     context: ErrorContext,
-    severity: ErrorSeverity
+    severity: ErrorSeverity,
   ): ErrorReport {
     return {
       id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -354,7 +401,10 @@ export class ErrorHandler {
       name: error.name,
       message: error.message,
       stack: error.stack,
-      cause: (error as any).cause instanceof Error ? this.serializeError((error as any).cause) : undefined,
+      cause:
+        (error as { cause?: unknown }).cause instanceof Error
+          ? this.serializeError((error as { cause?: unknown }).cause as Error)
+          : undefined,
     };
   }
 
@@ -372,10 +422,15 @@ export class ErrorHandler {
     // Store in localStorage for persistence
     try {
       const recentReports = this.errorReports.slice(-10); // Keep only 10 most recent
-      localStorage.setItem('error-reports', JSON.stringify(recentReports));
+      localStorage.setItem("error-reports", JSON.stringify(recentReports));
     } catch (storageError) {
-      logger.warn('Failed to store error reports in localStorage', {
-        additionalData: { error: storageError instanceof Error ? storageError.message : String(storageError) }
+      logger.warn("Failed to store error reports in localStorage", {
+        additionalData: {
+          error:
+            storageError instanceof Error
+              ? storageError.message
+              : String(storageError),
+        },
       });
     }
   }
@@ -386,9 +441,11 @@ export class ErrorHandler {
   private async attemptRecovery(
     error: Error,
     context: ErrorContext,
-    errorType: ErrorType
+    errorType: ErrorType,
   ): Promise<boolean> {
-    const strategy = this.recoveryStrategies.get(errorType) || this.recoveryStrategies.get(error.name);
+    const strategy =
+      this.recoveryStrategies.get(errorType) ||
+      this.recoveryStrategies.get(error.name);
 
     if (!strategy || !strategy.canRecover(error)) {
       logger.debug(`No recovery strategy available for ${errorType}`);
@@ -397,7 +454,7 @@ export class ErrorHandler {
 
     try {
       logger.info(`Attempting recovery for ${errorType}`, {
-        additionalData: { error: error.message }
+        additionalData: { error: error.message },
       });
       const recovered = await strategy.recover(error, context);
 
@@ -409,7 +466,12 @@ export class ErrorHandler {
 
       return recovered;
     } catch (recoveryError) {
-      logger.error(`Recovery strategy failed for ${errorType}`, recoveryError instanceof Error ? recoveryError : new Error(String(recoveryError)));
+      logger.error(
+        `Recovery strategy failed for ${errorType}`,
+        recoveryError instanceof Error
+          ? recoveryError
+          : new Error(String(recoveryError)),
+      );
       return false;
     }
   }
@@ -419,17 +481,19 @@ export class ErrorHandler {
    */
   private async reportError(report: ErrorReport): Promise<void> {
     // Only report high and critical errors in production
-    if (import.meta.env.MODE === 'production' &&
-        (report.severity === ErrorSeverity.HIGH || report.severity === ErrorSeverity.CRITICAL)) {
-
+    if (
+      import.meta.env.MODE === "production" &&
+      (report.severity === ErrorSeverity.HIGH ||
+        report.severity === ErrorSeverity.CRITICAL)
+    ) {
       try {
         // This would integrate with your error reporting service
         // For now, we'll just log it
-        logger.info('Error report would be sent to external service', {
+        logger.info("Error report would be sent to external service", {
           additionalData: {
             reportId: report.id,
             severity: report.severity,
-          }
+          },
         });
 
         // Example: Send to external service
@@ -439,7 +503,12 @@ export class ErrorHandler {
         //   body: JSON.stringify(report),
         // });
       } catch (reportingError) {
-        logger.error('Failed to report error to external service', reportingError instanceof Error ? reportingError : new Error(String(reportingError)));
+        logger.error(
+          "Failed to report error to external service",
+          reportingError instanceof Error
+            ? reportingError
+            : new Error(String(reportingError)),
+        );
       }
     }
   }
@@ -457,10 +526,12 @@ export class ErrorHandler {
   public clearErrorReports(): void {
     this.errorReports = [];
     try {
-      localStorage.removeItem('error-reports');
+      localStorage.removeItem("error-reports");
     } catch (error) {
-      logger.warn('Failed to clear error reports from localStorage', {
-        additionalData: { error: error instanceof Error ? error.message : String(error) }
+      logger.warn("Failed to clear error reports from localStorage", {
+        additionalData: {
+          error: error instanceof Error ? error.message : String(error),
+        },
       });
     }
   }
@@ -475,18 +546,26 @@ export class ErrorHandler {
     recoveryRate: number;
   } {
     const total = this.errorReports.length;
-    const bySeverity = this.errorReports.reduce((acc, report) => {
-      acc[report.severity] = (acc[report.severity] || 0) + 1;
-      return acc;
-    }, {} as Record<ErrorSeverity, number>);
+    const bySeverity = this.errorReports.reduce(
+      (acc, report) => {
+        acc[report.severity] = (acc[report.severity] || 0) + 1;
+        return acc;
+      },
+      {} as Record<ErrorSeverity, number>,
+    );
 
-    const byType = this.errorReports.reduce((acc, report) => {
-      const type = report.error.name;
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byType = this.errorReports.reduce(
+      (acc, report) => {
+        const type = report.error.name;
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    const recoveredCount = this.errorReports.filter(report => report.recovered).length;
+    const recoveredCount = this.errorReports.filter(
+      (report) => report.recovered,
+    ).length;
     const recoveryRate = total > 0 ? recoveredCount / total : 0;
 
     return {
@@ -501,7 +580,7 @@ export class ErrorHandler {
    * Utility method for delays
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

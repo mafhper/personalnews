@@ -62,6 +62,10 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
   const { startRenderTiming, endRenderTiming } = usePerformance();
   const { settings: layoutSettings } = useArticleLayout();
   const { contentConfig } = useAppearance();
+  const authorLabel =
+    article.author && article.author !== article.sourceTitle
+      ? article.author
+      : undefined;
 
   // Start performance measurement
   useEffect(() => {
@@ -90,17 +94,13 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
 
   return (
     <article className={`h-full flex flex-col transition-all duration-300 ${className}`}>
-      {/* Grid layout optimized for cards */}
-      <div className={`
-        flex h-full group transition-all duration-300
-        ${isHorizontal ? 'flex-row gap-6 p-5 bg-[rgb(var(--color-surface))]/80' : 'flex-col p-5 bg-[rgb(var(--color-surface))]/40'}
-        backdrop-blur-xl
-        rounded-2xl border border-white/20
-        hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))]/40
-        hover:shadow-2xl hover:shadow-black/60
-      `}>
+      <div
+        className={`feed-card flex h-full group ${isHorizontal ? 'flex-row gap-5 p-4 sm:p-5' : 'flex-col p-4 sm:p-5'}`}
+      >
         {/* Article image - Always render container */}
-        <div className={`relative bg-gray-800/50 rounded-xl overflow-hidden ${isHorizontal ? 'w-28 sm:w-40 h-20 sm:h-28 shrink-0 mb-0' : 'h-40 sm:h-32 lg:h-44 mb-4'}`}>
+        <div
+          className={`feed-media relative ${isHorizontal ? 'w-28 sm:w-40 aspect-[4/3] shrink-0 mb-0' : 'w-full aspect-[4/3] sm:aspect-[3/2] lg:aspect-[3/2] mb-4'}`}
+        >
           <a
             href={article.link}
             target="_blank"
@@ -125,7 +125,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
           </a>
 
           {/* Article number overlay */}
-          <div className="absolute top-2 left-2 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold pointer-events-none z-10">
+          <div className="absolute top-2 left-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold pointer-events-none z-10">
             {index}
           </div>
 
@@ -151,45 +151,46 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
                 onClick(article);
               }
             }}
-            aria-label={`Article: ${article.title} from ${article.author || article.sourceTitle
-              }`}
+            aria-label={`Article: ${article.title} from ${
+              authorLabel || article.sourceTitle
+            }`}
           >
             {/* Source badge */}
             {contentConfig.showTags && (
               <div className="mb-2">
-                <span className="inline-block bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-[0.1em] truncate max-w-full shadow-md shadow-black/40">
+                <span className="feed-chip truncate max-w-full">
                   {article.sourceTitle}
                 </span>
               </div>
             )}
 
             {/* Title with better text wrapping */}
-            <h4 className="font-bold text-base lg:text-lg leading-snug group-hover:text-white text-gray-100 mb-2 line-clamp-3 transition-colors">
+            <h4 className="feed-title text-base lg:text-lg leading-snug group-hover:text-white mb-2 line-clamp-3 transition-colors">
               {article.title}
             </h4>
 
             {article.description && (
-              <p className="text-gray-300/90 group-hover:text-gray-100 text-sm mt-1 mb-3 line-clamp-2 leading-relaxed font-medium transition-colors">
+              <p className="feed-desc text-sm mt-1 mb-3 line-clamp-2 leading-relaxed font-medium transition-colors group-hover:text-white/90">
                 {article.description}
               </p>
             )}
 
             {/* Article metadata */}
             <div className={`space-y-2 ${isHorizontal ? '' : 'mt-auto'}`}>
-              <div className="flex items-center justify-between text-xs font-bold text-white transition-colors">
-                {contentConfig.showAuthor && article.author && (
+              <div className="flex items-center justify-between text-xs transition-colors feed-meta">
+                {contentConfig.showAuthor && authorLabel && (
                   <span
-                    className="truncate max-w-[150px] bg-black/40 px-2 py-0.5 rounded shadow-sm"
-                    aria-label={`Author: ${article.author}`}
-                    title={article.author}
+                    className="truncate max-w-[150px] bg-black/30 px-2 py-0.5 rounded-md"
+                    aria-label={`Author: ${authorLabel}`}
+                    title={authorLabel}
                   >
-                    Por {article.author}
+                    Por {authorLabel}
                   </span>
                 )}
               </div>
               {(contentConfig.showDate || contentConfig.showTime) && (
                 <time
-                  className="text-white/80 font-bold text-[10px] block group-hover:text-white transition-colors bg-white/5 self-start px-2 py-0.5 rounded italic"
+                  className="feed-meta text-[10px] block group-hover:text-white transition-colors bg-white/5 self-start px-2 py-0.5 rounded italic"
                   dateTime={article.pubDate.toISOString()}
                   aria-label={`Published ${timeSince(article.pubDate)}`}
                 >

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { OptimizedImage } from '../OptimizedImage';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 
 interface TerminalLayoutProps {
@@ -12,8 +12,8 @@ interface TerminalLayoutProps {
 
 export const TerminalSkeleton: React.FC = () => {
   return (
-    <div className="min-h-screen text-green-500 pt-3 pb-12 px-3 sm:px-4 md:px-6 font-mono">
-      <div className="border border-white/10 rounded-lg bg-black/95 shadow-2xl min-h-[70vh] w-full lg:max-w-[80rem] lg:mx-auto">
+    <div className="min-h-screen terminal-accent pt-3 pb-12 px-3 sm:px-4 md:px-6 font-mono">
+      <div className="border terminal-border rounded-lg terminal-surface shadow-xl min-h-[70vh] w-full lg:max-w-[80rem] lg:mx-auto">
         <div className="bg-white/5 border-b border-white/5 p-2 flex items-center gap-2">
           <div className="flex gap-1.5 ml-2">
             <div className="w-3 h-3 rounded-full bg-white/5" />
@@ -22,15 +22,15 @@ export const TerminalSkeleton: React.FC = () => {
           </div>
         </div>
         <div className="p-8 space-y-8">
-          <div className="mb-8 bg-white/5 h-6 w-48 animate-pulse" />
+          <div className="mb-8 feed-skeleton-block h-6 w-48" />
           {[1, 2, 3, 4, 5].map(i => (
             <div key={i} className="flex gap-4 items-start pl-4 border-l-2 border-white/5">
               <span className="text-gray-700">{'>'}</span>
-              <div className="w-28 h-20 bg-white/5 animate-pulse rounded-md" />
+              <div className="w-28 h-20 feed-skeleton-block rounded-md" />
               <div className="flex-1 space-y-3">
-                <div className="h-3 w-32 bg-white/5 animate-pulse" />
-                <div className="h-6 w-full bg-white/5 animate-pulse" />
-                <div className="h-12 w-3/4 bg-white/5 animate-pulse" />
+                <div className="h-3 w-32 feed-skeleton-block" />
+                <div className="h-6 w-full feed-skeleton-block" />
+                <div className="h-12 w-3/4 feed-skeleton-block" />
               </div>
             </div>
           ))}
@@ -45,12 +45,12 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen text-green-500 pt-3 pb-12 px-3 sm:px-4 md:px-6 font-mono text-sm md:text-base">
+    <div className="min-h-screen terminal-accent pt-3 pb-12 px-3 sm:px-4 md:px-6 font-mono text-sm md:text-base">
 
       {/* Terminal Window */}
       <div
         className="
-          border border-white/10 rounded-lg bg-black/95 shadow-2xl overflow-hidden
+          border terminal-border rounded-lg terminal-surface shadow-xl overflow-hidden
           min-h-[70vh] flex flex-col relative backdrop-blur-sm
 
           /* 🔑 comportamento desejado */
@@ -95,7 +95,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                 key={article.link || i}
                 className="
                   group relative pl-4 border-l-2 border-transparent
-                  hover:border-green-500/50 transition-colors
+                  hover:border-[rgba(var(--terminal-accent),0.45)] transition-colors
                 "
               >
                 <div className="flex items-start gap-4">
@@ -138,7 +138,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                           article={article}
                           size="small"
                           position="inline"
-                          className="opacity-40 group-hover:opacity-100 transition-opacity grayscale hover:grayscale-0 p-0"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity grayscale hover:grayscale-0 p-0"
                         />
                       </span>
                     </div>
@@ -168,8 +168,8 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                       onClick={() => setReadingArticle(article)}
                       className="
                         mt-3 text-[10px] uppercase tracking-widest
-                        text-[#00ff41]/60 hover:text-[#00ff41]
-                        border border-[#00ff41]/20 hover:border-[#00ff41]/60
+                        text-[rgba(var(--terminal-accent),0.7)] hover:text-[rgba(var(--terminal-accent),0.95)]
+                        border border-[rgba(var(--terminal-accent),0.2)] hover:border-[rgba(var(--terminal-accent),0.55)]
                         px-2 py-1 rounded-sm transition-all
                       "
                     >

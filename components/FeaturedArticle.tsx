@@ -12,6 +12,10 @@ export const FeaturedArticle: React.FC<{
   timeFormat?: "12h" | "24h";
 }> = ({ article, timeFormat = "24h" }) => {
   const { settings: layoutSettings } = useArticleLayout();
+  const authorLabel =
+    article.author && article.author !== article.sourceTitle
+      ? article.author
+      : undefined;
 
   if (!article) return null;
 
@@ -27,7 +31,9 @@ export const FeaturedArticle: React.FC<{
           target="_blank"
           rel="noopener noreferrer"
           className="block relative h-full"
-          aria-label={`Read featured article: ${article.title} from ${article.author || article.sourceTitle}`}
+          aria-label={`Read featured article: ${article.title} from ${
+            authorLabel || article.sourceTitle
+          }`}
         >
           <OptimizedImage
             src={article.imageUrl}
@@ -44,7 +50,7 @@ export const FeaturedArticle: React.FC<{
           ></div>
 
           {/* Source badge */}
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 bg-[rgb(var(--color-accent))]/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider truncate max-w-[150px] sm:max-w-[200px]">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 feed-chip backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider truncate max-w-[150px] sm:max-w-[200px]">
             {article.sourceTitle}
           </div>
 
@@ -73,12 +79,14 @@ export const FeaturedArticle: React.FC<{
               {sanitizeArticleDescription(article.description || "")}
             </p>
             <footer className="mt-4 lg:mt-8 flex flex-wrap items-center gap-4 lg:gap-6 text-xs lg:text-sm font-black uppercase text-white min-w-0">
-              <span
-                className="truncate max-w-[200px] sm:max-w-[300px] bg-black/40 px-2 py-1 rounded"
-                aria-label={`Author: ${article.author || article.sourceTitle}`}
-              >
-                {article.author || article.sourceTitle}
-              </span>
+              {authorLabel && (
+                <span
+                  className="truncate max-w-[200px] sm:max-w-[300px] bg-black/40 px-2 py-1 rounded"
+                  aria-label={`Author: ${authorLabel}`}
+                >
+                  {authorLabel}
+                </span>
+              )}
               <span className="text-white/40 font-normal" aria-hidden="true">
                 |
               </span>

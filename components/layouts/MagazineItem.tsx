@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import type { Article } from '../../types';
+import { FavoriteButton } from '../FavoriteButton';
 
 
 interface MagazineItemProps {
@@ -25,27 +26,37 @@ const formatTimeAgo = (dateInput: Date | string) => {
 
 const MagazineItemComponent: React.FC<MagazineItemProps> = ({ article, onClick }) => {
     return (
-        <article
-            className="group cursor-pointer flex items-start gap-4 p-3 rounded-lg hover:bg-[rgb(var(--color-surface))] transition-colors border-b border-[rgb(var(--color-border))] last:border-0"
-            onClick={() => onClick(article)}
-        >
-            <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))] w-24 flex-shrink-0 truncate pt-0.5">
-                {article.sourceTitle}
-            </span>
-            <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2 mb-1">
-                    {article.title}
-                </h4>
-                {article.description && (
-                    <p className="text-xs text-[rgb(var(--color-textSecondary))] line-clamp-2 leading-relaxed">
-                        {article.description}
-                    </p>
-                )}
-            </div>
-            <span className="text-xs text-[rgb(var(--color-textSecondary))] flex-shrink-0 pt-0.5">
-                {formatTimeAgo(article.pubDate)}
-            </span>
-        </article>
+        <div className="mx-auto w-full max-w-[900px] xl:max-w-[980px] px-2 sm:px-3">
+            <article
+                className="group cursor-pointer flex items-start gap-4 p-3 rounded-lg feed-row"
+                onClick={() => onClick(article)}
+            >
+                <span className="feed-chip w-24 flex-shrink-0 truncate pt-0.5">
+                    {article.sourceTitle}
+                </span>
+                <div className="flex-1 min-w-0">
+                    <h4 className="feed-title text-sm group-hover:text-white transition-colors line-clamp-2 mb-1">
+                        {article.title}
+                    </h4>
+                    {article.description && (
+                        <p className="feed-desc text-xs line-clamp-2 leading-relaxed">
+                            {article.description}
+                        </p>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
+                    <span className="feed-meta text-xs">
+                        {formatTimeAgo(article.pubDate)}
+                    </span>
+                    <FavoriteButton
+                        article={article}
+                        size="small"
+                        position="inline"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
+                </div>
+            </article>
+        </div>
     );
 };
 

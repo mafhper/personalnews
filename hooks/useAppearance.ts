@@ -6,41 +6,11 @@ import { DEFAULT_CONFIG } from '../services/auraWallpaperService';
 import { BUILT_LAYOUT_PRESETS } from '../config/layoutPresets.config';
 import { INITIAL_APP_CONFIG } from '../constants/curatedFeeds';
 import { useLogger } from '../services/logger';
+import { DEFAULT_HEADER_CONFIG, DEFAULT_CONTENT_CONFIG } from '../config/defaultConfig';
 
-const defaultHeaderConfig: HeaderConfig = {
-  style: 'default',
-  position: (INITIAL_APP_CONFIG.header as any) || 'floating',
-  height: 'compact',
-  showTitle: false,
-  showLogo: true,
-  customTitle: 'Personal News',
-  logoUrl: null,
-  logoSize: 'md',
-  logoColorMode: 'original',
-  syncFavicon: true,
-  // Appearance defaults
-  backgroundColor: '#1F1F1F',
-  backgroundOpacity: 60,
-  blurIntensity: 'heavy',
-  borderColor: '#ffffff',
-  borderOpacity: 8,
-  categoryBackgroundColor: '#ffffff',
-  categoryBackgroundOpacity: 3,
-  // New props
-  bgColor: '#1F1F1F',
-  bgOpacity: 0.6,
-  blur: 20,
-};
+const defaultHeaderConfig: HeaderConfig = DEFAULT_HEADER_CONFIG;
 
-const defaultContentConfig: ContentConfig = {
-  showAuthor: true,
-  showDate: true,
-  showTime: false,
-  showTags: true,
-  layoutMode: 'modern',
-  density: 'comfortable',
-  paginationType: 'numbered',
-};
+const defaultContentConfig: ContentConfig = DEFAULT_CONTENT_CONFIG;
 
 const defaultBackgroundConfig: BackgroundConfig = {
   type: 'aura',

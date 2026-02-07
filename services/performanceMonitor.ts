@@ -3,7 +3,7 @@
  * Implements requirements 7.1, 7.2, 7.3, 7.4
  */
 
-import { logger } from './logger';
+import { logger } from "./logger";
 
 export interface PerformanceMetric {
   id: string;
@@ -11,8 +11,8 @@ export interface PerformanceMetric {
   startTime: number;
   endTime?: number;
   duration?: number;
-  metadata?: Record<string, any>;
-  status: 'pending' | 'completed' | 'failed';
+  metadata?: Record<string, unknown>;
+  status: "pending" | "completed" | "failed";
   error?: string;
 }
 
@@ -31,7 +31,7 @@ export interface PaginationMetric extends PerformanceMetric {
 }
 
 export interface ApplicationMetric extends PerformanceMetric {
-  type: 'app-load' | 'theme-change' | 'search' | 'filter';
+  type: "app-load" | "theme-change" | "search" | "filter";
   componentCount?: number;
   memoryUsage?: number;
 }
@@ -46,7 +46,9 @@ class PerformanceMonitor {
 
   constructor() {
     // Enable performance monitoring in development
-    this.isEnabled = import.meta.env.DEV || localStorage.getItem('performance-debug') === 'true';
+    this.isEnabled =
+      import.meta.env.DEV ||
+      localStorage.getItem("performance-debug") === "true";
     this.logToConsole = this.isEnabled;
 
     if (this.isEnabled) {
@@ -59,21 +61,25 @@ class PerformanceMonitor {
    * Start timing a performance metric
    * Requirement 7.1: Measure and log loading times
    */
-  startTiming(id: string, name: string, metadata?: Record<string, any>): void {
+  startTiming(
+    id: string,
+    name: string,
+    metadata?: Record<string, unknown>,
+  ): void {
     if (!this.isEnabled) return;
 
     const metric: PerformanceMetric = {
       id,
       name,
       startTime: performance.now(),
-      status: 'pending',
-      metadata
+      status: "pending",
+      metadata,
     };
 
     this.metrics.set(id, metric);
 
     if (this.logToConsole) {
-      logger.debugTag('PERF', `Started: ${name}`, metadata);
+      logger.debugTag("PERF", `Started: ${name}`, metadata);
     }
   }
 
@@ -81,7 +87,10 @@ class PerformanceMonitor {
    * End timing a performance metric
    * Requirement 7.1: Measure and log loading times
    */
-  endTiming(id: string, additionalMetadata?: Record<string, any>): PerformanceMetric | null {
+  endTiming(
+    id: string,
+    additionalMetadata?: Record<string, unknown>,
+  ): PerformanceMetric | null {
     if (!this.isEnabled) return null;
 
     const metric = this.metrics.get(id);
@@ -97,14 +106,18 @@ class PerformanceMonitor {
       ...metric,
       endTime,
       duration,
-      status: 'completed',
-      metadata: { ...metric.metadata, ...additionalMetadata }
+      status: "completed",
+      metadata: { ...metric.metadata, ...additionalMetadata },
     };
 
     this.metrics.set(id, completedMetric);
 
     if (this.logToConsole) {
-      logger.debugTag('PERF', `Completed: ${metric.name} (${duration.toFixed(2)}ms)`, completedMetric.metadata);
+      logger.debugTag(
+        "PERF",
+        `Completed: ${metric.name} (${duration.toFixed(2)}ms)`,
+        completedMetric.metadata,
+      );
     }
 
     return completedMetric;
@@ -114,7 +127,11 @@ class PerformanceMonitor {
    * Mark a metric as failed with error details
    * Requirement 7.3: Log error details for debugging
    */
-  markFailed(id: string, error: string, additionalMetadata?: Record<string, any>): PerformanceMetric | null {
+  markFailed(
+    id: string,
+    error: string,
+    additionalMetadata?: Record<string, unknown>,
+  ): PerformanceMetric | null {
     if (!this.isEnabled) return null;
 
     const metric = this.metrics.get(id);
@@ -130,18 +147,21 @@ class PerformanceMonitor {
       ...metric,
       endTime,
       duration,
-      status: 'failed',
+      status: "failed",
       error,
-      metadata: { ...metric.metadata, ...additionalMetadata }
+      metadata: { ...metric.metadata, ...additionalMetadata },
     };
 
     this.metrics.set(id, failedMetric);
 
     if (this.logToConsole) {
-      console.error(`❌ [Performance] Failed: ${metric.name} (${duration.toFixed(2)}ms)`, {
-        error,
-        ...failedMetric.metadata
-      });
+      console.error(
+        `❌ [Performance] Failed: ${metric.name} (${duration.toFixed(2)}ms)`,
+        {
+          error,
+          ...failedMetric.metadata,
+        },
+      );
     }
 
     return failedMetric;
@@ -151,16 +171,19 @@ class PerformanceMonitor {
    * Track feed loading performance
    * Requirement 7.2: Record response time for each feed
    */
-  trackFeedLoading(feedUrl: string, options?: {
-    cacheHit?: boolean;
-    retryCount?: number;
-  }): string {
+  trackFeedLoading(
+    feedUrl: string,
+    options?: {
+      cacheHit?: boolean;
+      retryCount?: number;
+    },
+  ): string {
     const id = `feed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     this.startTiming(id, `Feed Loading: ${feedUrl}`, {
       feedUrl,
-      type: 'feed-loading',
-      ...options
+      type: "feed-loading",
+      ...options,
     });
 
     return id;
@@ -170,16 +193,29 @@ class PerformanceMonitor {
    * Complete feed loading tracking
    * Requirement 7.2: Record response time for each feed
    */
-  completeFeedLoading(id: string, articleCount: number, additionalData?: Record<string, any>): void {
+  completeFeedLoading(
+    id: string,
+    articleCount: number,
+    additionalData?: Record<string, unknown>,
+  ): void {
     const metric = this.endTiming(id, { articleCount, ...additionalData });
 
     if (metric) {
       const feedMetric: FeedLoadingMetric = {
         ...metric,
-        feedUrl: metric.metadata?.feedUrl || 'unknown',
+        feedUrl:
+          typeof metric.metadata?.feedUrl === "string"
+            ? metric.metadata.feedUrl
+            : "unknown",
         articleCount,
-        cacheHit: metric.metadata?.cacheHit || false,
-        retryCount: metric.metadata?.retryCount || 0
+        cacheHit:
+          typeof metric.metadata?.cacheHit === "boolean"
+            ? metric.metadata.cacheHit
+            : false,
+        retryCount:
+          typeof metric.metadata?.retryCount === "number"
+            ? metric.metadata.retryCount
+            : 0,
       };
 
       this.feedMetrics.push(feedMetric);
@@ -191,16 +227,29 @@ class PerformanceMonitor {
    * Mark feed loading as failed
    * Requirement 7.3: Log error details for debugging
    */
-  failFeedLoading(id: string, error: string, additionalData?: Record<string, any>): void {
+  failFeedLoading(
+    id: string,
+    error: string,
+    additionalData?: Record<string, unknown>,
+  ): void {
     const metric = this.markFailed(id, error, additionalData);
 
-    if (metric && metric.metadata?.type === 'feed-loading') {
+    if (metric && metric.metadata?.type === "feed-loading") {
       const feedMetric: FeedLoadingMetric = {
         ...metric,
-        feedUrl: metric.metadata?.feedUrl || 'unknown',
+        feedUrl:
+          typeof metric.metadata?.feedUrl === "string"
+            ? metric.metadata.feedUrl
+            : "unknown",
         articleCount: 0,
-        cacheHit: metric.metadata?.cacheHit || false,
-        retryCount: metric.metadata?.retryCount || 0
+        cacheHit:
+          typeof metric.metadata?.cacheHit === "boolean"
+            ? metric.metadata.cacheHit
+            : false,
+        retryCount:
+          typeof metric.metadata?.retryCount === "number"
+            ? metric.metadata.retryCount
+            : 0,
       };
 
       this.feedMetrics.push(feedMetric);
@@ -212,14 +261,18 @@ class PerformanceMonitor {
    * Track pagination performance
    * Requirement 7.1: Measure pagination performance
    */
-  trackPagination(fromPage: number, toPage: number, totalArticles: number): string {
+  trackPagination(
+    fromPage: number,
+    toPage: number,
+    totalArticles: number,
+  ): string {
     const id = `pagination-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     this.startTiming(id, `Pagination: ${fromPage} → ${toPage}`, {
       fromPage,
       toPage,
       totalArticles,
-      type: 'pagination'
+      type: "pagination",
     });
 
     return id;
@@ -234,10 +287,19 @@ class PerformanceMonitor {
     if (metric) {
       const paginationMetric: PaginationMetric = {
         ...metric,
-        fromPage: metric.metadata?.fromPage || 0,
-        toPage: metric.metadata?.toPage || 0,
-        totalArticles: metric.metadata?.totalArticles || 0,
-        renderTime
+        fromPage:
+          typeof metric.metadata?.fromPage === "number"
+            ? metric.metadata.fromPage
+            : 0,
+        toPage:
+          typeof metric.metadata?.toPage === "number"
+            ? metric.metadata.toPage
+            : 0,
+        totalArticles:
+          typeof metric.metadata?.totalArticles === "number"
+            ? metric.metadata.totalArticles
+            : 0,
+        renderTime,
       };
 
       this.paginationMetrics.push(paginationMetric);
@@ -249,12 +311,12 @@ class PerformanceMonitor {
    * Track application-level performance
    * Requirement 7.1: Measure application loading times
    */
-  trackApplication(type: ApplicationMetric['type'], name?: string): string {
+  trackApplication(type: ApplicationMetric["type"], name?: string): string {
     const id = `app-${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     this.startTiming(id, name || `Application: ${type}`, {
       type,
-      memoryUsage: this.getMemoryUsage()
+      memoryUsage: this.getMemoryUsage(),
     });
 
     return id;
@@ -263,18 +325,33 @@ class PerformanceMonitor {
   /**
    * Complete application tracking
    */
-  completeApplication(id: string, additionalData?: Record<string, any>): void {
+  completeApplication(
+    id: string,
+    additionalData?: Record<string, unknown>,
+  ): void {
     const metric = this.endTiming(id, {
       memoryUsage: this.getMemoryUsage(),
-      ...additionalData
+      ...additionalData,
     });
 
     if (metric) {
       const appMetric: ApplicationMetric = {
         ...metric,
-        type: metric.metadata?.type || 'app-load',
-        componentCount: metric.metadata?.componentCount,
-        memoryUsage: metric.metadata?.memoryUsage
+        type:
+          typeof metric.metadata?.type === "string" &&
+          ["app-load", "theme-change", "search", "filter"].includes(
+            metric.metadata.type as string,
+          )
+            ? (metric.metadata.type as ApplicationMetric["type"])
+            : "app-load",
+        componentCount:
+          typeof metric.metadata?.componentCount === "number"
+            ? metric.metadata.componentCount
+            : undefined,
+        memoryUsage:
+          typeof metric.metadata?.memoryUsage === "number"
+            ? metric.metadata.memoryUsage
+            : undefined,
       };
 
       this.applicationMetrics.push(appMetric);
@@ -286,18 +363,34 @@ class PerformanceMonitor {
    * Mark application operation as failed
    * Requirement 7.3: Log error details for debugging
    */
-  failApplication(id: string, error: string, additionalData?: Record<string, any>): void {
+  failApplication(
+    id: string,
+    error: string,
+    additionalData?: Record<string, unknown>,
+  ): void {
     const metric = this.markFailed(id, error, {
       memoryUsage: this.getMemoryUsage(),
-      ...additionalData
+      ...additionalData,
     });
 
     if (metric) {
       const appMetric: ApplicationMetric = {
         ...metric,
-        type: metric.metadata?.type || 'app-load',
-        componentCount: metric.metadata?.componentCount,
-        memoryUsage: metric.metadata?.memoryUsage
+        type:
+          typeof metric.metadata?.type === "string" &&
+          ["app-load", "theme-change", "search", "filter"].includes(
+            metric.metadata.type as string,
+          )
+            ? (metric.metadata.type as ApplicationMetric["type"])
+            : "app-load",
+        componentCount:
+          typeof metric.metadata?.componentCount === "number"
+            ? metric.metadata.componentCount
+            : undefined,
+        memoryUsage:
+          typeof metric.metadata?.memoryUsage === "number"
+            ? metric.metadata.memoryUsage
+            : undefined,
       };
 
       this.applicationMetrics.push(appMetric);
@@ -330,13 +423,15 @@ class PerformanceMonitor {
       memoryTrend: number[];
     };
   } {
-    const successfulFeeds = this.feedMetrics.filter(m => m.status === 'completed');
-    const failedFeeds = this.feedMetrics.filter(m => m.status === 'failed');
-    const cacheHits = this.feedMetrics.filter(m => m.cacheHit).length;
+    const successfulFeeds = this.feedMetrics.filter(
+      (m) => m.status === "completed",
+    );
+    const failedFeeds = this.feedMetrics.filter((m) => m.status === "failed");
+    const cacheHits = this.feedMetrics.filter((m) => m.cacheHit).length;
 
-    const feedLoadTimes = successfulFeeds.map(m => m.duration || 0);
-    const paginationTimes = this.paginationMetrics.map(m => m.duration || 0);
-    const appLoadTimes = this.applicationMetrics.map(m => m.duration || 0);
+    const feedLoadTimes = successfulFeeds.map((m) => m.duration || 0);
+    const paginationTimes = this.paginationMetrics.map((m) => m.duration || 0);
+    const appLoadTimes = this.applicationMetrics.map((m) => m.duration || 0);
 
     return {
       feeds: {
@@ -344,20 +439,31 @@ class PerformanceMonitor {
         successful: successfulFeeds.length,
         failed: failedFeeds.length,
         averageLoadTime: this.calculateAverage(feedLoadTimes),
-        slowestFeed: this.findSlowest(this.feedMetrics) as FeedLoadingMetric | null,
-        fastestFeed: this.findFastest(this.feedMetrics) as FeedLoadingMetric | null,
-        cacheHitRate: this.feedMetrics.length > 0 ? (cacheHits / this.feedMetrics.length) * 100 : 0
+        slowestFeed: this.findSlowest(
+          this.feedMetrics,
+        ) as FeedLoadingMetric | null,
+        fastestFeed: this.findFastest(
+          this.feedMetrics,
+        ) as FeedLoadingMetric | null,
+        cacheHitRate:
+          this.feedMetrics.length > 0
+            ? (cacheHits / this.feedMetrics.length) * 100
+            : 0,
       },
       pagination: {
         total: this.paginationMetrics.length,
         averageNavigationTime: this.calculateAverage(paginationTimes),
-        slowestNavigation: this.findSlowest(this.paginationMetrics) as PaginationMetric | null
+        slowestNavigation: this.findSlowest(
+          this.paginationMetrics,
+        ) as PaginationMetric | null,
       },
       application: {
         total: this.applicationMetrics.length,
         averageLoadTime: this.calculateAverage(appLoadTimes),
-        memoryTrend: this.applicationMetrics.slice(-10).map(m => m.memoryUsage || 0)
-      }
+        memoryTrend: this.applicationMetrics
+          .slice(-10)
+          .map((m) => m.memoryUsage || 0),
+      },
     };
   }
 
@@ -368,23 +474,28 @@ class PerformanceMonitor {
   public logPerformanceSummary(): void {
     const summary = this.getPerformanceSummary();
 
-    logger.debugTag('PERF', 'Performance Summary', {
-        feeds: {
-            total: summary.feeds.total,
-            successRate: summary.feeds.total > 0 ? ((summary.feeds.successful / summary.feeds.total) * 100).toFixed(1) + '%' : '0%',
-            avgLoadTime: summary.feeds.averageLoadTime.toFixed(2) + 'ms',
-            cacheHitRate: summary.feeds.cacheHitRate.toFixed(1) + '%',
-            slowestFeed: summary.feeds.slowestFeed
-        },
-        pagination: {
-            total: summary.pagination.total,
-            avgNavTime: summary.pagination.averageNavigationTime.toFixed(2) + 'ms'
-        },
-        application: {
-            total: summary.application.total,
-            avgOpTime: summary.application.averageLoadTime.toFixed(2) + 'ms',
-            currentMemory: this.getMemoryUsage().toFixed(2) + 'MB'
-        }
+    logger.debugTag("PERF", "Performance Summary", {
+      feeds: {
+        total: summary.feeds.total,
+        successRate:
+          summary.feeds.total > 0
+            ? ((summary.feeds.successful / summary.feeds.total) * 100).toFixed(
+                1,
+              ) + "%"
+            : "0%",
+        avgLoadTime: summary.feeds.averageLoadTime.toFixed(2) + "ms",
+        cacheHitRate: summary.feeds.cacheHitRate.toFixed(1) + "%",
+        slowestFeed: summary.feeds.slowestFeed,
+      },
+      pagination: {
+        total: summary.pagination.total,
+        avgNavTime: summary.pagination.averageNavigationTime.toFixed(2) + "ms",
+      },
+      application: {
+        total: summary.application.total,
+        avgOpTime: summary.application.averageLoadTime.toFixed(2) + "ms",
+        currentMemory: this.getMemoryUsage().toFixed(2) + "MB",
+      },
     });
   }
 
@@ -402,7 +513,9 @@ class PerformanceMonitor {
       feeds: [...this.feedMetrics],
       pagination: [...this.paginationMetrics],
       application: [...this.applicationMetrics],
-      active: Array.from(this.metrics.values()).filter(m => m.status === 'pending')
+      active: Array.from(this.metrics.values()).filter(
+        (m) => m.status === "pending",
+      ),
     };
   }
 
@@ -415,7 +528,7 @@ class PerformanceMonitor {
     this.paginationMetrics = [];
     this.applicationMetrics = [];
     if (this.logToConsole) {
-      logger.debugTag('PERF', 'All metrics cleared');
+      logger.debugTag("PERF", "All metrics cleared");
     }
   }
 
@@ -427,34 +540,36 @@ class PerformanceMonitor {
     this.logToConsole = enabled;
 
     if (enabled) {
-      localStorage.setItem('performance-debug', 'true');
+      localStorage.setItem("performance-debug", "true");
     } else {
-      localStorage.removeItem('performance-debug');
+      localStorage.removeItem("performance-debug");
     }
   }
 
   // Private helper methods
 
   private initializePerformanceObserver(): void {
-    if (typeof PerformanceObserver !== 'undefined') {
+    if (typeof PerformanceObserver !== "undefined") {
       try {
         const observer = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           entries.forEach((entry) => {
-            if (entry.entryType === 'navigation') {
+            if (entry.entryType === "navigation") {
               const navEntry = entry as PerformanceNavigationTiming;
               console.log(`🌐 [Performance] Navigation timing:`, {
-                domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart,
+                domContentLoaded:
+                  navEntry.domContentLoadedEventEnd -
+                  navEntry.domContentLoadedEventStart,
                 loadComplete: navEntry.loadEventEnd - navEntry.loadEventStart,
-                totalTime: navEntry.loadEventEnd - navEntry.fetchStart
+                totalTime: navEntry.loadEventEnd - navEntry.fetchStart,
               });
             }
           });
         });
 
-        observer.observe({ entryTypes: ['navigation', 'measure'] });
+        observer.observe({ entryTypes: ["navigation", "measure"] });
       } catch (error) {
-        console.warn('[Performance] PerformanceObserver not supported:', error);
+        console.warn("[Performance] PerformanceObserver not supported:", error);
       }
     }
   }
@@ -463,19 +578,26 @@ class PerformanceMonitor {
     const info = {
       userAgent: navigator.userAgent,
       memory: this.getMemoryUsage(),
-      connection: (navigator as any).connection?.effectiveType || 'unknown',
-      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown'
+      connection:
+        (navigator as Navigator & { connection?: { effectiveType?: string } })
+          .connection?.effectiveType || "unknown",
+      hardwareConcurrency: navigator.hardwareConcurrency || "unknown",
     };
 
     // Use console instead of logger during initialization to avoid circular dependency/TDZ issues
     if (import.meta.env.DEV) {
-      console.debug('[PERF-DEBUG] System info', info);
+      console.debug("[PERF-DEBUG] System info", info);
     }
   }
 
   private getMemoryUsage(): number {
-    if ('memory' in performance) {
-      return (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
+    if ("memory" in performance) {
+      return (
+        (performance as Performance & { memory: { usedJSHeapSize: number } })
+          .memory.usedJSHeapSize /
+        1024 /
+        1024
+      ); // MB
     }
     return 0;
   }
@@ -488,14 +610,14 @@ class PerformanceMonitor {
   private findSlowest(metrics: PerformanceMetric[]): PerformanceMetric | null {
     if (metrics.length === 0) return null;
     return metrics.reduce((slowest, current) =>
-      (current.duration || 0) > (slowest.duration || 0) ? current : slowest
+      (current.duration || 0) > (slowest.duration || 0) ? current : slowest,
     );
   }
 
   private findFastest(metrics: PerformanceMetric[]): PerformanceMetric | null {
     if (metrics.length === 0) return null;
     return metrics.reduce((fastest, current) =>
-      (current.duration || 0) < (fastest.duration || 0) ? current : fastest
+      (current.duration || 0) < (fastest.duration || 0) ? current : fastest,
     );
   }
 
@@ -511,7 +633,10 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // Expose to window for debugging in development
 if (import.meta.env.DEV) {
-  (window as any).performanceMonitor = performanceMonitor;
+  (
+    window as Window &
+      typeof globalThis & { performanceMonitor?: PerformanceMonitor }
+  ).performanceMonitor = performanceMonitor;
 }
 
 // Helper functions for common use cases
@@ -522,16 +647,20 @@ if (import.meta.env.DEV) {
 export async function measureAsync<T>(
   name: string,
   fn: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>,
 ): Promise<T> {
-  const id = performanceMonitor.trackApplication('app-load', name);
+  const id = performanceMonitor.trackApplication("app-load", name);
 
   try {
     const result = await fn();
     performanceMonitor.completeApplication(id, metadata);
     return result;
   } catch (error) {
-    performanceMonitor.failApplication(id, error instanceof Error ? error.message : String(error), metadata);
+    performanceMonitor.failApplication(
+      id,
+      error instanceof Error ? error.message : String(error),
+      metadata,
+    );
     throw error;
   }
 }
@@ -542,16 +671,20 @@ export async function measureAsync<T>(
 export function measureSync<T>(
   name: string,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>,
 ): T {
-  const id = performanceMonitor.trackApplication('app-load', name);
+  const id = performanceMonitor.trackApplication("app-load", name);
 
   try {
     const result = fn();
     performanceMonitor.completeApplication(id, metadata);
     return result;
   } catch (error) {
-    performanceMonitor.failApplication(id, error instanceof Error ? error.message : String(error), metadata);
+    performanceMonitor.failApplication(
+      id,
+      error instanceof Error ? error.message : String(error),
+      metadata,
+    );
     throw error;
   }
 }

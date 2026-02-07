@@ -183,8 +183,8 @@ export function sanitizeUrl(url: string | null | undefined): string {
     }
   }
 
-  // Permite apenas http, https, ftp e mailto
-  if (!/^(https?|ftp|mailto):/i.test(cleanUrl)) {
+  // Permite apenas http, https e mailto (FTP removido por segurança)
+  if (!/^(https?|mailto):/i.test(cleanUrl)) {
     // Se não tem protocolo, assume https
     if (!/^[a-z]+:/i.test(cleanUrl)) {
       return `https://${cleanUrl}`;
@@ -192,7 +192,24 @@ export function sanitizeUrl(url: string | null | undefined): string {
     return "";
   }
 
-  return cleanUrl;
+  // Validação adicional: verifica se é uma URL válida
+  try {
+    const urlObj = new URL(cleanUrl);
+    // Bloqueia localhost e IPs privados em produção (exceto em desenvolvimento)
+    const hostname = urlObj.hostname.toLowerCase();
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.16.');
+    
+    // Em produção, bloquear localhost pode quebrar funcionalidades, então apenas logamos
+    if (isLocalhost && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+      console.warn('Blocked localhost URL in production:', cleanUrl);
+      return "";
+    }
+    
+    return cleanUrl;
+  } catch {
+    // Se não é uma URL válida, retorna vazio
+    return "";
+  }
 }
 
 /**

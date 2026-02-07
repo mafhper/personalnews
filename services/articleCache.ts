@@ -37,6 +37,14 @@ const DEFAULT_OPTIONS: ArticleCacheOptions = {
   autoCleanupInterval: 5 * 60 * 1000, // 5 minutes
 };
 
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
 /**
  * LRU (Least Recently Used) Cache for articles
  * Implements automatic cleanup based on size, age, and memory usage
@@ -217,7 +225,7 @@ export class ArticleCache {
     // Get memory usage if available
     let memoryUsage: number | null = null;
     if ('memory' in performance) {
-      memoryUsage = Math.round((performance as any).memory.usedJSHeapSize / (1024 * 1024)); // MB
+      memoryUsage = Math.round(((performance as unknown) as PerformanceWithMemory).memory!.usedJSHeapSize / (1024 * 1024)); // MB
     }
 
     return {
@@ -308,7 +316,7 @@ export class ArticleCache {
       return;
     }
 
-    const memory = (performance as any).memory;
+    const memory = ((performance as unknown) as PerformanceWithMemory).memory!;
     const usedMemoryMB = memory.usedJSHeapSize / (1024 * 1024);
 
     // If we're under the limit, no need to evict

@@ -1,23 +1,29 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Article, FeedSource } from '../types';
 import { FeedValidationResult } from '../services/feedValidator';
 import { Card } from './ui/Card';
+import { ProxyHealthSummary } from './ProxyHealthSummary';
+import { HealthReportExporter } from './HealthReportExporter';
 
 interface FeedAnalyticsProps {
   feeds: FeedSource[];
   articles: Article[];
   feedValidations: Map<string, FeedValidationResult>;
+  focusSection?: string;
+  onFocusConsumed?: () => void;
 }
 
 export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   feeds,
   articles,
-  feedValidations
+  feedValidations,
+  focusSection,
+  onFocusConsumed
 }) => {
   // 1. Calculate Feed Activity
   const activityStats = useMemo(() => {
     const stats = new Map<string, number>();
-    
+
     // Initialize all feeds with 0
     feeds.forEach(f => {
       const key = f.customTitle || f.url;
@@ -42,7 +48,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     });
 
     const sorted = Array.from(stats.entries()).sort((a, b) => b[1] - a[1]);
-    
+
     return {
       mostActive: sorted.slice(0, 5),
       leastActive: sorted.filter(x => x[1] === 0).slice(0, 5), // Feeds with 0 articles loaded
@@ -53,7 +59,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   // 2. Calculate Topic Trends
   const topicTrends = useMemo(() => {
     const counts = new Map<string, number>();
-    
+
     articles.forEach(article => {
       if (article.categories && article.categories.length > 0) {
         article.categories.forEach(cat => {
@@ -97,9 +103,63 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     return { valid, invalid, unchecked, issues };
   }, [feeds, feedValidations]);
 
+  const feedRows = useMemo(() => {
+    const statusWeight: Record<string, number> = {
+      invalid: 0,
+      timeout: 1,
+      network_error: 2,
+      parse_error: 3,
+      cors_error: 4,
+      not_found: 5,
+      server_error: 6,
+      discovery_required: 7,
+      discovery_in_progress: 8,
+      checking: 9,
+      unchecked: 10,
+      valid: 11,
+    };
+
+    return feeds
+      .map((feed) => {
+        const validation = feedValidations.get(feed.url);
+        const status = validation?.status || "unchecked";
+        const lastAttempt = validation?.validationAttempts?.slice(-1)[0];
+
+        return {
+          url: feed.url,
+          title: feed.customTitle || validation?.title || feed.url,
+          status,
+          statusWeight: statusWeight[status] ?? 99,
+          lastChecked: validation?.lastChecked,
+          responseTime: validation?.responseTime,
+          method: validation?.finalMethod || (validation ? "direct" : "-"),
+          proxyUsed: lastAttempt?.proxyUsed,
+          error: validation?.error,
+        };
+      })
+      .sort((a, b) => {
+        if (a.statusWeight !== b.statusWeight) {
+          return a.statusWeight - b.statusWeight;
+        }
+        return a.title.localeCompare(b.title);
+      });
+  }, [feeds, feedValidations]);
+
+  useEffect(() => {
+    if (!focusSection) return;
+    const run = () => {
+      const el = document.getElementById(focusSection);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      onFocusConsumed?.();
+    };
+    requestAnimationFrame(run);
+  }, [focusSection, onFocusConsumed]);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300 p-2">
-      
+
       {/* Top Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card variant="glass" className="p-4 flex items-center space-x-4">
@@ -130,8 +190,8 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           <div>
             <p className="text-sm text-gray-400">Saúde do Sistema</p>
             <h3 className="text-xl font-bold text-white">
-              {healthStats.invalid > 0 
-                ? `${healthStats.invalid} com erro` 
+              {healthStats.invalid > 0
+                ? `${healthStats.invalid} com erro`
                 : '100% Operacional'}
             </h3>
           </div>
@@ -141,6 +201,79 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Activity & Trends */}
         <div className="space-y-6">
+          {/* Feed Status */}
+          <div id="feed-status" className="bg-gray-800/40 rounded-xl border border-white/10 p-5">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Status dos Feeds
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-widest text-gray-500">Válidos</p>
+                <p className="text-lg font-bold text-emerald-300">{healthStats.valid}</p>
+              </div>
+              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-widest text-gray-500">Com erro</p>
+                <p className="text-lg font-bold text-amber-300">{healthStats.invalid}</p>
+              </div>
+              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-widest text-gray-500">Pendentes</p>
+                <p className="text-lg font-bold text-sky-300">{healthStats.unchecked}</p>
+              </div>
+              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-widest text-gray-500">Total</p>
+                <p className="text-lg font-bold text-white">{feeds.length}</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-separate border-spacing-y-2">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-widest text-gray-500">
+                    <th className="px-2 py-1">Feed</th>
+                    <th className="px-2 py-1">Status</th>
+                    <th className="px-2 py-1">Última verificação</th>
+                    <th className="px-2 py-1">Latência</th>
+                    <th className="px-2 py-1">Método</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedRows.map((row) => (
+                    <tr key={row.url} className="bg-black/20 border border-white/5 rounded-lg">
+                      <td className="px-2 py-2 max-w-[240px] truncate" title={row.title}>
+                        {row.title}
+                      </td>
+                      <td className="px-2 py-2">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
+                          row.status === "valid"
+                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                            : row.status === "unchecked"
+                              ? "bg-sky-500/10 text-sky-300 border-sky-500/20"
+                              : "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                        }`}>
+                          {row.status.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="px-2 py-2 text-gray-400">
+                        {row.lastChecked ? new Date(row.lastChecked).toLocaleString() : "-"}
+                      </td>
+                      <td className="px-2 py-2 text-gray-400">
+                        {row.responseTime ? `${row.responseTime}ms` : "-"}
+                      </td>
+                      <td className="px-2 py-2 text-gray-400">
+                        {row.proxyUsed ? `${row.method} • ${row.proxyUsed}` : row.method}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {feedRows.length === 0 && (
+                <p className="text-xs text-gray-500 mt-3">Nenhum feed disponível.</p>
+              )}
+            </div>
+          </div>
+
           {/* Popular Topics */}
           <div className="bg-gray-800/40 rounded-xl border border-white/10 p-5">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
@@ -150,11 +283,11 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             <div className="flex flex-wrap gap-2">
               {topicTrends.length > 0 ? (
                 topicTrends.map(([topic, count], idx) => (
-                  <span 
-                    key={topic} 
+                  <span
+                    key={topic}
                     className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                      idx < 3 
-                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' 
+                      idx < 3
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                         : 'bg-gray-700/50 text-gray-300 border-white/5'
                     }`}
                   >
@@ -197,7 +330,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
               <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               Status dos Feeds
             </h3>
-            
+
             <div className="flex h-4 rounded-full overflow-hidden mb-4 bg-gray-700">
               <div className="bg-green-500 transition-all duration-500" style={{ width: `${(healthStats.valid / feeds.length) * 100}%` }} title="Válidos" />
               <div className="bg-red-500 transition-all duration-500" style={{ width: `${(healthStats.invalid / feeds.length) * 100}%` }} title="Com Erro" />
@@ -243,6 +376,96 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
               <p className="text-green-400/70 text-sm mt-1">Nenhum problema detectado nos seus feeds.</p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Proxy Health Summary Section */}
+      <div id="proxy-health" className="mt-8 pt-8 border-t border-gray-700">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <svg className="w-5 h-5 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Saúde dos Proxies
+        </h3>
+        <ProxyHealthSummary />
+      </div>
+
+      <div id="feed-reports" className="mt-8 pt-8 border-t border-gray-700">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <svg className="w-5 h-5 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          Relatórios de Saúde
+        </h3>
+        <HealthReportExporter />
+      </div>
+
+      {/* Generate Reports Section */}
+      <div className="mt-8 pt-8 border-t border-gray-700 space-y-4">
+        <h3 className="text-lg font-semibold text-white flex items-center">
+          <svg className="w-5 h-5 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Gerar Relatórios
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            onClick={() => {
+              const report = {
+                timestamp: new Date().toISOString(),
+                feedCount: feeds.length,
+                articleCount: articles.length,
+                validFeeds: healthStats.valid,
+                invalidFeeds: healthStats.invalid,
+                topicTrends: topicTrends.slice(0, 5),
+                mostActive: activityStats.mostActive.slice(0, 5)
+              };
+              const dataStr = JSON.stringify(report, null, 2);
+              const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+              const link = document.createElement('a');
+              link.setAttribute('href', dataUri);
+              link.setAttribute('download', `feed-report-${Date.now()}.json`);
+              link.click();
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Exportar JSON
+          </button>
+          <button
+            onClick={() => {
+              const report = `
+# Relatório de Feeds - ${new Date().toLocaleString()}
+
+## Resumo
+- **Total de Feeds**: ${feeds.length}
+- **Total de Artigos**: ${articles.length}
+- **Feeds Válidos**: ${healthStats.valid}
+- **Feeds com Erro**: ${healthStats.invalid}
+
+## Tópicos Mais Frequentes
+${topicTrends.slice(0, 5).map((t, i) => `${i + 1}. ${t[0]} (${t[1]} ocorrências)`).join('\n')}
+
+## Feeds Mais Ativos
+${activityStats.mostActive.slice(0, 5).map((f, i) => `${i + 1}. ${f[0]} (${f[1]} artigos)`).join('\n')}
+
+## Feeds Sem Atividade
+${activityStats.leastActive.slice(0, 5).map((f, i) => `${i + 1}. ${f[0]}`).join('\n')}
+
+---
+Relatório gerado automaticamente pelo Personal News
+`;
+              const dataUri = 'data:text/markdown;charset=utf-8,'+ encodeURIComponent(report);
+              const link = document.createElement('a');
+              link.setAttribute('href', dataUri);
+              link.setAttribute('download', `feed-report-${Date.now()}.md`);
+              link.click();
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Exportar Markdown
+          </button>
         </div>
       </div>
     </div>

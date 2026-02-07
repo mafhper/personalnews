@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import type { Article } from "../types";
+import { FavoriteButton } from "./FavoriteButton";
 
 
 interface ArticleItemLightProps {
@@ -31,12 +32,16 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
     className = "",
     onClick,
 }) => {
+    const authorLabel =
+        article.author && article.author !== article.sourceTitle
+            ? article.author
+            : undefined;
     // Pure rendering - No Hooks, No Contexts, No Side Effects
     return (
         <article className={`h-full flex flex-col ${className}`}>
-            <div className="flex flex-col h-full group">
+            <div className="feed-card feed-card--flat flex flex-col h-full group p-4 sm:p-5">
                 {/* Article image container */}
-                <div className="relative mb-4 bg-gray-800 rounded-lg overflow-hidden h-40 sm:h-32 lg:h-40">
+                <div className="feed-media relative mb-4 w-full aspect-[4/3] sm:aspect-[3/2]">
                     {article.imageUrl ? (
                         <img
                             src={article.imageUrl}
@@ -47,15 +52,22 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                     ) : (
-                        <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                            <span className="text-gray-500 text-xs">No Image</span>
+                        <div className="w-full h-full bg-black/40 flex items-center justify-center">
+                            <span className="text-white/30 text-xs">No Image</span>
                         </div>
                     )}
 
                     {/* Article number overlay */}
-                    <div className="absolute top-2 left-2 bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold pointer-events-none z-10">
+                    <div className="absolute top-2 left-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold pointer-events-none z-10">
                         {index}
                     </div>
+
+                    <FavoriteButton
+                        article={article}
+                        size="small"
+                        position="overlay"
+                        className="top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 hover:bg-black/40"
+                    />
                 </div>
 
                 {/* Article content */}
@@ -74,26 +86,26 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
                     >
                         {/* Source badge */}
                         <div className="mb-2">
-                            <span className="inline-block bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide truncate max-w-full">
+                            <span className="feed-chip truncate max-w-full">
                                 {article.sourceTitle}
                             </span>
                         </div>
 
                         {/* Title */}
-                        <h4 className="font-bold text-base lg:text-lg leading-tight group-hover:underline text-gray-100 mb-3 line-clamp-3">
+                        <h4 className="feed-title text-base lg:text-lg leading-tight group-hover:text-white mb-3 line-clamp-3 transition-colors">
                             {article.title}
                         </h4>
 
                         {/* Metadata */}
                         <div className="mt-auto space-y-2">
-                            <div className="flex items-center justify-between text-xs text-gray-400">
-                                {article.author && (
-                                    <span className="truncate max-w-[120px]" title={article.author}>
-                                        {article.author}
+                            <div className="flex items-center justify-between text-xs feed-meta">
+                                {authorLabel && (
+                                    <span className="truncate max-w-[120px]" title={authorLabel}>
+                                        {authorLabel}
                                     </span>
                                 )}
                             </div>
-                            <time className="text-gray-500 text-xs block" dateTime={article.pubDate.toISOString()}>
+                            <time className="feed-meta text-xs block" dateTime={article.pubDate.toISOString()}>
                                 {timeSince(article.pubDate)}
                             </time>
                         </div>

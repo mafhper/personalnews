@@ -1,14 +1,15 @@
 # Quality Core
 
-**Quality Core** is a modular, extensible quality auditing system designed for web projects. It provides automated checks for performance, accessibility, UX, SEO, and build health, generating actionable reports.
+**Quality Core** is the quality and observability suite used by this project. It runs build audits, lighthouse performance checks, coverage collection, and produces a dashboard that summarizes results over time.
 
-## Features
+## Highlights
 
-- **Pluggable Audits** - Easy to add, remove, or customize individual audits
-- **Preset Configurations** - Pre-configured settings for common deployment targets (e.g., GitHub Pages)
-- **Multiple Reporters** - Generate reports in JSON or Markdown formats
-- **Dashboard Integration** - Visual dashboard for monitoring quality metrics
-- **CLI Interface** - Simple command-line interface for CI/CD integration
+- **Modular audits** with presets and thresholds
+- **CLI with TUI** (quick, silent, quiet modes)
+- **Lighthouse automation** (mobile + desktop)
+- **Coverage runner** with summary output
+- **Dashboard** for historical trends and snapshots
+- **Cross-platform** (Windows PowerShell 7 and WSL)
 
 ---
 
@@ -17,227 +18,187 @@
 ```
 quality-core/
 ├── cli/
-│   └── quality.cjs           # CLI entry point
-├── dashboard/                 # Integrated dashboard (self-contained)
+│   ├── run.cjs               # Quality gate orchestrator
+│   ├── quality.cjs           # Core audit runner
+│   ├── run-lighthouse.cjs    # Lighthouse automation
+│   ├── run-analysis.cjs      # Bundle + dependency analysis
+│   ├── run-coverage.cjs      # Coverage runner (quick/silent/quiet)
+│   ├── ui-helpers.cjs        # Shared TUI components
+│   └── history.cjs           # Execution time history/ETA
+├── config/
+│   ├── vitest.config.core.ts     # Core test configuration
+│   └── vitest.config.minimal.ts  # Minimal smoke test config
+├── scripts/
+│   ├── build-dashboard.cjs   # Dashboard build helper (bun/npm)
+│   ├── generate-changelog.cjs
+│   ├── i18n-audit.cjs
+│   ├── security-scan.cjs
+│   ├── sync-config.ts
+│   └── performance-gate/
+│       ├── run-lighthouse.cjs
+│       └── analyze.cjs
+├── dashboard/
+│   ├── src/                  # Dashboard React app
 │   ├── public/
-│   │   └── index.html        # Dashboard UI
-│   ├── server.cjs            # Express-compatible HTTP server
-│   └── template.html         # HTML template
+│   ├── vite.config.ts
+│   └── package.json
+├── dashboard-server.ts       # Dashboard HTTP server
+├── generate-snapshot.ts
+├── capture-audit.ts
+├── vitest.collector.ts
+├── snapshots.store.ts
+├── quality-schema.ts
+├── tests/                    # Quality-core unit tests
 ├── packages/
 │   ├── core/
-│   │   ├── result.contract.json  # JSON Schema for audit results
-│   │   ├── runner.cjs            # Audit orchestrator
-│   │   └── thresholds.cjs        # Default threshold values
 │   ├── audits/
-│   │   ├── build.cjs         # Bundle size & asset checks
-│   │   ├── render.cjs        # First Paint, CLS, TBT metrics
-│   │   ├── ux.cjs            # Tap target size checks
-│   │   ├── a11y.cjs          # Accessibility (buttons, labels, alt text)
-│   │   └── seo.cjs           # Meta tags, headings, canonical
 │   ├── adapters/
-│   │   ├── playwright.cjs    # Browser automation adapter
-│   │   └── utils.cjs         # Shared utilities
 │   └── reporters/
-│       ├── json.cjs          # JSON reporter
-│       └── markdown.cjs      # Markdown reporter
 └── presets/
-    └── github-pages.json     # GitHub Pages deployment preset
+    └── github-pages.json
 ```
 
 ---
 
-## Technologies & Architecture
+## Reports & Outputs
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Runtime | Node.js (CommonJS) | Cross-platform execution |
-| Browser Automation | Playwright | Rendering audits (FP, CLS, TBT) |
-| CLI | Native `process.argv` | Zero-dependency CLI parsing |
-| Reporters | Native `fs` | JSON and Markdown output |
-| Dashboard | Vanilla HTML/JS | No build step required |
+All reports are written to the root `performance-reports/` directory:
 
-### Architecture Overview
+- `performance-reports/quality` for core quality JSON/MD
+- `performance-reports/lighthouse` for Lighthouse JSON/HTML
+- `performance-reports/analysis` for bundle/deps analysis
+- `performance-reports/coverage` for `coverage-summary.json`
+- `performance-reports/quality-snapshots` for dashboard snapshots
+- `performance-reports/logs` for process logs
 
+---
+
+## Testing Layout
+
+- `quality-core/tests` contains the Quality Core unit tests.
+- Application tests remain in `__tests__/` (project-specific).
+- Vitest configs live in `quality-core/config`.
+
+---
+
+## Main Commands (Project Root)
+
+Core audits:
+
+```bash
+bun run quality:core
+bun run quality:core:quick
+bun run quality:core:silent
 ```
-┌──────────────┐     ┌───────────────┐     ┌──────────────┐
-│   CLI        │────▶│    Runner     │────▶│   Audits     │
-│ quality.cjs  │     │  runner.cjs   │     │ build/render │
-└──────────────┘     └───────────────┘     └──────────────┘
-                            │
-                            ▼
-                     ┌──────────────┐
-                     │  Reporters   │
-                     │ json/markdown│
-                     └──────────────┘
-                            │
-                            ▼
-                     ┌──────────────┐
-                     │  Dashboard   │
-                     │ server.cjs   │
-                     └──────────────┘
+
+Quality gate (orchestrator):
+
+```bash
+bun run quality:gate
+bun run quality:gate:quick-silent
+```
+
+Lighthouse:
+
+```bash
+bun run quality:lighthouse
+bun run quality:lighthouse:silent
+```
+
+Analysis:
+
+```bash
+bun run analysis
+bun run analysis:silent
+```
+
+Coverage (TUI + summary):
+
+```bash
+bun run test:coverage
+bun run test:coverage:quick
+bun run test:coverage:quiet
+bun run test:coverage:quick-quiet
+bun run test:coverage:silent
+```
+
+Dashboard:
+
+```bash
+bun run build:dashboard
+bun run dashboard
 ```
 
 ---
 
-## Usage
+## Modes (TUI)
 
-### Running Quality Audits
+- `--quick` runs a smaller/safer subset (faster)
+- `--quiet` reduces output but keeps a summary
+- `--silent` prints only the final summary
+
+---
+
+## Lighthouse Environment Variables
+
+- `CHROME_PATH` to force the Chrome/Chromium binary
+- `LH_HOST` to force server host (default `127.0.0.1`)
+- `LH_HEADLESS` to override headless mode (`new` | `legacy`)
+- `LH_CHROME_FLAGS` for extra chrome flags
+- `LH_MOBILE_THROTTLING` and `LH_DESKTOP_THROTTLING`
+- `LH_SERVER_WAIT_MS` to extend server readiness time
+- `LH_MAX_WAIT_MS` for audit timeout
+
+---
+
+## Dashboard Notes
+
+The dashboard is a Vite app and needs a build step.
 
 ```bash
-# Run all audits against a local preview server
-npm run quality -- --url=http://localhost:4173/
-
-# Run specific audits
-npm run quality -- --url=http://localhost:4173/ --audits=build,seo
-
-# Use a preset
-npm run quality -- --url=http://localhost:4173/ --preset=github-pages
+bun run build:dashboard
+bun run dashboard
 ```
 
-### Starting the Dashboard
+If the dashboard shows “Carregando interface...”, rebuild using:
 
 ```bash
-npm run dashboard
-# Opens at http://localhost:3333
+bun --cwd quality-core/dashboard run build
 ```
 
 ---
 
-## Adapting Quality Core for Another Project
+## Adapting Quality Core to Another Project
 
-### Step 1: Copy the `quality-core` folder
-
-Copy the entire `quality-core/` directory to your new project:
-
-```bash
-cp -r quality-core/ /path/to/new-project/quality-core/
-```
-
-### Step 2: Install Dependencies
-
-Quality Core requires Playwright for browser-based audits:
+1. Copy the `quality-core/` folder into the target repo.
+2. Install dependencies:
 
 ```bash
-npm install -D playwright
+npm install -D lighthouse playwright vitest
 ```
 
-### Step 3: Add npm Scripts
-
-Add to your `package.json`:
+3. Add scripts to `package.json`:
 
 ```json
 {
   "scripts": {
-    "quality": "node quality-core/cli/quality.cjs",
-    "quality:quick": "node quality-core/cli/quality.cjs --audits=build,seo",
-    "dashboard": "node quality-core/dashboard/server.cjs"
+    "quality:core": "node quality-core/cli/quality.cjs",
+    "quality:lighthouse": "node quality-core/cli/run-lighthouse.cjs",
+    "analysis": "node quality-core/cli/run-analysis.cjs",
+    "coverage": "node quality-core/cli/run-coverage.cjs",
+    "build:dashboard": "node quality-core/scripts/build-dashboard.cjs",
+    "dashboard": "bun run quality-core/dashboard-server.ts"
   }
 }
 ```
 
-### Step 4: Configure Paths (Optional)
-
-Edit `quality-core/dashboard/server.cjs` to update report directories:
-
-```javascript
-const CONFIG = {
-  reportsDir: path.join(process.cwd(), 'performance-reports'),
-  qualityDir: path.join(process.cwd(), 'performance-reports', 'quality'),
-  // ... other paths
-};
-```
-
-### Step 5: Create Custom Presets (Optional)
-
-Create a new preset in `quality-core/presets/`:
-
-```json
-{
-  "name": "my-project",
-  "target": "production",
-  "baseUrl": "https://example.com"
-}
-```
-
-### Step 6: Customize Thresholds
-
-Edit `quality-core/packages/core/thresholds.cjs`:
-
-```javascript
-const DEFAULT_THRESHOLDS = {
-  build: {
-    bundle_total_kb: 500,  // Adjust for your project
-    largest_chunk_kb: 200,
-    // ...
-  },
-  // ...
-};
-```
+4. Customize thresholds in `quality-core/packages/core/thresholds.cjs`.
 
 ---
 
-## Extending with Custom Audits
+## Extending Audits
 
-Create a new audit in `quality-core/packages/audits/`:
-
-```javascript
-// my-audit.cjs
-module.exports = {
-  name: 'my-audit',
-  async run(context) {
-    const violations = [];
-    
-    // Your audit logic here
-    
-    return {
-      name: 'my-audit',
-      status: violations.length === 0 ? 'passed' : 'failed',
-      score: 100 - (violations.length * 10),
-      violations,
-    };
-  }
-};
-```
-
-Register in `quality-core/cli/quality.cjs`:
-
-```javascript
-const audits = {
-  build: require('../packages/audits/build.cjs'),
-  render: require('../packages/audits/render.cjs'),
-  // Add your audit:
-  'my-audit': require('../packages/audits/my-audit.cjs'),
-};
-```
-
----
-
-## Report Formats
-
-### JSON Report
-
-```json
-{
-  "meta": {
-    "timestamp": "2024-12-17T18:00:00Z",
-    "preset": "github-pages",
-    "url": "http://localhost:4173/"
-  },
-  "status": "failed",
-  "audits": [
-    {
-      "name": "build",
-      "status": "failed",
-      "score": 70,
-      "violations": [...]
-    }
-  ]
-}
-```
-
-### Markdown Report
-
-Generated in `performance-reports/quality/quality-{timestamp}.md` with human-readable summaries.
+Create a new audit in `quality-core/packages/audits/` and register it in `quality-core/cli/quality.cjs`.
 
 ---
 

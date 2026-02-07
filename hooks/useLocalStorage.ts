@@ -1,3 +1,21 @@
+/**
+ * useLocalStorage Hook
+ * 
+ * Armazena dados no localStorage do navegador.
+ * 
+ * NOTA DE SEGURANÇA:
+ * - Este hook armazena dados em texto plano no localStorage
+ * - Para um agregador de notícias pessoal, isso é geralmente aceitável
+ * - Se você precisar armazenar dados sensíveis (senhas, tokens, etc.),
+ *   considere usar criptografia ou uma solução mais segura
+ * - Dados no localStorage são acessíveis por qualquer script na mesma origem
+ * 
+ * Dados armazenados:
+ * - Feeds RSS (não sensíveis)
+ * - Configurações de aparência (não sensíveis)
+ * - Favoritos (não sensíveis)
+ * - Histórico de busca (não sensíveis)
+ */
 
 import { useState, useEffect } from 'react';
 

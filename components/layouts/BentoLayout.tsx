@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
 
@@ -12,15 +12,15 @@ interface BentoLayoutProps {
 
 export const BentoSkeleton: React.FC = () => {
   return (
-    <div className="container mx-auto p-4 md:p-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
+    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 pt-4 pb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
         {/* Pattern positions consistent with actual layout */}
-        <div className="sm:col-span-2 sm:row-span-2 min-h-[400px] md:min-h-[500px] bg-white/5 animate-pulse rounded-3xl" />
-        <div className="sm:col-span-1 sm:row-span-2 min-h-[400px] md:min-h-[500px] bg-white/5 animate-pulse rounded-3xl" />
-        <div className="sm:col-span-1 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
-        <div className="sm:col-span-2 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
-        <div className="sm:col-span-1 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
-        <div className="sm:col-span-1 sm:row-span-1 min-h-[220px] bg-white/5 animate-pulse rounded-3xl" />
+        <div className="sm:col-span-2 sm:row-span-2 md:col-span-2 md:row-span-2 min-h-[400px] md:min-h-[500px] feed-skeleton-block rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-2 md:col-span-1 md:row-span-2 min-h-[400px] md:min-h-[500px] feed-skeleton-block rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-1 md:col-span-1 md:row-span-1 min-h-[220px] feed-skeleton-block rounded-3xl" />
+        <div className="sm:col-span-2 sm:row-span-1 md:col-span-2 md:row-span-1 min-h-[220px] feed-skeleton-block rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-1 md:col-span-1 md:row-span-1 min-h-[220px] feed-skeleton-block rounded-3xl" />
+        <div className="sm:col-span-1 sm:row-span-1 md:col-span-1 md:row-span-1 min-h-[220px] feed-skeleton-block rounded-3xl" />
       </div>
     </div>
   );
@@ -55,7 +55,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
     switch (patternIndex) {
       case 0: // Hero - Large featured
         return {
-          span: 'sm:col-span-2 sm:row-span-2',
+          span: 'sm:col-span-2 sm:row-span-2 md:col-span-2 md:row-span-2',
           size: 'hero',
           showDescription: true,
           containerClass: 'min-h-[400px] md:min-h-[500px]'
@@ -63,7 +63,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
       case 1: // Tall
       case 6:
         return {
-          span: 'sm:col-span-1 sm:row-span-2',
+          span: 'sm:col-span-1 sm:row-span-2 md:col-span-1 md:row-span-2',
           size: 'tall',
           showDescription: false,
           containerClass: 'min-h-[400px] md:min-h-[500px]'
@@ -71,14 +71,14 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
       case 3: // Wide
       case 10:
         return {
-          span: 'sm:col-span-2 sm:row-span-1',
+          span: 'sm:col-span-2 sm:row-span-1 md:col-span-2 md:row-span-1',
           size: 'wide',
           showDescription: true,
           containerClass: 'min-h-[220px]'
         };
       default: // Standard
         return {
-          span: 'sm:col-span-1 sm:row-span-1',
+          span: 'sm:col-span-1 sm:row-span-1 md:col-span-1 md:row-span-1',
           size: 'standard',
           showDescription: false,
           containerClass: 'min-h-[220px]'
@@ -88,9 +88,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
 
   return (
     <>
-      <div className="container mx-auto p-4 md:p-6">
+      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 pt-4 pb-6">
         {/* Bento Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
           {articles.map((article, index) => {
             const style = getCardStyle(index);
             const isHero = style.size === 'hero';
@@ -105,13 +105,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   ${style.span}
                   ${style.containerClass}
                   group relative overflow-hidden cursor-pointer
-                  rounded-3xl
-                  bg-[rgb(var(--color-surface))]/60 backdrop-blur-xl
-                  border border-white/10
-                  shadow-xl shadow-black/10
-                  hover:shadow-2xl hover:shadow-[rgb(var(--color-accent))]/10
-                  hover:border-[rgb(var(--color-accent))]/30
-                  transition-all duration-500
+                  rounded-3xl feed-card
+                  hover:border-[rgba(var(--color-accent),0.25)]
+                  transition-all duration-400
                 `}
               >
                 {/* Background Image Layer */}
@@ -131,7 +127,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                 </div>
 
                 {/* Glassmorphism Overlay on Hover */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[rgb(var(--color-accent))]/5 backdrop-blur-[1px]" />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 feed-accent-bg backdrop-blur-[1px]" />
 
                 {/* Content Layer */}
                 <div className={`relative h-full flex flex-col justify-between p-5 md:p-6`}>
@@ -139,7 +135,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   {/* Top Part: Source, Date and Favorite */}
                   <div className="flex justify-between items-start w-full gap-3">
                     <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                      <span className="inline-flex items-center self-start px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20 truncate max-w-full">
+                      <span className="feed-chip shadow-lg shadow-[rgb(var(--color-accent))]/20 truncate max-w-full">
                         {article.sourceTitle}
                       </span>
                       <span className="text-[10px] md:text-xs font-bold text-white/70 drop-shadow-md truncate">
@@ -181,7 +177,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                     {/* Read indicator */}
                     <div className={`mt-4 flex items-center gap-2 text-xs font-medium text-white/70 ${isHero ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       } transition-opacity duration-300`}>
-                      <span className="w-8 h-0.5 bg-[rgb(var(--color-accent))] rounded-full group-hover:w-12 transition-all duration-500" />
+                      <span className="w-8 h-0.5 bg-[rgba(var(--color-accent),0.45)] rounded-full group-hover:w-12 transition-all duration-500" />
                       <span className="uppercase tracking-widest">
                         {t('action.read') || 'Ler'}
                       </span>

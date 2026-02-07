@@ -3,7 +3,6 @@ import type { Article } from '../types';
 import { sanitizeHtmlContent } from '../utils/sanitization';
 import { getVideoEmbed } from '../utils/videoEmbed';
 
-import { fetchFullContent } from '../services/articleFetcher';
 
 interface MagazineReaderModalProps {
   article: Article;
@@ -26,16 +25,26 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
   const videoEmbed = getVideoEmbed(article.link);
   const [fullContent, setFullContent] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const authorLabel =
+    article.author && article.author !== article.sourceTitle
+      ? article.author
+      : null;
 
   useEffect(() => {
     const loadContent = async () => {
         setFullContent(null);
         setLoading(true);
-        const fetched = await fetchFullContent(article.link);
-        if (fetched) {
-            setFullContent(fetched);
+        try {
+            const { fetchFullContent } = await import('../services/articleFetcher');
+            const fetched = await fetchFullContent(article.link);
+            if (fetched) {
+                setFullContent(fetched);
+            }
+        } catch (error) {
+            console.error('[MagazineReader] Failed to load full content', error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     loadContent();
@@ -91,13 +100,13 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
       </button>
 
       {/* Magazine Modal Content - Two Page Spread */}
-      <div className="relative w-full max-w-6xl max-h-[90vh] aspect-[16/10] bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] rounded-sm shadow-2xl overflow-hidden flex flex-col md:flex-row border-l-[12px] border-r-[12px] border-[rgb(var(--color-border))] book-shadow">
+      <div className="relative w-full max-w-5xl max-h-[88vh] aspect-[16/10] bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] rounded-sm shadow-2xl overflow-hidden flex flex-col md:flex-row border-l-[12px] border-r-[12px] border-[rgb(var(--color-border))] book-shadow">
         
         {/* Left Page: Visuals & Meta */}
         <div className="w-full md:w-1/2 h-full p-8 md:p-12 md:border-r border-[rgb(var(--color-border))] flex flex-col justify-between relative bg-[rgb(var(--color-surface))] page-texture overflow-y-auto custom-scrollbar-light">
            <div>
              <div className="flex items-center gap-3 mb-6">
-                <span className="px-3 py-1 bg-[rgb(var(--color-accent))] text-white text-xs font-bold uppercase tracking-widest">{article.sourceTitle}</span>
+                <span className="feed-chip text-[rgb(var(--color-text))] bg-[rgba(var(--color-accent),0.18)]">{article.sourceTitle}</span>
                 <time className="text-[rgb(var(--color-textSecondary))] text-xs font-serif italic">{new Date(article.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</time>
              </div>
 
@@ -105,9 +114,9 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
                {sanitizeHtmlContent(article.title)}
              </h1>
 
-             {article.author && (
-                <div className="flex items-center gap-2 mb-8 text-sm font-medium text-[rgb(var(--color-textSecondary))] border-l-2 border-[rgb(var(--color-accent))] pl-3">
-                  By {article.author}
+             {authorLabel && (
+                <div className="flex items-center gap-2 mb-8 text-sm font-medium text-[rgb(var(--color-textSecondary))] border-l-2 border-[rgba(var(--color-accent),0.4)] pl-3">
+                  By {authorLabel}
                 </div>
              )}
              
@@ -143,28 +152,43 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
 
         {/* Right Page: Content */}
         <div className="w-full md:w-1/2 h-full p-8 md:p-12 bg-[rgb(var(--color-background))] page-texture overflow-y-auto custom-scrollbar-light relative">
+           <div className="flex justify-end mb-4">
+             <a
+               href={article.link}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="inline-flex items-center gap-2 text-[rgb(var(--color-accent))] hover:underline text-xs uppercase tracking-widest font-bold"
+             >
+               Abrir original
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+               </svg>
+             </a>
+           </div>
            <div className="prose prose-lg prose-invert max-w-none font-serif leading-relaxed drop-cap text-[rgb(var(--color-text))]">
               {/* If we have full content, iterate and render safe html, otherwise description */}
-              {fullContent ? (
-                  <div dangerouslySetInnerHTML={{ __html: fullContent }} className="animate-in fade-in duration-500" />
-              ) : (
-                  <>
-                      {article.content ? (
-                        <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                      ) : (
-                        <div 
-                          className="text-lg leading-8" 
-                          dangerouslySetInnerHTML={{ __html: article.description || '' }} 
-                        />
-                      )}
-                      {loading && (
-                           <div className="py-8 flex items-center justify-center text-[rgb(var(--color-textSecondary))] animate-pulse font-sans text-sm">
-                               <svg className="w-4 h-4 mr-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                               Fetching full story from source...
-                           </div>
-                       )}
-                  </>
-              )}
+              <div className="max-w-[60ch] mx-auto">
+                {fullContent ? (
+                    <div dangerouslySetInnerHTML={{ __html: fullContent }} className="animate-in fade-in duration-500" />
+                ) : (
+                    <>
+                        {article.content ? (
+                          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                        ) : (
+                          <div 
+                            className="text-lg leading-8" 
+                            dangerouslySetInnerHTML={{ __html: article.description || '' }} 
+                          />
+                        )}
+                        {loading && (
+                             <div className="py-8 flex items-center justify-center text-[rgb(var(--color-textSecondary))] animate-pulse font-sans text-sm">
+                                 <svg className="w-4 h-4 mr-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                 Fetching full story from source...
+                             </div>
+                         )}
+                    </>
+                )}
+              </div>
            </div>
            
            <div className="text-xs text-[rgb(var(--color-textSecondary))] font-mono mt-12 pt-4 border-t border-[rgb(var(--color-border))] text-right">

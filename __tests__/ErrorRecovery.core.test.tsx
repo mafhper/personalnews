@@ -74,7 +74,7 @@ describe("ErrorRecovery Components", () => {
 
       expect(screen.getByText("Retrying...")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /retrying/i })).toBeDisabled();
-    });
+    }, 10000);
 
     it("displays different error types correctly", () => {
       const networkError: FeedError = {

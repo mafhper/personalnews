@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { MagazineReaderModal } from '../MagazineReaderModal';
 import { useAppearance } from '../../hooks/useAppearance';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
 
@@ -12,16 +12,16 @@ interface MagazineLayoutProps {
 }
 
 const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />
+  <div className={`feed-skeleton-block rounded-xl ${className}`} />
 );
 
 export const MagazineSkeleton: React.FC = () => {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+    <div className="mx-auto w-full max-w-[1040px] 2xl:max-w-[1120px] px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-12">
       {/* HERO SKELETON */}
-      <div className="grid md:grid-cols-2 gap-0 bg-white/5 rounded-2xl overflow-hidden h-[450px]">
-        <div className="bg-white/10 animate-pulse h-full" />
-        <div className="p-10 flex flex-col justify-center space-y-6">
+      <div className="grid xl:grid-cols-12 gap-0 feed-skeleton-block rounded-2xl overflow-hidden h-[360px] sm:h-[400px] xl:h-[480px]">
+        <div className="xl:col-span-7 feed-skeleton-block h-full" />
+        <div className="xl:col-span-5 p-8 md:p-10 flex flex-col justify-center space-y-6">
           <Bone className="h-4 w-32" />
           <Bone className="h-10 w-full" />
           <Bone className="h-20 w-full" />
@@ -29,7 +29,7 @@ export const MagazineSkeleton: React.FC = () => {
       </div>
 
       {/* FEATURED SKELETON */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3].map(i => (
           <div key={i} className="space-y-4">
             <Bone className="aspect-video" />
@@ -40,7 +40,7 @@ export const MagazineSkeleton: React.FC = () => {
       </div>
 
       {/* GRID SKELETON */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
         {[1, 2, 3, 4, 5, 6].map(i => (
           <div key={i} className="flex gap-4 items-center">
             <Bone className="w-24 h-24 flex-shrink-0" />
@@ -116,6 +116,10 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
   // Layout Slices - Magazine style with clear sections
   const heroArticle = visibleArticles[0];
+  const heroAuthor =
+    heroArticle?.author && heroArticle.author !== heroArticle.sourceTitle
+      ? heroArticle.author
+      : undefined;
   const featuredArticles = visibleArticles.slice(1, 4); // 3 featured below hero
   const gridArticles = visibleArticles.slice(4, 10); // 6 in grid
   const listArticles = visibleArticles.slice(10); // Rest in list
@@ -127,17 +131,27 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in duration-300 min-h-screen">
+    <div className="mx-auto w-full max-w-[1040px] 2xl:max-w-[1120px] px-4 sm:px-6 lg:px-8 xl:px-10 py-8 animate-in fade-in duration-300 min-h-screen">
+      <div className="flex items-center justify-between border-b border-[rgb(var(--color-border))]/40 pb-4 mb-8">
+        <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.35em] text-[rgb(var(--color-textSecondary))] font-black">
+          <span className="feed-accent-text">{t('layout.magazine') || 'Magazine'}</span>
+          <span className="h-px w-8 bg-[rgba(var(--color-accent),0.4)]" />
+          <span>{now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+        </div>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-[rgb(var(--color-textSecondary))] font-black">
+          {t('layout.edition') || 'Edição'} {now.getFullYear()}
+        </div>
+      </div>
 
       {/* Hero Section - Full Width */}
       <section className="mb-12">
         <article
-          className="relative group cursor-pointer overflow-hidden rounded-2xl bg-[rgb(var(--color-surface))]"
+          className="relative group cursor-pointer overflow-hidden rounded-2xl bg-[rgb(var(--color-surface))]/90 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.8)]"
           onClick={() => handleOpenReader(heroArticle)}
         >
-          <div className="grid md:grid-cols-2 gap-0">
+          <div className="grid xl:grid-cols-12 gap-0">
             {/* Hero Image */}
-            <div className="relative aspect-[4/3] md:aspect-auto md:h-auto md:min-h-[450px] overflow-hidden flex-1">
+            <div className="relative aspect-[16/10] sm:aspect-[4/3] xl:aspect-auto xl:col-span-7 xl:min-h-[480px] overflow-hidden flex-1">
               <ArticleImage
                 article={heroArticle}
                 width={1200}
@@ -157,9 +171,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             </div>
 
             {/* Hero Content */}
-            <div className="flex flex-col justify-center p-6 md:p-10 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))]">
+            <div className="flex flex-col justify-center p-6 md:p-10 xl:col-span-5 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))] border-t border-white/5 xl:border-t-0 xl:border-l">
               <div className="flex items-center gap-3 mb-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-[rgb(var(--color-accent))] text-white shadow-sm shadow-black/20">
+                <span className="feed-chip inline-flex items-center px-3 py-1 shadow-sm shadow-black/15">
                   {heroArticle.sourceTitle}
                 </span>
                 <span className="text-sm font-bold text-[rgb(var(--color-textSecondary))] bg-black/10 px-2 py-0.5 rounded">
@@ -167,17 +181,17 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 </span>
               </div>
 
-              <h1 className="text-2xl md:text-4xl font-bold text-[rgb(var(--color-text))] leading-tight mb-4 group-hover:text-[rgb(var(--color-accent))] transition-colors">
+              <h1 className="font-serif text-2xl md:text-4xl font-bold text-[rgb(var(--color-text))] leading-tight mb-4 group-hover:text-white transition-colors">
                 {heroArticle.title}
               </h1>
 
-              <p className="text-[rgb(var(--color-textSecondary))] text-base md:text-lg leading-relaxed line-clamp-3 mb-6">
+              <p className="text-[rgb(var(--color-textSecondary))] text-base md:text-lg leading-relaxed line-clamp-3 mb-6 max-w-[48ch]">
                 {heroArticle.description}
               </p>
 
-              {heroArticle.author && (
+              {heroAuthor && (
                 <p className="text-sm text-[rgb(var(--color-textSecondary))] italic">
-                  {t('article.by') || 'Por'} {heroArticle.author}
+                  {t('article.by') || 'Por'} {heroAuthor}
                 </p>
               )}
 
@@ -200,14 +214,14 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {featuredArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer bg-[rgb(var(--color-surface))]/30 backdrop-blur-md rounded-2xl p-5 border border-white/5 hover:bg-[rgb(var(--color-surface))]/50 hover:border-[rgb(var(--color-accent))]/30 transition-all duration-300 shadow-sm"
+                className="group cursor-pointer bg-[rgb(var(--color-surface))]/30 backdrop-blur-md rounded-2xl p-5 border border-white/5 hover:bg-[rgb(var(--color-surface))]/50 hover:border-white/15 transition-all duration-300 shadow-sm"
                 onClick={() => handleOpenReader(article)}
               >
-                <div className="relative aspect-video sm:aspect-[4/3] overflow-hidden rounded-xl mb-5 bg-[rgb(var(--color-background))]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl mb-5 bg-[rgb(var(--color-background))]">
                   <ArticleImage
                     article={article}
                     width={600}
@@ -227,7 +241,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 </div>
 
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[10px] font-black uppercase tracking-[0.1em] bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded shadow-sm shadow-black/20">
+                  <span className="feed-chip text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
                     {article.sourceTitle}
                   </span>
                   <span className="text-[10px] font-bold text-white/80 group-hover:text-white transition-colors bg-black/20 px-1.5 py-0.5 rounded">
@@ -254,11 +268,11 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {gridArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all relative"
+                className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-white/15 transition-all relative"
                 onClick={() => handleOpenReader(article)}
               >
                 <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
@@ -273,7 +287,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))] truncate max-w-[100px]">
+                      <span className="text-[10px] font-bold uppercase feed-accent-text truncate max-w-[100px]">
                         {article.sourceTitle}
                       </span>
                       <span className="text-[10px] text-[rgb(var(--color-textSecondary))] flex-shrink-0">
@@ -289,7 +303,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                       />
                     </div>
                   </div>
-                  <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2 leading-snug">
+                  <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-white transition-colors line-clamp-2 leading-snug">
                     {article.title}
                   </h3>
                 </div>
@@ -309,45 +323,47 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {listArticles.map((article, i) => (
-              <article
-                key={i}
-                className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl bg-[rgb(var(--color-surface))]/80 backdrop-blur-xl border border-white/20 hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))] transition-all duration-300 shadow-lg"
-                onClick={() => handleOpenReader(article)}
-              >
-                <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl bg-[rgb(var(--color-background))] shadow-inner border border-white/10">
-                  <ArticleImage
-                    article={article}
-                    width={150}
-                    height={150}
-                    fill={true}
-                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.1em] bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded shadow-sm shadow-black/20">
-                      {article.sourceTitle}
-                    </span>
-                    <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] bg-black/5 px-2 py-0.5 rounded">
-                      {formatTimeAgo(article.pubDate)}
-                    </span>
+          <div className="max-w-full lg:max-w-[780px] xl:max-w-[840px] 2xl:max-w-[900px] mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {listArticles.map((article, i) => (
+                <article
+                  key={i}
+                  className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl bg-[rgb(var(--color-surface))]/80 backdrop-blur-xl border border-white/12 hover:bg-[rgb(var(--color-surface))] hover:border-white/18 transition-all duration-300 shadow-md"
+                  onClick={() => handleOpenReader(article)}
+                >
+                  <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl bg-[rgb(var(--color-background))] shadow-inner border border-white/10">
+                    <ArticleImage
+                      article={article}
+                      width={150}
+                      height={150}
+                      fill={true}
+                      className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                    />
                   </div>
-                  <h4 className="font-bold text-base text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-text))] group-hover:underline transition-all line-clamp-2 leading-tight">
-                    {article.title}
-                  </h4>
-                </div>
-                <div className="flex-shrink-0">
-                  <FavoriteButton
-                    article={article}
-                    size="medium"
-                    position="inline"
-                    className="text-[rgb(var(--color-accent))] opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
-                </div>
-              </article>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="feed-chip text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
+                        {article.sourceTitle}
+                      </span>
+                      <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] bg-black/5 px-2 py-0.5 rounded">
+                        {formatTimeAgo(article.pubDate)}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-base text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-text))] group-hover:underline transition-all line-clamp-2 leading-tight">
+                      {article.title}
+                    </h4>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <FavoriteButton
+                      article={article}
+                      size="medium"
+                      position="inline"
+                      className="feed-accent-text opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
       )}

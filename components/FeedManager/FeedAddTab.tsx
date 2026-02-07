@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FeedCategory } from '../../types';
 
 interface FeedAddTabProps {
@@ -28,7 +28,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
   return (
     <div className="p-4 sm:p-6 h-full overflow-y-auto custom-scrollbar">
       <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
-        
+
         {/* Header */}
         <div className="text-center animate-in slide-in-from-top-2">
           <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Adicionar Novo Feed</h2>
@@ -52,7 +52,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
                   type="text"
                   value={newFeedUrl}
                   onChange={(e) => setNewFeedUrl(e.target.value)}
-                  placeholder="https://exemplo.com ou Canal YouTube"
+                  placeholder="https://exemplo.com"
                   disabled={!!processingUrl}
                   className="w-full bg-black/40 text-white pl-10 pr-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))] focus:ring-1 focus:ring-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 />
@@ -91,7 +91,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
             <button
               type="submit"
               disabled={!!processingUrl}
-              className="mt-2 w-full px-6 py-3 bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium shadow-lg shadow-[rgb(var(--color-accent))]/20"
+              className="mt-2 w-full px-6 py-3 bg-[rgba(var(--color-accent),0.75)] hover:bg-[rgba(var(--color-accent),0.6)] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium shadow-sm"
             >
               {processingUrl ? (
                 <>
@@ -130,40 +130,6 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
               </div>
             </div>
           )}
-        </div>
-
-        {/* YouTube Guide Section */}
-        <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-5 animate-in slide-in-from-bottom-4 duration-500 delay-100">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 bg-red-500/10 p-2 rounded-lg">
-              <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Como adicionar canais do YouTube?</h3>
-              <p className="text-gray-400 text-sm mb-3 leading-relaxed">
-                Nosso sistema possui descoberta automática. Você pode tentar colar a <strong>URL do canal</strong> diretamente.
-              </p>
-              
-              <div className="space-y-3">
-                <div className="bg-black/30 rounded p-2 border border-white/5">
-                  <p className="text-xs text-gray-500 mb-1 font-bold uppercase">Opção 1: URL do Canal (Recomendado)</p>
-                  <code className="text-xs text-green-400 font-mono break-all">https://www.youtube.com/@CanalExemplo</code>
-                </div>
-                
-                <div className="bg-black/30 rounded p-2 border border-white/5">
-                  <p className="text-xs text-gray-500 mb-1 font-bold uppercase">Opção 2: ID do Canal (Infalível)</p>
-                  <p className="text-gray-400 text-xs mb-1">Se a URL falhar, use o ID direto:</p>
-                  <code className="text-xs text-blue-400 font-mono break-all">UCef5U1dB5a2e2S-XUlnhxSA</code>
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-500 mt-3 italic">
-                Nota: O sistema converte automaticamente para o feed XML correto.
-              </p>
-            </div>
-          </div>
         </div>
 
       </div>

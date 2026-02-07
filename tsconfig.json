@@ -40,6 +40,8 @@
     "myrssfeed/**/*",
     "dist/**/*",
     "node_modules/**/*",
+    "quality-core/dashboard-v2/**/*",
+    "quality-core/dashboard/**/*",
     "_dev/**/*",
     "_template_v0/**/*"
   ]

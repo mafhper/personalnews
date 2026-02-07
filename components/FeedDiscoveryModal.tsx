@@ -108,7 +108,7 @@ export const FeedDiscoveryModal: React.FC<FeedDiscoveryModalProps> = ({
                 <div className="flex items-center gap-2">
                   <FeedIcons.RSS className="text-orange-500" />
                   <Badge
-                    variant={getConfidenceColor(feed.confidence) as any}
+                    variant={getConfidenceColor(feed.confidence) as "green" | "yellow" | "red"}
                     className="text-xs"
                   >
                     {getConfidenceText(feed.confidence)} Confidence

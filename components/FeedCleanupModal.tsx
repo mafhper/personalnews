@@ -38,11 +38,11 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
         const parsed = JSON.parse(stored);
         // Ensure compatibility with the new format (array of objects)
         const history: FeedErrorHistoryItem[] = Array.isArray(parsed) 
-          ? parsed.map((item: any) => ({
-              url: item.url,
-              failures: item.failures || 1, // Fallback for old format
-              lastError: item.lastError,
-              lastErrorType: item.lastErrorType || 'unknown'
+          ? parsed.map((item: Record<string, unknown>) => ({
+              url: item.url as string,
+              failures: (item.failures as number) || 1, // Fallback for old format
+              lastError: item.lastError as number,
+              lastErrorType: (item.lastErrorType as string) || 'unknown'
             }))
           : [];
         setErrorHistory(history);

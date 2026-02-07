@@ -8,7 +8,7 @@ interface PerformanceMetric {
   name: string;
   value: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class PerformanceMetrics {
@@ -22,7 +22,7 @@ class PerformanceMetrics {
   /**
    * Registra uma métrica personalizada
    */
-  record(name: string, value: number, metadata?: Record<string, any>) {
+  record(name: string, value: number, metadata?: Record<string, unknown>) {
     this.metrics.push({
       name,
       value,
@@ -158,7 +158,7 @@ class PerformanceMetrics {
     try {
       const layoutObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          this.record('layout-shift', (entry as any).value);
+          this.record('layout-shift', (entry as unknown as { value: number }).value);
         }
       });
       layoutObserver.observe({ entryTypes: ['layout-shift'] });

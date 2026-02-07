@@ -6,6 +6,19 @@ import { useFeeds } from '../contexts/FeedContextState';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import * as feedMigration from '../utils/feedMigration';
 
+// Mock do hook useNotification antes de qualquer importação
+const mockShowNotification = vi.fn();
+
+vi.mock('../hooks/useNotification', () => ({
+  useNotification: () => ({
+    showNotification: mockShowNotification,
+    removeNotification: vi.fn(),
+    clearAllNotifications: vi.fn(),
+    showConfirm: vi.fn(() => Promise.resolve(true)),
+    showAlert: vi.fn(() => Promise.resolve()),
+  })
+}));
+
 // Mock dependencies
 vi.mock('../utils/feedMigration', () => ({
   getDefaultFeeds: vi.fn(() => []),
@@ -13,10 +26,10 @@ vi.mock('../utils/feedMigration', () => ({
 }));
 
 vi.mock('../services/logger', () => {
-  const mockLogger = { 
-    info: vi.fn(), 
-    error: vi.fn(), 
-    warn: vi.fn(), 
+  const mockLogger = {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
     debug: vi.fn(),
     debugTag: vi.fn()
   };
@@ -26,12 +39,6 @@ vi.mock('../services/logger', () => {
     useLogger: () => mockLogger,
   };
 });
-
-// Mock NotificationProvider to avoid complex wrapping issues
-vi.mock('../contexts/NotificationContext', () => ({
-  useNotification: () => ({ showNotification: vi.fn() }),
-  NotificationProvider: ({ children }: any) => <div>{children}</div>
-}));
 
 describe('FeedContext', () => {
   beforeEach(() => {

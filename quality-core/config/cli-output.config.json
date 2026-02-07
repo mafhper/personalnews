@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "levelPrefixes": [
+    "|",
+    "|-",
+    "|--",
+    "|---",
+    "|----"
+  ],
+  "separatorWidth": 50,
+  "wrapWidth": 100,
+  "separators": {
+    "default": "─",
+    "header": "─",
+    "summary": "="
+  }
+}

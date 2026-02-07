@@ -1,35 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-
-interface UIContextType {
-  // Modal states
-  isFeedManagerOpen: boolean;
-  isSettingsOpen: boolean;
-  isFavoritesOpen: boolean;
-  isShortcutsOpen: boolean;
-  
-  // Actions
-  openFeedManager: () => void;
-  closeFeedManager: () => void;
-  toggleFeedManager: () => void;
-  
-  openSettings: () => void;
-  closeSettings: () => void;
-  toggleSettings: () => void;
-  
-  openFavorites: () => void;
-  closeFavorites: () => void;
-  toggleFavorites: () => void;
-  
-  openShortcuts: () => void;
-  closeShortcuts: () => void;
-  toggleShortcuts: () => void;
-
-  // Global close (useful for escape key)
-  closeAllModals: () => void;
-  isAnyModalOpen: boolean;
-}
-
-const UIContext = createContext<UIContextType | undefined>(undefined);
+import React, { useState, ReactNode, useCallback } from "react";
+import { UIContext } from "./UIContextState";
 
 export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isFeedManagerOpen, setIsFeedManagerOpen] = useState(false);
@@ -39,19 +9,31 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
   const openFeedManager = useCallback(() => setIsFeedManagerOpen(true), []);
   const closeFeedManager = useCallback(() => setIsFeedManagerOpen(false), []);
-  const toggleFeedManager = useCallback(() => setIsFeedManagerOpen(prev => !prev), []);
+  const toggleFeedManager = useCallback(
+    () => setIsFeedManagerOpen((prev) => !prev),
+    [],
+  );
 
   const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const closeSettings = useCallback(() => setIsSettingsOpen(false), []);
-  const toggleSettings = useCallback(() => setIsSettingsOpen(prev => !prev), []);
+  const toggleSettings = useCallback(
+    () => setIsSettingsOpen((prev) => !prev),
+    [],
+  );
 
   const openFavorites = useCallback(() => setIsFavoritesOpen(true), []);
   const closeFavorites = useCallback(() => setIsFavoritesOpen(false), []);
-  const toggleFavorites = useCallback(() => setIsFavoritesOpen(prev => !prev), []);
+  const toggleFavorites = useCallback(
+    () => setIsFavoritesOpen((prev) => !prev),
+    [],
+  );
 
   const openShortcuts = useCallback(() => setIsShortcutsOpen(true), []);
   const closeShortcuts = useCallback(() => setIsShortcutsOpen(false), []);
-  const toggleShortcuts = useCallback(() => setIsShortcutsOpen(prev => !prev), []);
+  const toggleShortcuts = useCallback(
+    () => setIsShortcutsOpen((prev) => !prev),
+    [],
+  );
 
   const closeAllModals = useCallback(() => {
     setIsFeedManagerOpen(false);
@@ -60,7 +42,8 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setIsShortcutsOpen(false);
   }, []);
 
-  const isAnyModalOpen = isFeedManagerOpen || isSettingsOpen || isFavoritesOpen || isShortcutsOpen;
+  const isAnyModalOpen =
+    isFeedManagerOpen || isSettingsOpen || isFavoritesOpen || isShortcutsOpen;
 
   const value = {
     isFeedManagerOpen,
@@ -80,16 +63,8 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     closeShortcuts,
     toggleShortcuts,
     closeAllModals,
-    isAnyModalOpen
+    isAnyModalOpen,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
-};
-
-export const useUI = () => {
-  const context = useContext(UIContext);
-  if (context === undefined) {
-    throw new Error('useUI must be used within a UIProvider');
-  }
-  return context;
 };

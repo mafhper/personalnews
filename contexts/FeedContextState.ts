@@ -8,6 +8,7 @@ export interface FeedContextType {
     articles: Article[];
     loadingState: FeedLoadingState;
     loadFeeds: (forceRefresh?: boolean, priorityCategoryId?: string) => Promise<void>;
+    startInitialLoad: () => Promise<void>;
     retryFailedFeeds: () => Promise<void>;
     cancelLoading: () => void;
     refreshFeeds: (categoryFilter?: string) => void;

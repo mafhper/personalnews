@@ -25,6 +25,22 @@ function generateMarkdown(result) {
         md += `| ${key} | ${s} | ${icon} |\n`;
     }
 
+    // Hidden metrics for parsers (bundle/coverage)
+    const jsTotal = parseFloat(result.raw?.build?.jsTotal || '0');
+    const cssTotal = parseFloat(result.raw?.build?.cssTotal || '0');
+    const bundleTotal = jsTotal + cssTotal;
+    const coveragePct = typeof result.raw?.coverage?.lines === 'number'
+      ? result.raw.coverage.lines
+      : null;
+    md += `\n<!-- METRICS_START\n`;
+    if (!Number.isNaN(bundleTotal) && bundleTotal > 0) {
+        md += `  bundle_total_kb: ${bundleTotal.toFixed(2)}\n`;
+    }
+    if (coveragePct !== null && !Number.isNaN(coveragePct)) {
+        md += `  coverage: ${coveragePct}%\n`;
+    }
+    md += `  METRICS_END -->\n`;
+
     md += `\n## 🚨 Violations\n\n`;
 
     if (violations.length === 0) {

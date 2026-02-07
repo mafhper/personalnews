@@ -11,12 +11,12 @@ interface BrutalistLayoutProps {
 
 export const BrutalistSkeleton: React.FC = () => {
   return (
-    <div className="min-h-screen p-4 md:p-8 font-mono">
-      <div className="container mx-auto">
-        <div className="mb-8 border-b-4 border-black dark:border-white pb-2 h-16 bg-white/5 animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+    <div className="min-h-screen px-4 sm:px-6 lg:px-10 py-6 font-mono">
+      <div className="mx-auto w-full max-w-[1500px]">
+        <div className="mb-8 border-b-4 border-black dark:border-white pb-2 h-16 feed-skeleton-block" />
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-7">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div key={i} className="border-4 border-black dark:border-white h-[450px] bg-white/5 animate-pulse" />
+            <div key={i} className="border-4 border-black dark:border-white h-[450px] feed-skeleton-block" />
           ))}
         </div>
       </div>
@@ -37,12 +37,12 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
   return (
     <article
       className={`group relative flex flex-col border-4 border-black dark:border-white bg-[rgb(var(--color-surface))] transition-all duration-300 ${isExpanded
-        ? 'md:col-span-2 md:row-span-2 z-20 shadow-[12px_12px_0px_0px_rgba(var(--color-accent),1)] scale-[1.02]'
-        : 'hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]'
+        ? 'md:col-span-2 md:row-span-2 z-20 shadow-[10px_10px_0px_0px_rgba(var(--color-accent),0.6)] scale-[1.015]'
+        : 'hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.9)]'
         }`}
     >
       {/* Card Header / System Line */}
-      <div className={`flex items-center justify-between px-3 py-2 border-b-4 border-black dark:border-white text-[10px] font-bold uppercase tracking-wider ${isExpanded ? 'bg-[rgb(var(--color-accent))] text-white' : 'bg-black text-white dark:bg-white dark:text-black'
+      <div className={`flex items-center justify-between px-3 py-2 border-b-4 border-black dark:border-white text-[10px] font-bold uppercase tracking-wider ${isExpanded ? 'bg-[rgba(var(--color-accent),0.7)] text-white' : 'bg-black text-white dark:bg-white dark:text-black'
         }`}>
         <span className="truncate max-w-[60%]">{article.sourceTitle}</span>
         <span>
@@ -80,7 +80,7 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
 
             {/* Play Overlay (Only if not expanded) */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[2px] pointer-events-none z-10">
-              <div className="w-12 h-12 bg-[rgb(var(--color-accent))] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="w-12 h-12 bg-[rgba(var(--color-accent),0.75)] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                 </svg>
@@ -95,7 +95,7 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
       {/* Content Block */}
       <div className="p-4 flex flex-col flex-1 justify-between">
         <div>
-          <h2 className={`font-bold leading-tight mb-3 uppercase group-hover:text-[rgb(var(--color-accent))] transition-colors ${isExpanded ? 'text-xl md:text-2xl' : 'text-lg line-clamp-3'
+          <h2 className={`font-bold leading-tight mb-3 uppercase group-hover:text-white transition-colors ${isExpanded ? 'text-xl md:text-2xl' : 'text-lg line-clamp-3'
             }`}>
             <a href={article.link} target="_blank" rel="noopener noreferrer">
               {article.title}
@@ -115,7 +115,7 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
               article={article}
               size="small"
               position="inline"
-              className="text-black dark:text-white hover:text-[rgb(var(--color-accent))] p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="text-black dark:text-white hover:text-white p-0 opacity-0 group-hover:opacity-100 transition-opacity"
             />
           </div>
 
@@ -149,8 +149,8 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
 
 export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({ articles }) => {
   return (
-    <div className="min-h-screen p-4 md:p-8 font-mono">
-      <div className="container mx-auto">
+    <div className="min-h-screen px-4 sm:px-6 lg:px-10 py-6 font-mono">
+      <div className="mx-auto w-full max-w-[1500px]">
         {/* Header Decoration */}
         <div className="mb-8 border-b-4 border-black dark:border-white pb-2 flex justify-between items-end uppercase">
           <h1 className="text-4xl md:text-6xl font-black leading-none tracking-tighter">
@@ -162,7 +162,7 @@ export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({ articles }) =>
         </div>
 
         {/* Uniform Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 auto-dense">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-7 auto-dense">
           {articles.map((article, index) => (
             <BrutalistCard key={`${article.link}-${index}`} article={article} index={index} />
           ))}

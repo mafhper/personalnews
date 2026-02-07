@@ -62,8 +62,10 @@ export function useSearch(
   // Perform search when debounced query changes
   useEffect(() => {
     if (!searchIndex || !debouncedQuery.trim() || debouncedQuery.length < minQueryLength) {
-      const handle = requestAnimationFrame(() => setResults([]));
-      return () => cancelAnimationFrame(handle);
+      // Use setTimeout instead of requestAnimationFrame for background tab compatibility
+      // requestAnimationFrame is paused in inactive tabs, causing delays
+      const timeoutId = setTimeout(() => setResults([]), 0);
+      return () => clearTimeout(timeoutId);
     }
 
     // Reconstruct options to avoid dependency on the unstable searchOptions object
@@ -76,16 +78,17 @@ export function useSearch(
     };
 
     const searchResults = searchArticles(searchIndex, debouncedQuery, effectiveOptions);
-    const handle = requestAnimationFrame(() => setResults(searchResults));
-    return () => cancelAnimationFrame(handle);
+    // Use setTimeout instead of requestAnimationFrame for background tab compatibility
+    const timeoutId = setTimeout(() => setResults(searchResults), 0);
+    return () => clearTimeout(timeoutId);
   }, [
-    searchIndex, 
-    debouncedQuery, 
-    minQueryLength, 
-    searchOptions.includeTitle, 
-    searchOptions.includeContent, 
-    searchOptions.includeCategories, 
-    searchOptions.includeSource, 
+    searchIndex,
+    debouncedQuery,
+    minQueryLength,
+    searchOptions.includeTitle,
+    searchOptions.includeContent,
+    searchOptions.includeCategories,
+    searchOptions.includeSource,
     searchOptions.fuzzyThreshold
   ]);
 

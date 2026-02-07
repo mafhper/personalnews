@@ -186,7 +186,7 @@ describe('ErrorHandler', () => {
     });
 
     it('should handle recovery failures gracefully', async () => {
-      vi.useRealTimers();
+      // Mock the delay method to avoid waiting for exponential backoff
       const error = new Error('fetch failed');
       error.name = 'NetworkError';
       const failingRetryFunction = vi.fn().mockRejectedValue(new Error('Retry failed'));
@@ -194,11 +194,16 @@ describe('ErrorHandler', () => {
         additionalData: { retryFunction: failingRetryFunction },
       };
 
+      // Spy on delay method and mock it to resolve immediately
+      const delaySpy = vi.spyOn(errorHandler as any, 'delay').mockResolvedValue(undefined);
+
       const recovered = await errorHandler.handleError(error, context, true);
 
       expect(recovered).toBe(false);
       expect(failingRetryFunction).toHaveBeenCalled();
-    }, 10000); // Increase timeout to 10 seconds
+      
+      delaySpy.mockRestore();
+    });
   });
 
   describe('Error Reporting and Storage', () => {

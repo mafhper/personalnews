@@ -70,7 +70,7 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
         logger.debugTag('SYSTEM', 'Rendering image', logData);
       }
     }
-  }, [article.link, primarySrc, article.imageUrl, priority, remainingFallbacks.length, sourcesChain, logger]);
+  }, [article.link, primarySrc, article.imageUrl, priority, remainingFallbacks.length, sourcesChain]);
 
   // If no image URL at all, return a placeholder div instead of trying to load Picsum
   if (!article.imageUrl && sourcesChain.length === 0) {

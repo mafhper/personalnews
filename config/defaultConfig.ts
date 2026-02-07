@@ -1,10 +1,10 @@
 /**
  * defaultConfig.ts
- * 
+ *
  * Arquivo de configuração centralizado do Personal News.
  * Todas as configurações padrão do sistema estão definidas aqui.
  * Edite este arquivo para alterar os valores iniciais da aplicação.
- * 
+ *
  * @author Matheus Pereira
  * @version 1.0.0
  */
@@ -12,12 +12,21 @@
 import type {
     HeaderConfig,
     ContentConfig,
-    BackgroundConfig,
     FeedCategory,
     FeedSource,
 
 } from '../types';
 import { INITIAL_APP_CONFIG, DEFAULT_CATEGORIES as GEN_CATEGORIES, DEFAULT_FEEDS as GEN_FEEDS, CURATED_LISTS as GEN_CURATED_LISTS } from '../constants/curatedFeeds';
+
+const resolveHeaderPosition = (value?: string) => {
+  const normalized = (value || '').toLowerCase();
+  const allowed: HeaderConfig['position'][] = ['static', 'sticky', 'floating', 'hidden'];
+  return allowed.includes(normalized as HeaderConfig['position'])
+    ? (normalized as HeaderConfig['position'])
+    : 'floating';
+};
+
+const defaultHeaderPosition = resolveHeaderPosition(INITIAL_APP_CONFIG.header as string | undefined);
 
 // =============================================================================
 // CONFIGURAÇÕES DE APARÊNCIA (Header, Content, Background)
@@ -29,7 +38,7 @@ import { INITIAL_APP_CONFIG, DEFAULT_CATEGORIES as GEN_CATEGORIES, DEFAULT_FEEDS
  */
 export const DEFAULT_HEADER_CONFIG: HeaderConfig = {
     style: 'default',           // 'default' | 'minimal' | 'centered' | 'transparent'
-    position: 'sticky',       // 'floating' | 'fixed' | 'sticky' | 'relative'
+    position: defaultHeaderPosition,       // 'static' | 'sticky' | 'floating' | 'hidden'
     height: 'normal',          // "ultra-compact" | "tiny" | "compact" | "normal" | "spacious"
     showTitle: true,           // Mostrar título no header
     showLogo: true,             // Mostrar logo no header

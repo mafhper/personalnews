@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quality Core | Dashboard de Observabilidade</title>
+    
+    <!-- Favicons (Light/Dark support) -->
+    <link rel="icon" href="/icons/light/favicon.ico" sizes="any" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="/icons/light/favicon.svg" type="image/svg+xml" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="/icons/dark/favicon.ico" sizes="any" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="/icons/dark/favicon.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+
+    <!-- Default Fallback -->
+    <link rel="icon" href="/icons/light/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/icons/light/apple-touch-icon.png">
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <meta name="description" content="Dashboard de observabilidade para métricas de qualidade de código, testes e performance" />
+    <meta name="author" content="Quality Core" />
+    <meta name="theme-color" content="#02df82">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="Quality Core Dashboard" />
+    <meta property="og:description" content="Centro de comando para métricas de qualidade, testes e performance" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.png">
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/twitter-image.png">
+  </head>
+
+  <body>
+    <div id="root">
+      <div style="min-height:100vh;padding:24px;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b0f14;color:#d1d5db;">
+        <h1 style="margin:0 0 8px 0;font-size:20px;color:#e5e7eb;">Quality Core Dashboard</h1>
+        <p style="margin:0 0 8px 0;">Carregando interface...</p>
+        <p style="margin:0;font-size:12px;opacity:0.75;">
+          Se esta tela permanecer, verifique o build do dashboard:
+          <code>bun run build:dashboard</code>
+        </p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

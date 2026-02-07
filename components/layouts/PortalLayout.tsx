@@ -3,7 +3,7 @@ import { Article } from '../../types';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 
 interface PortalLayoutProps {
@@ -11,17 +11,15 @@ interface PortalLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
-const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
-
 export const PortalSkeleton: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* HERO SECTION SKELETON */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 h-[500px] bg-white/5 rounded-xl animate-pulse" />
+        <div className="lg:col-span-8 h-[500px] feed-skeleton-block rounded-xl" />
         <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="flex-1 bg-white/5 rounded-xl animate-pulse" />
-          <div className="flex-1 bg-white/5 rounded-xl animate-pulse" />
+          <div className="flex-1 feed-skeleton-block rounded-xl" />
+          <div className="flex-1 feed-skeleton-block rounded-xl" />
         </div>
       </div>
 
@@ -29,11 +27,11 @@ export const PortalSkeleton: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-white/5 pt-8">
         <div className="lg:col-span-8 space-y-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="flex gap-4 p-5 bg-white/5 rounded-2xl h-40 animate-pulse" />
+            <div key={i} className="flex gap-4 p-5 feed-skeleton-block rounded-2xl h-40" />
           ))}
         </div>
         <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white/5 rounded-2xl p-6 h-64 animate-pulse" />
+          <div className="feed-skeleton-block rounded-2xl p-6 h-64" />
         </div>
       </div>
     </div>
@@ -54,7 +52,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
       {/* Top Section: Main Featured + 2 Sub Featured */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Featured (8 cols) */}
-        <div className="lg:col-span-8 h-[500px] rounded-xl overflow-hidden relative group">
+        <div className="lg:col-span-8 aspect-[16/9] lg:aspect-auto lg:h-[520px] rounded-xl overflow-hidden relative group">
           <FeaturedArticle article={mainFeatured} timeFormat={timeFormat} />
         </div>
 
@@ -76,7 +74,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                 />
 
                 <div className="absolute bottom-0 p-4 w-full">
-                  <span className="text-[10px] font-bold text-[rgb(var(--color-accent))] uppercase bg-black/50 px-2 py-1 rounded mb-2 inline-block truncate max-w-full">{article.sourceTitle}</span>
+                  <span className="feed-chip text-[10px] font-bold uppercase bg-black/40 px-2 py-1 rounded mb-2 inline-block truncate max-w-full">{article.sourceTitle}</span>
                   <h3 className="text-white font-bold text-lg leading-tight group-hover:underline line-clamp-2">{article.title}</h3>
                 </div>
               </a>
@@ -89,9 +87,9 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-white/10 pt-8">
         {/* Main Feed (8 cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <h3 className="text-xl font-bold text-[rgb(var(--color-accent))] uppercase tracking-wider mb-6 border-b border-[rgb(var(--color-accent))]/30 pb-2 inline-block">Últimas Notícias</h3>
+          <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">Últimas Notícias</h3>
           {feed.map((article, idx) => (
-            <article key={idx} className="flex gap-4 p-5 bg-[rgb(var(--color-surface))]/70 backdrop-blur-xl rounded-2xl hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))]/40 transition-all border border-white/10 relative group shadow-md">
+            <article key={idx} className="feed-card flex gap-4 p-5 rounded-2xl hover:border-[rgba(var(--color-accent),0.25)] transition-all relative group shadow-sm">
               <div className="flex flex-col gap-3 w-32 sm:w-40 flex-shrink-0">
                 <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
                   <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" fallbackText={article.sourceTitle} size={200} />
@@ -112,7 +110,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                       e.preventDefault();
                       setReadingArticle(article);
                     }}
-                    className="w-full text-[10px] bg-[rgb(var(--color-accent))] text-white px-2 py-1.5 rounded-lg hover:bg-[rgb(var(--color-accent))]/80 transition-all shadow-xl font-black uppercase tracking-widest border border-white/10 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
+                    className="w-full text-[10px] bg-[rgba(var(--color-accent),0.75)] text-white px-2 py-1.5 rounded-lg hover:bg-[rgba(var(--color-accent),0.6)] transition-all shadow-md font-black uppercase tracking-widest border border-white/10 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
                   >
                     {t('action.preview')}
                   </button>
@@ -121,7 +119,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
 
               <div className="flex-1 flex flex-col p-1 relative">
                 <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-[10px] font-black uppercase tracking-tighter bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded shadow-sm">
+                  <span className="feed-chip text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded shadow-sm">
                     {article.sourceTitle}
                   </span>
                   <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center">
@@ -136,7 +134,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                   rel="noopener noreferrer"
                   className="group/title block"
                 >
-                  <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-2 group-hover/title:text-[rgb(var(--color-accent))] transition-colors line-clamp-2">
+                  <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-2 group-hover/title:text-white transition-colors line-clamp-2">
                     {article.title}
                   </h3>
                 </a>
@@ -148,7 +146,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                 )}
 
                 <div className="flex items-center justify-between mt-auto">
-                  {article.author && (
+                  {article.author && article.author !== article.sourceTitle && (
                     <p className="text-xs font-bold text-white/60 italic bg-white/5 px-2 py-0.5 rounded">{`Por ${article.author}`}</p>
                   )}
                 </div>
@@ -161,15 +159,15 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
         <div className="lg:col-span-4">
           <div className="sticky top-24">
             <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-4 flex items-center">
-              <span className="w-2 h-2 bg-[rgb(var(--color-accent))] rounded-full mr-2"></span>
+              <span className="w-2 h-2 bg-[rgba(var(--color-accent),0.6)] rounded-full mr-2"></span>
               Em Alta
             </h3>
-            <div className="bg-[rgb(var(--color-surface))]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 space-y-4 shadow-xl">
+            <div className="feed-surface rounded-2xl p-6 border border-white/12 space-y-4 shadow-md">
               {sidebar.map((article, idx) => (
                 <div key={idx} className="group cursor-pointer border-b border-white/10 last:border-0 pb-4 last:pb-0">
                   <div className="flex justify-between items-start gap-3">
                     <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0" onClick={(e) => { e.preventDefault(); setReadingArticle(article); }}>
-                      <span className="text-[10px] font-black text-[rgb(var(--color-accent))] mb-1 block uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-all">
+                      <span className="text-[10px] font-black feed-accent-text mb-1 block uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-all">
                         {idx + 1}. {article.sourceTitle}
                       </span>
                       <h4 className="text-sm font-bold text-white group-hover:text-white group-hover:underline transition-all line-clamp-2 leading-tight">
@@ -181,7 +179,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                         article={article}
                         size="small"
                         position="inline"
-                        className="opacity-100 text-[rgb(var(--color-accent))] hover:scale-110 transition-all"
+                        className="opacity-100 feed-accent-text hover:scale-110 transition-all"
                       />
                     </div>
                   </div>

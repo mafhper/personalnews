@@ -363,8 +363,9 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       } else {
         throw new Error("Unknown feed format");
       }
-    } catch (error: any) {
-      throw new Error(`Failed to extract feed metadata: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to extract feed metadata: ${message}`);
     }
   }
 
@@ -395,8 +396,9 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       // Use ProxyManager for robust fetching
       const result = await proxyManager.tryProxiesWithFailover(url);
       return result.content;
-    } catch (error: any) {
-      throw new Error(`Failed to fetch website content: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to fetch website content: ${message}`);
     }
   }
 
@@ -427,8 +429,9 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       // Use ProxyManager
       const result = await proxyManager.tryProxiesWithFailover(url);
       return result.content;
-    } catch (error: any) {
-      throw new Error(`Failed to fetch feed content: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to fetch feed content: ${message}`);
     }
   }
 
@@ -479,7 +482,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Content scanning failed:", error);
     }
 

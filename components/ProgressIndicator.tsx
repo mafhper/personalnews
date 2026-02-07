@@ -9,6 +9,7 @@
  */
 
 import React from "react";
+import { createPortal } from "react-dom";
 
 interface ProgressBarProps {
   progress: number; // 0-100
@@ -110,15 +111,21 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
 
   // Overlay / Floating Mode
   // Used for non-intrusive loading updates (initial load or background refresh)
-  if (mode === 'overlay' && !isComplete) {
-    return (
-      <div className={`fixed top-16 left-0 right-0 z-[60] flex justify-center pt-4 pointer-events-none ${className}`}>
-        <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-gray-900/90 border border-white/10 backdrop-blur-md shadow-xl transform transition-all duration-300 animate-in slide-in-from-top-4">
+  if (mode === 'overlay') {
+    if (isComplete) {
+      return null;
+    }
+    const overlay = (
+      <div 
+        className={`fixed left-0 right-0 z-[80] flex justify-center pt-1 pointer-events-none text-white ${className}`}
+        style={{ top: "calc(var(--feed-header-offset, 0px) + 0.35rem)" }}
+      >
+        <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-gray-900/90 border border-white/10 backdrop-blur-md shadow-xl transform transition-all duration-300 animate-in slide-in-from-top-4 text-white">
           {/* Small spinner */}
           <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-t-transparent border-[rgb(var(--color-accent))]" />
           
           {/* Dynamic text */}
-          <span className="text-xs font-medium text-gray-200">
+          <span className="text-xs font-semibold text-white/90">
             {statusText}
           </span>
           
@@ -130,7 +137,7 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
             />
           </div>
 
-          <span className="text-xs text-gray-500 font-mono ml-1">
+          <span className="text-xs text-white/70 font-mono ml-1">
              {Math.round(progress)}%
           </span>
           
@@ -149,6 +156,10 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
         </div>
       </div>
     );
+    if (typeof document !== "undefined") {
+      return createPortal(overlay, document.body);
+    }
+    return overlay;
   }
 
   // Full loading indicator (Inline Mode)
@@ -156,7 +167,7 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   return (
     <div className={`w-full max-w-md ${className}`}>
       {/* Main compact bar */}
-      <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-900/70 border border-white/5">
+      <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-900/70 border border-white/5 text-white">
         {/* Spinner or status icon */}
         {!isComplete ? (
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-transparent border-[rgb(var(--color-accent))]" />
@@ -172,20 +183,20 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
         
         {/* Status text */}
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-300 truncate">
+          <p className="text-xs text-white/80 truncate">
             {currentAction || (isBackgroundRefresh ? "Updating..." : "Loading...")}
           </p>
         </div>
         
         {/* Stats */}
-        <div className="flex items-center gap-2 text-xs text-gray-500 font-mono shrink-0">
+        <div className="flex items-center gap-2 text-xs text-white/60 font-mono shrink-0">
           <span>{loadedFeeds}/{totalFeeds}</span>
           <span className="text-[rgb(var(--color-accent))]">{Math.round(progress)}%</span>
         </div>
         
         {/* Cancel button */}
         {!isComplete && onCancel && (
-          <button onClick={onCancel} className="text-gray-500 hover:text-white text-xs transition-colors">
+          <button onClick={onCancel} className="text-white/50 hover:text-white text-xs transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>

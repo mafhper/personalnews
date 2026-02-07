@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useWeather } from '../../hooks/useWeather';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
 
@@ -12,7 +12,7 @@ interface NewspaperLayoutProps {
 }
 
 const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <div className={`bg-white/5 animate-pulse rounded ${className}`} />
+  <div className={`feed-skeleton-block ${className}`} />
 );
 
 export const NewspaperSkeleton: React.FC = () => {
@@ -27,7 +27,7 @@ export const NewspaperSkeleton: React.FC = () => {
 
       {/* Hero Skeleton */}
       <div className="grid lg:grid-cols-12 gap-8 mb-16 h-[450px]">
-        <div className="lg:col-span-7 2xl:col-span-8 bg-white/5 rounded-xl animate-pulse" />
+        <div className="lg:col-span-7 2xl:col-span-8 feed-skeleton-block rounded-xl" />
         <div className="lg:col-span-5 2xl:col-span-4 flex flex-col justify-center space-y-6">
           <Bone className="h-4 w-32" />
           <Bone className="h-12 w-full" />
@@ -77,15 +77,14 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
   return (
     <div className="min-h-screen">
       <div
-        className="
-          mx-auto px-6 md:px-10 py-8
-          max-w-[1400px]
-          2xl:max-w-[1680px]
-          bg-[rgb(var(--color-surface))]/85
-          backdrop-blur
-          rounded-2xl
-          border border-[rgb(var(--color-border))]/20
-        "
+            className="
+              mx-auto px-6 md:px-10 py-8
+              max-w-[1400px]
+              2xl:max-w-[1680px]
+              feed-surface
+              rounded-2xl
+              border border-[rgb(var(--color-border))]/20
+            "
       >
 
         {/* Masthead */}
@@ -95,7 +94,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
 
             <button
               onClick={handleCityChange}
-              className="flex items-center gap-2 hover:text-[rgb(var(--color-accent))]"
+              className="flex items-center gap-2 hover:text-white"
             >
               {isLoading ? '...' : weatherData && (
                 <>
@@ -169,7 +168,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 max-w-none
               "
             >
-              <span className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-accent))] truncate max-w-[200px]">
+              <span className="text-xs font-bold uppercase tracking-widest feed-accent-text truncate max-w-[200px]">
                 {main.sourceTitle}
               </span>
 
@@ -208,7 +207,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 onClick={() => setReadingArticle(article)}
                 className="flex gap-5 cursor-pointer group"
               >
-                <div className="relative w-40 h-28 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] flex-shrink-0">
+                <div className="relative w-40 aspect-[4/3] rounded-lg overflow-hidden bg-[rgb(var(--color-background))] flex-shrink-0">
                   <ArticleImage
                     article={article}
                     fill={true}
@@ -220,9 +219,9 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
 
                 <div className="flex flex-col gap-2 flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] uppercase tracking-widest text-[rgb(var(--color-accent))] font-bold truncate max-w-[120px]">
-                      {article.sourceTitle}
-                    </span>
+                  <span className="feed-chip text-[10px] uppercase tracking-widest font-bold truncate max-w-[120px]">
+                    {article.sourceTitle}
+                  </span>
                     <div className="flex-shrink-0">
                       <FavoriteButton
                         article={article}
@@ -233,7 +232,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                     </div>
                   </div>
 
-                  <h3 className="font-serif text-lg font-bold leading-snug group-hover:text-[rgb(var(--color-accent))]">
+                  <h3 className="font-serif text-lg font-bold leading-snug group-hover:text-white">
                     {article.title}
                   </h3>
 
@@ -254,7 +253,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               onClick={() => setReadingArticle(article)}
               className="cursor-pointer group border-t border-[rgb(var(--color-border))] pt-4"
             >
-              <div className="relative h-40 rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
+              <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
                 <ArticleImage
                   article={article}
                   fill={true}
@@ -265,7 +264,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               </div>
 
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="inline-block text-[10px] uppercase tracking-widest bg-[rgb(var(--color-accent))]/10 text-[rgb(var(--color-accent))] px-2 py-0.5 rounded font-bold truncate max-w-[150px]">
+                <span className="feed-chip inline-block text-[10px] uppercase tracking-widest px-2 py-0.5 rounded font-bold truncate max-w-[150px]">
                   {article.sourceTitle}
                 </span>
                 <div className="flex-shrink-0">
@@ -278,7 +277,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 </div>
               </div>
 
-              <h3 className="font-serif text-lg font-bold leading-snug mb-2 group-hover:text-[rgb(var(--color-accent))]">
+              <h3 className="font-serif text-lg font-bold leading-snug mb-2 group-hover:text-white">
                 {article.title}
               </h3>
 

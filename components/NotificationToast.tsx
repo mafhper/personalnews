@@ -1,7 +1,7 @@
 import React from "react";
 import { Alert, Snackbar, IconButton } from "@mui/material";
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
-import { useNotification } from "../contexts/NotificationContext";
+import { useNotification } from "../hooks/useNotification";
 import { Notification } from "../types";
 
 interface NotificationToastProps {
@@ -23,7 +23,7 @@ const getIcon = (type: Notification["type"]) => {
 };
 
 const getSeverity = (
-  type: Notification["type"]
+  type: Notification["type"],
 ): "success" | "error" | "warning" | "info" => {
   return type;
 };
@@ -75,20 +75,20 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
             notification.type === "success"
               ? "#10b981"
               : notification.type === "error"
-              ? "#ef4444"
-              : notification.type === "warning"
-              ? "#f59e0b"
-              : "#3b82f6"
+                ? "#ef4444"
+                : notification.type === "warning"
+                  ? "#f59e0b"
+                  : "#3b82f6"
           }`,
           "& .MuiAlert-icon": {
             color:
               notification.type === "success"
                 ? "#10b981"
                 : notification.type === "error"
-                ? "#ef4444"
-                : notification.type === "warning"
-                ? "#f59e0b"
-                : "#3b82f6",
+                  ? "#ef4444"
+                  : notification.type === "warning"
+                    ? "#f59e0b"
+                    : "#3b82f6",
           },
           "& .MuiAlert-message": {
             color: "white",
@@ -117,7 +117,7 @@ export const NotificationContainer: React.FC = () => {
         maxWidth: "400px",
       }}
     >
-      {notifications.map((notification) => (
+      {notifications.map((notification: Notification) => (
         <NotificationToast key={notification.id} notification={notification} />
       ))}
     </div>

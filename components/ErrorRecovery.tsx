@@ -675,6 +675,7 @@ export const QuickFixSuggestions: React.FC<QuickFixSuggestionsProps> = ({
   );
 };
 
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Utility function to categorize errors by type
  */

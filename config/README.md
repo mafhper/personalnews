@@ -89,3 +89,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
 | `borderRadius` | none / small / medium / large | Arredondamento dos cantos |
 | `shadows` | true / false | Sombras nos elementos |
 | `animations` | true / false | Transições e animações |
+### `initial-setup.md`
+Fonte declarativa para configurações globais, categorias e feeds padrão.  
+Edite este arquivo e rode `bun run config:sync` para gerar `constants/curatedFeeds.ts`.

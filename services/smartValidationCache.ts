@@ -66,7 +66,7 @@ export interface ValidationCacheManager {
  * Smart validation cache with different TTL strategies and memory management
  */
 export class SmartValidationCache implements ValidationCacheManager {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
   private stats = {
     hitCount: 0,
     missCount: 0,
@@ -322,7 +322,7 @@ export class SmartValidationCache implements ValidationCacheManager {
   /**
    * Get cache entry metadata without accessing the data
    */
-  getMetadata(key: string): Omit<CacheEntry<any>, "data"> | null {
+  getMetadata(key: string): Omit<CacheEntry<unknown>, "data"> | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
@@ -333,7 +333,7 @@ export class SmartValidationCache implements ValidationCacheManager {
   /**
    * Determine appropriate TTL based on key and data
    */
-  private determineTTL(key: string, data: any): number {
+  private determineTTL(key: string, data: unknown): number {
     // Discovery results get longer TTL
     if (key.includes("discovery:") || key.includes("feeds:")) {
       return this.config.discoveryTTL;
@@ -341,9 +341,9 @@ export class SmartValidationCache implements ValidationCacheManager {
 
     // Check if data indicates success or failure
     if (typeof data === "object" && data !== null) {
-      if (data.isValid === true || data.success === true) {
+      if ((data as { isValid?: boolean }).isValid === true || (data as { success?: boolean }).success === true) {
         return this.config.defaultSuccessTTL;
-      } else if (data.isValid === false || data.success === false) {
+      } else if ((data as { isValid?: boolean }).isValid === false || (data as { success?: boolean }).success === false) {
         return this.config.defaultFailureTTL;
       }
     }
@@ -355,7 +355,7 @@ export class SmartValidationCache implements ValidationCacheManager {
   /**
    * Estimate the size of data in bytes
    */
-  private estimateSize(data: any): number {
+  private estimateSize(data: unknown): number {
     try {
       // Simple estimation based on JSON serialization
       const jsonString = JSON.stringify(data);

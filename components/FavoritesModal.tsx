@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Modal } from "./Modal";
 import { LazyImage } from "./LazyImage";
-import { useFavorites, favoriteToArticle } from "../hooks/useFavorites";
+import { useFavorites, favoriteToArticle, FavoriteArticle } from "../hooks/useFavorites";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
@@ -151,7 +151,7 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
   );
 
   const handleRemoveFavorite = useCallback(
-    (favorite: any) => {
+    (favorite: FavoriteArticle) => {
       const article = favoriteToArticle(favorite);
       removeFromFavorites(article);
     },

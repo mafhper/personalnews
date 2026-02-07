@@ -9,22 +9,22 @@ interface ModernPortalLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
-const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`feed-skeleton-block rounded-xl ${className}`} />;
 
 export const ModernPortalSkeleton: React.FC = () => {
   return (
-    <div className="container mx-auto flex flex-col gap-8 pb-12">
+    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 flex flex-col gap-8 pb-12">
       {/* HERO SECTION SKELETON */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 h-[500px] bg-white/5 rounded-2xl animate-pulse" />
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="flex-1 h-[240px] bg-white/5 rounded-2xl animate-pulse" />
-          <div className="flex-1 h-[240px] bg-white/5 rounded-2xl animate-pulse" />
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6">
+        <div className="lg:col-span-8 h-[420px] md:h-[480px] lg:h-[520px] feed-skeleton-block rounded-2xl" />
+        <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-4 md:gap-5">
+          <div className="flex-1 h-[220px] md:h-[230px] feed-skeleton-block rounded-2xl" />
+          <div className="flex-1 h-[220px] md:h-[230px] feed-skeleton-block rounded-2xl" />
         </div>
       </section>
 
       {/* STRIP SKELETON */}
-      <section className="py-12 border-y border-white/5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <section className="py-10 border-y border-white/5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
         {[1, 2, 3, 4].map(i => (
           <div key={i} className="space-y-4">
             <Bone className="aspect-video" />
@@ -37,8 +37,8 @@ export const ModernPortalSkeleton: React.FC = () => {
       {/* MAIN FEED SKELETON */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
         <div className="lg:col-span-8 space-y-8">
-          <div className="h-[400px] bg-white/5 rounded-2xl animate-pulse" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-[360px] md:h-[400px] feed-skeleton-block rounded-2xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="space-y-4">
                 <Bone className="h-48" />
@@ -49,7 +49,7 @@ export const ModernPortalSkeleton: React.FC = () => {
         </div>
         <div className="lg:col-span-4 space-y-6">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-24 bg-white/5 rounded-xl animate-pulse" />
+            <div key={i} className="h-24 feed-skeleton-block rounded-xl" />
           ))}
         </div>
       </section>
@@ -90,14 +90,14 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
   };
 
   return (
-    <div className="container mx-auto flex flex-col gap-8 pb-12">
+    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 flex flex-col gap-8 pb-12">
 
       {/* SECTION 1: HERO GRID (Desktop: 2/3 + 1/3 split) */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
 
         {/* Main Hero */}
         <div
-          className="lg:col-span-8 group relative overflow-hidden rounded-2xl min-h-[300px] sm:min-h-[400px] lg:min-h-[500px] shadow-2xl cursor-pointer"
+          className="lg:col-span-8 group relative overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[380px] md:min-h-[420px] lg:min-h-[520px] shadow-xl cursor-pointer"
           onClick={() => handleOpenReader(heroArticle)}
         >
           <div
@@ -110,11 +110,11 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
             article={heroArticle}
             size="large"
             position="overlay"
-            className="top-4 right-4 z-20 bg-black/40 hover:bg-black/60 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/15 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
           />
 
           <div className="absolute bottom-0 left-0 p-6 lg:p-10 max-w-3xl">
-            <span className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-widest text-white uppercase bg-[rgb(var(--color-primary))] rounded-full shadow-lg shadow-black/40">
+            <span className="feed-chip mb-4 shadow-sm shadow-black/30">
               Top Story
             </span>
             <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-xl">
@@ -122,7 +122,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 href={heroArticle.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline decoration-4 decoration-[rgb(var(--color-accent))] underline-offset-8"
+                className="hover:underline decoration-4 decoration-[rgba(var(--color-accent),0.45)] underline-offset-8"
                 onClick={(e) => { e.preventDefault(); handleOpenReader(heroArticle); }}
               >
                 {heroArticle.title}
@@ -132,7 +132,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
               {heroArticle.description}
             </p>
             <div className="flex items-center text-sm font-bold min-w-0">
-              <span className="bg-[rgb(var(--color-accent))] text-white px-2 py-0.5 rounded truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/20">{heroArticle.sourceTitle}</span>
+              <span className="feed-chip truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/10">{heroArticle.sourceTitle}</span>
               <span className="mx-2 flex-shrink-0 text-white">•</span>
               <span className="truncate text-white font-black">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
@@ -140,11 +140,11 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
         </div>
 
         {/* Right Column: Top Stories */}
-        <div className="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-4 lg:gap-6">
+        <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-4 md:gap-5 lg:gap-6">
           {topStories.map((article) => (
             <div
               key={article.link}
-              className="relative flex-1 rounded-2xl overflow-hidden group min-h-[200px] shadow-lg cursor-pointer"
+              className="relative flex-1 rounded-2xl overflow-hidden group min-h-[200px] sm:min-h-[220px] md:min-h-[240px] aspect-[4/3] md:aspect-auto shadow-md cursor-pointer"
               onClick={() => handleOpenReader(article)}
             >
               <div
@@ -156,7 +156,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 article={article}
                 size="medium"
                 position="overlay"
-                className="top-4 right-4 z-20 bg-black/40 hover:bg-black/60 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
               />
               <div className="absolute bottom-0 left-0 p-5 w-full">
                 <h2 className="text-lg font-bold text-white leading-snug mb-2 drop-shadow-lg">
@@ -171,7 +171,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                   </a>
                 </h2>
                 <div className="flex items-center text-xs font-bold min-w-0">
-                  <span className="bg-[rgb(var(--color-accent))] text-white px-1.5 py-0.5 rounded truncate max-w-[120px] shadow-sm shadow-black/20">{article.sourceTitle}</span>
+                  <span className="feed-chip truncate max-w-[120px] shadow-sm shadow-black/10">{article.sourceTitle}</span>
                   <span className="mx-2 flex-shrink-0 text-white">•</span>
                   <span className="text-gray-200">{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
@@ -182,15 +182,15 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
       </section>
 
       {/* SECTION 2: VISUAL STRIP (4 cols) */}
-      <section className="border-y border-white/5 py-12 bg-[rgb(var(--color-surface))]/10 backdrop-blur-sm rounded-3xl px-4 md:px-8 shadow-inner">
+      <section className="border-y border-white/5 py-10 md:py-12 feed-surface rounded-3xl px-4 md:px-8">
         <div className="flex items-center gap-4 mb-8">
-          <span className="w-1.5 h-6 bg-[rgb(var(--color-accent))] rounded-full"></span>
-          <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-[rgb(var(--color-accent))]">
-            Trending Analysis
-          </h3>
+          <span className="w-1.5 h-6 bg-[rgba(var(--color-accent),0.55)] rounded-full"></span>
+            <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] feed-accent-text">
+              Trending Analysis
+            </h3>
           <div className="h-px flex-1 bg-gradient-to-r from-[rgb(var(--color-accent))]/30 to-transparent"></div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {featuredStrip.map((article) => (
             <ArticleItem
               key={article.link}
@@ -198,7 +198,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
               layoutMode="grid"
               density="compact"
               onClick={handleOpenReader}
-              className="[&_.relative.mb-4]:!h-72"
+              className="[&_.relative.mb-4]:!aspect-[4/3] [&_.relative.mb-4]:!h-auto"
             />
           ))}
         </div>
@@ -209,36 +209,38 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
 
         {/* Main Feed (Left 8 cols) */}
         <div className="lg:col-span-8">
-          <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
-            <span className="w-1.5 h-6 bg-[rgb(var(--color-primary))] rounded-full"></span>
-            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Latest News</h3>
-            <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
-          </div>
+          <div className="max-w-full lg:max-w-[860px] mx-auto lg:mx-0">
+            <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
+              <span className="w-1.5 h-6 bg-[rgb(var(--color-primary))] rounded-full"></span>
+              <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Latest News</h3>
+              <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
+            </div>
 
-          <div className="space-y-8">
-            {/* First item big */}
-            {mainFeed.length > 0 && (
-              <ArticleItem
-                article={mainFeed[0]}
-                layoutMode="newspaper"
-                density="comfortable"
-                onClick={handleOpenReader}
-                className="[&_.relative.mb-4]:!h-96"
-              />
-            )}
-
-            {/* Grid for the rest */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-              {mainFeed.slice(1).map(article => (
+            <div className="space-y-8">
+              {/* First item big */}
+              {mainFeed.length > 0 && (
                 <ArticleItem
-                  key={article.link}
-                  article={article}
-                  layoutMode="grid"
+                  article={mainFeed[0]}
+                  layoutMode="newspaper"
                   density="comfortable"
                   onClick={handleOpenReader}
-                  className="[&_.relative.mb-4]:!h-72"
+                  className="[&_.relative.mb-4]:!aspect-[16/9] [&_.relative.mb-4]:!h-auto"
                 />
-              ))}
+              )}
+
+              {/* Grid for the rest */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+                {mainFeed.slice(1).map(article => (
+                  <ArticleItem
+                    key={article.link}
+                    article={article}
+                    layoutMode="grid"
+                    density="comfortable"
+                    onClick={handleOpenReader}
+                    className="[&_.relative.mb-4]:!aspect-[4/3] [&_.relative.mb-4]:!h-auto"
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -246,20 +248,20 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
         {/* Sidebar (Right 4 cols) */}
         <div className="lg:col-span-4 space-y-8">
           {/* Sidebar Widget 1: Most Recent List */}
-          <div className="bg-[rgb(var(--color-surface))] rounded-xl p-6 border border-white/5 sticky top-24">
+          <div className="bg-[rgb(var(--color-surface))] rounded-xl p-6 border border-white/5 lg:sticky lg:top-24">
             <h4 className="text-lg font-bold text-[rgb(var(--color-text))] mb-4 flex items-center gap-2">
-              <span className="w-2 h-6 bg-[rgb(var(--color-accent))] rounded-sm"></span>
+              <span className="w-2 h-6 bg-[rgba(var(--color-accent),0.45)] rounded-sm"></span>
               In Case You Missed It
             </h4>
-            <div className="space-y-4">
+            <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 lg:block lg:space-y-4">
               {sidebarFeed.slice(0, 8).map((article, index) => (
                 <div
                   key={article.link}
-                  className="group cursor-pointer bg-[rgb(var(--color-surface))]/70 backdrop-blur-xl rounded-xl p-4 border border-white/10 hover:bg-[rgb(var(--color-surface))] hover:border-[rgb(var(--color-accent))]/50 transition-all duration-300 shadow-lg"
+                  className="group cursor-pointer bg-[rgb(var(--color-surface))]/70 backdrop-blur-xl rounded-xl p-4 border border-white/10 hover:bg-[rgb(var(--color-surface))] hover:border-white/15 transition-all duration-300 shadow-md"
                   onClick={() => handleOpenReader(article)}
                 >
                   <div className="flex gap-4 items-start">
-                    <span className="text-2xl font-black text-[rgb(var(--color-accent))] opacity-40 font-serif group-hover:opacity-100 transition-opacity">
+                    <span className="text-2xl font-black feed-accent-text opacity-40 font-serif group-hover:opacity-100 transition-opacity">
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -271,11 +273,11 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                           article={article}
                           size="small"
                           position="inline"
-                          className="opacity-100 text-[rgb(var(--color-textSecondary))] hover:text-white"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[rgb(var(--color-textSecondary))] hover:text-white"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[rgb(var(--color-accent))] bg-black/20 px-1.5 py-0.5 rounded truncate max-w-full">
+                        <span className="feed-chip text-[10px] font-black uppercase tracking-wider bg-black/20 px-1.5 py-0.5 rounded truncate max-w-full">
                           {article.sourceTitle}
                         </span>
                         <span className="text-[10px] font-bold text-white/60 group-hover:text-white transition-colors">

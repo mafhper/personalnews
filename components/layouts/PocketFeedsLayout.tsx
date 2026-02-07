@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { LazyImage } from '../LazyImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 
 interface PocketFeedsLayoutProps {
@@ -10,21 +10,21 @@ interface PocketFeedsLayoutProps {
   timeFormat?: '12h' | '24h';
 }
 
-const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`feed-skeleton-block ${className}`} />;
 
 export const PocketFeedsSkeleton: React.FC = () => {
   return (
     <div className="container mx-auto p-6 md:p-8 space-y-8">
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
         <div className="flex gap-3">
-          <div className="w-6 h-6 bg-white/5 rounded animate-pulse" />
-          <div className="w-32 h-6 bg-white/5 rounded animate-pulse" />
+          <div className="w-6 h-6 feed-skeleton-block rounded" />
+          <div className="w-32 h-6 feed-skeleton-block rounded" />
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {[1, 2].map(i => (
-          <div key={i} className="bg-white/5 rounded-xl border border-white/5 p-5 flex gap-4 h-[160px]">
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 rounded-xl animate-pulse flex-shrink-0" />
+          <div key={i} className="feed-surface rounded-xl p-5 flex gap-4 h-[160px]">
+            <div className="w-24 h-24 md:w-32 md:h-32 feed-skeleton-block rounded-xl flex-shrink-0" />
             <div className="flex-1 space-y-4">
               <Bone className="h-6 w-3/4" />
               <Bone className="h-4 w-1/2" />
@@ -105,7 +105,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
       {/* Header */}
       <div className="flex items-center justify-between mb-8 border-b border-[rgb(var(--color-border))] pb-4">
         <div className="flex items-center gap-3">
-          <svg className="w-6 h-6 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 feed-accent-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
           </svg>
           <h1 className="text-xl font-bold text-[rgb(var(--color-text))]">PocketFeeds</h1>
@@ -126,7 +126,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
             return (
               <div
                 key={podcastName}
-                className={`bg-[rgb(var(--color-surface))] rounded-xl border border-[rgb(var(--color-border))] overflow-hidden transition-all duration-300 ${isExpanded || podcastNames.length === 1 ? 'lg:col-span-2' : ''}`}
+                className={`feed-surface rounded-xl border border-[rgb(var(--color-border))] overflow-hidden transition-all duration-300 ${isExpanded || podcastNames.length === 1 ? 'lg:col-span-2' : ''}`}
               >
                 {/* Podcast Header with large artwork */}
                 <div
@@ -138,7 +138,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                     {firstEp.imageUrl ? (
                       <LazyImage src={firstEp.imageUrl} className="w-full h-full object-cover" alt={podcastName} />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-[rgb(var(--color-accent))] to-[rgb(var(--color-primary))] flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-[rgba(var(--color-accent),0.6)] to-[rgba(var(--color-primary),0.6)] flex items-center justify-center">
                         <svg className="w-12 h-12 text-white opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
@@ -155,7 +155,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                       {episodes.length} {episodes.length === 1 ? 'episódio' : 'episódios'}
                     </p>
                     {podcastNames.length > 1 && (
-                      <button className="text-xs font-medium text-[rgb(var(--color-accent))] flex items-center gap-1">
+                      <button className="text-xs font-medium feed-accent-text flex items-center gap-1">
                         {isExpanded ? 'Recolher' : 'Ver episódios'}
                         <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -171,15 +171,15 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                     {episodes.slice(0, 10).map((episode, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-4 p-4 hover:bg-[rgba(var(--color-text),0.03)] transition-colors border-b border-[rgb(var(--color-border))] last:border-b-0"
+                        className="group flex items-center gap-4 p-4 hover:bg-[rgba(var(--color-text),0.03)] transition-colors border-b border-[rgb(var(--color-border))] last:border-b-0"
                       >
                         {/* Play button */}
                         {episode.audioUrl ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); handlePlayPause(episode.audioUrl!); }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${playingAudio === episode.audioUrl
-                                ? 'bg-[rgb(var(--color-accent))] text-white'
-                                : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-accent))] hover:text-white'
+                                ? 'bg-[rgba(var(--color-accent),0.6)] text-white'
+                                : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgba(var(--color-accent),0.45)] hover:text-white'
                               }`}
                           >
                             {playingAudio === episode.audioUrl ? (
@@ -205,7 +205,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => setReadingArticle(episode)}
                         >
-                          <h3 className="font-medium text-[rgb(var(--color-text))] text-sm md:text-base line-clamp-1 hover:text-[rgb(var(--color-accent))] transition-colors">
+                          <h3 className="font-medium text-[rgb(var(--color-text))] text-sm md:text-base line-clamp-1 hover:text-white transition-colors">
                             {episode.title}
                           </h3>
                           <div className="flex items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))] mt-1">
@@ -225,11 +225,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                             article={episode}
                             size="small"
                             position="inline"
-                            className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-accent))]"
+                            className="text-[rgb(var(--color-textSecondary))] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
                           />
                           <button
                             onClick={() => setReadingArticle(episode)}
-                            className="p-2 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-accent))] transition-colors"
+                            className="p-2 text-[rgb(var(--color-textSecondary))] hover:text-white transition-colors"
                             title={t('action.preview')}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +276,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                   {firstEp.imageUrl ? (
                     <LazyImage src={firstEp.imageUrl} className="w-full h-full object-cover" alt={podcastName} />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[rgb(var(--color-accent))] to-[rgb(var(--color-primary))] flex items-center justify-center">
+                    <div className="w-full h-full bg-gradient-to-br from-[rgba(var(--color-accent),0.6)] to-[rgba(var(--color-primary),0.6)] flex items-center justify-center">
                       <svg className="w-12 h-12 text-white opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                       </svg>
@@ -285,7 +285,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
 
                   {/* New episodes badge */}
                   {newCount > 0 && (
-                    <div className="absolute top-2 right-2 bg-[rgb(var(--color-accent))] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    <div className="absolute top-2 right-2 bg-[rgba(var(--color-accent),0.7)] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                       {newCount} novo{newCount > 1 ? 's' : ''}
                     </div>
                   )}
@@ -301,7 +301,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                 </div>
 
                 {/* Title */}
-                <h3 className="mt-3 font-medium text-sm text-[rgb(var(--color-text))] line-clamp-2 group-hover:text-[rgb(var(--color-accent))] transition-colors">
+                <h3 className="mt-3 font-medium text-sm text-[rgb(var(--color-text))] line-clamp-2 group-hover:text-white transition-colors">
                   {podcastName}
                 </h3>
                 <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-1">
@@ -329,7 +329,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                 {podcastGroups[expandedPodcast][0].imageUrl ? (
                   <LazyImage src={podcastGroups[expandedPodcast][0].imageUrl} className="w-full h-full object-cover" alt="" />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[rgb(var(--color-accent))] to-[rgb(var(--color-primary))] flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-br from-[rgba(var(--color-accent),0.6)] to-[rgba(var(--color-primary),0.6)] flex items-center justify-center">
                     <svg className="w-8 h-8 text-white opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
@@ -357,14 +357,14 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
               {podcastGroups[expandedPodcast].map((episode, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-4 p-4 hover:bg-[rgba(var(--color-text),0.03)] transition-colors border-b border-[rgb(var(--color-border))] last:border-b-0"
+                  className="group flex items-center gap-4 p-4 hover:bg-[rgba(var(--color-text),0.03)] transition-colors border-b border-[rgb(var(--color-border))] last:border-b-0"
                 >
                   {episode.audioUrl ? (
                     <button
                       onClick={() => handlePlayPause(episode.audioUrl!)}
                       className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${playingAudio === episode.audioUrl
-                          ? 'bg-[rgb(var(--color-accent))] text-white'
-                          : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-accent))] hover:text-white'
+                          ? 'bg-[rgba(var(--color-accent),0.6)] text-white'
+                          : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgba(var(--color-accent),0.45)] hover:text-white'
                         }`}
                     >
                       {playingAudio === episode.audioUrl ? (
@@ -389,7 +389,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => setReadingArticle(episode)}
                   >
-                    <h3 className="font-medium text-[rgb(var(--color-text))] text-sm line-clamp-1 hover:text-[rgb(var(--color-accent))] transition-colors">
+                    <h3 className="font-medium text-[rgb(var(--color-text))] text-sm line-clamp-1 hover:text-white transition-colors">
                       {episode.title}
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))] mt-1">
@@ -408,7 +408,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                     article={episode}
                     size="small"
                     position="inline"
-                    className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-accent))]"
+                    className="text-[rgb(var(--color-textSecondary))] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
                   />
                 </div>
               ))}

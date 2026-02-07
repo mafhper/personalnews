@@ -8,8 +8,8 @@
  * @version 3.0.0
  */
 
-import React, { Suspense, lazy, useState, useCallback, useEffect } from "react";
-import { Virtuoso, VirtuosoGrid } from "react-virtuoso";
+import React, { Suspense, useState, useCallback, useEffect, lazy } from "react";
+import type { VirtuosoProps, VirtuosoGridProps, ItemContent, GridItemContent } from "react-virtuoso";
 import type { Article } from "../types";
 import { withPerformanceTracking } from "../services/performanceUtils";
 import { useAppearance } from "../hooks/useAppearance";
@@ -19,33 +19,92 @@ import { ArticleItem } from "./ArticleItem";
 import { ArticleItemLight } from "./ArticleItemLight";
 import { MagazineItem } from "./layouts/MagazineItem";
 import { MagazineHeader } from "./layouts/MagazineHeader";
-import { MagazineReaderModal } from "./MagazineReaderModal";
+const MagazineReaderModal = lazy(() =>
+  import("./MagazineReaderModal").then((m) => ({
+    default: m.MagazineReaderModal,
+  })),
+);
 import { useLogger } from "../services/logger";
 
-// Direct imports for instant category switching (No more code-splitting jumps)
-import { MasonryLayout } from "./layouts/MasonryLayout";
-import { MinimalLayout } from './layouts/MinimalLayout';
-import { PortalLayout } from './layouts/PortalLayout';
-import { ImmersiveLayout } from "./layouts/ImmersiveLayout";
-import { BrutalistLayout } from "./layouts/BrutalistLayout";
-import { TimelineLayout } from "./layouts/TimelineLayout";
-import { BentoLayout } from "./layouts/BentoLayout";
-import { ModernPortalLayout } from "./layouts/ModernPortalLayout";
-import { NewspaperLayout } from "./layouts/NewspaperLayout";
-import { FocusLayout } from "./layouts/FocusLayout";
-import { GalleryLayout } from "./layouts/GalleryLayout";
-import { CompactLayout } from "./layouts/CompactLayout";
-import { SplitLayout } from "./layouts/SplitLayout";
-import { CyberpunkLayout } from "./layouts/CyberpunkLayout";
-import { TerminalLayout } from "./layouts/TerminalLayout";
-import { PocketFeedsLayout } from "./layouts/PocketFeedsLayout";
+// Lazy-loaded layouts to reduce main bundle size
+const MasonryLayout = lazy(() =>
+  import("./layouts/MasonryLayout").then((m) => ({ default: m.MasonryLayout })),
+);
+const MinimalLayout = lazy(() =>
+  import("./layouts/MinimalLayout").then((m) => ({ default: m.MinimalLayout })),
+);
+const PortalLayout = lazy(() =>
+  import("./layouts/PortalLayout").then((m) => ({ default: m.PortalLayout })),
+);
+const ImmersiveLayout = lazy(() =>
+  import("./layouts/ImmersiveLayout").then((m) => ({
+    default: m.ImmersiveLayout,
+  })),
+);
+const BrutalistLayout = lazy(() =>
+  import("./layouts/BrutalistLayout").then((m) => ({
+    default: m.BrutalistLayout,
+  })),
+);
+const TimelineLayout = lazy(() =>
+  import("./layouts/TimelineLayout").then((m) => ({
+    default: m.TimelineLayout,
+  })),
+);
+const BentoLayout = lazy(() =>
+  import("./layouts/BentoLayout").then((m) => ({ default: m.BentoLayout })),
+);
+const ModernPortalLayout = lazy(() =>
+  import("./layouts/ModernPortalLayout").then((m) => ({
+    default: m.ModernPortalLayout,
+  })),
+);
+const NewspaperLayout = lazy(() =>
+  import("./layouts/NewspaperLayout").then((m) => ({
+    default: m.NewspaperLayout,
+  })),
+);
+const FocusLayout = lazy(() =>
+  import("./layouts/FocusLayout").then((m) => ({ default: m.FocusLayout })),
+);
+const GalleryLayout = lazy(() =>
+  import("./layouts/GalleryLayout").then((m) => ({ default: m.GalleryLayout })),
+);
+const CompactLayout = lazy(() =>
+  import("./layouts/CompactLayout").then((m) => ({ default: m.CompactLayout })),
+);
+const SplitLayout = lazy(() =>
+  import("./layouts/SplitLayout").then((m) => ({ default: m.SplitLayout })),
+);
+const CyberpunkLayout = lazy(() =>
+  import("./layouts/CyberpunkLayout").then((m) => ({
+    default: m.CyberpunkLayout,
+  })),
+);
+const TerminalLayout = lazy(() =>
+  import("./layouts/TerminalLayout").then((m) => ({
+    default: m.TerminalLayout,
+  })),
+);
+const PocketFeedsLayout = lazy(() =>
+  import("./layouts/PocketFeedsLayout").then((m) => ({
+    default: m.PocketFeedsLayout,
+  })),
+);
+
+const Virtuoso = lazy(() =>
+  import("react-virtuoso").then((m) => ({ default: m.Virtuoso })),
+) as React.ComponentType<VirtuosoProps<Article, unknown>>;
+const VirtuosoGrid = lazy(() =>
+  import("react-virtuoso").then((m) => ({ default: m.VirtuosoGrid })),
+) as React.ComponentType<VirtuosoGridProps<Article, unknown>>;
 
 // Grid Virtualizer Components
 const GridList = React.forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<'div'>>((props, ref) => (
   <div
     ref={ref}
     {...props}
-    className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+    className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 py-7 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-5 lg:gap-6"
     style={{ ...props.style, display: 'grid' }}
   />
 ));
@@ -87,7 +146,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     return () => {
       logger.debugTag('STATE', `FeedContent UNMOUNTED for category: ${selectedCategory || 'all'}`);
     };
-  }, [selectedCategory, logger, layoutMode, contentConfig.layoutMode, onMounted]);
+  }, [selectedCategory, logger, layoutMode, contentConfig.layoutMode, onMounted, articles.length]);
 
   useEffect(() => {
     logger.debugTag('STATE', `FeedContent rendering ${articles.length} articles`);
@@ -128,7 +187,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   }
 
   // Generic Item Renderer (for List/Minimal/Default) - Defined Unconditionally
-  const genericItemContent = useCallback((index: number, article: Article) => {
+  const genericItemContent: ItemContent<Article, unknown> = useCallback((index: number, article: Article) => {
     if (index === 0) {
         logger.debugTag('FEED', 'Virtuoso started rendering list items');
     }
@@ -147,7 +206,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   }, [effectiveLayout, timeFormat, handleOpenReader, logger]);
 
   // Magazine Item Renderer - Memoized to reduce closure recreation
-  const magazineItemContent = useCallback((index: number, article: Article) => {
+  const magazineItemContent: ItemContent<Article, unknown> = useCallback((index: number, article: Article) => {
     if (index === 0) {
         logger.debugTag('FEED', 'Virtuoso started rendering magazine items');
     }
@@ -155,13 +214,13 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   }, [handleOpenReader, logger]);
 
   // Grid Item Renderer - Memoized to reduce closure recreation
-  const gridItemContent = useCallback((index: number) => {
+  const gridItemContent: GridItemContent<Article, unknown> = useCallback((index: number, article: Article) => {
     if (index === 0) {
         logger.debugTag('FEED', 'Virtuoso started rendering grid items');
     }
     return (
       <ArticleItem
-        article={articles[index]}
+        article={article}
         index={index}
         timeFormat={timeFormat}
         onClick={handleOpenReader}
@@ -170,7 +229,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
         layoutMode="grid"
       />
     );
-  }, [articles, timeFormat, handleOpenReader, logger]);
+  }, [timeFormat, handleOpenReader, logger]);
 
   // Layouts that manage their own container/virtualization for now
   const complexLayouts = [
@@ -204,13 +263,20 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     };
 
     return (
-      <Suspense fallback={<div className="container mx-auto px-4 py-8"><FeedSkeleton count={6} /></div>}>
-        {renderComplexLayout()}
-      </Suspense>
+      <div className="feed-layout" data-layout={effectiveLayout}>
+        <Suspense fallback={<div className="container mx-auto px-4 py-8"><FeedSkeleton count={6} layoutMode={effectiveLayout} /></div>}>
+          {renderComplexLayout()}
+        </Suspense>
+      </div>
     );
   }
 
   // --- VIRTUALIZED LIST HANDLERS ---
+  const virtuosoFallback = (
+    <div className="container mx-auto px-4 py-8">
+      <FeedSkeleton count={6} layoutMode={effectiveLayout} />
+    </div>
+  );
 
   // Magazine Layout Handler
   if (effectiveLayout === 'magazine') {
@@ -221,62 +287,93 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     );
 
     return (
-      <>
+      <div className="feed-layout" data-layout={effectiveLayout}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
-          <Virtuoso
-            useWindowScroll
-            data={listArticles}
-            components={{ Header }}
-            itemContent={magazineItemContent}
-            overscan={400}
-          />
+          <Suspense fallback={virtuosoFallback}>
+            <Virtuoso
+              useWindowScroll
+              data={listArticles}
+              components={{ Header }}
+              itemContent={magazineItemContent}
+              overscan={200}
+            />
+          </Suspense>
         </div>
-        {readingArticle && <MagazineReaderModal article={readingArticle} onClose={() => setReadingArticle(null)} onNext={handleNextArticle} onPrev={handlePrevArticle} hasNext={true} hasPrev={true} />}
-      </>
+        {readingArticle && (
+          <Suspense fallback={null}>
+            <MagazineReaderModal
+              article={readingArticle}
+              onClose={() => setReadingArticle(null)}
+              onNext={handleNextArticle}
+              onPrev={handlePrevArticle}
+              hasNext={true}
+              hasPrev={true}
+            />
+          </Suspense>
+        )}
+      </div>
     );
   }
 
   // Grid Layout Handler
   if (effectiveLayout === 'grid') {
     return (
-      <>
+      <div className="feed-layout" data-layout={effectiveLayout}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
-          <VirtuosoGrid
-            useWindowScroll
-            totalCount={articles.length}
-            components={{ List: GridList, Item: GridItemContainer }}
-            itemContent={gridItemContent}
-            overscan={400}
-          />
+          <Suspense fallback={virtuosoFallback}>
+            <VirtuosoGrid
+              useWindowScroll
+              data={articles}
+              totalCount={articles.length}
+              components={{ List: GridList, Item: GridItemContainer }}
+              itemContent={gridItemContent}
+              overscan={200}
+            />
+          </Suspense>
         </div>
-        {readingArticle && <MagazineReaderModal article={readingArticle} onClose={() => setReadingArticle(null)} onNext={handleNextArticle} onPrev={handlePrevArticle} hasNext={true} hasPrev={true} />}
-      </>
+        {readingArticle && (
+          <Suspense fallback={null}>
+            <MagazineReaderModal
+              article={readingArticle}
+              onClose={() => setReadingArticle(null)}
+              onNext={handleNextArticle}
+              onPrev={handlePrevArticle}
+              hasNext={true}
+              hasPrev={true}
+            />
+          </Suspense>
+        )}
+      </div>
     );
   }
 
   // Default / List Fallback
   return (
-    <>
+    <div className="feed-layout" data-layout={effectiveLayout}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
-        <Virtuoso
-          useWindowScroll
-          data={articles}
-          itemContent={genericItemContent}
-          overscan={400}
-        />
+        <Suspense fallback={virtuosoFallback}>
+          <Virtuoso
+            useWindowScroll
+            data={articles}
+            itemContent={genericItemContent}
+            overscan={200}
+          />
+        </Suspense>
       </div>
 
       {readingArticle && (
-        <MagazineReaderModal
-          article={readingArticle}
-          onClose={() => setReadingArticle(null)}
-          onNext={handleNextArticle}
-          onPrev={handlePrevArticle}
-          hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
-          hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
-        />
+        <Suspense fallback={null}>
+          <MagazineReaderModal
+            article={readingArticle}
+            onClose={() => setReadingArticle(null)}
+            onNext={handleNextArticle}
+            onPrev={handlePrevArticle}
+            hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
+            hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
+          />
+        </Suspense>
       )}
-    </>
+    </div>
   );
 };
 

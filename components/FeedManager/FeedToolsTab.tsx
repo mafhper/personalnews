@@ -7,7 +7,14 @@ interface FeedToolsTabProps {
   onResetDefaults: () => void;
   onCleanupErrors: () => void;
   onDeleteAll: () => void;
+  onShowReports: () => void;
+  onShowProxySettings: () => void;
+  onShowProxyHealth: () => void;
+  onShowFeedStatus: () => void;
   feedCount: number;
+  validCount: number;
+  invalidCount: number;
+  pendingCount: number;
 }
 
 interface ToolCardProps {
@@ -22,10 +29,14 @@ interface ToolCardProps {
 const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon, onClick, variant = 'default', delay = 0 }) => {
   const getColors = () => {
     switch (variant) {
-      case 'danger': return 'bg-red-500/10 border-red-500/20 hover:border-red-500/40 text-red-400 hover:bg-red-500/20';
-      case 'warning': return 'bg-yellow-500/10 border-yellow-500/20 hover:border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/20';
-      case 'success': return 'bg-green-500/10 border-green-500/20 hover:border-green-500/40 text-green-400 hover:bg-green-500/20';
-      default: return 'bg-white/5 border-white/10 hover:border-white/20 text-blue-400 hover:bg-white/10';
+      case 'danger':
+        return 'bg-[rgba(255,255,255,0.025)] border-rose-400/12 hover:border-rose-400/25 text-rose-200/80 hover:bg-[rgba(255,255,255,0.05)]';
+      case 'warning':
+        return 'bg-[rgba(255,255,255,0.025)] border-amber-300/12 hover:border-amber-300/25 text-amber-200/80 hover:bg-[rgba(255,255,255,0.05)]';
+      case 'success':
+        return 'bg-[rgba(255,255,255,0.025)] border-emerald-300/12 hover:border-emerald-300/25 text-emerald-200/80 hover:bg-[rgba(255,255,255,0.05)]';
+      default:
+        return 'bg-[rgba(255,255,255,0.025)] border-white/8 hover:border-white/16 text-slate-200/90 hover:bg-[rgba(255,255,255,0.05)]';
     }
   };
 
@@ -35,11 +46,11 @@ const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon, onClick, 
       className={`flex flex-col items-start p-5 rounded-xl border transition-all duration-200 group text-left h-full ${getColors()} animate-in fade-in zoom-in-95`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="mb-3 p-2 rounded-lg bg-black/20 group-hover:scale-110 transition-transform duration-200">
+      <div className="mb-3 p-2 rounded-lg bg-black/25 group-hover:scale-105 transition-transform duration-200">
         {icon}
       </div>
-      <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
-      <p className="text-sm text-gray-400 leading-relaxed">{description}</p>
+      <h3 className="text-lg font-semibold text-[rgb(var(--color-text))] mb-1">{title}</h3>
+      <p className="text-sm text-slate-400/90 leading-relaxed">{description}</p>
     </button>
   );
 };
@@ -51,23 +62,38 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   onResetDefaults,
   onCleanupErrors,
   onDeleteAll,
-  feedCount
+  onShowReports,
+  onShowProxySettings,
+  onShowProxyHealth,
+  onShowFeedStatus,
+  feedCount,
+  validCount,
+  invalidCount,
+  pendingCount
 }) => {
   return (
     <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar h-full">
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
-        
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
+
         {/* Header Section */}
         <div className="text-center mb-6 sm:mb-8 animate-in slide-in-from-top-4 duration-500">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Ferramentas de Gerenciamento</h2>
-          <p className="text-sm sm:text-base text-gray-400">
-            Gerencie sua coleção de feeds, faça backups e manutenção do sistema.
+          <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--color-text))] mb-2">Funções de Gerenciamento</h2>
+          <p className="text-sm sm:text-base text-[rgb(var(--color-textSecondary))]">
+            Acesse as principais funções para gerenciar seus feeds, fazer backups e manutenção.
           </p>
         </div>
 
+        {/* Quick Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <SummaryPill label="Total" value={feedCount} tone="neutral" />
+          <SummaryPill label="Válidos" value={validCount} tone="success" />
+          <SummaryPill label="Com erro" value={invalidCount} tone="danger" />
+          <SummaryPill label="Pendentes" value={pendingCount} tone="warning" />
+        </div>
+
         {/* Tools Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+
           <ToolCard
             title="Exportar Feeds (OPML)"
             description="Baixe um arquivo .opml com todos os seus feeds para backup ou para usar em outros leitores de RSS."
@@ -145,8 +171,82 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
             delay={250}
           />
 
+          <ToolCard
+            title="Relatórios de Feeds"
+            description="Visualize uso, erros e exporte relatórios resumidos dos seus feeds monitorados."
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3v18M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            }
+            onClick={onShowReports}
+            variant="default"
+            delay={300}
+          />
+
+          <ToolCard
+            title="API Keys de Proxy"
+            description="Configure e gerencie chaves de API para servidores proxy e alternativas de fetch."
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7h4a2 2 0 012 2v10a2 2 0 01-2 2h-4m0 0H7a2 2 0 01-2-2V9a2 2 0 012-2h4m0 0V5a2 2 0 012-2h2a2 2 0 012 2v2" />
+              </svg>
+            }
+            onClick={onShowProxySettings}
+            variant="default"
+            delay={350}
+          />
+
+          <ToolCard
+            title="Saúde dos Proxys"
+            description="Monitore status, latência e taxa de sucesso dos servidores proxy configurados."
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            }
+            onClick={onShowProxyHealth}
+            variant="success"
+            delay={400}
+          />
+
+          <ToolCard
+            title="Status dos Feeds"
+            description="Visualize estado atual, erros de validação e histórico de sincronização dos feeds."
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            }
+            onClick={onShowFeedStatus}
+            variant="warning"
+            delay={450}
+          />
+
         </div>
       </div>
+    </div>
+  );
+};
+
+const SummaryPill: React.FC<{
+  label: string;
+  value: number;
+  tone: "neutral" | "success" | "warning" | "danger";
+}> = ({ label, value, tone }) => {
+  const styles = {
+    neutral: "from-white/5 to-white/0 text-slate-200/90 border-white/10",
+    success: "from-emerald-500/10 to-transparent text-emerald-200/90 border-emerald-400/20",
+    warning: "from-amber-500/10 to-transparent text-amber-200/90 border-amber-400/20",
+    danger: "from-rose-500/10 to-transparent text-rose-200/90 border-rose-400/20",
+  } as const;
+
+  return (
+    <div className={`rounded-xl border bg-gradient-to-br ${styles[tone]} px-3 py-2 flex items-center justify-between`}>
+      <span className="text-[10px] uppercase tracking-widest font-semibold">
+        {label}
+      </span>
+      <span className="text-lg font-bold">{value}</span>
     </div>
   );
 };

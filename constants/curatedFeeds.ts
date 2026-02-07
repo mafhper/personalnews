@@ -9,7 +9,7 @@ export const INITIAL_APP_CONFIG = {
   "theme": "dark-blue",
   "layout": "bento",
   "timeFormat": "24h",
-  "header": "sticky",
+  "header": "floating",
   "weatherCity": "São Paulo"
 };
 
@@ -20,7 +20,8 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "color": "#6B7280",
     "order": 0,
     "isDefault": true,
-    "isPinned": true
+    "isPinned": true,
+    "autoDiscovery": true
   },
   {
     "order": 1,
@@ -29,7 +30,6 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "id": "design",
     "color": "#F0EEE9",
     "layoutMode": "immersive",
-    "headerPosition": "sticky",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Inspiração visual, UX/UI e tendências de design."
@@ -41,7 +41,6 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "id": "games",
     "color": "#F59E0B",
     "layoutMode": "immersive",
-    "headerPosition": "sticky",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Lançamentos, reviews e cultura gamer."
@@ -53,7 +52,6 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "id": "tech",
     "color": "#3B82F6",
     "layoutMode": "list",
-    "headerPosition": "sticky",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
@@ -65,7 +63,6 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "id": "politics",
     "color": "#EF4444",
     "layoutMode": "list",
-    "headerPosition": "sticky",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Cobertura política nacional e internacional."
@@ -77,7 +74,6 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "id": "youtube",
     "color": "#C4302B",
     "layoutMode": "brutalist",
-    "headerPosition": "sticky",
     "isPinned": false,
     "autoDiscovery": false,
     "description": "Canais preferidos do Youtube."
@@ -111,9 +107,9 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Adrenaline"
   },
   {
-    "url": "https://naogames.jogabilida.de/",
+    "url": "https://jogabilida.de/feed/",
     "categoryId": "games",
-    "customTitle": "Jogabilidade (Não Games)"
+    "customTitle": "Jogabilidade"
   },
   {
     "url": "https://kotaku.com/rss",
@@ -121,14 +117,14 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Kotaku"
   },
   {
-    "url": "https://www.polygon.com/feed/",
-    "categoryId": "games",
-    "customTitle": "Polygon"
-  },
-  {
     "url": "https://www.pcgamer.com/feeds.xml",
     "categoryId": "games",
     "customTitle": "PC Gamer"
+  },
+  {
+    "url": "https://www.polygon.com/feed/",
+    "categoryId": "games",
+    "customTitle": "Polygon"
   },
   {
     "url": "https://g1.globo.com/rss/g1/politica/",
@@ -151,24 +147,9 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "The Intercept Brasil"
   },
   {
-    "url": "https://9to5google.com/feed/",
+    "url": "https://blog.adafruit.com/rss",
     "categoryId": "tech",
-    "customTitle": "9to5Google"
-  },
-  {
-    "url": "https://9to5linux.com/feed/",
-    "categoryId": "tech",
-    "customTitle": "9to5Linux"
-  },
-  {
-    "url": "https://9to5mac.com/feed/",
-    "categoryId": "tech",
-    "customTitle": "9to5Mac"
-  },
-  {
-    "url": "https://arstechnica.com/feed/",
-    "categoryId": "tech",
-    "customTitle": "Ars Technica"
+    "customTitle": "AdaFruit"
   },
   {
     "url": "http://www.cnet.com/rss/news/",
@@ -181,39 +162,14 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Diolinux"
   },
   {
-    "url": "https://macmagazine.com.br/feed/",
-    "categoryId": "tech",
-    "customTitle": "MacMagazine"
-  },
-  {
-    "url": "https://meiobit.com/feed/",
-    "categoryId": "tech",
-    "customTitle": "Meio Bit"
-  },
-  {
     "url": "https://tecnoblog.net/feed/",
     "categoryId": "tech",
     "customTitle": "Tecnoblog"
   },
   {
-    "url": "https://thenextweb.com/feed",
-    "categoryId": "tech",
-    "customTitle": "The Next Web"
-  },
-  {
     "url": "https://www.theverge.com/rss/index.xml",
     "categoryId": "tech",
     "customTitle": "The Verge"
-  },
-  {
-    "url": "https://www.tomsguide.com/feeds.xml",
-    "categoryId": "tech",
-    "customTitle": "Tom's Guide"
-  },
-  {
-    "url": "https://www.tomshardware.com/feeds.xml",
-    "categoryId": "tech",
-    "customTitle": "Tom's Hardware"
   },
   {
     "url": "https://www.xda-developers.com/feed/",
@@ -233,12 +189,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "hideFromAll": true
   },
   {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
-    "categoryId": "youtube",
-    "customTitle": "Jimmy Diresta",
-    "hideFromAll": true
-  },
-  {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
     "categoryId": "youtube",
     "customTitle": "Corridor Crew",
@@ -248,24 +198,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
     "categoryId": "youtube",
     "customTitle": "Diolinux",
-    "hideFromAll": true
-  },
-  {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
-    "categoryId": "youtube",
-    "customTitle": "News Rockstar",
-    "hideFromAll": true
-  },
-  {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
-    "categoryId": "youtube",
-    "customTitle": "NORMOSE",
-    "hideFromAll": true
-  },
-  {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
-    "categoryId": "youtube",
-    "customTitle": "The Spiffing Brit",
     "hideFromAll": true
   }
 ];
@@ -288,9 +220,9 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "IGN Brasil"
     },
     {
-      "url": "https://naogames.jogabilida.de/",
+      "url": "https://jogabilida.de/feed/",
       "categoryId": "games",
-      "customTitle": "Jogabilidade (Não Games)"
+      "customTitle": "Jogabilidade"
     },
     {
       "url": "https://g1.globo.com/rss/g1/politica/",
@@ -338,14 +270,24 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "1155 do ET"
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+      "categoryId": "youtube",
+      "customTitle": "Diolinux"
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
       "categoryId": "youtube",
       "customTitle": "NORMOSE"
     },
     {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg",
       "categoryId": "youtube",
-      "customTitle": "Diolinux"
+      "customTitle": "Tecnologia e Classe"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw",
+      "categoryId": "youtube",
+      "customTitle": "Gamera"
     }
   ],
   "International Mix": [
@@ -370,14 +312,14 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Kotaku"
     },
     {
-      "url": "https://www.polygon.com/feed/",
-      "categoryId": "games",
-      "customTitle": "Polygon"
-    },
-    {
       "url": "https://www.pcgamer.com/feeds.xml",
       "categoryId": "games",
       "customTitle": "PC Gamer"
+    },
+    {
+      "url": "https://www.polygon.com/feed/",
+      "categoryId": "games",
+      "customTitle": "Polygon"
     },
     {
       "url": "https://9to5google.com/feed/",
@@ -393,6 +335,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://9to5mac.com/feed/",
       "categoryId": "tech",
       "customTitle": "9to5Mac"
+    },
+    {
+      "url": "https://blog.adafruit.com/rss",
+      "categoryId": "tech",
+      "customTitle": "AdaFruit"
     },
     {
       "url": "https://arstechnica.com/feed/",
@@ -470,6 +417,21 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "XDA"
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
+      "categoryId": "youtube",
+      "customTitle": "Alex Ziskind"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw",
+      "categoryId": "youtube",
+      "customTitle": "Alberta Tech"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+      "categoryId": "youtube",
+      "customTitle": "Benn Jordan"
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
       "categoryId": "youtube",
       "customTitle": "Bizly"
@@ -485,6 +447,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "GreatScott!"
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ",
+      "categoryId": "youtube",
+      "customTitle": "Macho Nacho"
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
       "categoryId": "youtube",
       "customTitle": "News Rockstar"
@@ -498,16 +465,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
       "categoryId": "youtube",
       "customTitle": "The Spiffing Brit"
-    },
-    {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
-      "categoryId": "youtube",
-      "customTitle": "Benn Jordan"
-    },
-    {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
-      "categoryId": "youtube",
-      "customTitle": "Jimmy Diresta"
     }
   ],
   "Pacote Mix Global": [
@@ -547,19 +504,24 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Jogabilidade (Não Games)"
     },
     {
+      "url": "https://jogabilida.de/feed/",
+      "categoryId": "games",
+      "customTitle": "Jogabilidade"
+    },
+    {
       "url": "https://kotaku.com/rss",
       "categoryId": "games",
       "customTitle": "Kotaku"
     },
     {
-      "url": "https://www.polygon.com/feed/",
-      "categoryId": "games",
-      "customTitle": "Polygon"
-    },
-    {
       "url": "https://www.pcgamer.com/feeds.xml",
       "categoryId": "games",
       "customTitle": "PC Gamer"
+    },
+    {
+      "url": "https://www.polygon.com/feed/",
+      "categoryId": "games",
+      "customTitle": "Polygon"
     },
     {
       "url": "https://g1.globo.com/rss/g1/politica/",
@@ -595,6 +557,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://9to5mac.com/feed/",
       "categoryId": "tech",
       "customTitle": "9to5Mac"
+    },
+    {
+      "url": "https://blog.adafruit.com/rss",
+      "categoryId": "tech",
+      "customTitle": "AdaFruit"
     },
     {
       "url": "https://arstechnica.com/feed/",
@@ -697,6 +664,21 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "1155 do ET"
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
+      "categoryId": "youtube",
+      "customTitle": "Alex Ziskind"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw",
+      "categoryId": "youtube",
+      "customTitle": "Alberta Tech"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
+      "categoryId": "youtube",
+      "customTitle": "Benn Jordan"
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
       "categoryId": "youtube",
       "customTitle": "Bizly"
@@ -712,9 +694,19 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Diolinux"
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw",
+      "categoryId": "youtube",
+      "customTitle": "Gamera"
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",
       "categoryId": "youtube",
       "customTitle": "GreatScott!"
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ",
+      "categoryId": "youtube",
+      "customTitle": "Macho Nacho"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
@@ -732,19 +724,14 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Stuff Made Here"
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg",
+      "categoryId": "youtube",
+      "customTitle": "Tecnologia e Classe"
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
       "categoryId": "youtube",
       "customTitle": "The Spiffing Brit"
-    },
-    {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
-      "categoryId": "youtube",
-      "customTitle": "Benn Jordan"
-    },
-    {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
-      "categoryId": "youtube",
-      "customTitle": "Jimmy Diresta"
     }
   ]
 };

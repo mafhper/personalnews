@@ -160,6 +160,7 @@ export function searchArticles(
 
 /**
  * Searches within a specific index (title, content, etc.)
+ * Optimized for performance
  */
 function searchInIndex(
   index: Map<string, string[]>,
@@ -169,7 +170,39 @@ function searchInIndex(
   fieldName: string,
   weight: number
 ): void {
+  // Optimization: Check for exact match first
+  if (index.has(queryWord)) {
+    const articleIds = index.get(queryWord)!;
+    articleIds.forEach(articleId => {
+      if (!articleScores.has(articleId)) {
+        articleScores.set(articleId, { score: 0, matchedFields: new Set() });
+      }
+      const current = articleScores.get(articleId)!;
+      current.score += 1 * weight; // Exact match = similarity 1
+      current.matchedFields.add(fieldName);
+    });
+    return;
+  }
+
+  // Optimization: For fuzzy search, only check similar-length words
+  // This dramatically reduces the search space
+  const maxLen = Math.ceil(queryWord.length * 1.3);
+  const minLen = Math.floor(queryWord.length * 0.7);
+  let fuzzyCandidates = 0;
+  const MAX_FUZZY_CANDIDATES = 50; // Limit fuzzy candidates
+
   index.forEach((articleIds, indexWord) => {
+    // Skip if we've already processed too many fuzzy candidates
+    if (fuzzyCandidates > MAX_FUZZY_CANDIDATES) return;
+
+    // Optimization: Skip words with significantly different length
+    const wordLen = indexWord.length;
+    if (wordLen > maxLen || wordLen < minLen) return;
+
+    // Optimization: Check if word shares first letter (prefix heuristic)
+    if (indexWord[0] !== queryWord[0]) return;
+
+    fuzzyCandidates++;
     const similarity = calculateSimilarity(queryWord, indexWord);
 
     if (similarity >= fuzzyThreshold) {
@@ -204,25 +237,38 @@ function calculateSimilarity(str1: string, str2: string): number {
 
 /**
  * Calculates Levenshtein distance between two strings
+ * Optimized version using less memory allocation
  */
 function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+  const len1 = str1.length;
+  const len2 = str2.length;
 
-  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+  if (len1 === 0) return len2;
+  if (len2 === 0) return len1;
 
-  for (let j = 1; j <= str2.length; j++) {
-    for (let i = 1; i <= str1.length; i++) {
-      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,
-        matrix[j - 1][i] + 1,
-        matrix[j - 1][i - 1] + indicator
+  // Use two arrays instead of a full matrix to save memory
+  let prev = new Array(len2 + 1);
+  let curr = new Array(len2 + 1);
+
+  for (let j = 0; j <= len2; j++) prev[j] = j;
+
+  for (let i = 1; i <= len1; i++) {
+    curr[0] = i;
+
+    for (let j = 1; j <= len2; j++) {
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      curr[j] = Math.min(
+        curr[j - 1] + 1,      // insertion
+        prev[j] + 1,          // deletion
+        prev[j - 1] + cost    // substitution
       );
     }
+
+    // Swap arrays
+    [prev, curr] = [curr, prev];
   }
 
-  return matrix[str2.length][str1.length];
+  return prev[len2];
 }
 
 /**

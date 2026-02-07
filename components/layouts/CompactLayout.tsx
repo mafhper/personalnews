@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 
 interface CompactLayoutProps {
@@ -10,12 +10,12 @@ interface CompactLayoutProps {
 }
 
 export const CompactSkeleton: React.FC = () => {
-  const Bone = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded ${className}`} />;
+  const Bone = ({ className = "" }) => <div className={`feed-skeleton-block ${className}`} />;
   
   return (
     <div className="min-h-screen font-mono text-sm p-2 sm:p-4">
       <div className="max-w-5xl mx-auto bg-[rgb(var(--color-surface))] border border-white/5 rounded-lg overflow-hidden">
-        <div className="bg-white/5 h-10 px-4 flex items-center animate-pulse" />
+        <div className="feed-skeleton-block h-10 px-4 flex items-center" />
         <div className="p-4 space-y-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
             <div key={i} className="flex gap-3 py-2 border-b border-white/5">
@@ -38,10 +38,10 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
 
   return (
     <div className="min-h-screen font-mono text-sm p-2 sm:p-4">
-      <div className="max-w-5xl mx-auto bg-[rgb(var(--color-surface))] shadow-lg border border-[rgb(var(--color-border))] rounded-lg overflow-hidden">
-        <div className="bg-[rgb(var(--color-accent))] p-2 px-4 flex items-center">
-          <span className="font-bold text-white mr-4">FeedNews</span>
-          <span className="text-white/80 text-xs">new | past | comments | ask | jobs</span>
+      <div className="max-w-5xl mx-auto bg-[rgb(var(--color-surface))] shadow-md border border-[rgb(var(--color-border))] rounded-lg overflow-hidden">
+        <div className="bg-[rgba(var(--color-accent),0.16)] border-b border-white/5 p-2 px-4 flex items-center">
+          <span className="font-bold feed-accent-text mr-4">FeedNews</span>
+          <span className="text-white/70 text-xs">new | past | comments | ask | jobs</span>
         </div>
         <div className="p-2 sm:p-4">
           <ol className="list-decimal list-inside space-y-1 text-[rgb(var(--color-textSecondary))]">
@@ -61,12 +61,20 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
 
                 <div className="flex-1 min-w-0">
                   <div className="leading-tight">
-                    <span onClick={() => setReadingArticle(article)} className="text-[rgb(var(--color-text))] font-medium hover:text-[rgb(var(--color-accent))] hover:underline cursor-pointer mr-2 transition-colors">
+                    <span onClick={() => setReadingArticle(article)} className="text-[rgb(var(--color-text))] font-medium hover:text-white hover:underline cursor-pointer mr-2 transition-colors">
                       {article.title}
                     </span>
-                    <span className="text-[10px] text-[rgb(var(--color-textSecondary))] whitespace-nowrap">
-                      ({(() => { try { return new URL(article.link).hostname.replace('www.', ''); } catch { return 'source'; } })()})
-                    </span>
+                    {(() => {
+                      let host = '';
+                      try { host = new URL(article.link).hostname.replace('www.', ''); } catch { host = ''; }
+                      const source = (article.sourceTitle || '').toLowerCase();
+                      const showHost = host && !source.includes(host.toLowerCase());
+                      return showHost ? (
+                        <span className="text-[10px] text-[rgb(var(--color-textSecondary))] whitespace-nowrap">
+                          ({host})
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
 
                   <div className="text-[10px] text-[rgb(var(--color-textSecondary))] leading-tight mt-1 flex flex-col gap-1.5">
@@ -76,17 +84,21 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                       </p>
                     )}
                     <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <span className="truncate max-w-[150px] sm:max-w-[200px]">by {article.author || article.sourceTitle}</span>
+                      <span className="truncate max-w-[150px] sm:max-w-[200px]">
+                        {article.author && article.author !== article.sourceTitle
+                          ? `by ${article.author}`
+                          : `via ${article.sourceTitle}`}
+                      </span>
                       <span className="opacity-50 flex-shrink-0">|</span>
                       <span>{new Date(article.pubDate).toLocaleDateString()}</span>
                       <span className="opacity-50 flex-shrink-0">|</span>
-                      <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-accent))] transition-colors">{t('action.preview').toLowerCase()}</span>
+                      <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-white transition-colors">{t('action.preview').toLowerCase()}</span>
                       <span className="opacity-50 flex-shrink-0">|</span>
                       <FavoriteButton
                         article={article}
                         size="small"
                         position="inline"
-                        className="p-0 hover:text-[rgb(var(--color-accent))] transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-0 hover:text-white transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
                       />
                     </div>
                   </div>

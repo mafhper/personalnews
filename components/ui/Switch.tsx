@@ -5,9 +5,18 @@ interface SwitchProps {
   onChange: (checked: boolean) => void;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  ariaLabel?: string;
+  ariaLabelledby?: string;
 }
 
-export const Switch: React.FC<SwitchProps> = ({ checked, onChange, className = '', size = 'md' }) => {
+export const Switch: React.FC<SwitchProps> = ({
+  checked,
+  onChange,
+  className = '',
+  size = 'md',
+  ariaLabel,
+  ariaLabelledby,
+}) => {
   const sizes = {
     sm: {
       switch: 'h-5 w-9',
@@ -33,6 +42,8 @@ export const Switch: React.FC<SwitchProps> = ({ checked, onChange, className = '
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
       onClick={() => onChange(!checked)}
       className={`
         relative inline-flex ${currentSize.switch} flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:ring-offset-2

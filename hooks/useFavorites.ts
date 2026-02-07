@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { Article } from '../types';
 
-interface FavoriteArticle {
+export interface FavoriteArticle {
   id: string; // Generated from article link
   title: string;
   link: string;

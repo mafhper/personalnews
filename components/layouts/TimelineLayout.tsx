@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 
 interface TimelineLayoutProps {
@@ -9,7 +9,7 @@ interface TimelineLayoutProps {
   timeFormat: '12h' | '24h';
 }
 
-const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />;
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`feed-skeleton-block ${className}`} />;
 
 export const TimelineSkeleton: React.FC = () => {
   return (
@@ -22,12 +22,12 @@ export const TimelineSkeleton: React.FC = () => {
           </div>
           <div className="space-y-8">
             {[1, 2, 3].map(i => (
-              <div key={i} className="relative pl-10 md:pl-16">
-                <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-white/10" />
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4">
-                  <Bone className="h-4 w-32" />
-                  <Bone className="h-8 w-3/4" />
-                  <Bone className="h-40 w-full" />
+            <div key={i} className="relative pl-10 md:pl-16">
+              <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-white/10" />
+              <div className="feed-surface p-6 rounded-2xl space-y-4">
+                <Bone className="h-4 w-32" />
+                <Bone className="h-8 w-3/4" />
+                <Bone className="h-40 w-full" />
                 </div>
               </div>
             ))}
@@ -98,7 +98,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
         <div key={date} className="mb-12 relative">
           {/* Date Header */}
           <div className="sticky top-20 z-10 mb-8 ml-10 md:ml-16">
-            <span className="inline-block px-4 py-2 bg-[rgb(var(--color-surface))] border border-[rgb(var(--color-border))] rounded-full text-sm font-bold text-[rgb(var(--color-text))] shadow-sm capitalize">
+            <span className="feed-chip inline-block px-4 py-2 rounded-full text-sm font-bold capitalize shadow-sm">
               {date}
             </span>
           </div>
@@ -107,12 +107,12 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
             {dateArticles.map((article) => (
               <article key={article.link} className="relative pl-10 md:pl-16 group">
                 {/* Timeline Dot */}
-                <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-[rgb(var(--color-accent))] border-4 border-[rgb(var(--color-background))] shadow-sm group-hover:scale-125 transition-transform" />
+                <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-[rgba(var(--color-accent),0.6)] border-4 border-[rgb(var(--color-background))] shadow-sm group-hover:scale-125 transition-transform" />
 
-                <div className="bg-[rgb(var(--color-surface))] p-4 md:p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all shadow-sm hover:shadow-md relative overflow-hidden">
+                <div className="bg-[rgb(var(--color-surface))] p-4 md:p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-white/20 transition-all shadow-sm hover:shadow-md relative overflow-hidden">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))] min-w-0">
-                      <span className="font-medium text-[rgb(var(--color-accent))] truncate max-w-[150px] sm:max-w-[200px]">{article.sourceTitle}</span>
+                      <span className="font-medium feed-accent-text truncate max-w-[150px] sm:max-w-[200px]">{article.sourceTitle}</span>
                       <span className="flex-shrink-0">•</span>
                       <span>
                         {new Date(article.pubDate).toLocaleTimeString(language, {
@@ -133,7 +133,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                   </div>
 
                   <h3
-                    className="text-xl font-bold text-[rgb(var(--color-text))] mb-3 leading-tight cursor-pointer hover:text-[rgb(var(--color-accent))] transition-colors"
+                    className="text-xl font-bold text-[rgb(var(--color-text))] mb-3 leading-tight cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleOpenReader(article)}
                   >
                     {article.title}
@@ -149,12 +149,8 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                   )}
 
                   <div className="relative">
-                    <p className="text-[rgb(var(--color-textSecondary))] text-sm line-clamp-6 mb-2 leading-relaxed">
+                    <p className="text-[rgb(var(--color-textSecondary))] text-sm line-clamp-6 mb-2 leading-relaxed max-w-[70ch]">
                       {article.description}
-                      {/* Simulate more text if description is short for visual balance request */}
-                      {(!article.description || article.description.length < 100) && (
-                        <span className="opacity-50"> {article.description} {article.description}</span>
-                      )}
                     </p>
 
                     {/* Overlay with Preview Button */}
@@ -162,7 +158,7 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                       {/* Button needs pointer-events-auto to work inside pointer-events-none parent */}
                       <button
                         onClick={(e) => { e.stopPropagation(); handleOpenReader(article); }}
-                        className="pointer-events-auto bg-[rgb(var(--color-accent))] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg hover:scale-105 transition-transform"
+                        className="pointer-events-auto bg-[rgba(var(--color-accent),0.75)] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md hover:scale-105 transition-transform"
                       >
                         {t('action.preview')}
                       </button>

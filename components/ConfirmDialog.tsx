@@ -136,7 +136,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <Button
           onClick={handleConfirm}
           variant="contained"
-          color={getButtonColor(type) as any}
+          color={getButtonColor(type)}
           sx={{
             backgroundColor:
               type === "danger"

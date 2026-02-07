@@ -8,7 +8,7 @@ exports[`[SNAPSHOT] Logo Component > should match current snapshot 1`] = `
     <img
       alt="Personal News Logo"
       class="w-full h-full object-contain"
-      src="/assets/logo.svg"
+      src="/icons/light/logo.svg"
     />
   </div>
 </DocumentFragment>
@@ -22,7 +22,7 @@ exports[`[SNAPSHOT] Logo Component > should match snapshot with custom className
     <img
       alt="Personal News Logo"
       class="w-full h-full object-contain"
-      src="/assets/logo.svg"
+      src="/icons/light/logo.svg"
     />
   </div>
 </DocumentFragment>

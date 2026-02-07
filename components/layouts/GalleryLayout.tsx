@@ -14,7 +14,7 @@ export const GallerySkeleton: React.FC = () => {
     <div className="min-h-screen">
       <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1 p-1">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(i => (
-          <div key={i} className="aspect-square bg-white/5 animate-pulse rounded-sm" />
+          <div key={i} className="aspect-square feed-skeleton-block rounded-sm" />
         ))}
       </div>
     </div>
@@ -63,10 +63,10 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
 
             {/* Post info at bottom-left */}
             <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-              <span className="text-[rgb(var(--color-accent))] text-[10px] font-bold uppercase tracking-widest block mb-1 truncate max-w-full">
+              <span className="feed-chip text-[10px] font-bold uppercase tracking-widest block mb-1 truncate max-w-full">
                 {article.sourceTitle}
               </span>
-              <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 group-hover:text-[rgb(var(--color-accent))] transition-colors">
+              <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 group-hover:text-white transition-colors">
                 {article.title}
               </h3>
               <span className="text-white/60 text-[10px] mt-1 block">

@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "defaultExcludes": [
+    "deploy",
+    "dev",
+    "preview",
+    "test:watch",
+    "test:e2e:ui",
+    "test:e2e:headed",
+    "test:e2e:install",
+    "promo",
+    "dashboard",
+    "quality:dashboard",
+    "system:start",
+    "cleanup",
+    "scripts:audit:all",
+    "scripts:audit:all:fail",
+    "scripts:audit:area"
+  ],
+  "areaOrder": [
+    "build-config",
+    "quality-static",
+    "tests",
+    "quality-core",
+    "performance-analysis",
+    "composite-pipelines",
+    "operations",
+    "misc"
+  ],
+  "areas": {
+    "build-config": {
+      "exact": [
+        "clean",
+        "config:sync",
+        "promo:changelog"
+      ],
+      "prefix": [
+        "build"
+      ]
+    },
+    "quality-static": {
+      "exact": [
+        "type-check"
+      ],
+      "prefix": [
+        "lint",
+        "i18n:",
+        "security:"
+      ]
+    },
+    "tests": {
+      "exact": [
+        "test"
+      ],
+      "prefix": [
+        "test:"
+      ]
+    },
+    "quality-core": {
+      "exact": [
+        "quality:snapshot",
+        "quality:dashboard:refresh"
+      ],
+      "prefix": [
+        "quality:core",
+        "quality:gate",
+        "quality:lighthouse",
+        "quality:coverage"
+      ]
+    },
+    "performance-analysis": {
+      "exact": [
+        "analysis"
+      ],
+      "prefix": [
+        "analysis:",
+        "perf:"
+      ]
+    },
+    "composite-pipelines": {
+      "exact": [
+        "quality:check"
+      ],
+      "prefix": [
+        "quality:full",
+        "quality:reports",
+        "quality:ci"
+      ]
+    },
+    "operations": {
+      "prefix": [
+        "audit:",
+        "system:",
+        "quality:dashboard"
+      ],
+      "exact": [
+        "promo",
+        "preview",
+        "dev",
+        "dashboard",
+        "cleanup"
+      ]
+    }
+  },
+  "scriptPolicies": {
+    "test:feeds": {
+      "timeoutMs": 240000,
+      "env": {
+        "FEED_TEST_LIMIT": "2"
+      }
+    },
+    "quality:core": {
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "args": [
+        "--fail-on-error"
+      ]
+    },
+    "quality:core:silent": {
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "args": [
+        "--fail-on-error"
+      ]
+    },
+    "quality:core:quick": {
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "args": [
+        "--fail-on-error"
+      ]
+    },
+    "quality:core:quick-silent": {
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "args": [
+        "--fail-on-error"
+      ]
+    },
+    "quality:lighthouse": {
+      "timeoutMs": 1200000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "quality:lighthouse:silent": {
+      "timeoutMs": 1200000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "quality:lighthouse:home": {
+      "timeoutMs": 1200000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "quality:lighthouse:feed": {
+      "timeoutMs": 1200000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "quality:reports:all": {
+      "timeoutMs": 1800000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "quality:reports:all:silent": {
+      "timeoutMs": 1800000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "quality:ci": {
+      "timeoutMs": 2100000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "quality:ci:quick-silent": {
+      "timeoutMs": 1800000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "perf:lighthouse": {
+      "timeoutMs": 1200000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "perf:lighthouse:home": {
+      "timeoutMs": 1200000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    },
+    "perf:lighthouse:feed": {
+      "timeoutMs": 1200000,
+      "requiresDist": true,
+      "prepareScript": "build:app",
+      "env": {
+        "LH_RETRY_COUNT": "1",
+        "LH_RETRY_TRANSIENT_ONLY": "true"
+      }
+    }
+  }
+}

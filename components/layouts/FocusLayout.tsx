@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 
 interface FocusLayoutProps {
@@ -15,13 +15,13 @@ export const FocusSkeleton: React.FC = () => {
     <div className="fixed inset-0 z-[100] bg-black flex flex-col justify-center px-8 md:px-24">
       <div className="max-w-6xl mx-auto w-full space-y-8">
         <div className="flex gap-4">
-          <div className="w-32 h-6 bg-white/5 rounded animate-pulse" />
-          <div className="w-24 h-6 bg-white/5 rounded animate-pulse" />
+          <div className="w-32 h-6 feed-skeleton-block rounded" />
+          <div className="w-24 h-6 feed-skeleton-block rounded" />
         </div>
-        <div className="h-24 md:h-32 lg:h-40 w-full bg-white/5 rounded-2xl animate-pulse" />
-        <div className="h-8 w-3/4 bg-white/5 rounded-xl animate-pulse" />
-        <div className="h-8 w-1/2 bg-white/5 rounded-xl animate-pulse" />
-        <div className="w-40 h-10 bg-white/5 rounded-lg animate-pulse mt-12" />
+        <div className="h-24 md:h-32 lg:h-40 w-full feed-skeleton-block rounded-2xl" />
+        <div className="h-8 w-3/4 feed-skeleton-block rounded-xl" />
+        <div className="h-8 w-1/2 feed-skeleton-block rounded-xl" />
+        <div className="w-40 h-10 feed-skeleton-block rounded-lg mt-12" />
       </div>
     </div>
   );
@@ -131,9 +131,9 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col justify-center px-8 md:px-24 max-w-6xl mx-auto">
-         <div key={currentIndex} className="animate-in slide-in-from-bottom-10 fade-in duration-500 flex flex-col justify-center h-full pb-12">
+         <div key={currentIndex} className="group animate-in slide-in-from-bottom-10 fade-in duration-500 flex flex-col justify-center h-full pb-12">
             <div className="flex items-center gap-4 mb-8 min-w-0">
-                <span className="px-3 py-1 rounded border border-white/20 text-xs uppercase tracking-[0.2em] bg-black/40 backdrop-blur-md truncate max-w-[200px] md:max-w-[300px]">
+                <span className="feed-chip px-3 py-1 rounded border border-white/15 bg-black/30 backdrop-blur-md truncate max-w-[200px] md:max-w-[300px]">
                     {currentArticle.sourceTitle}
                 </span>
                 <span className="text-xs text-gray-400 font-mono tracking-widest">
@@ -143,13 +143,13 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                   article={currentArticle} 
                   size="medium"
                   position="inline"
-                  className="bg-white/5 hover:bg-white/10 border border-white/10"
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
                 />
             </div>
 
             <h2
                 onClick={() => setReadingArticle(currentArticle)}
-                className={`font-bold leading-none mb-8 cursor-pointer hover:text-[rgb(var(--color-accent))] transition-colors tracking-tight break-words
+                className={`font-bold leading-none mb-8 cursor-pointer hover:text-white transition-colors tracking-tight break-words
                   ${currentArticle.title.length > 80 ? 'text-4xl md:text-6xl lg:text-7xl' : 'text-5xl md:text-7xl lg:text-8xl'}
                 `}
             >
@@ -162,10 +162,10 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
 
             <button
               onClick={() => setReadingArticle(currentArticle)}
-              className="group flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:text-[rgb(var(--color-accent))] transition-colors self-start"
+              className="group flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:text-white transition-colors self-start"
             >
               <span>{t('article.read_full')}</span>
-              <div className="w-12 h-[1px] bg-white/30 group-hover:bg-[rgb(var(--color-accent))] transition-colors relative overflow-hidden">
+              <div className="w-12 h-[1px] bg-white/30 group-hover:bg-white transition-colors relative overflow-hidden">
                  <div className="absolute inset-0 bg-white w-full -translate-x-full group-hover:translate-x-0 transition-transform duration-300"/>
               </div>
             </button>

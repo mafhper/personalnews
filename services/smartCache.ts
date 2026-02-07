@@ -21,6 +21,7 @@ export interface CacheEntry {
   title: string;
   accessCount: number;
   lastAccessed: number;
+  checksum?: string; // Hash simples para validação de integridade
 }
 
 export interface CacheOptions {
@@ -43,6 +44,35 @@ const DEFAULT_TTL = 10 * 60 * 1000; // 10 minutes (reduzido de 15)
 const DEFAULT_MAX_ENTRIES = 100; // Aumentado para mais feeds
 const DEFAULT_STALE_WHILE_REVALIDATE = 2 * 60 * 60 * 1000; // 2 horas (aumentado)
 const STORAGE_KEY = 'smart-feed-cache-v2';
+
+/**
+ * Gera um hash simples para validação de integridade
+ * Usa uma função hash simples baseada em string
+ */
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
+/**
+ * Calcula checksum de uma entrada de cache
+ */
+function calculateChecksum(entry: Omit<CacheEntry, 'checksum'>): string {
+  const content = JSON.stringify({
+    feedUrl: entry.feedUrl,
+    title: entry.title,
+    articlesCount: entry.articles.length,
+    timestamp: entry.timestamp,
+    etag: entry.etag,
+    lastModified: entry.lastModified,
+  });
+  return simpleHash(content);
+}
 
 
 /**
@@ -222,7 +252,7 @@ export class SmartCache {
     const now = Date.now();
 
     // Create cache entry
-    const entry: CacheEntry = {
+    const entryWithoutChecksum: Omit<CacheEntry, 'checksum'> = {
       articles: articles.map(article => ({
         ...article,
         pubDate: new Date(article.pubDate), // Ensure Date objects
@@ -234,6 +264,12 @@ export class SmartCache {
       lastModified: headers?.get('last-modified') || undefined,
       accessCount: 1,
       lastAccessed: now,
+    };
+
+    // Calculate checksum for integrity validation
+    const entry: CacheEntry = {
+      ...entryWithoutChecksum,
+      checksum: calculateChecksum(entryWithoutChecksum),
     };
 
     // Check if we need to evict entries
@@ -345,7 +381,7 @@ export class SmartCache {
       return null;
     }
 
-    const { articles: _unused, ...metadata } = entry;
+    const { articles: _, ...metadata } = entry;
     return metadata;
   }
 
@@ -440,6 +476,24 @@ export class SmartCache {
       const now = Date.now();
 
       for (const [key, entryData] of data.entries || []) {
+        // Validate integrity if checksum exists
+        if (entryData.checksum) {
+          const { checksum, ...entryWithoutChecksum } = entryData;
+          const expectedChecksum = calculateChecksum(entryWithoutChecksum);
+          
+          if (checksum !== expectedChecksum) {
+            logger.warn(`Cache integrity check failed for ${key}, skipping entry`, {
+              component: 'SmartCache',
+              additionalData: {
+                feedUrl: key,
+                expected: expectedChecksum,
+                actual: checksum,
+              }
+            });
+            continue; // Skip corrupted entry
+          }
+        }
+
         // Convert article dates back to Date objects
         const entry: CacheEntry = {
           ...entryData,

@@ -13,8 +13,8 @@ import { Switch } from './ui/Switch';
 import { logger } from '../services/logger';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
-import { useLanguage } from '../contexts/LanguageContext';
-import { Language } from '../types';
+import { useLanguage } from '../hooks/useLanguage';
+import { Language, HeaderConfig, ContentConfig } from '../types';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -142,8 +142,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <Modal isOpen={isOpen} onClose={onClose} initialFocus="h2" ariaLabelledBy="settings-modal-title">
             <div className="space-y-6 max-h-[80vh] overflow-y-auto px-1 custom-scrollbar">
                 {/* Header */}
-                <div className="border-b border-white/10 pb-4 flex items-center justify-between sticky top-0 bg-[#0a0a0c] z-10 pt-2">
-                    <h2 id="settings-modal-title" className="text-2xl font-bold text-white flex items-center gap-3" tabIndex={-1}>
+                <div className="border-b border-white/10 pb-4 flex items-center justify-between sticky top-0 bg-[rgb(var(--color-surface))] z-10 pt-2">
+                    <h2 id="settings-modal-title" className="text-2xl font-bold text-[rgb(var(--color-text))] flex items-center gap-3" tabIndex={-1}>
                         <svg className="w-6 h-6 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -152,7 +152,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                        className="p-2 rounded-full hover:bg-white/10 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors"
                         aria-label={t('action.back')}
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,17 +161,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <Tabs tabs={tabs} activeTab={activeTab} onTabChange={(id) => setActiveTab(id as any)} variant="glass" />
+                {/* Tabs - Mobile */}
+                <div className="lg:hidden">
+                    <Tabs tabs={tabs} activeTab={activeTab} onTabChange={(id) => setActiveTab(id as 'appearance' | 'layouts' | 'display' | 'system')} variant="glass" />
+                </div>
 
-                {/* Tab Content */}
-                <div className="min-h-[400px]">
+                <div className="lg:grid lg:grid-cols-[220px_1fr] gap-6">
+                    {/* Sidebar Nav - Desktop */}
+                    <div className="hidden lg:flex flex-col gap-2 bg-white/5 border border-white/5 rounded-2xl p-3 h-fit sticky top-2">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as 'appearance' | 'layouts' | 'display' | 'system')}
+                                className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === tab.id
+                                        ? 'bg-[rgba(var(--color-accent),0.14)] text-[rgb(var(--color-text))] border border-white/10'
+                                        : 'text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-white/5'
+                                    }`}
+                            >
+                                <span>{tab.label}</span>
+                                {activeTab === tab.id && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(var(--color-accent),0.6)]" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="min-h-[400px]">
                     {activeTab === 'appearance' && (
                         <div className="space-y-6 animate-in fade-in duration-300">
 
                             {/* Premium Theme Selector (Auto/Light/Dark) */}
                             <section>
-                                <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider mb-3">Tema Principal</h3>
+                                <h3 className="text-sm font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-3">Tema Principal</h3>
                                 <div className="grid grid-cols-3 gap-4">
                                     {[
                                         { id: 'auto', label: 'Automatico', desc: 'Sincronizado com o sistema', active: themeSettings.autoDetectSystemTheme },
@@ -193,17 +215,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 }
                                             }}
                                             className={`relative group p-4 rounded-xl border transition-all duration-300 flex flex-col items-center text-center gap-2
-                                        ${mode.active
-                                                    ? 'bg-[rgb(var(--color-accent))]/10 border-[rgb(var(--color-accent))] shadow-[0_0_20px_rgba(var(--color-accent),0.2)]'
-                                                    : 'bg-gray-800/30 border-white/5 hover:bg-gray-800/60 hover:border-white/20'
+                                                ${mode.active
+                                                    ? 'bg-[rgba(var(--color-accent),0.12)] border-[rgba(var(--color-accent),0.25)] shadow-sm'
+                                                    : 'bg-[rgb(var(--color-surface))]/35 border-white/5 hover:bg-[rgb(var(--color-surface))]/60 hover:border-white/20'
                                                 }
                                       `}
                                         >
-                                            <span className={`font-bold text-sm ${mode.active ? 'text-[rgb(var(--color-accent))]' : 'text-gray-200'}`}>{mode.label}</span>
-                                            <span className="text-[10px] text-gray-400 leading-tight mt-1">{mode.desc}</span>
+                                            <span className={`font-bold text-sm ${mode.active ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-text))]'}`}>{mode.label}</span>
+                                            <span className="text-[10px] text-[rgb(var(--color-textSecondary))] leading-tight mt-1">{mode.desc}</span>
 
                                             {mode.active && (
-                                                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[rgb(var(--color-accent))]" />
+                                                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[rgba(var(--color-accent),0.6)]" />
                                             )}
                                         </button>
                                     ))}
@@ -212,13 +234,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                             {/* Background Creator with Live Preview */}
                             <section>
-                                <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider mb-3">Plano de Fundo</h3>
+                                <h3 className="text-sm font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-3">Plano de Fundo</h3>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <BackgroundCreator config={backgroundConfig} onChange={updateBackgroundConfig} />
 
                                     {/* Live Preview Box */}
                                     <div className="space-y-2">
-                                        <h4 className="text-[10px] text-gray-400 uppercase tracking-wider">Preview</h4>
+                                        <h4 className="text-[10px] text-[rgb(var(--color-textSecondary))] uppercase tracking-wider">Preview</h4>
                                         <div
                                             className="h-full min-h-[200px] rounded-xl border border-white/10 relative overflow-hidden shadow-2xl transition-all duration-500"
                                             style={{
@@ -230,7 +252,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             }}
                                         >
                                             {/* Content Overlay Simulation */}
-                                            <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
+                                            <div className="absolute inset-0 bg-[rgb(var(--color-background))]/18 backdrop-blur-[2px]" />
 
                                             <div className="relative z-10 p-6 space-y-4">
                                                 {/* Mock Header */}
@@ -256,7 +278,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             </section>
 
                             <section>
-                                <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider mb-3">Cores do Sistema</h3>
+                                <h3 className="text-sm font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-3">Cores do Sistema</h3>
                                 <ThemeSelector setThemeColor={setThemeColor} />
                             </section>
 
@@ -267,7 +289,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className="space-y-6 animate-in fade-in duration-300">
                             {/* Header Config */}
                             <Card variant="glass" className="p-4 space-y-4">
-                                <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <h3 className="text-xs font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 flex items-center gap-2">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                                     Cabeçalho (Header)
                                 </h3>
@@ -275,7 +297,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 {/* Row 1: Basic Info */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">{t('settings.header.title')}</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">{t('settings.header.title')}</label>
                                         <Input
                                             value={headerConfig.customTitle || ''}
                                             onChange={(e) => updateHeaderConfig({ customTitle: e.target.value })}
@@ -284,7 +306,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">{t('settings.header.logo')}</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">{t('settings.header.logo')}</label>
                                         <div className="flex gap-2">
                                             <Input
                                                 value={headerConfig.logoUrl || ''}
@@ -292,7 +314,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 placeholder="https://..."
                                                 className="h-8 text-sm"
                                             />
-                                            <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded-lg text-xs flex items-center justify-center min-w-[80px]">
+                                            <label className="cursor-pointer bg-[rgb(var(--color-surface))]/75 hover:bg-[rgb(var(--color-surface))]/85 text-[rgb(var(--color-text))] px-3 py-1 rounded-lg text-xs flex items-center justify-center min-w-[80px]">
                                                 Upload
                                                 <input type="file" accept=".svg" className="hidden" onChange={async (e) => {
                                                     const file = e.target.files?.[0];
@@ -306,11 +328,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 {/* Row 2: Position & Style */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Posição</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Posição</label>
                                         <select
                                             value={headerConfig.position}
-                                            onChange={(e) => updateHeaderConfig({ position: e.target.value as any })}
-                                            className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
+                                            onChange={(e) => updateHeaderConfig({ position: e.target.value as HeaderConfig['position'] })}
+                                            className="w-full bg-[rgb(var(--color-surface))]/65 border-[rgb(var(--color-border))]/30 text-[rgb(var(--color-textSecondary))] text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                                         >
                                             <option value="sticky">Sticky</option>
                                             <option value="static">Static</option>
@@ -319,11 +341,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Estilo</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Estilo</label>
                                         <select
                                             value={headerConfig.style}
-                                            onChange={(e) => updateHeaderConfig({ style: e.target.value as any })}
-                                            className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
+                                            onChange={(e) => updateHeaderConfig({ style: e.target.value as HeaderConfig['style'] })}
+                                            className="w-full bg-[rgb(var(--color-surface))]/65 border-[rgb(var(--color-border))]/30 text-[rgb(var(--color-textSecondary))] text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                                         >
                                             <option value="default">Padrão</option>
                                             <option value="centered">Centralizado</option>
@@ -331,11 +353,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Altura</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Altura</label>
                                         <select
                                             value={headerConfig.height}
-                                            onChange={(e) => updateHeaderConfig({ height: e.target.value as any })}
-                                            className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
+                                            onChange={(e) => updateHeaderConfig({ height: e.target.value as HeaderConfig['height'] })}
+                                            className="w-full bg-[rgb(var(--color-surface))]/65 border-[rgb(var(--color-border))]/30 text-[rgb(var(--color-textSecondary))] text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                                         >
                                             <option value="ultra-compact">Mínima (Ultra)</option>
                                             <option value="tiny">Extra Compacto</option>
@@ -345,11 +367,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Blur</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Blur</label>
                                         <select
                                             value={headerConfig.blurIntensity || 'medium'}
-                                            onChange={(e) => updateHeaderConfig({ blurIntensity: e.target.value as any })}
-                                            className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
+                                            onChange={(e) => updateHeaderConfig({ blurIntensity: e.target.value as HeaderConfig['blurIntensity'] })}
+                                            className="w-full bg-[rgb(var(--color-surface))]/65 border-[rgb(var(--color-border))]/30 text-[rgb(var(--color-textSecondary))] text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                                         >
                                             <option value="none">Nenhum</option>
                                             <option value="light">Leve</option>
@@ -362,13 +384,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 {/* Row 3: Color Controls */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Cor de Fundo</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Cor de Fundo</label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="color"
                                                 value={headerConfig.backgroundColor || '#0a0a0c'}
                                                 onChange={(e) => updateHeaderConfig({ backgroundColor: e.target.value })}
-                                                className="w-8 h-8 rounded-lg border border-gray-700 cursor-pointer bg-transparent"
+                                                className="w-8 h-8 rounded-lg border border-[rgb(var(--color-border))]/30 cursor-pointer bg-transparent"
                                             />
                                             <Input
                                                 value={headerConfig.backgroundColor || '#0a0a0c'}
@@ -378,23 +400,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Opacidade: {headerConfig.backgroundOpacity ?? 95}%</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Opacidade: {headerConfig.backgroundOpacity ?? 95}%</label>
                                         <input
                                             type="range"
                                             min="0" max="100"
                                             value={headerConfig.backgroundOpacity ?? 95}
                                             onChange={(e) => updateHeaderConfig({ backgroundOpacity: parseInt(e.target.value) })}
-                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-accent))]"
+                                            className="w-full h-2 bg-[rgb(var(--color-surface))]/75 rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-accent))]"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Cor da Borda</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Cor da Borda</label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="color"
                                                 value={headerConfig.borderColor || '#ffffff'}
                                                 onChange={(e) => updateHeaderConfig({ borderColor: e.target.value })}
-                                                className="w-8 h-8 rounded-lg border border-gray-700 cursor-pointer bg-transparent"
+                                                className="w-8 h-8 rounded-lg border border-[rgb(var(--color-border))]/30 cursor-pointer bg-transparent"
                                             />
                                             <Input
                                                 value={headerConfig.borderColor || '#ffffff'}
@@ -404,25 +426,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-gray-400 mb-1">Borda Opac: {headerConfig.borderOpacity ?? 8}%</label>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Borda Opac: {headerConfig.borderOpacity ?? 8}%</label>
                                         <input
                                             type="range"
                                             min="0" max="100"
                                             value={headerConfig.borderOpacity ?? 8}
                                             onChange={(e) => updateHeaderConfig({ borderOpacity: parseInt(e.target.value) })}
-                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-accent))]"
+                                            className="w-full h-2 bg-[rgb(var(--color-surface))]/75 rounded-lg appearance-none cursor-pointer accent-[rgb(var(--color-accent))]"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Row 4: Toggle Options */}
                                 <div className="flex flex-wrap gap-3">
-                                    <div className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2 border border-gray-700 min-w-[140px]">
-                                        <span className="text-[10px] text-gray-400">Usar Cor do Tema</span>
+                                    <div className="flex items-center justify-between bg-[rgb(var(--color-surface))]/55 rounded-lg px-3 py-2 border border-[rgb(var(--color-border))]/30 min-w-[140px]">
+                                        <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">Usar Cor do Tema</span>
                                         <Switch checked={headerConfig.useThemeColor || false} onChange={(c) => updateHeaderConfig({ useThemeColor: c })} size="sm" />
                                     </div>
-                                    <div className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2 border border-gray-700 min-w-[140px]">
-                                        <span className="text-[10px] text-gray-400">Mostrar Título</span>
+                                    <div className="flex items-center justify-between bg-[rgb(var(--color-surface))]/55 rounded-lg px-3 py-2 border border-[rgb(var(--color-border))]/30 min-w-[140px]">
+                                        <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">Mostrar Título</span>
                                         <Switch checked={headerConfig.showTitle !== false} onChange={(c) => updateHeaderConfig({ showTitle: c })} size="sm" />
                                     </div>
                                 </div>
@@ -430,27 +452,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                             {/* Layout Selection Grid */}
                             <div className="space-y-4">
-                                <h3 className="text-sm font-medium text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                                <h3 className="text-sm font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider flex items-center gap-2">
                                     <span>📰</span> Estilo de Leitura
                                 </h3>
 
                                 {allLayouts.map((group) => (
                                     <div key={group.category}>
-                                        <h4 className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2 ml-1">{group.category}</h4>
+                                        <h4 className="text-[10px] text-[rgb(var(--color-textSecondary))]/70 uppercase tracking-widest font-bold mb-2 ml-1">{group.category}</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                             {group.modes.map((mode) => (
                                                 <button
                                                     key={mode.value}
                                                     onClick={() => {
-                                                        updateContentConfig({ layoutMode: mode.value as any });
+                                                        updateContentConfig({ layoutMode: mode.value as ContentConfig['layoutMode'] });
                                                         resetCategoryLayouts(); // Reset category-specific layouts
                                                     }}
                                                     className={`relative p-3 rounded-lg text-left transition-all duration-200 border ${contentConfig.layoutMode === mode.value
-                                                            ? 'bg-[rgb(var(--color-accent))]/20 border-[rgb(var(--color-accent))] ring-1 ring-[rgb(var(--color-accent))]'
-                                                            : 'bg-gray-800/40 border-white/5 hover:bg-gray-800 hover:border-white/10'
+                                                        ? 'bg-[rgb(var(--color-accent))]/20 border-[rgb(var(--color-accent))] ring-1 ring-[rgb(var(--color-accent))]'
+                                                        : 'bg-[rgb(var(--color-surface))]/45 border-white/5 hover:bg-[rgb(var(--color-surface))]/65 hover:border-white/10'
                                                         }`}
                                                 >
-                                                    <span className={`text-sm font-medium block ${contentConfig.layoutMode === mode.value ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'
+                                                    <span className={`text-sm font-medium block ${contentConfig.layoutMode === mode.value ? 'text-[rgb(var(--color-text))]' : 'text-[rgb(var(--color-textSecondary))] group-hover:text-[rgb(var(--color-text))]'
                                                         }`}>
                                                         {mode.label}
                                                     </span>
@@ -471,15 +493,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <Card variant="glass" className="p-4 space-y-6">
                                 {/* Top Stories */}
                                 <div>
-                                    <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2">{t('settings.display.top_stories')}</h3>
+                                    <h3 className="text-xs font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2">{t('settings.display.top_stories')}</h3>
                                     <div className="flex gap-2">
-                                        {[0, 5, 10, 15, 20].map((count) => (
+                                        {([0, 5, 10, 15, 20] as const).map((count) => (
                                             <button
                                                 key={count}
-                                                onClick={() => updateLayoutSettings({ topStoriesCount: count as any })}
+                                                onClick={() => updateLayoutSettings({ topStoriesCount: count })}
                                                 className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${layoutSettings.topStoriesCount === count
-                                                        ? 'bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20'
-                                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                                                    ? 'bg-[rgb(var(--color-accent))] text-[rgb(var(--color-text))] shadow-lg shadow-[rgb(var(--color-accent))]/20'
+                                                    : 'bg-[rgb(var(--color-surface))]/65 hover:bg-[rgb(var(--color-surface))]/75 text-[rgb(var(--color-textSecondary))]'
                                                     }`}
                                             >
                                                 {count === 0 ? 'Off' : count}
@@ -490,7 +512,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                                 {/* Auto Refresh */}
                                 <div>
-                                    <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2">{t('settings.display.auto_refresh')}</h3>
+                                    <h3 className="text-xs font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2">{t('settings.display.auto_refresh')}</h3>
                                     <div className="flex gap-2">
                                         {[
                                             { label: 'Off', value: 0 },
@@ -502,8 +524,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 key={option.value}
                                                 onClick={() => updateLayoutSettings({ autoRefreshInterval: option.value })}
                                                 className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${layoutSettings.autoRefreshInterval === option.value
-                                                        ? 'bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20'
-                                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                                                    ? 'bg-[rgb(var(--color-accent))] text-[rgb(var(--color-text))] shadow-lg shadow-[rgb(var(--color-accent))]/20'
+                                                    : 'bg-[rgb(var(--color-surface))]/65 hover:bg-[rgb(var(--color-surface))]/75 text-[rgb(var(--color-textSecondary))]'
                                                     }`}
                                             >
                                                 {option.label}
@@ -515,15 +537,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="border-t border-white/5 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {/* Time Format */}
                                     <div>
-                                        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2">{t('settings.display.time_format')}</h3>
-                                        <div className="flex bg-gray-800 rounded-lg p-1">
+                                        <h3 className="text-xs font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2">{t('settings.display.time_format')}</h3>
+                                        <div className="flex bg-[rgb(var(--color-surface))]/65 rounded-lg p-1">
                                             {['12h', '24h'].map((format) => (
                                                 <button
                                                     key={format}
-                                                    onClick={() => setTimeFormat(format as any)}
+                                                    onClick={() => setTimeFormat(format as '12h' | '24h')}
                                                     className={`flex-1 py-1.5 rounded text-xs font-medium transition-all ${timeFormat === format
-                                                            ? 'bg-[rgb(var(--color-accent))] text-white shadow-sm'
-                                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                                        ? 'bg-[rgb(var(--color-accent))] text-[rgb(var(--color-text))] shadow-sm'
+                                                        : 'text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-white/5'
                                                         }`}
                                                 >
                                                     {format}
@@ -533,11 +555,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </div>
                                     {/* Language */}
                                     <div>
-                                        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-2">{t('settings.language')}</h3>
+                                        <h3 className="text-xs font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2">{t('settings.language')}</h3>
                                         <select
                                             value={language}
                                             onChange={(e) => setLanguage(e.target.value as Language)}
-                                            className="w-full bg-gray-800 border-gray-700 text-gray-300 text-xs rounded-lg h-8 px-2 focus:ring-[rgb(var(--color-accent))] focus:border-[rgb(var(--color-accent))]"
+                                            className="w-full bg-[rgb(var(--color-surface))]/65 border-[rgb(var(--color-border))]/30 text-[rgb(var(--color-textSecondary))] text-xs rounded-lg h-8 px-2 focus:ring-[rgb(var(--color-accent))] focus:border-[rgb(var(--color-accent))]"
                                         >
                                             <option value="pt-BR">Português (BR)</option>
                                             <option value="en-US">English (US)</option>
@@ -557,16 +579,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className="space-y-4 animate-in fade-in duration-200">
                             {/* Backup & Restore */}
                             <Card variant="glass" className="p-4">
-                                <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wider mb-3">{t('settings.backup')}</h3>
+                                <h3 className="text-xs font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-3">{t('settings.backup')}</h3>
                                 <div className="flex gap-3">
                                     <button
                                         onClick={handleExportBackup}
-                                        className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-all text-xs flex items-center justify-center gap-2 group border border-white/5 hover:border-white/20"
+                                        className="flex-1 px-4 py-3 bg-[rgb(var(--color-surface))]/75 hover:bg-[rgb(var(--color-surface))]/85 text-[rgb(var(--color-text))] rounded-xl transition-all text-xs flex items-center justify-center gap-2 group border border-white/5 hover:border-white/20"
                                     >
                                         <span className="text-lg group-hover:-translate-y-0.5 transition-transform">📤</span>
                                         <div className="text-left">
                                             <span className="block font-bold">Exportar</span>
-                                            <span className="text-[10px] text-gray-400">Salvar configurações</span>
+                                            <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">Salvar configurações</span>
                                         </div>
                                     </button>
                                     <button
@@ -593,13 +615,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <Card variant="glass" className="p-4 space-y-3">
                                 <div className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                                     <div className="pr-4">
-                                        <span className="text-sm text-gray-200 block font-medium">{t('settings.system.transitions')}</span>
-                                        <span className="text-[10px] text-gray-500">Animações suaves ao trocar de tema</span>
+                                        <span className="text-sm text-[rgb(var(--color-text))] block font-medium">{t('settings.system.transitions')}</span>
+                                        <span className="text-[10px] text-[rgb(var(--color-textSecondary))]/70">Animações suaves ao trocar de tema</span>
                                     </div>
                                     <Switch
                                         checked={themeSettings.themeTransitions}
                                         onChange={(e) => updateThemeSettings({ themeTransitions: e })}
                                         size="sm"
+                                        ariaLabel={t('settings.system.transitions')}
                                     />
                                 </div>
                             </Card>
@@ -623,6 +646,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
                 </div>
             </div>
+        </div>
         </Modal>
     );
 };

@@ -32,11 +32,11 @@ export const STORAGE_KEYS = {
 export interface BackupData {
   version: string;
   timestamp: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export const createBackup = (): BackupData => {
-  const data: Record<string, any> = {};
+  const data: Record<string, unknown> = {};
 
   Object.values(STORAGE_KEYS).forEach((key) => {
     const item = localStorage.getItem(key);
@@ -69,9 +69,10 @@ export const downloadBackup = (backup: BackupData) => {
   URL.revokeObjectURL(url);
 };
 
-export const validateBackup = (data: any): boolean => {
+export const validateBackup = (data: unknown): boolean => {
   if (!data || typeof data !== 'object') return false;
-  if (!data.version || !data.timestamp || !data.data) return false;
+  const backup = data as BackupData;
+  if (!backup.version || !backup.timestamp || !backup.data) return false;
   return true;
 };
 

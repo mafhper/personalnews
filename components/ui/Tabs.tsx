@@ -81,7 +81,7 @@ export const Tabs: React.FC<TabsProps> = ({
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 ${currentActiveTab === tab.id
-                  ? "bg-[rgb(var(--color-accent))] text-white shadow-lg shadow-[rgb(var(--color-accent))]/20"
+                  ? "bg-[rgba(var(--color-accent),0.16)] text-white border border-white/10 shadow-sm"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
                   }`}
               >

@@ -8,7 +8,7 @@ import React from "react";
 import { screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { renderWithNotifications } from "./NotificationTestWrapper";
-import { useNotification } from "../../contexts/NotificationContext";
+import { useNotification } from "../../hooks/useNotification";
 import { act, fireEvent } from "@testing-library/react";
 
 // Test component that uses notification context

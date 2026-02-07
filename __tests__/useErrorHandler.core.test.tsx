@@ -3,7 +3,7 @@ import React from "react";
 import { render, screen, fireEvent, act, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from "vitest";
 import * as matchers from '@testing-library/jest-dom/matchers';
-import { useErrorHandler } from "../components/ErrorBoundary";
+import { useErrorHandler } from "../hooks/useErrorHandler";
 
 expect.extend(matchers);
 

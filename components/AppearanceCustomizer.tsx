@@ -3,7 +3,7 @@ import type { ThemePreset, ExtendedTheme } from "../types";
 import { useAppearance, LAYOUT_PRESETS } from "../hooks/useAppearance";
 import { exportTheme, importTheme, hexToRgb } from "../services/themeUtils";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
-import { useLanguage } from "../contexts/LanguageContext";
+import { useLanguage } from "../hooks/useLanguage";
 import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
@@ -164,7 +164,7 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
         <Tabs
           tabs={tabs}
           activeTab={activeTab}
-          onTabChange={(tabId) => setActiveTab(tabId as any)}
+          onTabChange={(tabId) => setActiveTab(tabId as "layouts" | "colors" | "header" | "content" | "background" | "import-export")}
           variant="glass"
           className="mb-6"
         />
@@ -206,101 +206,101 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
             <div className="space-y-8 animate-in fade-in duration-300">
               {/* Editor Section (Integrated) */}
               {editingTheme ? (
-                 <div className="space-y-6">
-                 {/* Editor Header */}
-                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-gray-800/30 p-4 rounded-xl border border-white/5">
-                   <div>
-                     <h3 className="text-xl font-semibold text-white mb-1 flex items-center">
-                       <ActionIcons.Edit className="w-5 h-5 mr-2 text-[rgb(var(--color-accent))]" />
-                       Editing: {editingTheme.name}
-                     </h3>
-                     <p className="text-sm text-gray-400">
-                       Adjust colors individually
-                     </p>
-                   </div>
-                   <div className="flex flex-wrap gap-2">
-                     <Button
-                       onClick={handleApplyLivePreview}
-                       variant="secondary"
-                       size="sm"
-                       icon={<StatusIcons.Preview />}
-                     >
-                       {t('action.preview')}
-                     </Button>
-                     <Button
-                       onClick={handleSaveEditedTheme}
-                       variant="primary"
-                       size="sm"
-                       icon={<ActionIcons.Save />}
-                     >
-                       {t('action.save')}
-                     </Button>
-                     <Button
-                       onClick={() => setEditingTheme(null)}
-                       variant="ghost"
-                       size="sm"
-                       icon={<ActionIcons.Close />}
-                     >
-                       {t('action.cancel')}
-                     </Button>
-                   </div>
-                 </div>
+                <div className="space-y-6">
+                  {/* Editor Header */}
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-gray-800/30 p-4 rounded-xl border border-white/5">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-1 flex items-center">
+                        <ActionIcons.Edit className="w-5 h-5 mr-2 text-[rgb(var(--color-accent))]" />
+                        Editing: {editingTheme.name}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        Adjust colors individually
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        onClick={handleApplyLivePreview}
+                        variant="secondary"
+                        size="sm"
+                        icon={<StatusIcons.Preview />}
+                      >
+                        {t('action.preview')}
+                      </Button>
+                      <Button
+                        onClick={handleSaveEditedTheme}
+                        variant="primary"
+                        size="sm"
+                        icon={<ActionIcons.Save />}
+                      >
+                        {t('action.save')}
+                      </Button>
+                      <Button
+                        onClick={() => setEditingTheme(null)}
+                        variant="ghost"
+                        size="sm"
+                        icon={<ActionIcons.Close />}
+                      >
+                        {t('action.cancel')}
+                      </Button>
+                    </div>
+                  </div>
 
-                 {/* Color Editor Grid */}
-                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                   <Card variant="glass" className="p-6">
-                     <h4 className="text-lg font-semibold text-white mb-6">{t('customizer.group.primary_colors')}</h4>
-                     <div className="space-y-6">
-                       {['primary', 'accent', 'secondary'].map((key) => (
-                         <div key={key}>
-                           <label className="block text-sm font-medium text-gray-300 mb-2 capitalize">{key}</label>
-                           <div className="flex items-center space-x-3">
-                             <input
-                               type="color"
-                               value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
-                               onChange={(e) => handleColorChange(key, e.target.value)}
-                               className="w-10 h-10 rounded-lg border-0 p-0 cursor-pointer"
-                             />
-                             <Input
-                               value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
-                               onChange={(e) => handleColorChange(key, e.target.value)}
-                               className="flex-1 font-mono text-sm"
-                             />
-                           </div>
-                         </div>
-                       ))}
-                     </div>
-                   </Card>
-                   <Card variant="glass" className="p-6">
-                     <h4 className="text-lg font-semibold text-white mb-6">{t('customizer.group.background_colors')}</h4>
-                     <div className="space-y-6">
-                       {['background', 'surface', 'text'].map((key) => (
-                         <div key={key}>
-                           <label className="block text-sm font-medium text-gray-300 mb-2 capitalize">{key}</label>
-                           <div className="flex items-center space-x-3">
-                             <input
-                               type="color"
-                               value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
-                               onChange={(e) => handleColorChange(key, e.target.value)}
-                               className="w-10 h-10 rounded-lg border-0 p-0 cursor-pointer"
-                             />
-                             <Input
-                               value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
-                               onChange={(e) => handleColorChange(key, e.target.value)}
-                               className="flex-1 font-mono text-sm"
-                             />
-                           </div>
-                         </div>
-                       ))}
-                     </div>
-                   </Card>
-                 </div>
-               </div>
+                  {/* Color Editor Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card variant="glass" className="p-6">
+                      <h4 className="text-lg font-semibold text-white mb-6">{t('customizer.group.primary_colors')}</h4>
+                      <div className="space-y-6">
+                        {['primary', 'accent', 'secondary'].map((key) => (
+                          <div key={key}>
+                            <label className="block text-sm font-medium text-gray-300 mb-2 capitalize">{key}</label>
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="color"
+                                value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
+                                onChange={(e) => handleColorChange(key, e.target.value)}
+                                className="w-10 h-10 rounded-lg border-0 p-0 cursor-pointer"
+                              />
+                              <Input
+                                value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
+                                onChange={(e) => handleColorChange(key, e.target.value)}
+                                className="flex-1 font-mono text-sm"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                    <Card variant="glass" className="p-6">
+                      <h4 className="text-lg font-semibold text-white mb-6">{t('customizer.group.background_colors')}</h4>
+                      <div className="space-y-6">
+                        {['background', 'surface', 'text'].map((key) => (
+                          <div key={key}>
+                            <label className="block text-sm font-medium text-gray-300 mb-2 capitalize">{key}</label>
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="color"
+                                value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
+                                onChange={(e) => handleColorChange(key, e.target.value)}
+                                className="w-10 h-10 rounded-lg border-0 p-0 cursor-pointer"
+                              />
+                              <Input
+                                value={rgbToHex(editingTheme.colors[key as keyof typeof editingTheme.colors] as string)}
+                                onChange={(e) => handleColorChange(key, e.target.value)}
+                                className="flex-1 font-mono text-sm"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </div>
+                </div>
               ) : (
                 <>
                   {/* Presets List */}
                   <div>
-                    <div 
+                    <div
                       className="flex justify-between items-center cursor-pointer mb-4"
                       onClick={() => toggleSection('colorPresets')}
                     >
@@ -314,8 +314,8 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
                             key={preset.id}
                             variant={currentTheme.id === preset.id ? "glass" : "outline"}
                             className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${currentTheme.id === preset.id
-                                ? "ring-1 ring-[rgb(var(--color-accent))]"
-                                : "hover:border-white/20"
+                              ? "ring-1 ring-[rgb(var(--color-accent))]"
+                              : "hover:border-white/20"
                               }`}
                             onClick={() => handlePresetSelect(preset)}
                           >
@@ -347,7 +347,7 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
                   {/* Custom Themes */}
                   {customThemes.length > 0 && (
                     <div className="mt-8">
-                      <div 
+                      <div
                         className="flex justify-between items-center cursor-pointer mb-4"
                         onClick={() => toggleSection('customThemes')}
                       >
@@ -400,11 +400,11 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
 
           {/* ... (Background, Header, Content tabs - assumed similar replacement for brevity, but focusing on keys added) ... */}
           {/* Note: I'm only replacing the parts I added keys for to keep the diff manageable and correct. */}
-          
+
           {activeTab === "import-export" && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <Card variant="glass" className="p-6">
-                <div 
+                <div
                   className="flex justify-between items-center cursor-pointer mb-2"
                   onClick={() => toggleSection('exportTheme')}
                 >
@@ -448,7 +448,7 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
               </Card>
 
               <Card variant="glass" className="p-6">
-                <div 
+                <div
                   className="flex justify-between items-center cursor-pointer mb-2"
                   onClick={() => toggleSection('importTheme')}
                 >
@@ -496,3 +496,4 @@ export const AppearanceCustomizer: React.FC<AppearanceCustomizerProps> = ({
     </Modal>
   );
 };
+

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Article } from '../../types';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
 
@@ -31,6 +31,10 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
 
     // Layout Slices
     const heroArticle = articles[0];
+    const heroAuthor =
+        heroArticle?.author && heroArticle.author !== heroArticle.sourceTitle
+            ? heroArticle.author
+            : undefined;
     const featuredArticles = articles.slice(1, 4);
     const gridArticles = articles.slice(4, 10);
 
@@ -38,15 +42,16 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
 
     return (
         <div className="mb-8 animate-in fade-in duration-300">
+            <div className="mx-auto w-full max-w-[1040px] 2xl:max-w-[1120px]">
             {/* Hero Section */}
             <section className="mb-12">
                 <article
-                    className="relative group cursor-pointer overflow-hidden rounded-2xl bg-[rgb(var(--color-surface))]"
+                    className="feed-card relative group cursor-pointer overflow-hidden rounded-2xl"
                     onClick={() => onArticleClick(heroArticle)}
                 >
-                    <div className="grid md:grid-cols-2 gap-0">
+                    <div className="grid lg:grid-cols-2 gap-0">
                         {/* Hero Image */}
-                        <div className="relative aspect-[4/3] md:aspect-auto md:h-[400px] overflow-hidden">
+                        <div className="feed-media relative aspect-[4/3] lg:aspect-auto lg:h-[400px]">
                             <ArticleImage
                                 article={heroArticle}
                                 width={1200}
@@ -60,22 +65,22 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                 article={heroArticle}
                                 size="medium"
                                 position="overlay"
-                                className="top-4 right-4 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="top-4 right-4 z-10 bg-black/30 hover:bg-black/50 border border-white/15 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                             />
                         </div>
 
                         {/* Hero Content */}
-                        <div className="flex flex-col justify-center p-6 md:p-10 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))]">
+                        <div className="flex flex-col justify-center p-6 md:p-10 bg-gradient-to-br from-[rgba(var(--color-surface),0.8)] to-[rgba(var(--color-background),0.6)]">
                             <div className="flex items-center gap-3 mb-4">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[rgb(var(--color-accent))] text-white truncate max-w-[150px] md:max-w-[200px]">
+                                <span className="feed-chip truncate max-w-[150px] md:max-w-[200px]">
                                     {heroArticle.sourceTitle}
                                 </span>
-                                <span className="text-sm text-[rgb(var(--color-textSecondary))]">
+                                <span className="feed-meta text-sm">
                                     {formatTimeAgo(heroArticle.pubDate)}
                                 </span>
                             </div>
 
-                            <h1 className="text-2xl md:text-4xl font-bold text-[rgb(var(--color-text))] leading-tight mb-4 group-hover:text-[rgb(var(--color-accent))] transition-colors">
+                            <h1 className="feed-title text-2xl md:text-4xl leading-tight mb-4 group-hover:text-white transition-colors">
                                 {heroArticle.title}
                             </h1>
 
@@ -83,13 +88,13 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                 {heroArticle.description}
                             </p>
 
-                            {heroArticle.author && (
+                            {heroAuthor && (
                                 <p className="text-sm text-[rgb(var(--color-textSecondary))] italic">
-                                    {t('article.by') || 'Por'} {heroArticle.author}
+                                    {t('article.by') || 'Por'} {heroAuthor}
                                 </p>
                             )}
 
-                            <button className="mt-6 self-start px-6 py-2.5 bg-[rgb(var(--color-primary))] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity">
+                            <button className="mt-6 self-start px-6 py-2.5 bg-[rgba(var(--color-primary),0.8)] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity">
                                 {t('action.read') || 'Ler artigo'}
                             </button>
                         </div>
@@ -108,14 +113,14 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-6">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {featuredArticles.map((article, i) => (
                             <article
                                 key={i}
                                 className="group cursor-pointer"
                                 onClick={() => onArticleClick(article)}
                             >
-                                <div className="relative aspect-[16/10] overflow-hidden rounded-xl mb-4 bg-[rgb(var(--color-surface))]">
+                                <div className="feed-media relative aspect-[16/10] mb-4">
                                     <ArticleImage
                                         article={article}
                                         width={600}
@@ -129,25 +134,25 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                         article={article}
                                         size="small"
                                         position="overlay"
-                                        className="top-3 right-3 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                        className="top-3 right-3 z-10 bg-black/30 hover:bg-black/50 border border-white/15 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                                     />
                                 </div>
 
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-xs font-bold uppercase text-[rgb(var(--color-accent))] truncate max-w-[120px]">
+                                    <span className="feed-chip truncate max-w-[120px]">
                                         {article.sourceTitle}
                                     </span>
                                     <span className="text-xs text-[rgb(var(--color-textSecondary))]">•</span>
-                                    <span className="text-xs text-[rgb(var(--color-textSecondary))]">
+                                    <span className="feed-meta text-xs">
                                         {formatTimeAgo(article.pubDate)}
                                     </span>
                                 </div>
 
-                                <h3 className="font-bold text-lg text-[rgb(var(--color-text))] leading-snug group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2">
+                                <h3 className="feed-title text-lg leading-snug group-hover:text-white transition-colors line-clamp-2">
                                     {article.title}
                                 </h3>
                                 {article.description && (
-                                    <p className="text-sm text-[rgb(var(--color-textSecondary))] mt-2 line-clamp-2">
+                                    <p className="feed-desc text-sm mt-2 line-clamp-2">
                                         {article.description}
                                     </p>
                                 )}
@@ -167,14 +172,14 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                         <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {gridArticles.map((article, i) => (
                             <article
                                 key={i}
-                                className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-[rgb(var(--color-accent))] transition-all relative"
+                                className="feed-card group cursor-pointer flex gap-4 p-4 rounded-xl transition-all relative"
                                 onClick={() => onArticleClick(article)}
                             >
-                                <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
+                                <div className="feed-media w-24 h-24 flex-shrink-0">
                                     <ArticleImage
                                         article={article}
                                         width={200}
@@ -186,10 +191,10 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                     <div className="flex items-center justify-between gap-2 mb-1">
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <span className="text-[10px] font-bold uppercase text-[rgb(var(--color-accent))] truncate max-w-[100px]">
+                                            <span className="feed-chip truncate max-w-[100px]">
                                                 {article.sourceTitle}
                                             </span>
-                                            <span className="text-[10px] text-[rgb(var(--color-textSecondary))] flex-shrink-0">
+                                            <span className="feed-meta text-[10px] flex-shrink-0">
                                                 {formatTimeAgo(article.pubDate)}
                                             </span>
                                         </div>
@@ -202,7 +207,7 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                             />
                                         </div>
                                     </div>
-                                    <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-accent))] transition-colors line-clamp-2 leading-snug">
+                                    <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-white transition-colors line-clamp-2 leading-snug">
                                         {article.title}
                                     </h3>
                                     {article.description && (
@@ -223,6 +228,7 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                     Latest News
                 </h2>
                 <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
+            </div>
             </div>
         </div>
     );

@@ -28,7 +28,7 @@ const BuildAudit = {
 
     // Check if dist exists
     if (!fs.existsSync(distDir)) {
-        throw new Error(`Dist directory not found at ${distDir}. Run 'npm run build' first.`);
+        throw new Error(`Dist directory not found at ${distDir}. Run 'bun run build:app' first.`);
     }
 
     const files = await getFiles(distDir);

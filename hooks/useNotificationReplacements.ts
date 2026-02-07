@@ -1,4 +1,4 @@
-import { useNotification } from "../contexts/NotificationContext";
+import { useNotification } from "../hooks/useNotification";
 
 /**
  * Hook que fornece substitutos para window.alert, window.confirm, etc.

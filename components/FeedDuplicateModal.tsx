@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../hooks/useLanguage';
 import { FeedSource } from '../types';
 
 interface FeedDuplicateModalProps {
@@ -151,3 +151,4 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
     document.body
   );
 };
+

@@ -67,14 +67,14 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, initial
         >
             <div
                 ref={containerRef}
-                className={`bg-gray-900/80 backdrop-blur-xl border border-white/10 shadow-2xl overflow-y-auto transform transition-all duration-300 animate-in fade-in zoom-in-95 relative ${modalSizeClass} ${size === 'full' ? 'h-full w-full m-0 p-0 rounded-none border-none' : 'rounded-2xl p-4 sm:p-6 lg:p-8 m-4 max-h-[90vh]'}`}
+                className={`bg-[rgb(var(--color-surface))]/90 text-[rgb(var(--color-text))] backdrop-blur-xl border border-[rgb(var(--color-border))]/30 shadow-2xl overflow-y-auto transform transition-all duration-300 animate-in fade-in zoom-in-95 relative ${modalSizeClass} ${size === 'full' ? 'h-full w-full m-0 p-0 rounded-none border-none' : 'rounded-2xl p-4 sm:p-6 lg:p-8 m-4 max-h-[90vh]'}`}
                 onClick={(e) => e.stopPropagation()}
                 role="document"
             >
                 {size !== 'full' && (
                     <button
                         onClick={handleClose}
-                        className="absolute top-3 right-3 p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/15 hover:border-white/20 transition-all duration-200 group z-10"
+                        className="absolute top-3 right-3 p-2 rounded-lg bg-[rgb(var(--color-surface))]/70 border border-[rgb(var(--color-border))]/30 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-surface))]/90 hover:border-[rgb(var(--color-border))]/50 transition-all duration-200 group z-10"
                         aria-label="Close modal"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,29 +1,47 @@
-
 export interface ContentConfig {
   showAuthor: boolean;
   showDate: boolean;
   showTime: boolean;
   showTags: boolean;
-  layoutMode: 'default' | 'grid' | 'magazine' | 'list' | 'masonry' | 'minimal' | 'immersive' | 'brutalist' | 'timeline' | 'bento' | 'newspaper' | 'focus' | 'gallery' | 'compact' | 'split' | 'cyberpunk' | 'terminal' | 'pocketfeeds' | 'modern';
-  density: 'compact' | 'comfortable' | 'spacious';
-  paginationType?: 'numbered' | 'loadMore' | 'infinite';
+  layoutMode:
+    | "default"
+    | "grid"
+    | "magazine"
+    | "list"
+    | "masonry"
+    | "minimal"
+    | "immersive"
+    | "brutalist"
+    | "timeline"
+    | "bento"
+    | "newspaper"
+    | "focus"
+    | "gallery"
+    | "compact"
+    | "split"
+    | "cyberpunk"
+    | "terminal"
+    | "pocketfeeds"
+    | "modern";
+  density: "compact" | "comfortable" | "spacious";
+  paginationType?: "numbered" | "loadMore" | "infinite";
 }
 
 export interface HeaderConfig {
-  style: 'default' | 'centered' | 'minimal';
-  position: 'static' | 'sticky' | 'floating' | 'hidden';
-  height: 'ultra-compact' | 'tiny' | 'compact' | 'normal' | 'spacious';
+  style: "default" | "centered" | "minimal";
+  position: "static" | "sticky" | "floating" | "hidden";
+  height: "ultra-compact" | "tiny" | "compact" | "normal" | "spacious";
   showTitle: boolean;
   showLogo?: boolean;
   customTitle: string;
   logoUrl: string | null;
-  logoSize: 'sm' | 'md' | 'lg';
+  logoSize: "sm" | "md" | "lg";
   customFavicon?: string | null;
   useThemeColor?: boolean;
   // New appearance controls
   backgroundColor?: string;
   backgroundOpacity?: number; // 0-100
-  blurIntensity?: 'none' | 'light' | 'medium' | 'heavy';
+  blurIntensity?: "none" | "light" | "medium" | "heavy";
   borderColor?: string;
   borderOpacity?: number; // 0-100
   categoryBackgroundColor?: string;
@@ -35,7 +53,7 @@ export interface HeaderConfig {
   // Advanced Customization
   customLogoSvg?: string;
   logoColor?: string;
-  logoColorMode?: 'custom' | 'theme' | 'original';
+  logoColorMode?: "custom" | "theme" | "original";
   syncFavicon?: boolean;
   titleColor?: string;
   titleGradient?: {
@@ -61,9 +79,10 @@ export interface FeedCategory {
   order: number;
   isDefault?: boolean;
   isPinned?: boolean;
-  layoutMode?: ContentConfig['layoutMode'];
-  headerPosition?: HeaderConfig['position'];
+  layoutMode?: ContentConfig["layoutMode"];
+  // headerPosition removido - agora configurado apenas globalmente via Settings
   autoDiscovery?: boolean;
+  hideFromAll?: boolean;
 }
 
 export interface LayoutPreset {
@@ -97,7 +116,7 @@ export interface WeatherData {
   isDay: boolean;
 }
 
-export type ThemeColor = 'blue' | 'green' | 'purple' | 'orange' | 'red';
+export type ThemeColor = "blue" | "green" | "purple" | "orange" | "red";
 
 export interface AppSettings {
   themeColor: ThemeColor;
@@ -108,7 +127,7 @@ export interface UserSettings {
   themeColor: ThemeColor;
   backgroundImage: string | null;
   weatherCity: string;
-  timeFormat: '12h' | '24h';
+  timeFormat: "12h" | "24h";
 }
 
 // Extended Theme System
@@ -147,9 +166,9 @@ export interface ExtendedTheme {
     warning: string;
     error: string;
   };
-  layout: 'compact' | 'comfortable' | 'spacious';
-  density: 'low' | 'medium' | 'high';
-  borderRadius: 'none' | 'small' | 'medium' | 'large';
+  layout: "compact" | "comfortable" | "spacious";
+  density: "low" | "medium" | "high";
+  borderRadius: "none" | "small" | "medium" | "large";
   shadows: boolean;
   animations: boolean;
   adaptiveLayout?: AdaptiveLayoutConfig;
@@ -160,18 +179,16 @@ export interface ThemePreset {
   name: string;
   description: string;
   theme: ExtendedTheme;
-  category: 'light' | 'dark' | 'colorful' | 'minimal';
+  category: "light" | "dark" | "colorful" | "minimal";
 }
 
 export interface ThemeSettings {
   currentTheme: ExtendedTheme;
   customThemes: ExtendedTheme[];
   autoDetectSystemTheme: boolean;
-  systemThemeOverride: 'light' | 'dark' | null;
+  systemThemeOverride: "light" | "dark" | null;
   themeTransitions: boolean;
 }
-
-
 
 export interface GradientStop {
   id: string;
@@ -181,7 +198,7 @@ export interface GradientStop {
 }
 
 export interface GradientSettings {
-  type: 'linear' | 'radial';
+  type: "linear" | "radial";
   angle: number;
   stops: GradientStop[];
 }
@@ -193,34 +210,42 @@ export interface ColorStop {
 }
 
 export type BlendMode =
-  | 'normal' | 'screen' | 'overlay' | 'multiply' | 'color-dodge'
-  | 'soft-light' | 'difference' | 'lighten' | 'darken' | 'color-burn';
+  | "normal"
+  | "screen"
+  | "overlay"
+  | "multiply"
+  | "color-dodge"
+  | "soft-light"
+  | "difference"
+  | "lighten"
+  | "darken"
+  | "color-burn";
 
 export interface Shape {
   id: string;
-  type: 'circle';     // Geometric primitive
-  x: number;          // X position in % (0-100)
-  y: number;          // Y position in % (0-100)
-  size: number;       // Size relative to width (e.g., 80 = 80% of width)
-  color: string;      // Shape color (Hex/RGBA)
-  opacity: number;    // Transparency (0.0 - 1.0)
-  blur: number;       // Gaussian Blur (px)
+  type: "circle"; // Geometric primitive
+  x: number; // X position in % (0-100)
+  y: number; // Y position in % (0-100)
+  size: number; // Size relative to width (e.g., 80 = 80% of width)
+  color: string; // Shape color (Hex/RGBA)
+  opacity: number; // Transparency (0.0 - 1.0)
+  blur: number; // Gaussian Blur (px)
   blendMode: BlendMode; // Blend mode
 }
 
 export interface WallpaperConfig {
-  width: number;      // Export width (px)
-  height: number;     // Export height (px)
-  baseColor: string;  // Background color (Hex)
-  noise: number;      // Noise intensity (0-100)
+  width: number; // Export width (px)
+  height: number; // Export height (px)
+  baseColor: string; // Background color (Hex)
+  noise: number; // Noise intensity (0-100)
   noiseScale: number; // Noise size (1-20)
-  shapes: Shape[];    // Array of visual layers
+  shapes: Shape[]; // Array of visual layers
 }
 
 export interface Preset {
   id: string;
   name: string;
-  category: 'Aura' | 'Neon' | 'Dark' | 'Soft' | 'Abstract';
+  category: "Aura" | "Neon" | "Dark" | "Soft" | "Abstract";
   thumbnail: string; // CSS Gradient string for UI
   config: Partial<WallpaperConfig>;
 }
@@ -232,7 +257,7 @@ export interface ExportSize {
 }
 
 export interface BackgroundConfig {
-  type: 'solid' | 'gradient' | 'pattern' | 'image' | 'aura';
+  type: "solid" | "gradient" | "pattern" | "image" | "aura";
   value: string; // The CSS value (e.g., color, gradient string, url("data:image/svg+xml,..."))
   customImage?: string | null; // For type 'image'
   auraSettings?: WallpaperConfig; // For type 'aura'
@@ -246,7 +271,7 @@ export interface AppearanceSettings {
   background: BackgroundConfig;
 }
 
-export type Language = 'pt-BR' | 'en-US' | 'es' | 'fr' | 'it' | 'zh' | 'ja';
+export type Language = "pt-BR" | "en-US" | "es" | "fr" | "it" | "zh" | "ja";
 
 export interface NotificationOptions {
   type?: "success" | "error" | "warning" | "info";

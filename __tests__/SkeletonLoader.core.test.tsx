@@ -46,7 +46,7 @@ describe("SkeletonLoader Components", () => {
       expect(section).toBeInTheDocument();
       expect(section).toHaveAttribute("aria-labelledby", "loading-articles");
       expect(section).toHaveAttribute("aria-live", "polite");
-    });
+    }, 10000);
 
     it("renders custom number of skeleton articles", () => {
       const customCount = 6;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { Input } from './ui/Input';
 import { BackgroundConfig, WallpaperConfig } from '../types';
@@ -271,7 +271,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
         {['solid', 'aura', 'image'].map((type) => (
           <button
             key={type}
-            onClick={() => handleTypeChange(type as any)}
+            onClick={() => handleTypeChange(type as BackgroundConfig['type'])}
             className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
               activeTab === type 
                 ? 'bg-[rgb(var(--color-accent))] text-white shadow-md' 

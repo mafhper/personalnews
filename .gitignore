@@ -16,19 +16,19 @@ build/
 dist/
 
 # Agent & AI Configuration
+.agents/
 .gemini/
 .gemini-clipboard/
 GEMINI.md
+AGENTS.md
 
 # Development & Temporary
 _dev/
 tmp/
 temp/
 .bun/
-docs/*
 
 # Logs & Reports
-docs/logs/
 logs/
 *.log
 npm-debug.log*
@@ -36,10 +36,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-performance-reports/
-playwright-report/
+performance-reports/*
 coverage/
 __tests_unused/
+temp-vitest-report.json
 
 # Editor & IDE
 .vscode/
@@ -58,3 +58,8 @@ ehthumbs.db
 .eslintcache
 .cache
 .parcel-cache
+
+# WSL/Windows artifacts (from lighthouse/chrome)
+C:*
+google-chrome-stable_current_amd64.deb
+**/*.timestamp-*.mjs
