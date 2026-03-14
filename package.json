@@ -158,5 +158,8 @@
     "react-virtuoso": "^4.18.1",
     "rimraf": "^6.1.2",
     "zod": "^4.0.10"
+  },
+  "resolutions": {
+    "yauzl": "3.2.1"
   }
 }
