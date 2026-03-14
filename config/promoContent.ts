@@ -364,7 +364,7 @@ const ptBR: PromoContent = {
       },
     ],
     aboutEyebrow: "Sobre mim",
-    aboutTitle: "Eu sou o mafhper.",
+    aboutTitle: "mafhper desenvolve o Personal News.",
     aboutBody:
       "Sou um profissional multidisciplinar com experiência em desenvolvimento web, análise de dados e sistemas embarcados. Meu foco é construir soluções tecnológicas eficientes, bem estruturadas e open-source.",
     aboutSupport:
