@@ -12,9 +12,9 @@ interface GalleryLayoutProps {
 export const GallerySkeleton: React.FC = () => {
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1 p-1">
+      <div className="feed-top-clearance feed-page-frame grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 px-1 pb-1">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(i => (
-          <div key={i} className="aspect-square feed-skeleton-block rounded-sm" />
+          <div key={i} className="aspect-square feed-skeleton-block rounded-xl" />
         ))}
       </div>
     </div>
@@ -26,15 +26,15 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-1 p-1">
+      <div className="feed-top-clearance feed-page-frame grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 px-1 pb-1">
         {articles.map((article, i) => (
           <div
             key={i}
             onClick={() => setReadingArticle(article)}
-            className="group relative aspect-square overflow-hidden cursor-pointer bg-[rgb(var(--color-surface))]"
+            className="group relative aspect-square overflow-hidden cursor-pointer rounded-2xl bg-[rgb(var(--color-surface))] shadow-lg ring-1 ring-white/5"
           >
             {article.imageUrl ? (
-              <div className="w-full h-full">
+              <div className="w-full h-full overflow-hidden rounded-[inherit]">
                 <OptimizedImage
                   src={article.imageUrl}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -62,16 +62,17 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
             />
 
             {/* Post info at bottom-left */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-              <span className="feed-chip text-[10px] font-bold uppercase tracking-widest block mb-1 truncate max-w-full">
-                {article.sourceTitle}
-              </span>
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
+              <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/70 min-w-0">
+                <span className="truncate">{article.sourceTitle}</span>
+                <span className="h-px w-4 flex-shrink-0 bg-white/20" />
+                <span className="flex-shrink-0">
+                  {new Date(article.pubDate).toLocaleDateString()}
+                </span>
+              </div>
               <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 group-hover:text-white transition-colors">
                 {article.title}
               </h3>
-              <span className="text-white/60 text-[10px] mt-1 block">
-                {new Date(article.pubDate).toLocaleDateString()}
-              </span>
             </div>
           </div>
         ))}

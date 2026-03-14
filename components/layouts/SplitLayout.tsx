@@ -16,7 +16,7 @@ const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
 
 export const SplitSkeleton: React.FC = () => {
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 flex flex-col min-h-screen">
+    <div className="feed-page-frame feed-page-frame--wide flex flex-col min-h-screen">
       {[1, 2, 3].map((i) => (
         <div key={i} className={`flex flex-col lg:flex-row h-auto lg:min-h-[420px] lg:h-[50vh] min-h-[400px] ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
           <div className="w-full lg:w-1/2 h-64 lg:h-full feed-skeleton-block" />
@@ -39,14 +39,17 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
   const { t } = useLanguage();
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 flex flex-col min-h-screen">
+    <div className="feed-page-frame feed-page-frame--wide flex flex-col gap-0">
       {articles.map((article, i) => (
-        <article key={i} className={`flex flex-col lg:flex-row h-auto lg:min-h-[420px] lg:h-[50vh] min-h-[400px] group ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
+        <article
+          key={i}
+          className={`feed-surface-strong overflow-hidden border-b border-[rgb(var(--color-border))]/28 flex flex-col items-stretch lg:flex-row min-h-[26rem] lg:min-h-[34rem] xl:min-h-[38rem] group ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
+        >
           <div
-            className="w-full lg:w-1/2 aspect-[4/3] lg:aspect-auto lg:h-full relative overflow-hidden cursor-pointer"
+            className="w-full lg:w-1/2 aspect-[4/3] lg:aspect-auto min-h-[18rem] lg:min-h-[34rem] xl:min-h-[38rem] relative overflow-hidden self-stretch cursor-pointer"
             onClick={() => setReadingArticle(article)}
           >
-            <div className="w-full h-full">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,#13233d_0%,#0d121a_100%)]">
               <OptimizedImage
                 src={article.imageUrl}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -56,12 +59,12 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
                 height={600}
               />
             </div>
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,10,18,0.08)_0%,rgba(6,10,18,0.24)_100%)] group-hover:bg-transparent transition-colors" />
           </div>
-          <div className="w-full lg:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center bg-[rgb(var(--color-surface))] border-b border-[rgb(var(--color-border))]">
-            <div className="max-w-2xl mx-auto md:mx-0">
-              <div className="flex justify-between items-start mb-4 gap-4">
-                <span className="feed-chip font-bold uppercase tracking-widest text-xs truncate max-w-[200px] md:max-w-[300px]">{article.sourceTitle}</span>
+          <div className="w-full lg:w-1/2 p-7 md:p-10 lg:p-14 xl:p-16 flex flex-col justify-center bg-[rgb(var(--theme-surface-elevated))]">
+            <div className="max-w-[38rem] mx-auto md:mx-0">
+              <div className="flex justify-between items-start mb-5 gap-4">
+                <span className="feed-chip font-bold uppercase tracking-widest text-xs truncate max-w-[220px] md:max-w-[320px]">{article.sourceTitle}</span>
                 <FavoriteButton
                   article={article}
                   size="medium"
@@ -70,20 +73,23 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
                 />
               </div>
               <h2
-                className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6 text-[rgb(var(--color-text))] hover:text-white transition-colors cursor-pointer leading-tight"
+                className="text-[clamp(2rem,2vw+1.2rem,4.25rem)] font-bold mb-5 text-[rgb(var(--theme-text-on-surface))] transition-colors cursor-pointer leading-[1.02] tracking-[-0.04em] max-w-[14ch]"
                 onClick={() => setReadingArticle(article)}
               >
                 {article.title}
               </h2>
-              <p className="text-[rgb(var(--color-textSecondary))] leading-relaxed mb-6 line-clamp-4 max-w-[70ch]">{article.description}</p>
-              <div className="flex items-center text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-text))] opacity-60">
+              <p className="text-[rgb(var(--theme-text-secondary-on-surface))] text-[clamp(1rem,0.3vw+0.96rem,1.2rem)] leading-relaxed mb-7 line-clamp-4 max-w-[64ch]">
+                {article.description}
+              </p>
+              <div className="flex items-center text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-on-surface))]">
                 {new Date(article.pubDate).toDateString()}
               </div>
               <button
                 onClick={() => setReadingArticle(article)}
-                className="mt-6 text-xs font-bold uppercase tracking-widest text-[rgb(var(--color-text))] hover:text-white self-start"
+                className="mt-7 inline-flex items-center gap-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--color-primary))] hover:opacity-80 self-start"
               >
-                {t('action.preview')} &rarr;
+                {t('action.preview')}
+                <span aria-hidden="true">-&gt;</span>
               </button>
             </div>
           </div>

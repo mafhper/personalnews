@@ -28,7 +28,6 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Layout Global: bento;
   Opções:
-- `grid`: Grade de revista clássica
 - `list`: Lista limpa estilo portal
 - `masonry`: Cards com alturas variáveis
 - `bento`: Grade moderna estilo Apple/Bento

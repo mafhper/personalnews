@@ -300,6 +300,142 @@ const isValidRGBString = (rgb: string): boolean => {
 };
 
 // WCAG Contrast Ratio Utilities
+
+const rgbStringToObject = (rgb: string) => {
+  const [r, g, b] = rgb.split(/\s+/).map(Number);
+  return { r, g, b };
+};
+
+const rgbObjectToString = ({ r, g, b }: { r: number; g: number; b: number }): string =>
+  `${Math.round(Math.max(0, Math.min(255, r)))} ${Math.round(Math.max(0, Math.min(255, g)))} ${Math.round(Math.max(0, Math.min(255, b)))}`;
+
+const composeRgbColors = (
+  foreground: string,
+  background: string,
+  alpha: number,
+): string => {
+  const fg = rgbStringToObject(foreground);
+  const bg = rgbStringToObject(background);
+  const normalizedAlpha = Math.max(0, Math.min(1, alpha));
+
+  return rgbObjectToString({
+    r: fg.r * normalizedAlpha + bg.r * (1 - normalizedAlpha),
+    g: fg.g * normalizedAlpha + bg.g * (1 - normalizedAlpha),
+    b: fg.b * normalizedAlpha + bg.b * (1 - normalizedAlpha),
+  });
+};
+
+const shiftColor = (rgb: string, factor: number, toward: "white" | "black") => {
+  const { r, g, b } = rgbStringToObject(rgb);
+  if (toward === "white") {
+    return rgbObjectToString({
+      r: r + (255 - r) * factor,
+      g: g + (255 - g) * factor,
+      b: b + (255 - b) * factor,
+    });
+  }
+
+  return rgbObjectToString({
+    r: r * (1 - factor),
+    g: g * (1 - factor),
+    b: b * (1 - factor),
+  });
+};
+
+const getBestContrastText = (
+  background: string,
+  preferredText?: string,
+  targetRatio: number = 4.5,
+): string => {
+  if (
+    preferredText &&
+    calculateContrastRatio(preferredText, background) >= targetRatio
+  ) {
+    return preferredText;
+  }
+
+  const white = "255 255 255";
+  const black = "15 23 42";
+
+  if (calculateContrastRatio(white, background) >= targetRatio) {
+    return white;
+  }
+
+  if (calculateContrastRatio(black, background) >= targetRatio) {
+    return black;
+  }
+
+  return calculateContrastRatio(white, background) >=
+    calculateContrastRatio(black, background)
+    ? white
+    : black;
+};
+
+export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
+  const isLightBackground = calculateLuminance(theme.colors.background) > 0.5;
+  const surfaceBackground = composeRgbColors(
+    theme.colors.surface,
+    theme.colors.background,
+    isLightBackground ? 0.96 : 0.88,
+  );
+  const elevatedSurface = composeRgbColors(
+    isLightBackground
+      ? shiftColor(theme.colors.surface, 0.14, "white")
+      : shiftColor(theme.colors.surface, 0.16, "black"),
+    theme.colors.background,
+    isLightBackground ? 0.98 : 0.92,
+  );
+  const headerBackground = composeRgbColors(
+    theme.colors.surface,
+    theme.colors.background,
+    isLightBackground ? 0.94 : 0.9,
+  );
+  const badgeBackground = composeRgbColors(
+    theme.colors.accent,
+    surfaceBackground,
+    isLightBackground ? 0.22 : 0.28,
+  );
+  const controlBackground = composeRgbColors(
+    theme.colors.surface,
+    theme.colors.background,
+    isLightBackground ? 0.92 : 0.82,
+  );
+  const paginationBackground = composeRgbColors(
+    elevatedSurface,
+    theme.colors.background,
+    isLightBackground ? 0.96 : 0.88,
+  );
+
+  return {
+    surfaceBackground,
+    elevatedSurface,
+    headerBackground,
+    badgeBackground,
+    controlBackground,
+    paginationBackground,
+    textOnBackground: getBestContrastText(
+      theme.colors.background,
+      theme.colors.text,
+    ),
+    textSecondaryOnBackground: getBestContrastText(
+      theme.colors.background,
+      theme.colors.textSecondary,
+    ),
+    textOnSurface: getBestContrastText(surfaceBackground, theme.colors.text),
+    textSecondaryOnSurface: getBestContrastText(
+      surfaceBackground,
+      theme.colors.textSecondary,
+    ),
+    headerText: getBestContrastText(headerBackground, theme.colors.text),
+    badgeText: getBestContrastText(badgeBackground, theme.colors.text),
+    controlText: getBestContrastText(controlBackground, theme.colors.text),
+    paginationText: getBestContrastText(
+      paginationBackground,
+      theme.colors.text,
+    ),
+  };
+};
+
 export const calculateLuminance = (rgb: string): number => {
   const [r, g, b] = rgb.split(/\s+/).map(Number);
 
@@ -609,13 +745,45 @@ export const createThemeFromAccentColor = (
 };
 
 // Apply theme to CSS custom properties
+
 export const applyThemeToDOM = (theme: ExtendedTheme): void => {
   const root = document.documentElement;
+  const safeTheme = autoFixThemeAccessibility(theme);
+  const resolved = resolveThemeContrastTokens(safeTheme);
 
   // Apply color variables
-  Object.entries(theme.colors).forEach(([key, value]) => {
+  Object.entries(safeTheme.colors).forEach(([key, value]) => {
     root.style.setProperty(`--color-${key}`, value);
   });
+
+  // Set dark mode class based on background luminance
+  const luminance = calculateLuminance(safeTheme.colors.background);
+  if (luminance < 0.5) {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
+
+  root.style.setProperty("--theme-surface-readable", resolved.surfaceBackground);
+  root.style.setProperty("--theme-surface-elevated", resolved.elevatedSurface);
+  root.style.setProperty("--theme-header-bg", resolved.headerBackground);
+  root.style.setProperty("--theme-header-text", resolved.headerText);
+  root.style.setProperty("--theme-chip-bg", resolved.badgeBackground);
+  root.style.setProperty("--theme-chip-text", resolved.badgeText);
+  root.style.setProperty("--theme-control-bg", resolved.controlBackground);
+  root.style.setProperty("--theme-control-text", resolved.controlText);
+  root.style.setProperty("--theme-pagination-bg", resolved.paginationBackground);
+  root.style.setProperty("--theme-pagination-text", resolved.paginationText);
+  root.style.setProperty("--theme-text-readable", resolved.textOnBackground);
+  root.style.setProperty(
+    "--theme-text-secondary-readable",
+    resolved.textSecondaryOnBackground,
+  );
+  root.style.setProperty("--theme-text-on-surface", resolved.textOnSurface);
+  root.style.setProperty(
+    "--theme-text-secondary-on-surface",
+    resolved.textSecondaryOnSurface,
+  );
 
   // Apply layout variables
   const layoutSpacing = {
@@ -624,7 +792,7 @@ export const applyThemeToDOM = (theme: ExtendedTheme): void => {
     spacious: { padding: "1.5rem", gap: "1.5rem" },
   };
 
-  const spacing = layoutSpacing[theme.layout];
+  const spacing = layoutSpacing[safeTheme.layout];
   root.style.setProperty("--layout-padding", spacing.padding);
   root.style.setProperty("--layout-gap", spacing.gap);
 
@@ -635,7 +803,7 @@ export const applyThemeToDOM = (theme: ExtendedTheme): void => {
     high: { fontSize: "1.125rem", lineHeight: "1.75rem" },
   };
 
-  const density = densityValues[theme.density];
+  const density = densityValues[safeTheme.density];
   root.style.setProperty("--density-font-size", density.fontSize);
   root.style.setProperty("--density-line-height", density.lineHeight);
 
@@ -649,19 +817,23 @@ export const applyThemeToDOM = (theme: ExtendedTheme): void => {
 
   root.style.setProperty(
     "--border-radius",
-    borderRadiusValues[theme.borderRadius],
+    borderRadiusValues[safeTheme.borderRadius],
   );
 
   // Apply shadow and animation preferences
-  root.style.setProperty("--shadows-enabled", theme.shadows ? "1" : "0");
-  root.style.setProperty("--animations-enabled", theme.animations ? "1" : "0");
+  root.style.setProperty("--shadows-enabled", safeTheme.shadows ? "1" : "0");
+  root.style.setProperty(
+    "--animations-enabled",
+    safeTheme.animations ? "1" : "0",
+  );
 
   // Set transition duration based on animation preference
   root.style.setProperty(
     "--transition-duration",
-    theme.animations ? "0.2s" : "0s",
+    safeTheme.animations ? "0.2s" : "0s",
   );
 };
+
 
 // Get system theme preference
 export const getSystemThemePreference = (): "light" | "dark" => {

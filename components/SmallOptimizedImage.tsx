@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { buildImagePlaceholderDataUri } from '../utils/imagePlaceholders';
 
 interface SmallOptimizedImageProps {
   src?: string;
@@ -38,36 +39,32 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
 
   // Generate fallback URLs
   const generateFallbackUrl = useCallback((level: number, originalSrc?: string): string => {
-    const color1 = '374151'; // Gray-700
-    const color2 = '9CA3AF'; // Gray-400
-
     switch (level) {
       case 0:
         // Original image
         return originalSrc || '';
       case 1:
-        // SVG placeholder with text
-        return `data:image/svg+xml,${encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="${actualWidth}" height="${actualHeight}">
-            <rect width="100%" height="100%" fill="#${color1}"/>
-            <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="14" fill="#${color2}" text-anchor="middle" dominant-baseline="middle">
-              ${fallbackText.substring(0, 3)}
-            </text>
-          </svg>
-        `)}`;
+        return buildImagePlaceholderDataUri({
+          width: actualWidth,
+          height: actualHeight,
+          label: fallbackText || 'Personal News',
+          eyebrow: 'Visual local',
+          tone: 'neutral',
+        });
       case 2:
       default:
-        // Final fallback - simple colored SVG
-        return `data:image/svg+xml,${encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="${actualWidth}" height="${actualHeight}">
-            <rect width="100%" height="100%" fill="#6B7280"/>
-            <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="12" fill="#F3F4F6" text-anchor="middle" dominant-baseline="middle">
-              IMG
-            </text>
-          </svg>
-        `)}`;
+        return buildImagePlaceholderDataUri({
+          width: actualWidth,
+          height: actualHeight,
+          label: fallbackText || 'Personal News',
+          eyebrow: 'Offline',
+          headline: 'Imagem indisponivel',
+          tone: 'neutral',
+      });
     }
-  }, [fallbackText, actualWidth, actualHeight]);
+  }, [actualHeight, actualWidth, fallbackText]);
+  const localPlaceholder = generateFallbackUrl(1, undefined);
+  const offlinePlaceholder = generateFallbackUrl(2, undefined);
 
   const handleImageLoad = useCallback(() => {
     setImageState('loaded');
@@ -107,10 +104,11 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
       {/* Loading placeholder - prevents layout shift */}
       {imageState === 'loading' && (
         <div
-          className="absolute inset-0 bg-gray-700 flex items-center justify-center"
+          className="absolute inset-0 flex items-center justify-center bg-center bg-cover"
+          style={{ backgroundImage: `url("${localPlaceholder}")` }}
         >
-          <div className="text-gray-400 text-xs font-medium">
-            {fallbackLevel === 0 ? '...' : fallbackText.substring(0, 3)}
+          <div className="rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-center text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white/58 backdrop-blur-sm">
+            {fallbackLevel === 0 ? 'Carregando visual' : 'Visual local'}
           </div>
         </div>
       )}
@@ -130,10 +128,11 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
       {/* Error state */}
       {imageState === 'error' && (
         <div
-          className="absolute inset-0 bg-gray-800 flex items-center justify-center"
+          className="absolute inset-0 flex items-center justify-center bg-center bg-cover"
+          style={{ backgroundImage: `url("${offlinePlaceholder}")` }}
         >
-          <div className="text-gray-500 text-xs font-medium">
-            ⚠️
+          <div className="rounded-full border border-white/10 bg-black/42 px-3 py-1.5 text-center text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white/52 backdrop-blur-sm">
+            Offline
           </div>
         </div>
       )}

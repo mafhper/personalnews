@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useProxyConfig, useProxyStats } from '../hooks/useProxyConfig';
 import { PROXY_CONFIGS, getRecommendedProxyOrder } from '../config/proxyConfig';
 import styles from '../styles/ProxySettings.module.css';
@@ -167,7 +168,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                 <li key={proxyId}>
                   <span className={styles.proxyName}>{config.name}</span>
                   {apiKeys[proxyId as keyof typeof apiKeys] && (
-                    <span className={styles.badge}>API Key ✓</span>
+                    <span className={styles.badge}>API Key active</span>
                   )}
                 </li>
               );
@@ -209,7 +210,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                           : styles.badgeNeutral
                       }`}
                     >
-                      {status.hasKey ? '✓ Configurada' : 'Não configurada'}
+                      {status.hasKey ? 'Configurada' : 'Não configurada'}
                     </div>
                   </div>
 
@@ -307,11 +308,15 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                         Saúde: {proxy.health.score}%
                       </span>
                       {proxy.apiKeyStatus?.isValid && (
-                        <span className={styles.badge}>API Key ✓</span>
+                          <span className={styles.badge}>API Key active</span>
                       )}
                     </div>
                     <div className={styles.expandIcon}>
-                      {isExpanded ? '▼' : '▶'}
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
                     </div>
                   </div>
 
@@ -369,9 +374,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                               : styles.testFailure
                           }`}
                         >
-                          {testResults[proxy.id]
-                            ? '✓ Proxy está funcionando'
-                            : '✗ Proxy não respondeu'}
+                            {testResults[proxy.id]
+                              ? 'Proxy está funcionando'
+                              : 'Proxy não respondeu'}
                         </div>
                       )}
 

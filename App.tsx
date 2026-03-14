@@ -32,6 +32,68 @@ declare global {
 }
 
 const HOME_STAY_PREFETCH_DELAY_MS = 30000;
+const VALID_FIRST_PAINT_LAYOUTS = new Set([
+  "default",
+  "magazine",
+  "list",
+  "masonry",
+  "minimal",
+  "immersive",
+  "brutalist",
+  "timeline",
+  "bento",
+  "newspaper",
+  "focus",
+  "gallery",
+  "compact",
+  "split",
+  "cyberpunk",
+  "terminal",
+  "pocketfeeds",
+  "modern",
+]);
+
+const getStoredLayoutForFirstPaint = () => {
+  const normalizeLegacyLayout = (layout: string | null) =>
+    layout === "grid" ? "modern" : layout;
+
+  if (typeof window === "undefined") return "modern";
+
+  try {
+    const contentConfig = JSON.parse(
+      localStorage.getItem("appearance-content") ?? "null",
+    );
+    const layoutMode =
+      typeof contentConfig?.layoutMode === "string"
+        ? contentConfig.layoutMode
+        : null;
+
+    const normalizedContentLayout = normalizeLegacyLayout(layoutMode);
+
+    if (
+      normalizedContentLayout &&
+      VALID_FIRST_PAINT_LAYOUTS.has(normalizedContentLayout)
+    ) {
+      return normalizedContentLayout;
+    }
+
+    const activeLayout = JSON.parse(
+      localStorage.getItem("appearance-active-layout") ?? "null",
+    );
+
+    const normalizedActiveLayout =
+      typeof activeLayout === "string"
+        ? normalizeLegacyLayout(activeLayout)
+        : null;
+
+    return normalizedActiveLayout &&
+      VALID_FIRST_PAINT_LAYOUTS.has(normalizedActiveLayout)
+      ? normalizedActiveLayout
+      : "modern";
+  } catch {
+    return "modern";
+  }
+};
 
 const getViewFromHash = () => {
   if (typeof window === "undefined") return "landing";
@@ -67,14 +129,7 @@ const FeedBootstrap: React.FC<{ active: boolean }> = ({ active }) => {
 
 const FeedView: React.FC = () => {
   // 0. SYNC LAYOUT READ FOR SKELETON MATCHING
-  const initialLayout = React.useMemo(() => {
-    try {
-      const stored = localStorage.getItem("appearance-active-layout");
-      return stored ? JSON.parse(stored) : "modern";
-    } catch {
-      return "modern";
-    }
-  }, []);
+  const initialLayout = React.useMemo(() => getStoredLayoutForFirstPaint(), []);
 
   // 1. FIRST PAINT MODE STATE
   const [isFirstPaint, setIsFirstPaint] = useState(true);

@@ -158,11 +158,11 @@ const HeroArticle: React.FC<{
         />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/98 via-black/74 to-black/16 pointer-events-none" />
 
       {/* Top Controls: Site name and FavoriteButton aligned */}
       <div className="absolute top-0 left-0 right-0 p-6 sm:p-8 md:p-10 flex justify-between items-start z-20">
-        <div className="feed-chip backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+        <div className="rounded-full border border-white/10 bg-black/50 px-4 py-2 backdrop-blur-md">
           <span className="text-xs font-bold uppercase tracking-widest text-white/90">
             {article.sourceTitle}
           </span>
@@ -182,14 +182,20 @@ const HeroArticle: React.FC<{
             {article.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
           </time>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight">
+          <h1
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight"
+            style={{ textShadow: '0 12px 32px rgba(0, 0, 0, 0.55)' }}
+          >
             <a href={article.link} target="_blank" rel="noopener noreferrer" className="hover:text-white/90 transition-colors">
               {article.title}
             </a>
           </h1>
 
           {article.description && (
-            <p className="text-base sm:text-lg md:text-xl text-gray-300/90 line-clamp-3 leading-relaxed max-w-3xl">
+            <p
+              className="text-base sm:text-lg md:text-xl text-gray-300/95 line-clamp-3 leading-relaxed max-w-3xl"
+              style={{ textShadow: '0 8px 24px rgba(0, 0, 0, 0.45)' }}
+            >
               {article.description}
             </p>
           )}
@@ -236,7 +242,7 @@ const ArticleCard: React.FC<{
         />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/96 via-black/62 to-transparent pointer-events-none" />
 
       <FavoriteButton
         article={article}
@@ -250,7 +256,7 @@ const ArticleCard: React.FC<{
 
         {/* Top Part */}
         <div className="flex justify-start items-start w-full">
-          <div className="bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 min-w-0 max-w-[150px] sm:max-w-[200px]">
+          <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 min-w-0 max-w-[170px] sm:max-w-[220px]">
             <span className="text-[10px] font-bold uppercase tracking-widest text-white/80 truncate block">
               {article.sourceTitle}
             </span>
@@ -264,7 +270,10 @@ const ArticleCard: React.FC<{
           </time>
 
           <div className="space-y-2">
-            <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+            <h2
+              className="text-lg sm:text-xl font-bold text-white leading-tight"
+              style={{ textShadow: '0 10px 28px rgba(0, 0, 0, 0.48)' }}
+            >
               <a
                 href={article.link}
                 target="_blank"
@@ -276,7 +285,10 @@ const ArticleCard: React.FC<{
             </h2>
 
             {article.description && (
-              <p className="text-xs sm:text-sm text-gray-300/90 line-clamp-2 leading-relaxed">
+              <p
+                className="text-xs sm:text-sm text-gray-300/95 line-clamp-2 leading-relaxed"
+                style={{ textShadow: '0 8px 20px rgba(0, 0, 0, 0.42)' }}
+              >
                 {article.description}
               </p>
             )}

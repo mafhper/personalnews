@@ -12,11 +12,12 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { Article, FeedSource } from '../types';
+import type { Article, FeedLoadRequest, FeedSource } from '../types';
 import { parseRssUrl } from '../services/rssParser';
 import { getCachedArticles, isCacheFresh } from '../services/smartCache';
 import { useLogger } from '../services/logger';
 import { categorizeError } from '../components/ErrorRecovery';
+import { areUrlsEqual } from '../utils/urlUtils';
 // import { schedulePreload } from '../services/feedPreloader';
 
 export interface FeedLoadingState {
@@ -46,6 +47,32 @@ interface FeedResult {
   success: boolean;
   error?: string;
 }
+
+const resolveScopeMode = (
+  request?: FeedLoadRequest,
+): NonNullable<FeedLoadRequest["mode"]> => {
+  if (request?.mode) return request.mode;
+  if (request?.feedUrl) return "single-feed";
+  if (request?.categoryId && request.categoryId !== "all") return "category";
+  return "all";
+};
+
+export const resolveFeedLoadScope = (
+  feeds: FeedSource[],
+  request?: FeedLoadRequest,
+): FeedSource[] => {
+  const mode = resolveScopeMode(request);
+
+  if (mode === "single-feed" && request?.feedUrl) {
+    return feeds.filter((feed) => areUrlsEqual(feed.url, request.feedUrl!));
+  }
+
+  if (mode === "category" && request?.categoryId) {
+    return feeds.filter((feed) => feed.categoryId === request.categoryId);
+  }
+
+  return feeds;
+};
 
 const FEED_TIMEOUT_MS = 6000; // 6 seconds per feed (reduzido para mais velocidade)
 const BATCH_SIZE = 8; // Aumentado para 8 feeds por batch
@@ -106,11 +133,11 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
   /**
    * Get cached articles for immediate display using smart cache
    */
-  const getCachedArticlesFromSmartCache = useCallback((): Article[] => {
+  const getCachedArticlesFromSmartCache = useCallback((targetFeeds: FeedSource[]): Article[] => {
     try {
       const allCachedArticles: Article[] = [];
 
-      feedsRef.current.forEach(feed => {
+      targetFeeds.forEach(feed => {
         const cachedArticles = getCachedArticles(feed.url);
         if (cachedArticles && cachedArticles.length > 0) {
           // Ensure feedUrl is present for filtering later
@@ -220,14 +247,20 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
   }, [logger]);
 
   /**
-   * Load feeds progressively with immediate cache display
-   * @param forceRefresh - If true, bypass cache checks
-   * @param priorityCategoryId - If provided, feeds from this category will be loaded first
+   * Load feeds progressively with scoped loading.
+   * Single-feed navigation loads only the chosen feed.
    */
-  const loadFeedsProgressively = useCallback(async (forceRefresh = false, priorityCategoryId?: string) => {
+  const loadFeedsProgressively = useCallback(async (request: FeedLoadRequest = {}) => {
     const currentFeeds = feedsRef.current;
-    if (currentFeeds.length === 0) {
+    const scopedFeeds = resolveFeedLoadScope(currentFeeds, request);
+    const mode = resolveScopeMode(request);
+    const priorityCategoryId =
+      mode === "category" ? request.categoryId : undefined;
+    const forceRefresh = request.forceRefresh ?? false;
+
+    if (scopedFeeds.length === 0) {
       setArticles([]);
+      setFeedResults(new Map());
       setLoadingState({
         status: 'success',
         progress: 100,
@@ -235,7 +268,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         totalFeeds: 0,
         errors: [],
         isBackgroundRefresh: false,
-        currentAction: 'No feeds configured',
+        currentAction: currentFeeds.length === 0 ? 'No feeds configured' : 'No feeds matched the selected scope',
         isResolved: true,
       });
       return;
@@ -250,26 +283,34 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     // Check cache first for immediate display
     let hasValidCache = false;
     if (!forceRefresh) {
-      const cachedArticles = getCachedArticlesFromSmartCache();
+      const cachedArticles = getCachedArticlesFromSmartCache(scopedFeeds);
       if (cachedArticles.length > 0) {
         // Check if at least some feeds have valid cache
-        hasValidCache = currentFeeds.some(feed => isCacheFresh(feed.url));
+        hasValidCache = scopedFeeds.some(feed => isCacheFresh(feed.url));
 
         if (hasValidCache) {
           setArticles(cachedArticles);
+          setFeedResults(new Map());
           setLoadingState({
             status: 'loading',
             progress: 0,
             loadedFeeds: 0,
-            totalFeeds: currentFeeds.length,
+            totalFeeds: scopedFeeds.length,
             errors: [],
             isBackgroundRefresh: true,
-            currentAction: 'Updating feeds in background...',
+            currentAction:
+              mode === "single-feed"
+                ? 'Updating selected feed...'
+                : 'Updating feeds in background...',
             isResolved: true,
           });
 
           logger.info(`Displaying ${cachedArticles.length} cached articles while refreshing`, {
-            additionalData: { feedsCount: currentFeeds.length }
+            additionalData: {
+              feedsCount: scopedFeeds.length,
+              mode,
+              feedUrl: request.feedUrl,
+            }
           });
         }
       }
@@ -281,14 +322,18 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         status: 'loading',
         progress: 0,
         loadedFeeds: 0,
-        totalFeeds: currentFeeds.length,
+        totalFeeds: scopedFeeds.length,
         errors: [],
         isBackgroundRefresh: false,
-        currentAction: 'Initializing feed engine...',
+        currentAction:
+          mode === "single-feed"
+            ? 'Loading selected feed...'
+            : 'Initializing feed engine...',
         isResolved: false,
       });
     }
 
+    setFeedResults(new Map());
     const newFeedResults = new Map<string, FeedResult>();
     const errors: FeedError[] = [];
     let loadedCount = 0;
@@ -350,8 +395,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       return history.failures * 10 + recencyPenalty;
     };
 
-    const priorityFeeds = currentFeeds.filter(f => isPriority(f));
-    const otherFeeds = currentFeeds.filter(f => !isPriority(f));
+    const priorityFeeds = scopedFeeds.filter(f => isPriority(f));
+    const otherFeeds = scopedFeeds.filter(f => !isPriority(f));
 
     const sortByHealth = (a: FeedSource, b: FeedSource) => getHealthScore(a) - getHealthScore(b);
 
@@ -374,6 +419,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     }
 
     const hasPriorityPhase =
+      mode !== "single-feed" &&
       prioritySorted.length > 0 && priorityCategoryId && priorityCategoryId !== 'all';
 
     const feedPhases: { name: 'priority' | 'secondary' | 'default'; feeds: FeedSource[] }[] = hasPriorityPhase
@@ -385,8 +431,12 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
     const totalBatches = feedPhases.reduce((sum, phase) => sum + Math.ceil(phase.feeds.length / BATCH_SIZE), 0);
 
-    logger.info(`Loading ${currentFeeds.length} feeds in ${totalBatches} batches of ${BATCH_SIZE}`, {
-      additionalData: { totalFeeds: currentFeeds.length, batchCount: totalBatches }
+    logger.info(`Loading ${scopedFeeds.length} feeds in ${totalBatches} batches of ${BATCH_SIZE}`, {
+      additionalData: {
+        totalFeeds: scopedFeeds.length,
+        batchCount: totalBatches,
+        mode,
+      }
     });
 
     const allResults: Promise<FeedResult>[] = [];
@@ -410,7 +460,9 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         // Update status for user
         setLoadingState(prev => ({
           ...prev,
-          currentAction: phase.name === 'priority'
+          currentAction: mode === "single-feed"
+            ? `Loading ${batch[0]?.customTitle || batch[0]?.url || 'feed'}...`
+            : phase.name === 'priority'
             ? `Carregando feeds da categoria atual (${batchIndex + 1}/${phaseBatches.length})...`
             : `Carregando lote ${batchCounter} de ${totalBatches}...`
         }));
@@ -425,7 +477,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
             // Update progress immediately when each feed completes
             loadedCount++;
-            const progress = (loadedCount / currentFeeds.length) * 100;
+            const progress = (loadedCount / scopedFeeds.length) * 100;
 
             // Check if all priority feeds have been loaded
             const priorityComplete = priorityFeedCount === 0
@@ -438,8 +490,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
               progress,
               priorityFeedsLoaded: priorityComplete,
               // Show what we just finished or generic progress
-              currentAction: priorityComplete && loadedCount < currentFeeds.length
-                ? `Carregando feeds restantes... (${currentFeeds.length - loadedCount} faltam)`
+              currentAction: mode === "single-feed"
+                ? `Processed ${feed.customTitle || new URL(feed.url).hostname}`
+                : priorityComplete && loadedCount < scopedFeeds.length
+                ? `Carregando feeds restantes... (${scopedFeeds.length - loadedCount} faltam)`
                 : `Processado ${feed.customTitle || new URL(feed.url).hostname}`
             }));
 
@@ -462,7 +516,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             return result;
           } catch (error) {
             loadedCount++;
-            const progress = (loadedCount / currentFeeds.length) * 100;
+            const progress = (loadedCount / scopedFeeds.length) * 100;
 
             setLoadingState(prev => ({
               ...prev,
@@ -496,7 +550,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
         // Update articles AFTER the batch completes to reduce re-renders and layout shifts
         setFeedResults(prev => {
-          const updated = new Map(prev);
+          const updated = batchCounter === 1 ? new Map<string, FeedResult>() : new Map(prev);
           // Merge new results from this batch into the map
           newFeedResults.forEach((result, url) => {
             updated.set(url, result);
@@ -536,11 +590,12 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       setLoadingState({
         status: 'success',
         progress: 100,
-        loadedFeeds: currentFeeds.length,
-        totalFeeds: currentFeeds.length,
+        loadedFeeds: scopedFeeds.length,
+        totalFeeds: scopedFeeds.length,
         errors,
         isBackgroundRefresh: false,
-        currentAction: 'All feeds loaded',
+        currentAction:
+          mode === "single-feed" ? 'Selected feed loaded' : 'All feeds loaded',
         priorityFeedsLoaded: true,
         isResolved: true,
       });
@@ -582,12 +637,13 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
       logger.info(`Feed loading completed`, {
         additionalData: {
-          totalFeeds: currentFeeds.length,
+          totalFeeds: scopedFeeds.length,
           successfulFeeds,
-          failedFeeds: currentFeeds.length - successfulFeeds,
+          failedFeeds: scopedFeeds.length - successfulFeeds,
           errorsCount: errors.length,
           forceRefresh,
           hadValidCache: hasValidCache,
+          mode,
         }
       });
 
@@ -597,8 +653,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       setLoadingState({
         status: 'error',
         progress: 100,
-        loadedFeeds: currentFeeds.length,
-        totalFeeds: currentFeeds.length,
+        loadedFeeds: scopedFeeds.length,
+        totalFeeds: scopedFeeds.length,
         errors,
         isBackgroundRefresh: false,
         currentAction: 'Error during loading process',

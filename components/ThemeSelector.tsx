@@ -27,6 +27,8 @@ const hexToRgb = (hex: string): string => {
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ setThemeColor }) => {
     const [customColor, setCustomColor] = useState('#3b82f6');
     const [activePreset, setActivePreset] = useState<string | null>(null);
+    const labelClass =
+        'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]';
 
     const handlePresetClick = (preset: typeof COLOR_PRESETS[0]) => {
         setActivePreset(preset.name);
@@ -50,7 +52,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ setThemeColor }) =
                         onClick={() => handlePresetClick(preset)}
                         className={`group relative w-10 h-10 rounded-full transition-all duration-200 ${
                             activePreset === preset.name 
-                                ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900 scale-110' 
+                                ? 'ring-2 ring-[rgb(var(--color-text))] ring-offset-2 ring-offset-[rgb(var(--theme-surface-readable,var(--color-surface)))] scale-110' 
                                 : 'hover:scale-110'
                         }`}
                         style={{ backgroundColor: preset.hex }}
@@ -74,13 +76,13 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ setThemeColor }) =
                         title="Custom color"
                     />
                     <div 
-                        className={`w-10 h-10 rounded-full border-2 border-dashed border-gray-500 flex items-center justify-center transition-all hover:border-white ${
-                            activePreset === null ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900' : ''
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-[rgb(var(--color-border))]/55 transition-all hover:border-[rgb(var(--color-text))] ${
+                            activePreset === null ? 'ring-2 ring-[rgb(var(--color-text))] ring-offset-2 ring-offset-[rgb(var(--theme-surface-readable,var(--color-surface)))]' : ''
                         }`}
                         style={{ backgroundColor: activePreset === null ? customColor : 'transparent' }}
                     >
                         {activePreset !== null && (
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className={`h-4 w-4 ${labelClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                         )}
@@ -89,7 +91,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ setThemeColor }) =
             </div>
             
             {/* Labels */}
-            <div className="flex items-center gap-3 text-[10px] text-gray-500 uppercase tracking-wider">
+            <div className={`flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.12em] ${labelClass}`}>
                 {COLOR_PRESETS.map(preset => (
                     <span key={preset.name} className="w-10 text-center truncate">{preset.name}</span>
                 ))}

@@ -155,42 +155,41 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
               authorLabel || article.sourceTitle
             }`}
           >
-            {/* Source badge */}
+            {/* Source line */}
             {contentConfig.showTags && (
-              <div className="mb-2">
-                <span className="feed-chip truncate max-w-full">
+              <div className="mb-2 flex items-center gap-2 min-w-0">
+                <span className="feed-meta text-[10px] font-bold uppercase tracking-[0.22em] truncate max-w-full">
                   {article.sourceTitle}
                 </span>
+                <span className="h-px w-5 flex-shrink-0 bg-[rgb(var(--color-border))]/35" />
               </div>
             )}
 
             {/* Title with better text wrapping */}
-            <h4 className="feed-title text-base lg:text-lg leading-snug group-hover:text-white mb-2 line-clamp-3 transition-colors">
+            <h4 className="feed-title feed-title-hoverable text-base lg:text-lg leading-snug mb-2 line-clamp-3">
               {article.title}
             </h4>
 
             {article.description && (
-              <p className="feed-desc text-sm mt-1 mb-3 line-clamp-2 leading-relaxed font-medium transition-colors group-hover:text-white/90">
+              <p className="feed-desc feed-desc-hoverable text-sm mt-1 mb-3 line-clamp-2 leading-relaxed font-medium">
                 {article.description}
               </p>
             )}
 
             {/* Article metadata */}
-            <div className={`space-y-2 ${isHorizontal ? '' : 'mt-auto'}`}>
-              <div className="flex items-center justify-between text-xs transition-colors feed-meta">
-                {contentConfig.showAuthor && authorLabel && (
-                  <span
-                    className="truncate max-w-[150px] bg-black/30 px-2 py-0.5 rounded-md"
-                    aria-label={`Author: ${authorLabel}`}
-                    title={authorLabel}
-                  >
-                    Por {authorLabel}
-                  </span>
-                )}
-              </div>
+            <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${isHorizontal ? '' : 'mt-auto'}`}>
+              {contentConfig.showAuthor && authorLabel && (
+                <span
+                  className="feed-meta text-[11px] truncate max-w-[220px]"
+                  aria-label={`Author: ${authorLabel}`}
+                  title={authorLabel}
+                >
+                  Por {authorLabel}
+                </span>
+              )}
               {(contentConfig.showDate || contentConfig.showTime) && (
                 <time
-                  className="feed-meta text-[10px] block group-hover:text-white transition-colors bg-white/5 self-start px-2 py-0.5 rounded italic"
+                  className="feed-meta feed-meta-hoverable text-[10px] uppercase tracking-[0.18em] block self-start"
                   dateTime={article.pubDate.toISOString()}
                   aria-label={`Published ${timeSince(article.pubDate)}`}
                 >

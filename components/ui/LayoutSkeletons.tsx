@@ -83,7 +83,7 @@ export const ImmersiveSkeleton = () => (
 
 // Terminal Layout Skeleton
 export const TerminalSkeleton = () => (
-  <div className="min-h-screen pt-3 pb-12 px-3 sm:px-4 md:px-6 font-mono animate-pulse">
+  <div className="feed-top-clearance min-h-screen pb-12 px-3 sm:px-4 md:px-6 font-mono animate-pulse">
     <div className="w-full max-w-[80rem] lg:mx-auto border border-white/10 rounded-lg bg-black/95 min-h-[70vh] flex flex-col">
       {/* Header */}
       <div className="bg-white/5 border-b border-white/5 p-2 flex items-center gap-2">

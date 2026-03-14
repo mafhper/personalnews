@@ -2,6 +2,7 @@ import React, { memo, useEffect } from 'react';
 import type { Article } from '../types';
 import { LazyImage } from './LazyImage';
 import { logger } from '../services/logger';
+import { buildImagePlaceholderDataUri } from '../utils/imagePlaceholders';
 
 interface ArticleImageProps {
   article: Article;
@@ -32,18 +33,28 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
   priority = false,
   fill = false
 }) => {
-  // Only use Picsum as fallback if we had an original imageUrl that failed
-  // Don't use Picsum if there was never an imageUrl to begin with
-  const shouldUseFallback = article.imageUrl !== undefined && article.imageUrl !== null;
-  const fallbackUrl = shouldUseFallback
-    ? `https://picsum.photos/seed/${encodeURIComponent(article.link)}/${width || 1200}/${height || 800}`
-    : null;
+  const placeholderWidth = width || 1200;
+  const placeholderHeight = height || 800;
+  const editorialFallback = buildImagePlaceholderDataUri({
+    width: placeholderWidth,
+    height: placeholderHeight,
+    label: article.sourceTitle || 'Personal News',
+    eyebrow: 'Visual local',
+    tone: 'brand',
+  });
+  const offlineFallback = buildImagePlaceholderDataUri({
+    width: placeholderWidth,
+    height: placeholderHeight,
+    label: article.sourceTitle || 'Personal News',
+    eyebrow: 'Offline',
+    headline: 'Imagem indisponivel',
+    tone: 'neutral',
+  });
 
-  // Chain of sources to try in order
   const sourcesChain = [
-    article.imageUrl,
-    // Only add Picsum fallback if we had an original imageUrl
-    fallbackUrl
+    article.imageUrl || editorialFallback,
+    article.imageUrl ? editorialFallback : undefined,
+    offlineFallback,
   ].filter((s): s is string => typeof s === 'string' && s.length > 0);
 
   // Determine primary source and its fallbacks
@@ -72,36 +83,12 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
     }
   }, [article.link, primarySrc, article.imageUrl, priority, remainingFallbacks.length, sourcesChain]);
 
-  // If no image URL at all, return a placeholder div instead of trying to load Picsum
-  if (!article.imageUrl && sourcesChain.length === 0) {
-    if (process.env.NODE_ENV === 'development') {
-      logger.debugTag('SYSTEM', 'No image sources available, rendering placeholder', {
-        articleLink: article.link.substring(0, 60) + '...'
-      });
-    }
-
-    return (
-      <div
-        className={`${className} bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center`}
-        style={{ minHeight: height || 200, minWidth: width || 300 }}
-      >
-        <div className="text-center p-4 min-w-0 max-w-full">
-          <div className="text-gray-500 text-xs font-medium uppercase tracking-widest mb-2 truncate px-2">
-            {article.sourceTitle}
-          </div>
-          <div className="text-gray-600 text-xs">
-            Sem imagem
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <LazyImage
       src={primarySrc}
       fallbacks={remainingFallbacks}
       alt={alt || article.title}
+      placeholder={editorialFallback}
       className={className}
       retryAttempts={2}
       retryDelay={500}

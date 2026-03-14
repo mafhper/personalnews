@@ -245,12 +245,12 @@ describe('FeedValidator', () => {
 
   describe('utility functions', () => {
     it('should return correct status icons', () => {
-      expect(getFeedStatusIcon('valid')).toBe('✅');
-      expect(getFeedStatusIcon('invalid')).toBe('❌');
-      expect(getFeedStatusIcon('timeout')).toBe('⏱️');
-      expect(getFeedStatusIcon('network_error')).toBe('🌐');
-      expect(getFeedStatusIcon('parse_error')).toBe('📄');
-      expect(getFeedStatusIcon('checking')).toBe('🔄');
+      expect(getFeedStatusIcon('valid')).toBe('OK');
+      expect(getFeedStatusIcon('invalid')).toBe('ERR');
+      expect(getFeedStatusIcon('timeout')).toBe('TIME');
+      expect(getFeedStatusIcon('network_error')).toBe('NET');
+      expect(getFeedStatusIcon('parse_error')).toBe('XML');
+      expect(getFeedStatusIcon('checking')).toBe('...');
     });
 
     it('should return correct status colors', () => {

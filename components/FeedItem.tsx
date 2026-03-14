@@ -32,8 +32,8 @@ export const FeedItem: React.FC<FeedItemProps> = ({
   onMoveCategory,
 }) => {
   const getStatusColor = () => {
-    if (!validation) return "text-slate-400/80";
-    return validation.isValid ? "text-emerald-300/80" : "text-rose-300/85";
+    if (!validation) return "text-[rgba(var(--color-textSecondary),0.8)]";
+    return validation.isValid ? "text-[rgba(var(--color-success),0.8)]" : "text-[rgba(var(--color-error),0.85)]";
   };
 
   const getStatusIcon = () => {
@@ -42,29 +42,29 @@ export const FeedItem: React.FC<FeedItemProps> = ({
   };
 
   return (
-    <div className="bg-white/3 border border-white/6 rounded-xl p-3 hover:border-white/12 transition-colors">
+    <div className="bg-[rgba(var(--color-text),0.05)] border border-black/5 dark:border-[rgba(var(--color-border),0.15)] rounded-xl p-3 hover:border-[rgba(var(--color-border),0.15)] transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className={`text-sm font-bold ${getStatusColor()}`}>
               {getStatusIcon()}
             </span>
-            <h4 className="text-[rgb(var(--color-text))] font-medium truncate">
+            <h4 className="text-[rgb(var(--theme-text-readable))] font-medium truncate">
               {feed.customTitle || validation?.title || "Feed sem título"}
             </h4>
           </div>
-          <p className="text-slate-400/80 text-xs truncate mt-1">
+          <p className="text-[rgba(var(--color-textSecondary),0.8)] text-xs truncate mt-1">
             {feed.url}
           </p>
           {validation?.error && (
             <div className="mt-1 flex items-center gap-2">
-              <p className="text-rose-300/85 text-xs truncate max-w-[200px] sm:max-w-xs">
+              <p className="text-[rgba(var(--color-error),0.85)] text-xs truncate max-w-[200px] sm:max-w-xs">
                 {validation.error}
               </p>
               {onShowError && (
                 <button
                   onClick={() => onShowError(feed.url)}
-                  className="text-[10px] uppercase font-bold text-rose-200/90 hover:text-[rgb(var(--color-text))] bg-rose-500/10 hover:bg-rose-500/20 px-2 py-0.5 rounded transition-colors"
+                  className="text-[10px] uppercase font-bold text-[rgba(var(--color-error),0.9)] hover:text-[rgb(var(--theme-text-readable))] bg-rose-500/10 hover:bg-rose-500/20 px-2 py-0.5 rounded transition-colors"
                 >
                   Ver Detalhes
                 </button>
@@ -78,7 +78,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
           <select
             value={feed.categoryId || ""}
             onChange={(e) => onMoveCategory(e.target.value)}
-            className="bg-black/30 text-slate-300/80 text-xs rounded px-2 py-1 border border-white/10 focus:outline-none focus:border-[rgba(var(--color-accent),0.45)]"
+            className="bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-secondary-readable))] text-xs rounded px-2 py-1 border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:border-[rgba(var(--color-accent),0.45)]"
           >
             <option value="">Sem categoria</option>
             {categories.map((cat) => (
@@ -92,7 +92,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
           {validation && !validation.isValid && onShowError && (
             <button
               onClick={() => onShowError(feed.url)}
-            className="p-1.5 text-slate-300/70 hover:text-rose-300 hover:bg-rose-400/10 rounded transition-colors"
+            className="p-1.5 text-[rgba(var(--color-textSecondary),0.8)] hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-400/10 rounded transition-colors"
             title="Ver Detalhes do Erro"
           >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -102,7 +102,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
           {/* Retry button */}
           <button
             onClick={() => onRetry(feed.url)}
-            className="p-1.5 text-slate-300/70 hover:text-sky-300 hover:bg-sky-400/10 rounded transition-colors"
+            className="p-1.5 text-[rgba(var(--color-textSecondary),0.8)] hover:text-[rgb(var(--color-primary))] hover:bg-sky-400/10 rounded transition-colors"
             title="Revalidar"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +113,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
           {/* Edit button */}
           <button
             onClick={() => onEdit(feed.url)}
-            className="p-1.5 text-slate-300/70 hover:text-amber-300 hover:bg-amber-400/10 rounded transition-colors"
+            className="p-1.5 text-[rgba(var(--color-textSecondary),0.8)] hover:text-[rgb(var(--color-warning))] hover:bg-amber-400/10 rounded transition-colors"
             title="Editar"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,8 +126,8 @@ export const FeedItem: React.FC<FeedItemProps> = ({
             <button
               onClick={() => onToggleHideFromAll(feed.url)}
               className={`p-1.5 rounded transition-colors ${feed.hideFromAll
-                  ? "text-violet-300 bg-violet-400/10 hover:bg-violet-400/18"
-                  : "text-slate-300/70 hover:text-violet-300 hover:bg-violet-400/10"
+                  ? "text-violet-600 dark:text-violet-300 bg-violet-400/10 hover:bg-violet-400/18"
+                  : "text-slate-300/70 hover:text-violet-600 dark:text-violet-300 hover:bg-violet-400/10"
                 }`}
               title={feed.hideFromAll ? "Mostrar em 'Todos'" : "Esconder de 'Todos'"}
             >
@@ -149,7 +149,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
           {/* Remove button */}
           <button
             onClick={() => onRemove(feed.url)}
-            className="p-1.5 text-slate-300/70 hover:text-rose-300 hover:bg-rose-400/10 rounded transition-colors"
+            className="p-1.5 text-[rgba(var(--color-textSecondary),0.8)] hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-400/10 rounded transition-colors"
             title="Remover"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -54,4 +54,4 @@ Contributions are welcome and encouraged. To collaborate:
 This project is licensed under the MIT License. See the LICENSE file included in the repository for the full license text.
 
 ---
-Developed with ❤.
+Developed with care.

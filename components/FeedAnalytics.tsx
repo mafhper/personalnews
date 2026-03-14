@@ -1,9 +1,8 @@
-import React, { useMemo, useEffect } from 'react';
-import { Article, FeedSource } from '../types';
-import { FeedValidationResult } from '../services/feedValidator';
-import { Card } from './ui/Card';
-import { ProxyHealthSummary } from './ProxyHealthSummary';
-import { HealthReportExporter } from './HealthReportExporter';
+import React, { useEffect, useMemo, useState } from "react";
+import { Article, FeedSource } from "../types";
+import { FeedValidationResult } from "../services/feedValidator";
+import { ProxyHealthSummary } from "./ProxyHealthSummary";
+import { HealthReportExporter } from "./HealthReportExporter";
 
 interface FeedAnalyticsProps {
   feeds: FeedSource[];
@@ -13,95 +12,275 @@ interface FeedAnalyticsProps {
   onFocusConsumed?: () => void;
 }
 
+type AccordionSection = "validation" | "insights" | "health" | "tools";
+
+const SURFACE_CLASS =
+  "rounded-[1.5rem] border border-[rgba(var(--color-border),0.2)] bg-[rgb(var(--theme-surface-readable))] shadow-2xl backdrop-blur-xl overflow-hidden";
+const PANEL_CLASS =
+  "rounded-2xl border border-[rgba(var(--color-border),0.12)] bg-[rgba(var(--color-text),0.02)] hover:bg-[rgba(var(--color-text),0.05)] hover:border-[rgba(var(--color-border),0.25)] transition-all duration-300 shadow-sm hover:shadow-md";
+const MUTED_TEXT_CLASS =
+  "text-[rgb(var(--theme-text-secondary-readable))] opacity-90";
+const TITLE_TEXT_CLASS =
+  "text-[rgb(var(--theme-text-readable))] font-bold";
+
+const normalizeLabel = (value?: string) =>
+  (value || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+const normalizeUrlKey = (value?: string) => {
+  if (!value) return "";
+  try {
+    const parsed = new URL(value);
+    parsed.hash = "";
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return value.trim().replace(/\/$/, "");
+  }
+};
+
+const safeHostname = (value?: string) => {
+  if (!value) return null;
+  try {
+    return new URL(value).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+};
+
+const formatStatusLabel = (status: string) => status.replace(/_/g, " ");
+
+const getStatusTone = (status: string) => {
+  if (status === "valid") return "border-[rgba(var(--color-success),0.2)] bg-[rgba(var(--color-success),0.1)] text-[rgb(var(--color-success))]";
+  if (status === "unchecked") return "border-[rgba(var(--color-primary),0.2)] bg-[rgba(var(--color-primary),0.1)] text-[rgb(var(--color-primary))]";
+  return "border-[rgba(var(--color-warning),0.2)] bg-[rgba(var(--color-warning),0.1)] text-[rgb(var(--color-warning))]";
+};
+
+const downloadTextFile = (content: string, mimeType: string, filename: string) => {
+  const link = document.createElement("a");
+  link.setAttribute("href", `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`);
+  link.setAttribute("download", filename);
+  link.click();
+};
+
+const Accordion: React.FC<{
+  section: AccordionSection;
+  expandedSection: AccordionSection | null;
+  onToggle: (section: AccordionSection) => void;
+  title: string;
+  description: string;
+  badge?: string;
+  children: React.ReactNode;
+}> = ({ section, expandedSection, onToggle, title, description, badge, children }) => {
+  const isExpanded = expandedSection === section;
+
+  return (
+    <section className={SURFACE_CLASS}>
+      <button
+        type="button"
+        onClick={() => onToggle(section)}
+        className="flex w-full items-start justify-between gap-4 px-5 py-5 text-left sm:px-6"
+      >
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className={`text-lg font-semibold ${TITLE_TEXT_CLASS}`}>{title}</h3>
+            {badge && (
+              <span className="rounded-full border border-[rgb(var(--color-border))]/24 bg-[rgba(var(--color-text),0.05)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                {badge}
+              </span>
+            )}
+          </div>
+          <p className={`mt-2 text-sm leading-relaxed ${MUTED_TEXT_CLASS}`}>{description}</p>
+        </div>
+        <span className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(var(--color-border),0.15)] bg-[rgba(var(--color-text),0.03)] text-[rgb(var(--theme-text-secondary-readable))] group-hover:bg-[rgba(var(--color-text),0.06)] group-hover:scale-105 transition-all">
+          <svg
+            className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
+      {isExpanded && (
+        <div className="border-t border-[rgb(var(--color-border))]/16 px-5 py-5 sm:px-6">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const MetricCard: React.FC<{
+  label: string;
+  value: string | number;
+  hint?: string;
+  tone?: "neutral" | "success" | "warning" | "danger";
+}> = ({ label, value, hint, tone = "neutral" }) => {
+  const toneClass =
+    tone === "success"
+      ? "text-[rgb(var(--color-success))]"
+      : tone === "warning"
+        ? "text-[rgb(var(--color-warning))]"
+        : tone === "danger"
+          ? "text-[rgb(var(--color-error))]"
+          : TITLE_TEXT_CLASS;
+
+  return (
+    <div className={`${PANEL_CLASS} p-6 flex flex-col justify-between h-full border-t-4 border-t-[rgba(var(--color-primary),0.1)] group`}>
+      <div className={`text-[10px] uppercase tracking-[0.25em] font-black ${MUTED_TEXT_CLASS} opacity-60 group-hover:opacity-100 transition-opacity`}>
+        {label}
+      </div>
+      <div className="mt-4 flex items-baseline gap-2">
+        <div className={`text-4xl font-extrabold tracking-tight ${toneClass}`}>{value}</div>
+        {hint && <div className={`text-[10px] ${MUTED_TEXT_CLASS} font-medium`}>• {hint}</div>}
+      </div>
+    </div>
+  );
+};
+
 export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   feeds,
   articles,
   feedValidations,
   focusSection,
-  onFocusConsumed
+  onFocusConsumed,
 }) => {
-  // 1. Calculate Feed Activity
+  const [expandedSection, setExpandedSection] = useState<AccordionSection | null>("validation");
+  const [showAllRows, setShowAllRows] = useState(false);
+  const [showAllIssues, setShowAllIssues] = useState(false);
+
   const activityStats = useMemo(() => {
-    const stats = new Map<string, number>();
+    const countByFeed = new Map<string, number>();
+    const labelByFeed = new Map<string, string>();
+    const sourceTitleIndex = new Map<string, Set<string>>();
+    const hostIndex = new Map<string, Set<string>>();
 
-    // Initialize all feeds with 0
-    feeds.forEach(f => {
-      const key = f.customTitle || f.url;
-      stats.set(key, 0);
-    });
+    feeds.forEach((feed) => {
+      const feedKey = normalizeUrlKey(feed.url);
+      const validation = feedValidations.get(feed.url);
+      const displayLabel = feed.customTitle || validation?.title || feed.url;
 
-    // Count articles per feed
-    articles.forEach(article => {
-      const key = article.sourceTitle || 'Unknown Source';
-      // Only count if it matches a known feed (fuzzy match) or we add it directly
-      // For simplicity, we use sourceTitle from article which usually matches
-      if (stats.has(key)) {
-        stats.set(key, (stats.get(key) || 0) + 1);
-      } else {
-        // Try to find by URL match
-        const matchingFeed = feeds.find(f => article.link.includes(new URL(f.url).hostname));
-        if (matchingFeed) {
-          const feedKey = matchingFeed.customTitle || matchingFeed.url;
-          stats.set(feedKey, (stats.get(feedKey) || 0) + 1);
-        }
+      countByFeed.set(feedKey, 0);
+      labelByFeed.set(feedKey, displayLabel);
+
+      [feed.customTitle, validation?.title, safeHostname(feed.url)]
+        .map((label) => normalizeLabel(label || undefined))
+        .filter(Boolean)
+        .forEach((label) => {
+          const next = sourceTitleIndex.get(label) || new Set<string>();
+          next.add(feedKey);
+          sourceTitleIndex.set(label, next);
+        });
+
+      const host = safeHostname(feed.url);
+      if (host) {
+        const next = hostIndex.get(host) || new Set<string>();
+        next.add(feedKey);
+        hostIndex.set(host, next);
       }
     });
 
-    const sorted = Array.from(stats.entries()).sort((a, b) => b[1] - a[1]);
+    let unmatchedArticles = 0;
+
+    const resolveFeedForArticle = (article: Article) => {
+      const directFeedKey = normalizeUrlKey(article.feedUrl);
+      if (directFeedKey && countByFeed.has(directFeedKey)) return directFeedKey;
+
+      const sourceLabel = normalizeLabel(article.sourceTitle);
+      const titleMatches = sourceTitleIndex.get(sourceLabel);
+      if (titleMatches?.size === 1) return Array.from(titleMatches)[0];
+
+      const articleHost = safeHostname(article.feedUrl || article.link);
+      const hostMatches = articleHost ? hostIndex.get(articleHost) : null;
+      if (hostMatches?.size === 1) return Array.from(hostMatches)[0];
+
+      return null;
+    };
+
+    articles.forEach((article) => {
+      const resolvedFeedKey = resolveFeedForArticle(article);
+      if (!resolvedFeedKey) {
+        unmatchedArticles += 1;
+        return;
+      }
+
+      countByFeed.set(resolvedFeedKey, (countByFeed.get(resolvedFeedKey) || 0) + 1);
+    });
+
+    const sorted = Array.from(countByFeed.entries())
+      .map(([feedKey, count]) => ({
+        feedKey,
+        count,
+        label: labelByFeed.get(feedKey) || feedKey,
+      }))
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.label.localeCompare(b.label);
+      });
 
     return {
-      mostActive: sorted.slice(0, 5),
-      leastActive: sorted.filter(x => x[1] === 0).slice(0, 5), // Feeds with 0 articles loaded
-      totalArticles: articles.length
+      countsByFeed: countByFeed,
+      totalArticles: articles.length,
+      matchedArticles: articles.length - unmatchedArticles,
+      unmatchedArticles,
+      mostActive: sorted.slice(0, 6),
+      leastActive: sorted.filter((item) => item.count === 0).slice(0, 6),
     };
-  }, [feeds, articles]);
+  }, [articles, feedValidations, feeds]);
 
-  // 2. Calculate Topic Trends
   const topicTrends = useMemo(() => {
     const counts = new Map<string, number>();
 
-    articles.forEach(article => {
-      if (article.categories && article.categories.length > 0) {
-        article.categories.forEach(cat => {
-          // Normalize tag
-          const normalized = cat.trim().toLowerCase();
-          if (normalized.length > 2 && !['uncategorized', 'general', 'news'].includes(normalized)) {
-             counts.set(normalized, (counts.get(normalized) || 0) + 1);
-          }
-        });
-      }
+    articles.forEach((article) => {
+      article.categories?.forEach((category) => {
+        const normalized = category.trim().toLowerCase();
+        if (normalized.length > 2 && !["uncategorized", "general", "news"].includes(normalized)) {
+          counts.set(normalized, (counts.get(normalized) || 0) + 1);
+        }
+      });
     });
 
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10); // Top 10 topics
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
   }, [articles]);
 
-  // 3. Health Analysis
   const healthStats = useMemo(() => {
     let valid = 0;
     let invalid = 0;
     let unchecked = 0;
-    const issues: { url: string, error: string, title?: string }[] = [];
+    const issues: Array<{
+      url: string;
+      title: string;
+      error: string;
+      status: string;
+      articleCount: number;
+    }> = [];
 
-    feeds.forEach(feed => {
-      const val = feedValidations.get(feed.url);
-      if (!val) {
-        unchecked++;
-      } else if (val.isValid) {
-        valid++;
-      } else {
-        invalid++;
-        issues.push({
-          url: feed.url,
-          title: feed.customTitle,
-          error: val.error || 'Erro desconhecido'
-        });
+    feeds.forEach((feed) => {
+      const validation = feedValidations.get(feed.url);
+      const articleCount = activityStats.countsByFeed.get(normalizeUrlKey(feed.url)) || 0;
+
+      if (!validation) {
+        unchecked += 1;
+        return;
       }
+
+      if (validation.isValid) {
+        valid += 1;
+        return;
+      }
+
+      invalid += 1;
+      issues.push({
+        url: feed.url,
+        title: feed.customTitle || validation.title || feed.url,
+        error: validation.error || "Erro desconhecido",
+        status: validation.status || "invalid",
+        articleCount,
+      });
     });
 
     return { valid, invalid, unchecked, issues };
-  }, [feeds, feedValidations]);
+  }, [activityStats.countsByFeed, feedValidations, feeds]);
 
   const feedRows = useMemo(() => {
     const statusWeight: Record<string, number> = {
@@ -135,339 +314,405 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           method: validation?.finalMethod || (validation ? "direct" : "-"),
           proxyUsed: lastAttempt?.proxyUsed,
           error: validation?.error,
+          articleCount: activityStats.countsByFeed.get(normalizeUrlKey(feed.url)) || 0,
         };
       })
       .sort((a, b) => {
-        if (a.statusWeight !== b.statusWeight) {
-          return a.statusWeight - b.statusWeight;
-        }
+        if (a.statusWeight !== b.statusWeight) return a.statusWeight - b.statusWeight;
+        if (b.articleCount !== a.articleCount) return b.articleCount - a.articleCount;
         return a.title.localeCompare(b.title);
       });
-  }, [feeds, feedValidations]);
+  }, [activityStats.countsByFeed, feedValidations, feeds]);
+
+  const visibleRows = showAllRows ? feedRows : feedRows.slice(0, 8);
+  const visibleIssues = showAllIssues ? healthStats.issues : healthStats.issues.slice(0, 6);
+  const totalFeedsSafe = Math.max(feeds.length, 1);
 
   useEffect(() => {
     if (!focusSection) return;
-    const run = () => {
-      const el = document.getElementById(focusSection);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      onFocusConsumed?.();
+
+    const focusMap: Partial<Record<string, AccordionSection>> = {
+      "feed-status": "validation",
+      "proxy-health": "tools",
+      "feed-reports": "tools",
     };
-    requestAnimationFrame(run);
+
+    const sectionToOpen = focusMap[focusSection];
+    if (sectionToOpen) setExpandedSection(sectionToOpen);
+
+    const timer = window.setTimeout(() => {
+      document.getElementById(focusSection)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      onFocusConsumed?.();
+    }, 180);
+
+    return () => window.clearTimeout(timer);
   }, [focusSection, onFocusConsumed]);
 
+  const toggleSection = (section: AccordionSection) => {
+    setExpandedSection((current) => (current === section ? null : section));
+  };
+
+  const exportJsonReport = () => {
+    const report = {
+      timestamp: new Date().toISOString(),
+      feedCount: feeds.length,
+      articleCount: articles.length,
+      matchedArticles: activityStats.matchedArticles,
+      unmatchedArticles: activityStats.unmatchedArticles,
+      validFeeds: healthStats.valid,
+      invalidFeeds: healthStats.invalid,
+      uncheckedFeeds: healthStats.unchecked,
+      topicTrends: topicTrends.slice(0, 6),
+      mostActive: activityStats.mostActive.slice(0, 6),
+    };
+
+    downloadTextFile(JSON.stringify(report, null, 2), "application/json", `feed-report-${Date.now()}.json`);
+  };
+
+  const exportMarkdownReport = () => {
+    const report = `# Relatório de Feeds - ${new Date().toLocaleString()}
+
+## Resumo
+- Total de feeds: ${feeds.length}
+- Total de artigos no cache: ${articles.length}
+- Artigos associados com segurança: ${activityStats.matchedArticles}
+- Artigos sem vínculo confiável: ${activityStats.unmatchedArticles}
+- Feeds válidos: ${healthStats.valid}
+- Feeds com erro: ${healthStats.invalid}
+- Feeds pendentes: ${healthStats.unchecked}
+
+## Tópicos mais frequentes
+${topicTrends.slice(0, 6).map((topic, index) => `${index + 1}. ${topic[0]} (${topic[1]})`).join("\n")}
+
+## Feeds mais ativos
+${activityStats.mostActive.slice(0, 6).map((feed, index) => `${index + 1}. ${feed.label} (${feed.count} artigos)`).join("\n")}
+
+## Feeds sem atividade
+${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${feed.label}`).join("\n")}
+`;
+
+    downloadTextFile(report, "text/markdown", `feed-report-${Date.now()}.md`);
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 p-2">
-
-      {/* Top Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card variant="glass" className="p-4 flex items-center space-x-4">
-          <div className="p-3 bg-blue-500/20 rounded-full">
-            <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Artigos em Cache</p>
-            <h3 className="text-2xl font-bold text-white">{activityStats.totalArticles}</h3>
-            <span className="text-[10px] text-gray-500">Atualizado: {new Date().toLocaleTimeString()}</span>
-          </div>
-        </Card>
-
-        <Card variant="glass" className="p-4 flex items-center space-x-4">
-          <div className="p-3 bg-[rgb(var(--color-accent))]/20 rounded-full">
-            <svg className="w-6 h-6 text-[rgb(var(--color-accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11c3.866 0 7 3.134 7 7m-7-7v7" /></svg>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Feeds Monitorados</p>
-            <h3 className="text-2xl font-bold text-white">{feeds.length}</h3>
-          </div>
-        </Card>
-
-        <Card variant="glass" className="p-4 flex items-center space-x-4">
-          <div className={`p-3 rounded-full ${healthStats.invalid > 0 ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
-            <svg className={`w-6 h-6 ${healthStats.invalid > 0 ? 'text-red-400' : 'text-green-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Saúde do Sistema</p>
-            <h3 className="text-xl font-bold text-white">
-              {healthStats.invalid > 0
-                ? `${healthStats.invalid} com erro`
-                : '100% Operacional'}
-            </h3>
-          </div>
-        </Card>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Feeds monitorados" value={feeds.length} hint="Base total cadastrada" />
+        <MetricCard
+          label="Artigos associados"
+          value={activityStats.matchedArticles}
+          hint={`${activityStats.totalArticles} no cache`}
+          tone="success"
+        />
+        <MetricCard
+          label="Feeds com erro"
+          value={healthStats.invalid}
+          hint="Precisam de revisão"
+          tone={healthStats.invalid > 0 ? "danger" : "success"}
+        />
+        <MetricCard
+          label="Pendentes"
+          value={healthStats.unchecked}
+          hint="Ainda não verificados"
+          tone={healthStats.unchecked > 0 ? "warning" : "neutral"}
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column: Activity & Trends */}
-        <div className="space-y-6">
-          {/* Feed Status */}
-          <div id="feed-status" className="bg-gray-800/40 rounded-xl border border-white/10 p-5">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Status dos Feeds
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500">Válidos</p>
-                <p className="text-lg font-bold text-emerald-300">{healthStats.valid}</p>
-              </div>
-              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500">Com erro</p>
-                <p className="text-lg font-bold text-amber-300">{healthStats.invalid}</p>
-              </div>
-              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500">Pendentes</p>
-                <p className="text-lg font-bold text-sky-300">{healthStats.unchecked}</p>
-              </div>
-              <div className="bg-black/20 border border-white/5 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500">Total</p>
-                <p className="text-lg font-bold text-white">{feeds.length}</p>
-              </div>
+      <Accordion
+        section="validation"
+        expandedSection={expandedSection}
+        onToggle={toggleSection}
+        title="Validação dos feeds"
+        description="Visão operacional do que está saudável, do que precisa de ação e do que ainda não foi verificado."
+        badge={`${feedRows.length} feeds`}
+      >
+        <div id="feed-status" className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <MetricCard label="Válidos" value={healthStats.valid} tone="success" />
+            <MetricCard label="Com erro" value={healthStats.invalid} tone="danger" />
+            <MetricCard label="Pendentes" value={healthStats.unchecked} tone="warning" />
+            <MetricCard label="Sem atividade" value={activityStats.leastActive.length} hint="Entre os exibidos" />
+          </div>
+
+          <div className={`${PANEL_CLASS} p-4`}>
+            <div className="flex h-3 overflow-hidden rounded-full bg-[rgba(var(--color-text),0.1)]">
+              <div className="bg-[rgb(var(--color-success))] transition-all duration-500" style={{ width: `${(healthStats.valid / totalFeedsSafe) * 100}%` }} title="Válidos" />
+              <div className="bg-[rgb(var(--color-warning))] transition-all duration-500" style={{ width: `${(healthStats.invalid / totalFeedsSafe) * 100}%` }} title="Com erro" />
+              <div className="bg-[rgb(var(--color-primary))] transition-all duration-500" style={{ width: `${(healthStats.unchecked / totalFeedsSafe) * 100}%` }} title="Pendentes" />
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-separate border-spacing-y-2">
-                <thead>
-                  <tr className="text-[10px] uppercase tracking-widest text-gray-500">
-                    <th className="px-2 py-1">Feed</th>
-                    <th className="px-2 py-1">Status</th>
-                    <th className="px-2 py-1">Última verificação</th>
-                    <th className="px-2 py-1">Latência</th>
-                    <th className="px-2 py-1">Método</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {feedRows.map((row) => (
-                    <tr key={row.url} className="bg-black/20 border border-white/5 rounded-lg">
-                      <td className="px-2 py-2 max-w-[240px] truncate" title={row.title}>
-                        {row.title}
-                      </td>
-                      <td className="px-2 py-2">
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
-                          row.status === "valid"
-                            ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
-                            : row.status === "unchecked"
-                              ? "bg-sky-500/10 text-sky-300 border-sky-500/20"
-                              : "bg-amber-500/10 text-amber-300 border-amber-500/20"
-                        }`}>
-                          {row.status.replace("_", " ")}
-                        </span>
-                      </td>
-                      <td className="px-2 py-2 text-gray-400">
-                        {row.lastChecked ? new Date(row.lastChecked).toLocaleString() : "-"}
-                      </td>
-                      <td className="px-2 py-2 text-gray-400">
-                        {row.responseTime ? `${row.responseTime}ms` : "-"}
-                      </td>
-                      <td className="px-2 py-2 text-gray-400">
-                        {row.proxyUsed ? `${row.method} • ${row.proxyUsed}` : row.method}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {feedRows.length === 0 && (
-                <p className="text-xs text-gray-500 mt-3">Nenhum feed disponível.</p>
-              )}
+            <div className={`mt-3 flex flex-wrap gap-3 text-xs ${MUTED_TEXT_CLASS}`}>
+              <span>Válidos: {healthStats.valid}</span>
+              <span>Com erro: {healthStats.invalid}</span>
+              <span>Pendentes: {healthStats.unchecked}</span>
             </div>
           </div>
 
-          {/* Popular Topics */}
-          <div className="bg-gray-800/40 rounded-xl border border-white/10 p-5">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
-              Assuntos Populares
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {topicTrends.length > 0 ? (
-                topicTrends.map(([topic, count], idx) => (
-                  <span
-                    key={topic}
-                    className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                      idx < 3
-                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                        : 'bg-gray-700/50 text-gray-300 border-white/5'
-                    }`}
-                  >
-                    #{topic} <span className="opacity-50 ml-1">({count})</span>
-                  </span>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 italic">Não há dados suficientes para análise de tópicos ainda.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Most Frequent Feeds */}
-          <div className="bg-gray-800/40 rounded-xl border border-white/10 p-5">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-              Maior Frequência
-            </h3>
-            <div className="space-y-3">
-              {activityStats.mostActive.map(([name, count], idx) => (
-                <div key={name} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="w-5 text-xs text-gray-500 mr-2">#{idx + 1}</span>
-                    <span className="text-sm text-gray-200 truncate max-w-[200px]">{name}</span>
+          <div className="space-y-3">
+            {visibleRows.map((row) => (
+              <div key={row.url} className={`${PANEL_CLASS} flex flex-col gap-3 p-4 lg:flex-row lg:items-start lg:justify-between`}>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className={`truncate text-sm font-semibold ${TITLE_TEXT_CLASS}`}>{row.title}</h4>
+                    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${getStatusTone(row.status)}`}>
+                      {formatStatusLabel(row.status)}
+                    </span>
                   </div>
-                  <span className="text-xs font-mono bg-green-900/30 text-green-400 px-2 py-0.5 rounded">
-                    {count} arts.
-                  </span>
+                  <p className={`mt-1 break-all text-xs ${MUTED_TEXT_CLASS}`}>{row.url}</p>
+                  {row.error && <p className="mt-2 text-xs text-[rgba(var(--color-warning),0.9)]">{row.error}</p>}
                 </div>
-              ))}
+                <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4 lg:min-w-[24rem]">
+                  <div>
+                    <div className={MUTED_TEXT_CLASS}>Artigos</div>
+                    <div className={`mt-1 font-semibold ${TITLE_TEXT_CLASS}`}>{row.articleCount}</div>
+                  </div>
+                  <div>
+                    <div className={MUTED_TEXT_CLASS}>Latência</div>
+                    <div className={`mt-1 font-semibold ${TITLE_TEXT_CLASS}`}>
+                      {row.responseTime !== undefined && row.responseTime !== null ? `${row.responseTime} ms` : "-"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className={MUTED_TEXT_CLASS}>Método</div>
+                    <div className={`mt-1 font-semibold ${TITLE_TEXT_CLASS}`}>
+                      {row.proxyUsed ? `${row.method} • ${row.proxyUsed}` : row.method}
+                    </div>
+                  </div>
+                  <div>
+                    <div className={MUTED_TEXT_CLASS}>Última verificação</div>
+                    <div className={`mt-1 font-semibold ${TITLE_TEXT_CLASS}`}>
+                      {row.lastChecked ? new Date(row.lastChecked).toLocaleString() : "-"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {feedRows.length > 8 && (
+            <button
+              type="button"
+              onClick={() => setShowAllRows((current) => !current)}
+              className="rounded-full border border-[rgba(var(--color-border),0.2)] bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgba(var(--color-text),0.1)] hover:border-[rgba(var(--color-border),0.4)]"
+            >
+              {showAllRows ? "Mostrar menos" : `Mostrar todos os ${feedRows.length} feeds`}
+            </button>
+          )}
+        </div>
+      </Accordion>
+
+      <Accordion
+        section="insights"
+        expandedSection={expandedSection}
+        onToggle={toggleSection}
+        title="Conteúdo e atividade"
+        description="Tópicos recorrentes e frequência real por feed, usando vínculo conservador para evitar contagens infladas."
+        badge={`${activityStats.matchedArticles} artigos associados`}
+      >
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
+          <div className="space-y-4">
+            <div className={`${PANEL_CLASS} p-4`}>
+              <div className="flex items-center justify-between gap-3">
+                <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Assuntos mais frequentes</h4>
+                <span className={`text-xs ${MUTED_TEXT_CLASS}`}>{topicTrends.length} tópicos</span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {topicTrends.length > 0 ? (
+                  topicTrends.map(([topic, count], index) => (
+                    <span
+                      key={topic}
+                      className={`rounded-full border px-3 py-1 text-xs ${
+                        index < 3
+                          ? "border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.12)] text-[rgb(var(--theme-text-on-surface,var(--color-text)))]"
+                          : "border-[rgb(var(--color-border))]/20 bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]"
+                      }`}
+                    >
+                      #{topic} <span className="opacity-70">({count})</span>
+                    </span>
+                  ))
+                ) : (
+                  <p className={`text-sm italic ${MUTED_TEXT_CLASS}`}>Ainda não há dados suficientes para extrair tendências.</p>
+                )}
+              </div>
+            </div>
+
+            <div className={`${PANEL_CLASS} p-4`}>
+              <div className="flex items-center justify-between gap-3">
+                <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Feeds mais ativos</h4>
+                <span className={`text-xs ${MUTED_TEXT_CLASS}`}>Top 6</span>
+              </div>
+              <div className="mt-4 space-y-3">
+                {activityStats.mostActive.map((feed, index) => (
+                  <div key={feed.feedKey} className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className={`text-xs ${MUTED_TEXT_CLASS}`}>#{index + 1}</div>
+                      <div className={`truncate text-sm font-medium ${TITLE_TEXT_CLASS}`}>{feed.label}</div>
+                    </div>
+                    <span className="rounded-full border border-[rgba(var(--color-success),0.2)] bg-[rgba(var(--color-success),0.1)] px-3 py-1 text-xs font-semibold text-[rgb(var(--color-success))] shadow-sm">
+                      {feed.count} artigos
+                    </span>
+                  </div>
+                ))}
+                {activityStats.mostActive.length === 0 && (
+                  <p className={`text-sm italic ${MUTED_TEXT_CLASS}`}>Nenhuma atividade consolidada ainda.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className={`${PANEL_CLASS} p-4`}>
+              <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Qualidade da contagem</h4>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <MetricCard label="Associados com segurança" value={activityStats.matchedArticles} tone="success" />
+                <MetricCard
+                  label="Sem vínculo confiável"
+                  value={activityStats.unmatchedArticles}
+                  tone={activityStats.unmatchedArticles > 0 ? "warning" : "neutral"}
+                />
+              </div>
+              <p className={`mt-4 text-sm leading-relaxed ${MUTED_TEXT_CLASS}`}>
+                Para reduzir falsos positivos, a contagem prioriza `feedUrl` exato, depois títulos exclusivos e só então hostname exato quando ele aponta para um único feed.
+              </p>
+            </div>
+
+            <div className={`${PANEL_CLASS} p-4`}>
+              <div className="flex items-center justify-between gap-3">
+                <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Sem atividade</h4>
+                <span className={`text-xs ${MUTED_TEXT_CLASS}`}>Top 6</span>
+              </div>
+              <div className="mt-4 space-y-3">
+                {activityStats.leastActive.map((feed) => (
+                  <div key={feed.feedKey} className="flex items-center justify-between gap-4">
+                    <span className={`truncate text-sm ${TITLE_TEXT_CLASS}`}>{feed.label}</span>
+                    <span className="rounded-full border border-[rgb(var(--color-border))]/20 bg-[rgba(var(--color-text),0.05)] px-3 py-1 text-xs font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      0 artigos
+                    </span>
+                  </div>
+                ))}
+                {activityStats.leastActive.length === 0 && (
+                  <p className={`text-sm italic ${MUTED_TEXT_CLASS}`}>Todos os feeds exibidos tiveram alguma atividade recente.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
+      </Accordion>
 
-        {/* Right Column: Health & Issues */}
-        <div className="space-y-6">
-          {/* Health Overview */}
-          <div className="bg-gray-800/40 rounded-xl border border-white/10 p-5">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-              Status dos Feeds
-            </h3>
-
-            <div className="flex h-4 rounded-full overflow-hidden mb-4 bg-gray-700">
-              <div className="bg-green-500 transition-all duration-500" style={{ width: `${(healthStats.valid / feeds.length) * 100}%` }} title="Válidos" />
-              <div className="bg-red-500 transition-all duration-500" style={{ width: `${(healthStats.invalid / feeds.length) * 100}%` }} title="Com Erro" />
-              <div className="bg-gray-500 transition-all duration-500" style={{ width: `${(healthStats.unchecked / feeds.length) * 100}%` }} title="Não Verificados" />
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="text-green-400">
-                <span className="block font-bold text-lg">{healthStats.valid}</span>
-                Válidos
-              </div>
-              <div className="text-red-400">
-                <span className="block font-bold text-lg">{healthStats.invalid}</span>
-                Erros
-              </div>
-              <div className="text-gray-400">
-                <span className="block font-bold text-lg">{healthStats.unchecked}</span>
-                Pendentes
-              </div>
-            </div>
-          </div>
-
-          {/* Problematic Feeds List */}
+      <Accordion
+        section="health"
+        expandedSection={expandedSection}
+        onToggle={toggleSection}
+        title="Alertas e revisão"
+        description="Lista curta e priorizada dos feeds com falha para facilitar triagem, em vez de uma parede de erros."
+        badge={healthStats.issues.length > 0 ? `${healthStats.issues.length} alertas` : "sem alertas"}
+      >
+        <div className="space-y-4">
           {healthStats.issues.length > 0 ? (
-            <div className="bg-red-900/10 rounded-xl border border-red-500/20 p-5">
-              <h3 className="text-lg font-semibold text-red-400 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Atenção Necessária
-              </h3>
-              <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                {healthStats.issues.map((issue, idx) => (
-                  <div key={idx} className="bg-red-500/5 p-3 rounded-lg border border-red-500/10">
-                    <p className="text-sm font-medium text-red-200 truncate">{issue.title || issue.url}</p>
-                    <p className="text-xs text-red-400 mt-1 break-all">{issue.error}</p>
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <MetricCard label="Falhas" value={healthStats.invalid} hint="Feeds com erro ativo" tone="danger" />
+                <MetricCard label="Pendentes" value={healthStats.unchecked} hint="Ainda sem validação" tone="warning" />
+                <MetricCard label="Saudáveis" value={healthStats.valid} hint="Feeds válidos" tone="success" />
+              </div>
+
+              <div className="space-y-3">
+                {visibleIssues.map((issue) => (
+                  <div key={issue.url} className={`${PANEL_CLASS} p-4`}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>{issue.title}</h4>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${getStatusTone(issue.status)}`}>
+                        {formatStatusLabel(issue.status)}
+                      </span>
+                    </div>
+                    <p className={`mt-1 break-all text-xs ${MUTED_TEXT_CLASS}`}>{issue.url}</p>
+                    <p className="mt-3 text-sm text-[rgba(var(--color-warning),0.9)]">{issue.error}</p>
+                    <div className={`mt-3 text-xs ${MUTED_TEXT_CLASS}`}>Artigos associados: {issue.articleCount}</div>
                   </div>
                 ))}
               </div>
-            </div>
+
+              {healthStats.issues.length > 6 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllIssues((current) => !current)}
+                  className="rounded-full border border-[rgba(var(--color-border),0.2)] bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgba(var(--color-text),0.1)] hover:border-[rgba(var(--color-border),0.4)]"
+                >
+                  {showAllIssues ? "Mostrar menos alertas" : `Mostrar todos os ${healthStats.issues.length} alertas`}
+                </button>
+              )}
+            </>
           ) : (
-            <div className="bg-green-900/10 rounded-xl border border-green-500/20 p-5 text-center">
-              <svg className="w-12 h-12 text-green-500/50 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <p className="text-green-300 font-medium">Tudo Certo!</p>
-              <p className="text-green-400/70 text-sm mt-1">Nenhum problema detectado nos seus feeds.</p>
+            <div className="rounded-[2rem] border border-[rgba(var(--color-success),0.2)] bg-[rgba(var(--color-success),0.03)] px-8 py-10 text-center shadow-inner">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-[rgba(var(--color-success),0.3)] bg-[rgba(var(--color-success),0.1)] text-[rgb(var(--color-success))] shadow-lg">
+                <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h4 className="text-xl font-bold text-[rgb(var(--color-success))]">Saúde Impecável</h4>
+              <p className="mt-3 text-sm text-[rgb(var(--theme-text-secondary-readable))] max-w-sm mx-auto">A validação atual não encontrou feeds quebrados ou pendentes na sua coleção.</p>
             </div>
           )}
         </div>
-      </div>
+      </Accordion>
 
-      {/* Proxy Health Summary Section */}
-      <div id="proxy-health" className="mt-8 pt-8 border-t border-gray-700">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-          <svg className="w-5 h-5 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Saúde dos Proxies
-        </h3>
-        <ProxyHealthSummary />
-      </div>
+      <Accordion
+        section="tools"
+        expandedSection={expandedSection}
+        onToggle={toggleSection}
+        title="Proxy e relatórios"
+        description="Ferramentas operacionais agrupadas numa única seção recolhível para reduzir ruído visual na guia."
+        badge="utilitários"
+      >
+        <div className="space-y-6">
+          <div id="proxy-health" className="space-y-3">
+            <div>
+              <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Saúde dos proxies</h4>
+              <p className={`mt-1 text-sm ${MUTED_TEXT_CLASS}`}>
+                Status, latência e taxa de sucesso dos caminhos de fetch configurados.
+              </p>
+            </div>
+            <div className={PANEL_CLASS}>
+              <div className="p-4">
+                <ProxyHealthSummary />
+              </div>
+            </div>
+          </div>
 
-      <div id="feed-reports" className="mt-8 pt-8 border-t border-gray-700">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-          <svg className="w-5 h-5 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          Relatórios de Saúde
-        </h3>
-        <HealthReportExporter />
-      </div>
+          <div id="feed-reports" className="space-y-3">
+            <div>
+              <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Relatórios de saúde</h4>
+              <p className={`mt-1 text-sm ${MUTED_TEXT_CLASS}`}>
+                Exporte o estado atual da sua base sem espalhar esses controles pelo restante da tela.
+              </p>
+            </div>
+            <div className={`${PANEL_CLASS} p-4`}>
+              <HealthReportExporter />
+            </div>
+          </div>
 
-      {/* Generate Reports Section */}
-      <div className="mt-8 pt-8 border-t border-gray-700 space-y-4">
-        <h3 className="text-lg font-semibold text-white flex items-center">
-          <svg className="w-5 h-5 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Gerar Relatórios
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={() => {
-              const report = {
-                timestamp: new Date().toISOString(),
-                feedCount: feeds.length,
-                articleCount: articles.length,
-                validFeeds: healthStats.valid,
-                invalidFeeds: healthStats.invalid,
-                topicTrends: topicTrends.slice(0, 5),
-                mostActive: activityStats.mostActive.slice(0, 5)
-              };
-              const dataStr = JSON.stringify(report, null, 2);
-              const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-              const link = document.createElement('a');
-              link.setAttribute('href', dataUri);
-              link.setAttribute('download', `feed-report-${Date.now()}.json`);
-              link.click();
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            Exportar JSON
-          </button>
-          <button
-            onClick={() => {
-              const report = `
-# Relatório de Feeds - ${new Date().toLocaleString()}
-
-## Resumo
-- **Total de Feeds**: ${feeds.length}
-- **Total de Artigos**: ${articles.length}
-- **Feeds Válidos**: ${healthStats.valid}
-- **Feeds com Erro**: ${healthStats.invalid}
-
-## Tópicos Mais Frequentes
-${topicTrends.slice(0, 5).map((t, i) => `${i + 1}. ${t[0]} (${t[1]} ocorrências)`).join('\n')}
-
-## Feeds Mais Ativos
-${activityStats.mostActive.slice(0, 5).map((f, i) => `${i + 1}. ${f[0]} (${f[1]} artigos)`).join('\n')}
-
-## Feeds Sem Atividade
-${activityStats.leastActive.slice(0, 5).map((f, i) => `${i + 1}. ${f[0]}`).join('\n')}
-
----
-Relatório gerado automaticamente pelo Personal News
-`;
-              const dataUri = 'data:text/markdown;charset=utf-8,'+ encodeURIComponent(report);
-              const link = document.createElement('a');
-              link.setAttribute('href', dataUri);
-              link.setAttribute('download', `feed-report-${Date.now()}.md`);
-              link.click();
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-            Exportar Markdown
-          </button>
+          <div className={`${PANEL_CLASS} p-4`}>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={exportJsonReport}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(var(--color-primary),0.3)] bg-[rgba(var(--color-primary),0.1)] px-5 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.2)]"
+              >
+                Exportar JSON
+              </button>
+              <button
+                type="button"
+                onClick={exportMarkdownReport}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(var(--color-success),0.3)] bg-[rgba(var(--color-success),0.1)] px-5 py-2 text-sm font-semibold text-[rgb(var(--color-success))] transition-all hover:bg-[rgba(var(--color-success),0.2)]"
+              >
+                Exportar Markdown
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </Accordion>
     </div>
   );
 };

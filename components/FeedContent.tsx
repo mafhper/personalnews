@@ -2,14 +2,14 @@
  * FeedContent.tsx
  *
  * Componente principal para exibição de artigos no Personal News Dashboard.
- * Gerencia a seleção e renderização dos layouts (Grid, Masonry, Minimal, Portal).
+ * Gerencia a seleção e renderização dos layouts do feed.
  *
  * @author Matheus Pereira
  * @version 3.0.0
  */
 
 import React, { Suspense, useState, useCallback, useEffect, lazy } from "react";
-import type { VirtuosoProps, VirtuosoGridProps, ItemContent, GridItemContent } from "react-virtuoso";
+import type { VirtuosoProps, ItemContent } from "react-virtuoso";
 import type { Article } from "../types";
 import { withPerformanceTracking } from "../services/performanceUtils";
 import { useAppearance } from "../hooks/useAppearance";
@@ -95,23 +95,25 @@ const PocketFeedsLayout = lazy(() =>
 const Virtuoso = lazy(() =>
   import("react-virtuoso").then((m) => ({ default: m.Virtuoso })),
 ) as React.ComponentType<VirtuosoProps<Article, unknown>>;
-const VirtuosoGrid = lazy(() =>
-  import("react-virtuoso").then((m) => ({ default: m.VirtuosoGrid })),
-) as React.ComponentType<VirtuosoGridProps<Article, unknown>>;
-
-// Grid Virtualizer Components
-const GridList = React.forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<'div'>>((props, ref) => (
-  <div
-    ref={ref}
-    {...props}
-    className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 py-7 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-5 lg:gap-6"
-    style={{ ...props.style, display: 'grid' }}
-  />
-));
-
-const GridItemContainer = React.forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<'div'>>((props, ref) => (
-  <div ref={ref} {...props} className="h-full" />
-));
+const SUPPORTED_LAYOUTS = new Set([
+  "magazine",
+  "modern",
+  "masonry",
+  "minimal",
+  "focus",
+  "immersive",
+  "brutalist",
+  "timeline",
+  "bento",
+  "newspaper",
+  "gallery",
+  "compact",
+  "split",
+  "cyberpunk",
+  "terminal",
+  "pocketfeeds",
+  "list",
+]);
 
 interface FeedContentProps {
   articles: Article[];
@@ -182,8 +184,17 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
       effectiveLayout = category.layoutMode;
     }
   }
+  if (effectiveLayout === 'grid') {
+    effectiveLayout = 'modern';
+  }
   if (effectiveLayout === 'default') {
-    effectiveLayout = 'grid'; // Default 'grid' now maps to Magazine-style/Grid virtualized
+    effectiveLayout = 'modern';
+  }
+  if (!SUPPORTED_LAYOUTS.has(effectiveLayout)) {
+    logger.warn("Unsupported layout mode detected, falling back to modern", {
+      additionalData: { effectiveLayout },
+    });
+    effectiveLayout = "modern";
   }
 
   // Generic Item Renderer (for List/Minimal/Default) - Defined Unconditionally
@@ -212,24 +223,6 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     }
     return <MagazineItem article={article} onClick={handleOpenReader} />;
   }, [handleOpenReader, logger]);
-
-  // Grid Item Renderer - Memoized to reduce closure recreation
-  const gridItemContent: GridItemContent<Article, unknown> = useCallback((index: number, article: Article) => {
-    if (index === 0) {
-        logger.debugTag('FEED', 'Virtuoso started rendering grid items');
-    }
-    return (
-      <ArticleItem
-        article={article}
-        index={index}
-        timeFormat={timeFormat}
-        onClick={handleOpenReader}
-        showImage={true}
-        renderMode="full"
-        layoutMode="grid"
-      />
-    );
-  }, [timeFormat, handleOpenReader, logger]);
 
   // Layouts that manage their own container/virtualization for now
   const complexLayouts = [
@@ -264,7 +257,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
     return (
       <div className="feed-layout" data-layout={effectiveLayout}>
-        <Suspense fallback={<div className="container mx-auto px-4 py-8"><FeedSkeleton count={6} layoutMode={effectiveLayout} /></div>}>
+        <Suspense fallback={<div className="feed-page-frame"><FeedSkeleton count={6} layoutMode={effectiveLayout} /></div>}>
           {renderComplexLayout()}
         </Suspense>
       </div>
@@ -273,7 +266,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   // --- VIRTUALIZED LIST HANDLERS ---
   const virtuosoFallback = (
-    <div className="container mx-auto px-4 py-8">
+    <div className="feed-page-frame">
       <FeedSkeleton count={6} layoutMode={effectiveLayout} />
     </div>
   );
@@ -288,7 +281,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
     return (
       <div className="feed-layout" data-layout={effectiveLayout}>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
+        <div className="feed-page-frame" style={{ minHeight: '80vh' }}>
           <Suspense fallback={virtuosoFallback}>
             <Virtuoso
               useWindowScroll
@@ -315,42 +308,10 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     );
   }
 
-  // Grid Layout Handler
-  if (effectiveLayout === 'grid') {
-    return (
-      <div className="feed-layout" data-layout={effectiveLayout}>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
-          <Suspense fallback={virtuosoFallback}>
-            <VirtuosoGrid
-              useWindowScroll
-              data={articles}
-              totalCount={articles.length}
-              components={{ List: GridList, Item: GridItemContainer }}
-              itemContent={gridItemContent}
-              overscan={200}
-            />
-          </Suspense>
-        </div>
-        {readingArticle && (
-          <Suspense fallback={null}>
-            <MagazineReaderModal
-              article={readingArticle}
-              onClose={() => setReadingArticle(null)}
-              onNext={handleNextArticle}
-              onPrev={handlePrevArticle}
-              hasNext={true}
-              hasPrev={true}
-            />
-          </Suspense>
-        )}
-      </div>
-    );
-  }
-
   // Default / List Fallback
   return (
     <div className="feed-layout" data-layout={effectiveLayout}>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8" style={{ minHeight: '80vh' }}>
+      <div className="feed-page-frame" style={{ minHeight: '80vh' }}>
         <Suspense fallback={virtuosoFallback}>
           <Virtuoso
             useWindowScroll

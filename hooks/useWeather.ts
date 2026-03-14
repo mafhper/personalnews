@@ -16,20 +16,20 @@ interface WeatherState {
 const WEATHER_STORAGE_KEY = 'personalnews_weather_city';
 const DEFAULT_CITY = 'São Paulo';
 
-// Weather codes to description/icon mapping
+// Weather codes to description mapping
 const weatherCodeToIcon = (code: number, isDay: boolean): string => {
   // WMO Weather interpretation codes (WW)
   // https://open-meteo.com/en/docs
-  if (code === 0) return isDay ? '☀️' : '🌙'; // Clear sky
-  if (code <= 3) return isDay ? '⛅' : '☁️'; // Partly cloudy
-  if (code <= 48) return '🌫️'; // Fog
-  if (code <= 57) return '🌧️'; // Drizzle
-  if (code <= 67) return '🌧️'; // Rain
-  if (code <= 77) return '❄️'; // Snow
-  if (code <= 82) return '🌧️'; // Rain showers
-  if (code <= 86) return '🌨️'; // Snow showers
-  if (code >= 95) return '⛈️'; // Thunderstorm
-  return '☁️';
+  if (code === 0) return isDay ? 'Clear' : 'Night'; // Clear sky
+  if (code <= 3) return 'Cloudy'; // Partly cloudy
+  if (code <= 48) return 'Fog'; // Fog
+  if (code <= 57) return 'Drizzle'; // Drizzle
+  if (code <= 67) return 'Rain'; // Rain
+  if (code <= 77) return 'Snow'; // Snow
+  if (code <= 82) return 'Showers'; // Rain showers
+  if (code <= 86) return 'Snow'; // Snow showers
+  if (code >= 95) return 'Storm'; // Thunderstorm
+  return 'Weather';
 };
 
 // Simple geocoding using Open-Meteo's geocoding API
@@ -113,7 +113,7 @@ export const useWeather = () => {
   }, [fetchWeather, state.city]);
 
   const getWeatherIcon = useCallback(() => {
-    if (!state.data) return '🌡️';
+    if (!state.data) return 'Weather';
     return weatherCodeToIcon(state.data.weatherCode, state.data.isDay);
   }, [state.data]);
 

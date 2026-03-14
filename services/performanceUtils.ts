@@ -300,7 +300,7 @@ export const PerformanceLogger = {
     ];
 
     if (slowOperations.length > 0) {
-      console.group('🐌 Slow Operations (>' + thresholdMs + 'ms)');
+      console.group('Slow Operations (>' + thresholdMs + 'ms)');
       slowOperations.forEach(op => {
         console.warn(`${op.name}: ${op.duration?.toFixed(2)}ms`, op.metadata);
       });
@@ -320,7 +320,7 @@ export const PerformanceLogger = {
     ];
 
     if (failedOperations.length > 0) {
-      console.group('❌ Failed Operations');
+      console.group('Failed Operations');
       failedOperations.forEach(op => {
         console.error(`${op.name}: ${op.error}`, op.metadata);
       });
@@ -598,5 +598,5 @@ if (import.meta.env.DEV) {
     trends: () => PerformanceLogger.logPerformanceTrends()
   };
 
-  console.log('🔧 Performance debugging available via window.perf');
+  console.log('Performance debugging available via window.perf');
 }

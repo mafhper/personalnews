@@ -96,3 +96,57 @@ export interface QualitySnapshot {
     stability: StabilityMetrics;
   };
 }
+
+export type UiGateBoard = 'marketing-page' | 'ui-release';
+export type UiGateArtifactKind = 'promo-page' | 'feed-layout';
+export type UiGateVerdict = 'APPROVED' | 'APPROVED_WITH_REMARKS' | 'BLOCKED';
+export type UiGateDimension =
+  | 'purpose'
+  | 'typography'
+  | 'consistency'
+  | 'hierarchy'
+  | 'layoutDiscipline'
+  | 'wcag';
+export type UiGateCriticalFlag =
+  | 'duplicate-cta'
+  | 'decorative-numbering'
+  | 'competing-secondary-column'
+  | 'subtitle-axis-break'
+  | 'hero-image-cropping'
+  | 'brand-spelling'
+  | 'purposeless-illustration';
+
+export interface UiGateReview {
+  artifactId: string;
+  artifactKind: UiGateArtifactKind;
+  artifactLabel: string;
+  board: UiGateBoard;
+  notes?: string[];
+  evidence?: string[];
+  scores: Record<UiGateDimension, number>;
+  criticalFlags: UiGateCriticalFlag[];
+}
+
+export interface UiGateReviewResult extends UiGateReview {
+  weightedScore: number;
+  verdict: UiGateVerdict;
+  blockReasons: string[];
+}
+
+export interface UiGateReport {
+  generatedAt: string;
+  version: 1;
+  weights: Record<UiGateDimension, number>;
+  threshold: {
+    minimumAverage: number;
+    minimumCoreScore: number;
+    minimumWcagScore: number;
+  };
+  results: UiGateReviewResult[];
+  summary: {
+    total: number;
+    approved: number;
+    approvedWithRemarks: number;
+    blocked: number;
+  };
+}

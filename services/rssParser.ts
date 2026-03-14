@@ -778,7 +778,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           }
         } else {
           if (process.env.NODE_ENV === 'development') {
-            console.warn('[ImageExtraction] ⚠️ DOMParser not available, using regex fallback', {
+            console.warn('[ImageExtraction] DOMParser not available, using regex fallback', {
               articleTitle: title.substring(0, 50) + '...'
             });
           }
@@ -786,7 +786,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         }
       } catch (e) {
         if (process.env.NODE_ENV === 'development') {
-          console.warn('[ImageExtraction] ⚠️ DOMParser failed, using regex fallback', {
+          console.warn('[ImageExtraction] DOMParser failed, using regex fallback', {
             error: e instanceof Error ? e.message : String(e),
             articleTitle: title.substring(0, 50) + '...'
           });
@@ -888,14 +888,14 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           } catch (e) {
             // Invalid URL - already normalized, so this shouldn't happen, but just in case
             if (process.env.NODE_ENV === 'development') {
-              console.warn('[ImageValidation] ❌ Failed to validate URL', { url: imageUrl.substring(0, 80), error: e });
+              console.warn('[ImageValidation] Failed to validate URL', { url: imageUrl.substring(0, 80), error: e });
             }
             validImageUrl = undefined;
           }
         }
       } else {
         if (process.env.NODE_ENV === 'development') {
-          console.warn('[ImageValidation] ⚠️ No image URL selected', {
+          console.warn('[ImageValidation] No image URL selected', {
             candidatesCount: imageCandidates.length,
             articleTitle: title.substring(0, 50) + '...'
           });

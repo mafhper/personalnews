@@ -9,6 +9,8 @@ import {
   importTheme,
   defaultThemePresets,
   hexToRgb,
+  resolveThemeContrastTokens,
+  validateThemeAccessibility,
 } from '../services/themeUtils';
 import type { ExtendedTheme } from '../types';
 
@@ -202,18 +204,22 @@ describe('themeUtils', () => {
     });
 
     it('should validate RGB color format correctly', () => {
-      const validTheme = {
-        id: 'test',
-        name: 'Test Theme',
+      expect(validateTheme(defaultThemePresets[1].theme)).toBe(true);
+    });
+
+    it('should reject themes that still fail contrast expectations', () => {
+      const invalidContrastTheme: ExtendedTheme = {
+        id: 'low-contrast',
+        name: 'Low Contrast',
         colors: {
-          primary: '255 255 255',
-          secondary: '0 0 0',
-          accent: '128 128 128',
-          background: '26 32 44',
-          surface: '45 55 72',
-          text: '247 250 252',
-          textSecondary: '160 174 192',
-          border: '75 85 99',
+          primary: '180 180 180',
+          secondary: '235 235 235',
+          accent: '210 210 210',
+          background: '245 245 245',
+          surface: '247 247 247',
+          text: '242 242 242',
+          textSecondary: '238 238 238',
+          border: '220 220 220',
           success: '16 185 129',
           warning: '245 158 11',
           error: '239 68 68',
@@ -224,7 +230,8 @@ describe('themeUtils', () => {
         shadows: true,
         animations: true,
       };
-      expect(validateTheme(validTheme)).toBe(true);
+
+      expect(validateTheme(invalidContrastTheme)).toBe(false);
     });
   });
 
@@ -283,6 +290,14 @@ describe('themeUtils', () => {
       expect(mockSetProperty).toHaveBeenCalledWith('--color-primary', theme.colors.primary);
       expect(mockSetProperty).toHaveBeenCalledWith('--color-accent', theme.colors.accent);
       expect(mockSetProperty).toHaveBeenCalledWith('--color-background', theme.colors.background);
+      expect(mockSetProperty).toHaveBeenCalledWith(
+        '--theme-chip-bg',
+        expect.any(String),
+      );
+      expect(mockSetProperty).toHaveBeenCalledWith(
+        '--theme-pagination-text',
+        expect.any(String),
+      );
     });
 
     it('should apply layout and density settings', () => {
@@ -357,6 +372,19 @@ describe('themeUtils', () => {
       const ids = defaultThemePresets.map(preset => preset.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(ids.length);
+    });
+  });
+
+  describe('contrast tokens', () => {
+    it('should derive readable tokens for all default presets', () => {
+      defaultThemePresets.forEach((preset) => {
+        const tokens = resolveThemeContrastTokens(preset.theme);
+        const validation = validateThemeAccessibility(preset.theme);
+
+        expect(tokens.headerBackground).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
+        expect(tokens.badgeText).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
+        expect(validation.isAccessible).toBe(true);
+      });
     });
   });
 });

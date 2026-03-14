@@ -6,6 +6,7 @@ import { HeaderIcons } from "./icons";
 import FeedDropdown from "./FeedDropdown";
 import { useAppearance } from "../hooks/useAppearance";
 import { useLanguage } from "../hooks/useLanguage";
+import { APP_BRAND_NAME } from "../config/brand";
 
 interface HeaderProps {
   onManageFeedsClick: () => void;
@@ -71,6 +72,20 @@ const Header: React.FC<HeaderProps> = (props) => {
     return "floating";
   })();
   const { t } = useLanguage();
+  const normalizeBrandTitle = (value?: string) => {
+    const normalized = (value || "").trim();
+    const compact = normalized.toLowerCase().replace(/\s+/g, "");
+    const canonicalCompact = APP_BRAND_NAME.toLowerCase().replace(/\s+/g, "");
+
+    if (!normalized || compact === canonicalCompact) {
+      return APP_BRAND_NAME;
+    }
+
+    return normalized;
+  };
+  const resolvedBrandTitle = normalizeBrandTitle(
+    headerConfig.customTitle || t("app.title"),
+  );
   const [isHeaderVisible, setIsHeaderVisible] = useState(
     headerPosition !== 'hidden'
   );
@@ -162,9 +177,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
   // Update document title and favicon based on headerConfig
   useEffect(() => {
-    if (headerConfig.customTitle) {
-      document.title = headerConfig.customTitle;
-    }
+    document.title = resolvedBrandTitle;
 
     // Update favicon intelligently based on theme and header config
     const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
@@ -231,19 +244,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     const applyFavicon = () => {
       const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       updateSocialImages(prefersDark);
-      if (headerConfig.logoUrl) {
-        if (headerConfig.logoUrl.trim().startsWith('<svg')) {
-          const svg = headerConfig.logoUrl;
-          const encodedSvg = encodeURIComponent(svg);
-          setHref(`data:image/svg+xml;charset=utf-8,${encodedSvg}`);
-          return;
-        }
-        // If custom URL provided, try to use it; if it contains "dark" and prefersDark false, fallback will handle
-        setHref(headerConfig.logoUrl);
-        return;
-      }
-
-      // No custom logoUrl: choose themed favicon with fallbacks
+      // Choose themed favicon with fallbacks
       const primary = prefersDark ? favDarkSvg : favLightSvg;
       const secondary = prefersDark ? favLightSvg : favDarkSvg;
       const tertiary = prefersDark ? favDarkIco : favLightIco;
@@ -276,12 +277,12 @@ const Header: React.FC<HeaderProps> = (props) => {
         }
       };
     }
-  }, [headerConfig.customTitle, headerConfig.logoUrl]);
+  }, [resolvedBrandTitle, t]);
 
   const headerPositionClasses = {
     static: "relative w-full",
     sticky: "fixed left-0 right-0 z-50 w-full",
-    floating: "fixed left-1/2 -translate-x-1/2 w-[96%] max-w-7xl rounded-xl md:rounded-2xl border border-white/10 z-50",
+    floating: "fixed left-1/2 -translate-x-1/2 w-[96%] max-w-7xl rounded-xl md:rounded-2xl border z-50",
     hidden: `fixed left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isHeaderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`,
   };
 
@@ -343,11 +344,42 @@ const Header: React.FC<HeaderProps> = (props) => {
     return `rgba(${r},${g},${b},${alpha})`;
   };
 
+  const getColorTriplet = (hex: string) => {
+    if (!/^#?[0-9a-f]{6}$/i.test(hex)) {
+      return '10 10 12';
+    }
+
+    const normalizedHex = hex.startsWith('#') ? hex : `#${hex}`;
+    const r = parseInt(normalizedHex.slice(1, 3), 16);
+    const g = parseInt(normalizedHex.slice(3, 5), 16);
+    const b = parseInt(normalizedHex.slice(5, 7), 16);
+
+    return `${r} ${g} ${b}`;
+  };
+
+  const getReadableTextTriplet = (hex: string) => {
+    if (!/^#?[0-9a-f]{6}$/i.test(hex)) {
+      return '248 250 252';
+    }
+
+    const normalizedHex = hex.startsWith('#') ? hex : `#${hex}`;
+    const r = parseInt(normalizedHex.slice(1, 3), 16);
+    const g = parseInt(normalizedHex.slice(3, 5), 16);
+    const b = parseInt(normalizedHex.slice(5, 7), 16);
+    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+    return luminance > 0.58 ? '17 24 39' : '248 250 252';
+  };
+
   const styleBgOpacity = headerConfig.style === 'minimal'
     ? Math.min(normalizedBgOpacity, 0.5)
     : normalizedBgOpacity;
   const headerBgStyle = hexToRgba(bgColor, styleBgOpacity);
   const headerBorderStyle = hexToRgba(borderColor, borderOpacity / 100);
+  const headerBgTriplet = getColorTriplet(bgColor);
+  const headerTextTriplet = getReadableTextTriplet(bgColor);
+  const headerMutedTriplet =
+    headerTextTriplet === '17 24 39' ? '71 85 105' : '203 213 225';
 
   // Category area styles
   const catBgColor = headerConfig.categoryBackgroundColor ?? '#ffffff';
@@ -356,19 +388,18 @@ const Header: React.FC<HeaderProps> = (props) => {
   const headerStyleVariant = headerConfig.style ?? 'default';
   const categoryContainerClass = headerStyleVariant === 'minimal'
     ? 'border border-transparent bg-transparent'
-    : headerStyleVariant === 'centered'
-      ? 'border border-white/12 bg-white/6 shadow-[0_8px_22px_-18px_rgba(0,0,0,0.6)]'
-      : 'border border-white/10 bg-white/5';
+    : 'feed-header-category-shell';
 
   const mobileCategoryClasses = {
     base: 'flex-shrink-0 min-h-11 px-3.5 py-2 text-xs font-semibold transition-all whitespace-nowrap snap-start',
     active: headerStyleVariant === 'minimal'
-      ? 'text-white border-b-2 border-white/60'
-      : 'text-white bg-white/12 border border-white/20 shadow-[0_8px_18px_-14px_rgba(0,0,0,0.8)]',
+      ? 'feed-header-title border-b-2 border-[rgb(var(--color-primary))]'
+      : 'feed-header-chip feed-header-chip--active',
     idle: headerStyleVariant === 'minimal'
-      ? 'text-gray-400 border-b-2 border-transparent hover:text-white'
-      : 'text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white',
+      ? 'feed-header-muted border-b-2 border-transparent'
+      : 'feed-header-chip',
   };
+  const headerTextColor = `rgb(${headerTextTriplet})`;
 
   // Scroll Logic for Categories
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -393,9 +424,33 @@ const Header: React.FC<HeaderProps> = (props) => {
     const updateHeaderOffset = () => {
       if (!headerRef.current) return;
       const rect = headerRef.current.getBoundingClientRect();
+      const viewportWidth =
+        typeof window !== "undefined" ? window.innerWidth : 1280;
+      const isMobileViewport = viewportWidth < 768;
+      const isWideViewport = viewportWidth >= 1536;
       const isFixedMode = headerPosition !== 'static';
-      const topGap = headerPosition === 'floating' ? 6 : 0;
-      const gap = headerPosition === 'floating' ? topGap : 8;
+      const topGap =
+        headerPosition === "floating"
+          ? isMobileViewport
+            ? 10
+            : isWideViewport
+              ? 16
+              : 12
+          : 0;
+      const gap =
+        headerPosition === "floating"
+          ? isMobileViewport
+            ? 18
+            : isWideViewport
+              ? 26
+              : 22
+          : headerPosition === "static"
+            ? isMobileViewport
+              ? 12
+              : 16
+            : isMobileViewport
+              ? 14
+              : 18;
       // +2px safety buffer to avoid occasional overlap during dynamic reflow.
       const offset = isFixedMode ? Math.max(0, rect.height + 2) : 0;
       document.documentElement.style.setProperty('--feed-header-offset', `${Math.round(offset)}px`);
@@ -423,7 +478,7 @@ const Header: React.FC<HeaderProps> = (props) => {
         resizeObserver.disconnect();
       }
       document.documentElement.style.setProperty('--feed-header-offset', '0px');
-      document.documentElement.style.setProperty('--feed-header-gap', '8px');
+      document.documentElement.style.setProperty('--feed-header-gap', '14px');
       document.documentElement.style.setProperty('--feed-header-top-gap', '0px');
     };
   }, [
@@ -452,15 +507,39 @@ const Header: React.FC<HeaderProps> = (props) => {
     }
   };
 
-  const getLogoSizeClasses = (size: 'sm' | 'md' | 'lg' | undefined) => {
-    switch (size) {
-      case 'sm': return 'w-6 h-6';
-      case 'lg': return 'w-12 h-12';
-      case 'md':
-      default: return 'w-8 h-8';
-    }
-  };
-
+  const headerInlineStyle: React.CSSProperties &
+    Record<
+      | '--theme-header-text'
+      | '--theme-control-text'
+      | '--theme-text-secondary-readable'
+      | '--theme-control-bg',
+      string
+    > = {
+      backgroundColor: headerBgStyle,
+      backdropFilter: blurValue > 0 ? `blur(${blurValue}px)` : undefined,
+      WebkitBackdropFilter: blurValue > 0 ? `blur(${blurValue}px)` : undefined,
+      position:
+        headerPosition === 'floating' ||
+        headerPosition === 'sticky' ||
+        headerPosition === 'hidden'
+          ? 'fixed'
+          : undefined,
+      top:
+        headerPosition === 'floating'
+          ? 'var(--feed-header-top-gap, 6px)'
+          : headerPosition !== 'static'
+            ? '0px'
+            : undefined,
+      marginTop: headerPosition === 'static' ? '0px' : undefined,
+      marginBottom: headerPosition === 'static' ? '0px' : undefined,
+      color: headerTextColor,
+      '--theme-header-text': headerTextTriplet,
+      '--theme-control-text': headerTextTriplet,
+      '--theme-text-secondary-readable': headerMutedTriplet,
+      '--theme-control-bg': headerBgTriplet,
+      borderColor: headerPosition === 'floating' ? headerBorderStyle : undefined,
+      borderBottomColor: isScrolled && !isFloating ? headerBorderStyle : 'transparent',
+    };
 
   return (
     <>
@@ -471,16 +550,7 @@ const Header: React.FC<HeaderProps> = (props) => {
         } ${headerPosition === 'floating' ? 'overflow-hidden [background-clip:padding-box]' : ''} ${
           isScrolled && !isFloating ? 'border-b' : ''
         }`}
-        style={{
-          backgroundColor: headerBgStyle,
-          backdropFilter: blurValue > 0 ? `blur(${blurValue}px)` : undefined,
-          WebkitBackdropFilter: blurValue > 0 ? `blur(${blurValue}px)` : undefined,
-          position: headerPosition === 'floating' || headerPosition === 'sticky' || headerPosition === 'hidden' ? 'fixed' : undefined,
-          top: headerPosition === 'floating' ? 'var(--feed-header-top-gap, 6px)' : headerPosition !== 'static' ? '0px' : undefined,
-          marginTop: headerPosition === 'static' ? '0px' : undefined,
-          marginBottom: headerPosition === 'static' ? '0px' : undefined,
-          borderBottomColor: isScrolled && !isFloating ? headerBorderStyle : 'transparent',
-        }}
+        style={headerInlineStyle}
       >
         <div
           className={`pointer-events-none absolute inset-0 rounded-[inherit] ${
@@ -526,48 +596,21 @@ const Header: React.FC<HeaderProps> = (props) => {
                     </div>
                   )}
                   <div className="relative z-10">
-                    {headerConfig.customLogoSvg ? (
-                      <div
-                        key={headerConfig.logoColorMode} // Force re-render on mode change to clear styles
-                        className={`
-                            ${getLogoSizeClasses(headerConfig.logoSize)}
-                            ${headerConfig.logoColorMode === 'theme' ? 'text-[rgb(var(--color-accent))]' : ''}
-                            [&>svg]:w-full [&>svg]:h-full
-                            ${headerConfig.logoColorMode !== 'original' ? "[&_*:not([fill='none'])]:!fill-current [&_*:not([stroke='none'])]:!stroke-current" : ''}
-                        `}
-                        style={{ color: headerConfig.logoColorMode === 'custom' ? headerConfig.logoColor : undefined }}
-                        dangerouslySetInnerHTML={{ __html: headerConfig.customLogoSvg }}
-                      />
-                    ) : (
-                      <Logo
-                        size={headerConfig.logoSize}
-                        isClickable={true}
-                        onClick={handleLogoClick}
-                        customSrc={headerConfig.logoUrl}
-                        useThemeColor={headerConfig.useThemeColor}
-                      />
-                    )}
+                    <Logo
+                      size={headerConfig.logoSize}
+                      isClickable={true}
+                      onClick={handleLogoClick}
+                    />
                   </div>
                 </div>
               )}
               {headerConfig.showTitle ? (
                 <h1
-                  className="font-bold tracking-tight cursor-pointer pb-1 text-lg md:text-xl truncate max-w-[120px] sm:max-w-[200px] md:max-w-none"
+                  className="feed-header-title font-bold tracking-tight cursor-pointer pb-1 text-lg md:text-xl truncate max-w-[120px] sm:max-w-[200px] md:max-w-none"
                   onClick={handleTitleClick}
-                  style={{ color: headerConfig.titleGradient?.enabled ? undefined : (headerConfig.titleColor || 'rgb(var(--color-text))') }}
+                  style={{ color: headerTextColor }}
                 >
-                  {headerConfig.titleGradient?.enabled ? (
-                    <span
-                      className="bg-clip-text text-transparent"
-                      style={{
-                        backgroundImage: `linear-gradient(${headerConfig.titleGradient.direction || 'to right'}, ${headerConfig.titleGradient.from}, ${headerConfig.titleGradient.to})`,
-                      }}
-                    >
-                      {headerConfig.customTitle || t('app.title')}
-                    </span>
-                  ) : (
-                    <span>{headerConfig.customTitle || t('app.title')}</span>
-                  )}
+                  <span>{resolvedBrandTitle}</span>
                 </h1>
               ) : (
                 <h1 className="sr-only">{t('app.title')}</h1>
@@ -582,7 +625,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <div className={`absolute left-0 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
                   <button
                     onClick={() => scroll('left')}
-                    className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
+                    className="feed-header-scroll-button"
                     aria-label="Scroll left"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -596,7 +639,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                   ref={scrollContainerRef}
                   onScroll={checkScroll}
                   className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all overflow-x-auto no-scrollbar max-w-full scroll-smooth ${categoryContainerClass} ${headerStyleVariant === 'minimal' ? 'px-0' : ''}`}
-                  style={{ ...(headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: hexToRgba('#ffffff', 0.06) }), scrollbarWidth: 'none' }}
+                  style={{ ...(headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: headerBorderStyle }), scrollbarWidth: 'none' }}
                 >
                   {activeCategories.map((category) => (
                     <div key={category.id} className="flex-shrink-0">
@@ -617,7 +660,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
                   <button
                     onClick={() => scroll('right')}
-                    className="p-1.5 rounded-full bg-gray-800/80 backdrop-blur-md text-white hover:bg-[rgb(var(--color-primary))] border border-white/10 shadow-lg transition-all"
+                    className="feed-header-scroll-button"
                     aria-label="Scroll right"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -633,7 +676,7 @@ const Header: React.FC<HeaderProps> = (props) => {
             {isCentered && (
               <div
                 className={`hidden lg:flex items-center space-x-1 p-1 rounded-full transition-all flex-grow justify-center ${categoryContainerClass}`}
-                style={headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: hexToRgba('#ffffff', 0.06) }}
+                style={headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: headerBorderStyle }}
               >
                 {activeCategories.map((category) => (
                   <FeedDropdown
@@ -657,7 +700,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               <div className="hidden md:flex items-center space-x-1">
                 <button
                   onClick={props.onRefreshClick}
-                  className="p-3 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="feed-header-control"
                   title={t('header.refresh')}
                   aria-label={t('header.refresh')}
                 >
@@ -666,7 +709,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
                 <button
                   onClick={props.onOpenFavorites}
-                  className="p-3 text-gray-400 hover:text-[rgb(var(--color-accent))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="feed-header-control"
                   title={t('header.favorites')}
                   aria-label={t('header.favorites')}
                 >
@@ -675,7 +718,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
                 <button
                   onClick={props.onOpenSettings}
-                  className="p-3 text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="feed-header-control"
                   title="Configurações"
                   aria-label="Configurações"
                 >
@@ -687,7 +730,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
                 <button
                   onClick={props.onManageFeedsClick}
-                  className="p-3 text-gray-400 hover:text-[rgb(var(--color-primary))] hover:bg-[rgba(255,255,255,0.1)] rounded-full transition-all duration-200"
+                  className="feed-header-control"
                   title={t('header.manage_feeds')}
                   aria-label={t('header.manage_feeds')}
                 >
@@ -699,10 +742,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               <div className="lg:hidden ml-2">
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className={`p-2 rounded-lg transition-colors ${mobileMenuOpen
-                    ? "bg-[rgba(255,255,255,0.1)] text-white"
-                    : "text-gray-400 hover:text-white hover:bg-[rgba(255,255,255,0.05)]"
-                    }`}
+                  className={`feed-header-control ${mobileMenuOpen ? "feed-header-control--filled" : ""}`}
                   aria-label="Menu"
                 >
                   <HeaderIcons.Menu
@@ -716,7 +756,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           </div>
 
           {/* MOBILE/TABLET: Categories (Second row) - always visible, expandable */}
-          <div className="md:hidden w-full py-1.5 border-t border-white/5 bg-[rgb(var(--color-surface))]/20">
+          <div className="feed-header-mobile-bar md:hidden w-full py-1.5">
             <div className="flex items-center gap-1.5 px-3">
               <div className="relative flex-1 min-w-0">
                 <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[rgb(var(--color-background))]/70 to-transparent" />
@@ -743,7 +783,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               </div>
               <button
                 onClick={() => setMobileCategoriesOpen((prev) => !prev)}
-                className="shrink-0 p-2 rounded-full border border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                className="feed-header-control feed-header-control--filled shrink-0"
                 aria-label={mobileCategoriesOpen ? "Recolher categorias" : "Expandir categorias"}
               >
                 <HeaderIcons.ChevronDown
@@ -759,17 +799,17 @@ const Header: React.FC<HeaderProps> = (props) => {
                   const feeds = props.categorizedFeeds[category.id] || [];
                   const isExpanded = mobileExpandedCategory === category.id;
                   return (
-                    <div key={category.id} className="rounded-2xl border border-white/8 bg-white/5 p-3">
+                    <div key={category.id} className="feed-header-panel rounded-2xl p-3">
                       <button
                         onClick={() =>
                           setMobileExpandedCategory((prev) =>
                             prev === category.id ? null : category.id
                           )
                         }
-                        className="w-full min-h-11 py-2 flex items-center justify-between text-sm text-white/80"
+                        className="feed-header-title w-full min-h-11 py-2 flex items-center justify-between text-sm"
                       >
                         <span className="font-semibold">{category.name}</span>
-                        <span className="text-xs text-white/50">{feeds.length}</span>
+                        <span className="feed-header-muted text-xs">{feeds.length}</span>
                         <HeaderIcons.ChevronDown
                           size="xs"
                           className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
@@ -785,14 +825,14 @@ const Header: React.FC<HeaderProps> = (props) => {
                                   props.onNavigation(category.id, feed.url);
                                   setMobileCategoriesOpen(false);
                                 }}
-                                className="text-[10px] px-2.5 py-1 rounded-full border border-white/10 bg-black/20 text-white/70 hover:text-white hover:border-white/30 transition-all"
+                                className="feed-header-chip text-[10px] px-2.5 py-1 rounded-full transition-all"
                                 title={feed.customTitle || feed.url}
                               >
                                 {getFeedLabel(feed)}
                               </button>
                             ))
                           ) : (
-                            <span className="text-xs text-white/40">
+                            <span className="feed-header-muted text-xs">
                               Sem feeds nesta categoria
                             </span>
                           )}
@@ -821,13 +861,13 @@ const Header: React.FC<HeaderProps> = (props) => {
 
         {/* Drawer Content */}
         <div
-          className={`absolute top-0 right-0 bottom-0 w-[80%] max-w-sm bg-[rgb(var(--color-surface))] border-l border-[rgba(255,255,255,0.08)] shadow-2xl transform transition-transform duration-300 ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          className={`feed-header-drawer absolute top-0 right-0 bottom-0 w-[80%] max-w-sm border-l border-[rgb(var(--color-border))]/35 shadow-2xl transform transition-transform duration-300 ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"
             }`}
         >
           <div className="flex flex-col h-full">
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">{t('header.menu')}</h2>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white">
+            <div className="flex items-center justify-between border-b border-[rgb(var(--color-border))]/35 p-4">
+              <h2 className="feed-header-title text-lg font-bold">{t('header.menu')}</h2>
+              <button onClick={() => setMobileMenuOpen(false)} className="feed-header-control">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -850,28 +890,28 @@ const Header: React.FC<HeaderProps> = (props) => {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => { props.onManageFeedsClick(); setMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center p-4 bg-[rgba(139,92,246,0.1)] text-[rgb(var(--color-primary))] rounded-xl font-medium border border-[rgba(139,92,246,0.2)]"
+                  className="feed-header-drawer-card feed-header-drawer-card--primary"
                 >
                   <HeaderIcons.Feeds showBackground={false} size="md" />
                   <span className="mt-2 text-xs">{t('feeds.tab.feeds')}</span>
                 </button>
                 <button
                   onClick={() => { props.onOpenFavorites(); setMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center p-4 bg-[rgba(255,255,255,0.05)] text-gray-300 rounded-xl font-medium hover:bg-[rgba(255,255,255,0.1)]"
+                  className="feed-header-drawer-card"
                 >
                   <HeaderIcons.Favorites showBackground={false} size="md" />
                   <span className="mt-2 text-xs">{t('header.favorites')}</span>
                 </button>
                 <button
                   onClick={() => { props.onOpenSettings(); setMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center p-4 bg-[rgba(255,255,255,0.05)] text-gray-300 rounded-xl font-medium hover:bg-[rgba(255,255,255,0.1)]"
+                  className="feed-header-drawer-card"
                 >
                   <HeaderIcons.Settings showBackground={false} size="md" />
                   <span className="mt-2 text-xs">{t('settings.title')}</span>
                 </button>
                 <button
                   onClick={() => { props.onRefreshClick(); setMobileMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center p-4 bg-[rgba(255,255,255,0.05)] text-gray-300 rounded-xl font-medium hover:bg-[rgba(255,255,255,0.1)]"
+                  className="feed-header-drawer-card"
                 >
                   <HeaderIcons.Refresh showBackground={false} size="md" />
                   <span className="mt-2 text-xs">{t('action.refresh')}</span>

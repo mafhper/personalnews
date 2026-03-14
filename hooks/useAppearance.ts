@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { HeaderConfig, ContentConfig, LayoutPreset, BackgroundConfig } from '../types';
 import { useExtendedTheme } from './useExtendedTheme';
 import { DEFAULT_CONFIG } from '../services/auraWallpaperService';
 import { BUILT_LAYOUT_PRESETS } from '../config/layoutPresets.config';
+import { FEED_LAYOUT_IDS } from '../config/feedLayoutCatalog';
 import { INITIAL_APP_CONFIG } from '../constants/curatedFeeds';
 import { useLogger } from '../services/logger';
 import { DEFAULT_HEADER_CONFIG, DEFAULT_CONTENT_CONFIG } from '../config/defaultConfig';
@@ -21,6 +22,12 @@ const defaultBackgroundConfig: BackgroundConfig = {
 // Layout presets agora vêm do arquivo de configuração centralizado
 // Edite config/layoutPresets.config.ts para ajustar os presets
 export const LAYOUT_PRESETS: LayoutPreset[] = BUILT_LAYOUT_PRESETS;
+const VALID_LAYOUT_IDS = new Set(LAYOUT_PRESETS.map((preset) => preset.id));
+const VALID_LAYOUT_MODES = new Set<ContentConfig["layoutMode"]>([
+  "default",
+  ...FEED_LAYOUT_IDS,
+]);
+const MODERN_LAYOUT_ID = "modern";
 
 interface UserOverrides {
   header?: Partial<HeaderConfig>;
@@ -56,6 +63,89 @@ export const useAppearance = () => {
     'appearance-overrides',
     {}
   );
+
+  useEffect(() => {
+    if (activeLayoutId && !VALID_LAYOUT_IDS.has(activeLayoutId)) {
+      logger.warn("Invalid persisted layout detected, falling back to modern", {
+        additionalData: { activeLayoutId },
+      });
+      setActiveLayoutId(MODERN_LAYOUT_ID);
+    }
+  }, [activeLayoutId, logger, setActiveLayoutId]);
+
+  useEffect(() => {
+    if (
+      contentConfig.layoutMode &&
+      !VALID_LAYOUT_MODES.has(contentConfig.layoutMode)
+    ) {
+      logger.warn("Invalid content layout detected, falling back to modern", {
+        additionalData: { layoutMode: contentConfig.layoutMode },
+      });
+      setContentConfig((prev) => ({
+        ...prev,
+        layoutMode: MODERN_LAYOUT_ID as ContentConfig["layoutMode"],
+      }));
+    }
+  }, [contentConfig.layoutMode, logger, setContentConfig]);
+
+  useEffect(() => {
+    const hasDeprecatedHeaderControls = Boolean(
+      headerConfig.logoUrl ||
+      headerConfig.customLogoSvg ||
+      headerConfig.logoColor ||
+      headerConfig.logoColorMode ||
+      headerConfig.syncFavicon !== undefined ||
+      headerConfig.titleColor ||
+      headerConfig.titleGradient ||
+      headerConfig.useThemeColor !== undefined
+    );
+
+    if (!hasDeprecatedHeaderControls) {
+      return;
+    }
+
+    logger.info("Removing deprecated header customization fields", {
+      additionalData: {
+        hasLogoUrl: Boolean(headerConfig.logoUrl),
+        hasCustomLogoSvg: Boolean(headerConfig.customLogoSvg),
+        hasTitleColor: Boolean(headerConfig.titleColor),
+        hasTitleGradient: Boolean(headerConfig.titleGradient),
+      },
+    });
+
+    setHeaderConfig((prev) => ({
+      ...prev,
+      logoUrl: null,
+      customLogoSvg: undefined,
+      logoColor: undefined,
+      logoColorMode: undefined,
+      syncFavicon: undefined,
+      titleColor: undefined,
+      titleGradient: undefined,
+      useThemeColor: undefined,
+    }));
+
+    setUserOverrides((prev) => {
+      if (!prev?.header) return prev;
+
+      const {
+        logoUrl: _logoUrl,
+        customLogoSvg: _customLogoSvg,
+        logoColor: _logoColor,
+        logoColorMode: _logoColorMode,
+        syncFavicon: _syncFavicon,
+        titleColor: _titleColor,
+        titleGradient: _titleGradient,
+        useThemeColor: _useThemeColor,
+        ...cleanHeaderOverrides
+      } = prev.header;
+
+      return {
+        ...prev,
+        header: cleanHeaderOverrides,
+      };
+    });
+  }, [headerConfig, logger, setHeaderConfig, setUserOverrides]);
 
   const updateHeaderConfig = useCallback((updates: Partial<HeaderConfig>, persistOverride: boolean = true) => {
     logger.debugTag('APPEARANCE', 'Header Update Call:', { updates, persistOverride });

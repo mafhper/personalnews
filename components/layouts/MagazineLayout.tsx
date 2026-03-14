@@ -69,13 +69,13 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
   let visibleArticles: Article[] = [];
   if (paginationType === 'loadMore') {
-    visibleArticles = articles.slice(0, displayLimit);
+    visibleArticles = articles;
   } else {
     visibleArticles = articles;
   }
 
   const handleLoadMore = () => {
-    setDisplayLimit(prev => Math.min(prev + 20, articles.length));
+    // Handled globally
   }
 
   const handleOpenReader = (article: Article) => {
@@ -131,7 +131,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1040px] 2xl:max-w-[1120px] px-4 sm:px-6 lg:px-8 xl:px-10 py-8 animate-in fade-in duration-300 min-h-screen">
+    <div className="feed-page-frame py-12 animate-in fade-in duration-300 min-h-screen pb-16">
       <div className="flex items-center justify-between border-b border-[rgb(var(--color-border))]/40 pb-4 mb-8">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.35em] text-[rgb(var(--color-textSecondary))] font-black">
           <span className="feed-accent-text">{t('layout.magazine') || 'Magazine'}</span>
@@ -149,9 +149,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
           className="relative group cursor-pointer overflow-hidden rounded-2xl bg-[rgb(var(--color-surface))]/90 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.8)]"
           onClick={() => handleOpenReader(heroArticle)}
         >
-          <div className="grid xl:grid-cols-12 gap-0">
+          <div className="grid xl:grid-cols-12 gap-0 items-stretch">
             {/* Hero Image */}
-            <div className="relative aspect-[16/10] sm:aspect-[4/3] xl:aspect-auto xl:col-span-7 xl:min-h-[480px] overflow-hidden flex-1">
+            <div className="relative aspect-[16/10] sm:aspect-[4/3] xl:aspect-auto xl:col-span-7 xl:min-h-[500px] overflow-hidden flex-1 self-stretch">
               <ArticleImage
                 article={heroArticle}
                 width={1200}
@@ -171,21 +171,21 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             </div>
 
             {/* Hero Content */}
-            <div className="flex flex-col justify-center p-6 md:p-10 xl:col-span-5 bg-gradient-to-br from-[rgb(var(--color-surface))] to-[rgb(var(--color-background))] border-t border-white/5 xl:border-t-0 xl:border-l">
+            <div className="flex flex-col justify-center p-6 md:p-10 xl:col-span-5 bg-gradient-to-br from-[rgb(var(--theme-surface-elevated))] to-[rgb(var(--color-background))] border-t border-[rgb(var(--color-border))]/35 xl:border-t-0 xl:border-l">
               <div className="flex items-center gap-3 mb-4">
                 <span className="feed-chip inline-flex items-center px-3 py-1 shadow-sm shadow-black/15">
                   {heroArticle.sourceTitle}
                 </span>
-                <span className="text-sm font-bold text-[rgb(var(--color-textSecondary))] bg-black/10 px-2 py-0.5 rounded">
+                <span className="text-sm font-bold text-[rgb(var(--theme-text-secondary-on-surface))] bg-[rgb(var(--theme-control-bg))]/70 px-2 py-0.5 rounded">
                   {formatTimeAgo(heroArticle.pubDate)}
                 </span>
               </div>
 
-              <h1 className="font-serif text-2xl md:text-4xl font-bold text-[rgb(var(--color-text))] leading-tight mb-4 group-hover:text-white transition-colors">
+              <h1 className="font-serif text-2xl md:text-4xl font-bold text-[rgb(var(--theme-text-on-surface))] leading-tight mb-4 transition-colors">
                 {heroArticle.title}
               </h1>
 
-              <p className="text-[rgb(var(--color-textSecondary))] text-base md:text-lg leading-relaxed line-clamp-3 mb-6 max-w-[48ch]">
+              <p className="text-[rgb(var(--theme-text-secondary-on-surface))] text-base md:text-lg leading-relaxed line-clamp-3 mb-6 max-w-[48ch]">
                 {heroArticle.description}
               </p>
 
@@ -218,7 +218,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             {featuredArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer bg-[rgb(var(--color-surface))]/30 backdrop-blur-md rounded-2xl p-5 border border-white/5 hover:bg-[rgb(var(--color-surface))]/50 hover:border-white/15 transition-all duration-300 shadow-sm"
+                className="group cursor-pointer feed-surface rounded-2xl p-5 transition-all duration-300 shadow-sm"
                 onClick={() => handleOpenReader(article)}
               >
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl mb-5 bg-[rgb(var(--color-background))]">
@@ -244,12 +244,12 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                   <span className="feed-chip text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
                     {article.sourceTitle}
                   </span>
-                  <span className="text-[10px] font-bold text-white/80 group-hover:text-white transition-colors bg-black/20 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-on-surface))] transition-colors bg-[rgb(var(--theme-control-bg))]/70 px-1.5 py-0.5 rounded">
                     {formatTimeAgo(article.pubDate)}
                   </span>
                 </div>
 
-                <h3 className="font-serif font-bold text-lg lg:text-xl text-white leading-tight group-hover:text-white group-hover:underline transition-all line-clamp-2 drop-shadow-sm">
+                <h3 className="font-serif font-bold text-lg lg:text-xl text-[rgb(var(--theme-text-on-surface))] leading-tight group-hover:underline transition-all line-clamp-2">
                   {article.title}
                 </h3>
               </article>
@@ -272,7 +272,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             {gridArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer flex gap-4 p-4 rounded-xl bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-background))] border border-[rgb(var(--color-border))] hover:border-white/15 transition-all relative"
+                className="group cursor-pointer flex gap-4 p-4 rounded-xl feed-surface hover:bg-[rgb(var(--theme-surface-elevated))] transition-all relative"
                 onClick={() => handleOpenReader(article)}
               >
                 <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
@@ -303,7 +303,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                       />
                     </div>
                   </div>
-                  <h3 className="font-semibold text-sm text-[rgb(var(--color-text))] group-hover:text-white transition-colors line-clamp-2 leading-snug">
+                  <h3 className="font-semibold text-sm text-[rgb(var(--theme-text-on-surface))] transition-colors line-clamp-2 leading-snug">
                     {article.title}
                   </h3>
                 </div>
@@ -328,9 +328,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
               {listArticles.map((article, i) => (
                 <article
                   key={i}
-                  className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl bg-[rgb(var(--color-surface))]/80 backdrop-blur-xl border border-white/12 hover:bg-[rgb(var(--color-surface))] hover:border-white/18 transition-all duration-300 shadow-md"
-                  onClick={() => handleOpenReader(article)}
-                >
+                className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl feed-surface transition-all duration-300 shadow-md"
+                onClick={() => handleOpenReader(article)}
+              >
                   <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl bg-[rgb(var(--color-background))] shadow-inner border border-white/10">
                     <ArticleImage
                       article={article}
@@ -345,11 +345,11 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                       <span className="feed-chip text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
                         {article.sourceTitle}
                       </span>
-                      <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] bg-black/5 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-on-surface))] bg-[rgb(var(--theme-control-bg))]/65 px-2 py-0.5 rounded">
                         {formatTimeAgo(article.pubDate)}
                       </span>
                     </div>
-                    <h4 className="font-bold text-base text-[rgb(var(--color-text))] group-hover:text-[rgb(var(--color-text))] group-hover:underline transition-all line-clamp-2 leading-tight">
+                    <h4 className="font-bold text-base text-[rgb(var(--theme-text-on-surface))] group-hover:underline transition-all line-clamp-2 leading-tight">
                       {article.title}
                     </h4>
                   </div>

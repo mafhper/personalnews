@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { usePerformance } from '../hooks/usePerformance';
 import { performanceUtils } from '../services/performanceUtils';
 import { performanceMonitor } from '../services/performanceMonitor';
@@ -11,7 +12,7 @@ interface PerformanceDebuggerProps {
 }
 
 const PerformanceDebugger: React.FC<PerformanceDebuggerProps> = ({
-  enabled = import.meta.env.DEV,
+  enabled = false,
   position = 'bottom-right'
 }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -83,7 +84,7 @@ const PerformanceDebugger: React.FC<PerformanceDebuggerProps> = ({
         className="flex items-center justify-between p-2 cursor-pointer hover:bg-white/10 rounded-t-lg"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <span className="font-semibold">⚡ Performance</span>
+        <span className="font-semibold">Performance</span>
         <div className="flex items-center gap-2">
           <div
             className={`w-2 h-2 rounded-full ${
@@ -92,7 +93,7 @@ const PerformanceDebugger: React.FC<PerformanceDebuggerProps> = ({
             }`}
           />
           {isBackgrounded && <span className="text-yellow-400">BG</span>}
-          <span>{isExpanded ? '▼' : '▶'}</span>
+          {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </div>
       </div>
 
@@ -456,26 +457,26 @@ const PerformanceDebugger: React.FC<PerformanceDebuggerProps> = ({
                   <div className="space-y-1 text-xs">
                     {newSummary.feeds.slowestFeed?.duration && newSummary.feeds.slowestFeed.duration > 2000 && (
                       <div className="flex items-center gap-1 text-yellow-400">
-                        <span>⚠</span>
+                        <span>Alert</span>
                         <span>Slow feed detected</span>
                       </div>
                     )}
                     {newSummary.feeds.failed > 0 && (
                       <div className="flex items-center gap-1 text-red-400">
-                        <span>✗</span>
+                        <span>Fail</span>
                         <span>{newSummary.feeds.failed} feed{newSummary.feeds.failed !== 1 ? 's' : ''} failed</span>
                       </div>
                     )}
                     {newSummary.feeds.cacheHitRate < 50 && newSummary.feeds.total > 3 && (
                       <div className="flex items-center gap-1 text-orange-400">
-                        <span>ℹ</span>
+                        <span>Info</span>
                         <span>Low cache hit rate</span>
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="text-xs text-green-400">✓ All feeds performing well</div>
+                <div className="text-xs text-green-400">All feeds performing well</div>
               )}
 
               {/* Feed Actions */}

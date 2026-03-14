@@ -14,7 +14,7 @@ export const BrutalistSkeleton: React.FC = () => {
     <div className="min-h-screen px-4 sm:px-6 lg:px-10 py-6 font-mono">
       <div className="mx-auto w-full max-w-[1500px]">
         <div className="mb-8 border-b-4 border-black dark:border-white pb-2 h-16 feed-skeleton-block" />
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-7">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-7">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
             <div key={i} className="border-4 border-black dark:border-white h-[450px] feed-skeleton-block" />
           ))}
@@ -162,7 +162,7 @@ export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({ articles }) =>
         </div>
 
         {/* Uniform Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-7 auto-dense">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-7 auto-dense">
           {articles.map((article, index) => (
             <BrutalistCard key={`${article.link}-${index}`} article={article} index={index} />
           ))}

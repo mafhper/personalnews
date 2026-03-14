@@ -934,13 +934,13 @@ export const feedDiscoveryService = new FeedDiscoveryServiceImpl();
 export const getFeedTypeIcon = (type: "rss" | "atom" | "rdf"): string => {
   switch (type) {
     case "rss":
-      return "📡";
+      return "RSS";
     case "atom":
-      return "⚛️";
+      return "ATOM";
     case "rdf":
-      return "🔗";
+      return "RDF";
     default:
-      return "📄";
+      return "RSS";
   }
 };
 

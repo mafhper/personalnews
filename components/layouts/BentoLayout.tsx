@@ -12,7 +12,7 @@ interface BentoLayoutProps {
 
 export const BentoSkeleton: React.FC = () => {
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 pt-4 pb-6">
+    <div className="feed-top-clearance mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 pb-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
         {/* Pattern positions consistent with actual layout */}
         <div className="sm:col-span-2 sm:row-span-2 md:col-span-2 md:row-span-2 min-h-[400px] md:min-h-[500px] feed-skeleton-block rounded-3xl" />
@@ -88,7 +88,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 pt-4 pb-6">
+      <div className="feed-top-clearance mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 pb-6">
         {/* Bento Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-auto gap-4 md:gap-5 grid-flow-dense">
           {articles.map((article, index) => {
@@ -96,6 +96,13 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
             const isHero = style.size === 'hero';
             const isTall = style.size === 'tall';
             const isWide = style.size === 'wide';
+            const bottomBlockClass = isHero
+              ? 'min-h-[7.5rem] md:min-h-[10.5rem]'
+              : isTall
+                ? 'min-h-[6.75rem] md:min-h-[8.5rem]'
+                : isWide
+                  ? 'min-h-[5.5rem] md:min-h-[6.5rem]'
+                  : 'min-h-[4.5rem]';
 
             return (
               <article
@@ -130,15 +137,15 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 feed-accent-bg backdrop-blur-[1px]" />
 
                 {/* Content Layer */}
-                <div className={`relative h-full flex flex-col justify-between p-5 md:p-6`}>
+                <div className="relative flex h-full flex-col p-5 md:p-6">
 
                   {/* Top Part: Source, Date and Favorite */}
-                  <div className="flex justify-between items-start w-full gap-3">
-                    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                      <span className="feed-chip shadow-lg shadow-[rgb(var(--color-accent))]/20 truncate max-w-full">
+                  <div className="flex w-full items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+                      <span className="feed-chip max-w-fit self-start whitespace-nowrap shadow-lg shadow-[rgb(var(--color-accent))]/20">
                         {article.sourceTitle}
                       </span>
-                      <span className="text-[10px] md:text-xs font-bold text-white/70 drop-shadow-md truncate">
+                      <span className="shrink-0 text-[10px] font-bold text-white/75 drop-shadow-md md:text-xs">
                         {formatTimeAgo(article.pubDate)}
                       </span>
                     </div>
@@ -154,9 +161,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   </div>
 
                   {/* Bottom Part: Content Block */}
-                  <div className={`transform transition-all duration-500`}>
+                  <div className={`mt-auto flex flex-col justify-end transform transition-all duration-500 ${bottomBlockClass}`}>
                     {/* Title */}
-                    <h3 className={`font-bold text-white leading-tight mb-2 drop-shadow-xl ${isHero ? 'text-2xl md:text-4xl' :
+                    <h3 className={`font-bold text-white leading-[1.04] drop-shadow-xl ${style.showDescription ? 'mb-2' : 'mb-0'} ${isHero ? 'text-2xl md:text-4xl' :
                       isTall ? 'text-xl md:text-2xl' :
                         isWide ? 'text-xl md:text-2xl' :
                           'text-lg'
@@ -175,7 +182,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                     )}
 
                     {/* Read indicator */}
-                    <div className={`mt-4 flex items-center gap-2 text-xs font-medium text-white/70 ${isHero ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    <div className={`mt-3 flex items-center gap-2 text-xs font-medium text-white/70 ${isHero ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       } transition-opacity duration-300`}>
                       <span className="w-8 h-0.5 bg-[rgba(var(--color-accent),0.45)] rounded-full group-hover:w-12 transition-all duration-500" />
                       <span className="uppercase tracking-widest">

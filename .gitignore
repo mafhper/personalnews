@@ -23,7 +23,8 @@ GEMINI.md
 AGENTS.md
 
 # Development & Temporary
-_dev/
+_dev
+.dev
 tmp/
 temp/
 .bun/
@@ -58,6 +59,17 @@ ehthumbs.db
 .eslintcache
 .cache
 .parcel-cache
+
+# Rust / Tauri
+**/target/
+**/node_modules/
+
+# Temporary Fix Scripts & Backups
+**/*.exe
+**/*.msi
+**/*.deb
+**/*.app
+**/*.dmg
 
 # WSL/Windows artifacts (from lighthouse/chrome)
 C:*

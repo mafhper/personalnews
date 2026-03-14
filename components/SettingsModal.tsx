@@ -4,7 +4,7 @@ import { ThemeSelector } from './ThemeSelector';
 import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
 import { useArticleLayout } from '../hooks/useArticleLayout';
-import { useAppearance } from '../hooks/useAppearance';
+import { useAppearance, LAYOUT_PRESETS } from '../hooks/useAppearance';
 import { useFeedCategories } from '../hooks/useFeedCategories';
 import { Tabs } from './ui/Tabs';
 import { Card } from './ui/Card';
@@ -15,6 +15,7 @@ import { createBackup, downloadBackup, restoreBackup } from '../services/backupS
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
 import { useLanguage } from '../hooks/useLanguage';
 import { Language, HeaderConfig, ContentConfig } from '../types';
+import { FEED_LAYOUT_GROUPS } from '../config/feedLayoutCatalog';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -32,7 +33,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [activeTab, setActiveTab] = useState<'appearance' | 'layouts' | 'display' | 'system'>('appearance');
     const { currentTheme, updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
     const { settings: layoutSettings, updateSettings: updateLayoutSettings } = useArticleLayout();
-    const { backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
+    const { applyLayoutPreset, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
     const { alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
     const { language, setLanguage, t } = useLanguage();
     const { resetCategoryLayouts } = useFeedCategories();
@@ -99,43 +100,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         { id: 'display', label: 'Exibição' },
         { id: 'system', label: 'Sistema' },
         // { id: 'logs', label: t('settings.tab.logs') },
-    ];
-
-    const allLayouts = [
-        {
-            category: 'Standard', modes: [
-                { value: 'list', label: 'List' },
-                { value: 'compact', label: 'Compact' },
-                { value: 'magazine', label: 'Magazine' },
-                { value: 'newspaper', label: 'Newspaper' },
-                { value: 'minimal', label: 'Minimal' },
-            ]
-        },
-        {
-            category: 'Grid & Visual', modes: [
-                { value: 'grid', label: 'Grid' },
-                { value: 'masonry', label: 'Masonry' },
-                { value: 'gallery', label: 'Gallery' },
-                { value: 'bento', label: 'Bento' },
-                { value: 'immersive', label: 'Immersive' },
-            ]
-        },
-        {
-            category: 'Modern', modes: [
-                { value: 'modern', label: 'Modern' },
-                { value: 'split', label: 'Split' },
-                { value: 'timeline', label: 'Timeline' },
-                { value: 'focus', label: 'Focus' },
-                { value: 'pocketfeeds', label: 'PocketFeeds' },
-            ]
-        },
-        {
-            category: 'Creative', modes: [
-                { value: 'brutalist', label: 'Brutalist' },
-                { value: 'cyberpunk', label: 'Cyberpunk' },
-                { value: 'terminal', label: 'Terminal' },
-            ]
-        }
     ];
 
     return (
@@ -306,22 +270,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">{t('settings.header.logo')}</label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={headerConfig.logoUrl || ''}
-                                                onChange={(e) => updateHeaderConfig({ logoUrl: e.target.value })}
-                                                placeholder="https://..."
-                                                className="h-8 text-sm"
-                                            />
-                                            <label className="cursor-pointer bg-[rgb(var(--color-surface))]/75 hover:bg-[rgb(var(--color-surface))]/85 text-[rgb(var(--color-text))] px-3 py-1 rounded-lg text-xs flex items-center justify-center min-w-[80px]">
-                                                Upload
-                                                <input type="file" accept=".svg" className="hidden" onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) updateHeaderConfig({ logoUrl: await file.text() });
-                                                }} />
-                                            </label>
-                                        </div>
+                                        <label className="block text-[10px] text-[rgb(var(--color-textSecondary))] mb-1">Tamanho do Logo</label>
+                                        <select
+                                            value={headerConfig.logoSize}
+                                            onChange={(e) => updateHeaderConfig({ logoSize: e.target.value as HeaderConfig['logoSize'] })}
+                                            className="w-full bg-[rgb(var(--color-surface))]/65 border-[rgb(var(--color-border))]/30 text-[rgb(var(--color-textSecondary))] text-xs rounded-lg h-8 px-2 focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
+                                        >
+                                            <option value="sm">Pequeno</option>
+                                            <option value="md">Médio</option>
+                                            <option value="lg">Grande</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -440,8 +398,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 {/* Row 4: Toggle Options */}
                                 <div className="flex flex-wrap gap-3">
                                     <div className="flex items-center justify-between bg-[rgb(var(--color-surface))]/55 rounded-lg px-3 py-2 border border-[rgb(var(--color-border))]/30 min-w-[140px]">
-                                        <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">Usar Cor do Tema</span>
-                                        <Switch checked={headerConfig.useThemeColor || false} onChange={(c) => updateHeaderConfig({ useThemeColor: c })} size="sm" />
+                                        <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">Mostrar Logo</span>
+                                        <Switch checked={headerConfig.showLogo !== false} onChange={(c) => updateHeaderConfig({ showLogo: c })} size="sm" />
                                     </div>
                                     <div className="flex items-center justify-between bg-[rgb(var(--color-surface))]/55 rounded-lg px-3 py-2 border border-[rgb(var(--color-border))]/30 min-w-[140px]">
                                         <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">Mostrar Título</span>
@@ -453,30 +411,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             {/* Layout Selection Grid */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider flex items-center gap-2">
-                                    <span>📰</span> Estilo de Leitura
+                                    <span>Estilo de Leitura</span>
                                 </h3>
 
-                                {allLayouts.map((group) => (
-                                    <div key={group.category}>
-                                        <h4 className="text-[10px] text-[rgb(var(--color-textSecondary))]/70 uppercase tracking-widest font-bold mb-2 ml-1">{group.category}</h4>
+                                {FEED_LAYOUT_GROUPS.map((group) => (
+                                    <div key={group.label}>
+                                        <h4 className="text-[10px] text-[rgb(var(--color-textSecondary))]/70 uppercase tracking-widest font-bold mb-2 ml-1">{group.label}</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                            {group.modes.map((mode) => (
+                                            {group.options.map((mode) => (
                                                 <button
-                                                    key={mode.value}
+                                                    key={mode.id}
                                                     onClick={() => {
-                                                        updateContentConfig({ layoutMode: mode.value as ContentConfig['layoutMode'] });
+                                                        const preset = LAYOUT_PRESETS.find((layoutPreset) => layoutPreset.id === mode.id);
+                                                        if (preset) {
+                                                            applyLayoutPreset(mode.id);
+                                                        } else {
+                                                            updateContentConfig({ layoutMode: mode.id as ContentConfig['layoutMode'] });
+                                                        }
                                                         resetCategoryLayouts(); // Reset category-specific layouts
                                                     }}
-                                                    className={`relative p-3 rounded-lg text-left transition-all duration-200 border ${contentConfig.layoutMode === mode.value
+                                                    className={`relative p-3 rounded-lg text-left transition-all duration-200 border ${contentConfig.layoutMode === mode.id
                                                         ? 'bg-[rgb(var(--color-accent))]/20 border-[rgb(var(--color-accent))] ring-1 ring-[rgb(var(--color-accent))]'
                                                         : 'bg-[rgb(var(--color-surface))]/45 border-white/5 hover:bg-[rgb(var(--color-surface))]/65 hover:border-white/10'
                                                         }`}
                                                 >
-                                                    <span className={`text-sm font-medium block ${contentConfig.layoutMode === mode.value ? 'text-[rgb(var(--color-text))]' : 'text-[rgb(var(--color-textSecondary))] group-hover:text-[rgb(var(--color-text))]'
+                                                    <span className={`text-sm font-medium block ${contentConfig.layoutMode === mode.id ? 'text-[rgb(var(--color-text))]' : 'text-[rgb(var(--color-textSecondary))] group-hover:text-[rgb(var(--color-text))]'
                                                         }`}>
                                                         {mode.label}
                                                     </span>
-                                                    {contentConfig.layoutMode === mode.value && (
+                                                    {contentConfig.layoutMode === mode.id && (
                                                         <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-accent))]" />
                                                     )}
                                                 </button>
@@ -585,7 +548,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         onClick={handleExportBackup}
                                         className="flex-1 px-4 py-3 bg-[rgb(var(--color-surface))]/75 hover:bg-[rgb(var(--color-surface))]/85 text-[rgb(var(--color-text))] rounded-xl transition-all text-xs flex items-center justify-center gap-2 group border border-white/5 hover:border-white/20"
                                     >
-                                        <span className="text-lg group-hover:-translate-y-0.5 transition-transform">📤</span>
                                         <div className="text-left">
                                             <span className="block font-bold">Exportar</span>
                                             <span className="text-[10px] text-[rgb(var(--color-textSecondary))]">Salvar configurações</span>
@@ -595,7 +557,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         onClick={() => fileInputRef.current?.click()}
                                         className="flex-1 px-4 py-3 bg-[rgb(var(--color-accent))]/10 hover:bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] rounded-xl transition-all text-xs flex items-center justify-center gap-2 border border-[rgb(var(--color-accent))]/30 group"
                                     >
-                                        <span className="text-lg group-hover:-translate-y-0.5 transition-transform">📥</span>
                                         <div className="text-left">
                                             <span className="block font-bold">Importar</span>
                                             <span className="text-[10px] opacity-70">Restaurar backup</span>
@@ -638,7 +599,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     }}
                                     className="w-full py-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors text-xs font-bold border border-red-500/20 flex items-center justify-center gap-2"
                                 >
-                                    <span>⚠️</span>
                                     {t('settings.reset.factory')}
                                 </button>
                             </div>

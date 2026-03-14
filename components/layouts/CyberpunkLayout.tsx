@@ -12,7 +12,7 @@ interface CyberpunkLayoutProps {
 export const CyberpunkSkeleton: React.FC = () => {
   return (
     <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-6 lg:px-10 py-6 font-mono cyber-accent">
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-7">
         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
           <div key={i} className="relative cyber-card p-4 flex flex-col space-y-4">
             <div className="flex justify-between border-b cyber-border pb-2">
@@ -37,7 +37,7 @@ export const CyberpunkLayout: React.FC<CyberpunkLayoutProps> = ({ articles }) =>
 
   return (
     <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-6 lg:px-10 py-6 font-mono cyber-accent">
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-7">
         {articles.map((article, i) => (
           <article key={i} className="relative cyber-card p-4 hover:shadow-[0_0_18px_rgba(120,255,190,0.28)] hover:border-white/30 transition-all group flex flex-col">
             <div className="absolute top-0 left-0 w-2 h-2 cyber-surface" />

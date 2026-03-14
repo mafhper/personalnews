@@ -68,11 +68,18 @@ describe("[CORE][STATE] regression when switching contexts", () => {
 
     // 2. Switch to 'Business'
     await act(async () => {
-      result.current.refreshFeeds("Business");
+      result.current.refreshFeeds({
+        categoryId: "Business",
+        mode: "category",
+      });
     });
 
     // 3. Assert that refresh was called with the specific category
-    expect(mockLoadFeeds).toHaveBeenCalledWith(true, "Business");
+    expect(mockLoadFeeds).toHaveBeenCalledWith({
+      forceRefresh: true,
+      categoryId: "Business",
+      mode: "category",
+    });
   });
 
   it("should maintain data isolation between contexts (A -> B -> A)", async () => {
@@ -81,18 +88,58 @@ describe("[CORE][STATE] regression when switching contexts", () => {
     const { result } = renderHook(() => useFeeds(), { wrapper });
 
     await act(async () => {
-      result.current.refreshFeeds("Tech");
+      result.current.refreshFeeds({
+        categoryId: "Tech",
+        mode: "category",
+      });
     });
-    expect(mockLoadFeeds).toHaveBeenLastCalledWith(true, "Tech");
+    expect(mockLoadFeeds).toHaveBeenLastCalledWith({
+      forceRefresh: true,
+      categoryId: "Tech",
+      mode: "category",
+    });
 
     await act(async () => {
-      result.current.refreshFeeds("Science");
+      result.current.refreshFeeds({
+        categoryId: "Science",
+        mode: "category",
+      });
     });
-    expect(mockLoadFeeds).toHaveBeenLastCalledWith(true, "Science");
+    expect(mockLoadFeeds).toHaveBeenLastCalledWith({
+      forceRefresh: true,
+      categoryId: "Science",
+      mode: "category",
+    });
 
     await act(async () => {
-      result.current.refreshFeeds("Tech");
+      result.current.refreshFeeds({
+        categoryId: "Tech",
+        mode: "category",
+      });
     });
-    expect(mockLoadFeeds).toHaveBeenLastCalledWith(true, "Tech");
+    expect(mockLoadFeeds).toHaveBeenLastCalledWith({
+      forceRefresh: true,
+      categoryId: "Tech",
+      mode: "category",
+    });
+  });
+
+  it("should preserve single-feed refresh scope", async () => {
+    const { result } = renderHook(() => useFeeds(), { wrapper });
+
+    await act(async () => {
+      result.current.refreshFeeds({
+        categoryId: "Tech",
+        feedUrl: "https://example.com/feed.xml",
+        mode: "single-feed",
+      });
+    });
+
+    expect(mockLoadFeeds).toHaveBeenLastCalledWith({
+      forceRefresh: true,
+      categoryId: "Tech",
+      feedUrl: "https://example.com/feed.xml",
+      mode: "single-feed",
+    });
   });
 });

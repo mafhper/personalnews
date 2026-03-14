@@ -24,7 +24,11 @@ export const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
   return (
     <div className="error-boundary-fallback">
       <div className="error-content">
-        <div className="error-icon">⚠️</div>
+        <div className="error-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5m0 3h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.72 3h16.92a2 2 0 0 0 1.72-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+          </svg>
+        </div>
         <h2>Something went wrong</h2>
         <p>
           We encountered an unexpected error. Don't worry, we're working to fix
@@ -77,8 +81,10 @@ export const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
         }
 
         .error-icon {
-          font-size: 3rem;
+          width: 3rem;
+          height: 3rem;
           margin-bottom: 1rem;
+          color: #dc2626;
         }
 
         .error-content h2 {
@@ -176,7 +182,11 @@ export const IsolatedErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
 }) => {
   return (
     <div className="isolated-error-fallback">
-      <span className="error-icon">⚠️</span>
+      <span className="error-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5m0 3h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.72 3h16.92a2 2 0 0 0 1.72-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+        </svg>
+      </span>
       <span className="error-message">Error loading component</span>
       <button
         onClick={retry}
@@ -184,7 +194,7 @@ export const IsolatedErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
         className="retry-button-small"
         title={error?.message}
       >
-        {isRecovering ? "..." : "↻"}
+        {isRecovering ? "..." : "Retry"}
       </button>
 
       <style>{`
@@ -201,7 +211,8 @@ export const IsolatedErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
         }
 
         .error-icon {
-          font-size: 1rem;
+          width: 1rem;
+          height: 1rem;
         }
 
         .error-message {

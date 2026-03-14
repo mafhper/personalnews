@@ -240,4 +240,4 @@ Contributors will be recognized in:
 - Release notes
 - Project documentation
 
-Thank you for contributing to Personal News Dashboard! 🎉
+Thank you for contributing to Personal News Dashboard.

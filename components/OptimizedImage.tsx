@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { buildImagePlaceholderDataUri } from '../utils/imagePlaceholders';
 
 interface OptimizedImageProps {
   src?: string;
@@ -36,39 +37,35 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   const [currentSrc, setCurrentSrc] = useState(src);
   const [fallbackLevel, setFallbackLevel] = useState(0);
 
+  const buildSvgPlaceholder = useCallback(
+    (
+      variant: "brand" | "neutral",
+      label: string,
+      accentLabel?: string,
+    ): string =>
+      buildImagePlaceholderDataUri({
+        width,
+        height,
+        label: label || fallbackText || "Personal News",
+        eyebrow: accentLabel || "Visual local",
+        tone: variant,
+      }),
+    [fallbackText, height, width],
+  );
+
   // Generate fallback URLs
-  const generateFallbackUrl = useCallback((level: number, originalSrc?: string): string => {
-    const encodedText = encodeURIComponent(fallbackText);
-    const color1 = '374151'; // Gray-700
-    const color2 = '9CA3AF'; // Gray-400
-
-    switch (level) {
-      case 0:
-        // Original image
-        return originalSrc || '';
-      case 1:
-        // Picsum with seed from original URL
-        if (originalSrc) {
-          return `https://picsum.photos/seed/${encodeURIComponent(originalSrc)}/${width}/${height}`;
-        }
-        return `https://picsum.photos/${width}/${height}?random=${Math.random()}`;
-      case 2:
-        // Placeholder with text
-        return `https://via.placeholder.com/${width}x${height}/${color1}/${color2}?text=${encodedText}`;
-      case 3:
-      default:
-        // Final fallback - simple colored placeholder
-        return `https://via.placeholder.com/${width}x${height}/6B7280/F3F4F6?text=IMG`;
-    }
-  }, [fallbackText, width, height]);
-
   const handleImageLoad = useCallback(() => {
     setImageState('loaded');
   }, []);
 
   const handleImageError = useCallback(() => {
     const nextLevel = fallbackLevel + 1;
-    const nextSrc = generateFallbackUrl(nextLevel, src);
+    const nextSrc =
+      nextLevel === 1
+        ? buildSvgPlaceholder("brand", fallbackText, "Visual local")
+        : nextLevel === 2
+          ? buildSvgPlaceholder("neutral", fallbackText, "Reserva local")
+          : buildSvgPlaceholder("neutral", "Imagem indisponivel", "Offline");
 
     if (nextLevel <= 3) {
       setFallbackLevel(nextLevel);
@@ -77,7 +74,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     } else {
       setImageState('error');
     }
-  }, [fallbackLevel, generateFallbackUrl, src]);
+  }, [buildSvgPlaceholder, fallbackLevel, fallbackText]);
 
   // Initialize current source
   React.useEffect(() => {
@@ -86,20 +83,37 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       setImageState('loading');
       setFallbackLevel(0);
     } else {
-      // No source provided, go directly to placeholder
-      setCurrentSrc(generateFallbackUrl(2, undefined));
+      setCurrentSrc(buildSvgPlaceholder("brand", fallbackText, "Visual local"));
       setImageState('loading');
-      setFallbackLevel(2);
+      setFallbackLevel(1);
     }
-  }, [src, generateFallbackUrl]);
+  }, [buildSvgPlaceholder, fallbackText, src]);
+
+  const showFallbackOverlay =
+    imageState === 'error' ||
+    !src ||
+    fallbackLevel > 0 ||
+    (imageState === 'loading' && !currentSrc);
+
+  const overlayEyebrow =
+    imageState === 'error'
+      ? 'Visual offline'
+      : fallbackLevel > 0 || !src
+        ? 'Visual local'
+        : 'Carregando visual';
 
   return (
     <div className={`relative overflow-hidden w-full h-full ${className}`}>
       {/* Loading placeholder - prevents layout shift */}
       {imageState === 'loading' && (
-        <div className="absolute inset-0 bg-gray-700 animate-pulse flex items-center justify-center">
-          <div className="text-gray-400 text-xs font-medium">
-            {fallbackLevel === 0 ? 'Loading...' : fallbackText}
+        <div className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(135deg,#14213a_0%,#0a1019_100%)]">
+          <div className="text-center px-4">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
+              {fallbackLevel === 0 ? 'Carregando visual' : 'Reserva local'}
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white/72">
+              {fallbackText}
+            </div>
           </div>
         </div>
       )}
@@ -116,12 +130,34 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         loading={priority ? 'eager' : 'lazy'}
       />
 
+      {showFallbackOverlay && (
+        <div className="absolute inset-x-4 bottom-4 z-10">
+          <div className="max-w-[19rem] rounded-2xl border border-white/10 bg-black/50 px-4 py-3 text-white shadow-2xl backdrop-blur-xl">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/52">
+              {overlayEyebrow}
+            </div>
+            <div className="mt-2 text-sm font-semibold leading-snug text-white/88">
+              {fallbackText}
+            </div>
+            <div className="mt-2 text-xs leading-relaxed text-white/60">
+              {imageState === 'error'
+                ? 'A leitura continua com superficie local e contraste preservado.'
+                : 'Contexto visual preservado localmente para manter ritmo e leitura.'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Error state */}
       {imageState === 'error' && (
-        <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-          <div className="text-gray-500 text-xs font-medium text-center">
-            <div className="mb-1">⚠️</div>
-            <div>Image Error</div>
+        <div className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(135deg,#151922_0%,#0e131b_100%)]">
+          <div className="text-center px-4">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/38">
+              Visual offline
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white/70">
+              {fallbackText}
+            </div>
           </div>
         </div>
       )}

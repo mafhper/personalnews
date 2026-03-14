@@ -31,6 +31,15 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       
       // Also sync properties for existing default categories (like autoDiscovery)
       const updatedExisting = prev.map(cat => {
+        const legacyLayoutMode = cat.layoutMode as string | undefined;
+
+        if (legacyLayoutMode === "grid") {
+          hasChanges = true;
+          return {
+            ...cat,
+            layoutMode: "modern" as FeedCategory["layoutMode"],
+          };
+        }
         if (cat.isDefault) {
           const defaultCat = DEFAULT_CATEGORIES.find(d => d.id === cat.id);
           if (defaultCat && cat.autoDiscovery !== defaultCat.autoDiscovery && defaultCat.autoDiscovery !== undefined) {

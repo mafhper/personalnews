@@ -596,13 +596,13 @@ export const feedValidator = new FeedValidatorService();
 // UI Helpers (kept for compatibility)
 export const getFeedStatusIcon = (status: string) => {
   switch (status) {
-    case 'valid': return '✅';
-    case 'invalid': return '❌';
-    case 'timeout': return '⏱️';
-    case 'network_error': return '🌐';
-    case 'parse_error': return '📄';
-    case 'checking': return '🔄';
-    default: return '❓';
+    case 'valid': return 'OK';
+    case 'invalid': return 'ERR';
+    case 'timeout': return 'TIME';
+    case 'network_error': return 'NET';
+    case 'parse_error': return 'XML';
+    case 'checking': return '...';
+    default: return '?';
   }
 };
 

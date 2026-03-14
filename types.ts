@@ -5,7 +5,6 @@ export interface ContentConfig {
   showTags: boolean;
   layoutMode:
     | "default"
-    | "grid"
     | "magazine"
     | "list"
     | "masonry"
@@ -69,6 +68,13 @@ export interface FeedSource {
   categoryId?: string;
   customTitle?: string;
   hideFromAll?: boolean;
+}
+
+export interface FeedLoadRequest {
+  forceRefresh?: boolean;
+  categoryId?: string;
+  feedUrl?: string;
+  mode?: "all" | "category" | "single-feed";
 }
 
 export interface FeedCategory {

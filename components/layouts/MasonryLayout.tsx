@@ -53,7 +53,7 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 space-y-8 animate-in fade-in duration-500">
+    <div className="feed-page-frame feed-page-frame--wide space-y-8 animate-in fade-in duration-500">
       {/* Featured Article - Full Width Hero */}
       <div className="h-[60vh] min-h-[400px] rounded-2xl overflow-hidden shadow-xl relative group bg-[rgb(var(--color-surface))]/30">
         <FeaturedArticle article={featured} timeFormat={timeFormat} />
@@ -61,7 +61,7 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
         <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity p-4 z-10">
           <button
             onClick={() => handleOpenReader(featured)}
-            className="feed-chip bg-white/10 hover:bg-white/15 backdrop-blur-md text-white border border-white/15 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider flex items-center gap-2 shadow-md hover:scale-105 transition-all"
+            className="feed-overlay-control px-4 py-2 text-sm font-bold uppercase tracking-wider flex items-center gap-2 shadow-md hover:scale-105 transition-all"
           >
             {t('action.preview')}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>

@@ -84,28 +84,27 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
                             }
                         }}
                     >
-                        {/* Source badge */}
-                        <div className="mb-2">
-                            <span className="feed-chip truncate max-w-full">
+                        {/* Source line */}
+                        <div className="mb-2 flex items-center gap-2 min-w-0">
+                            <span className="feed-meta text-[10px] font-bold uppercase tracking-[0.22em] truncate max-w-full">
                                 {article.sourceTitle}
                             </span>
+                            <span className="h-px w-5 flex-shrink-0 bg-[rgb(var(--color-border))]/35" />
                         </div>
 
                         {/* Title */}
-                        <h4 className="feed-title text-base lg:text-lg leading-tight group-hover:text-white mb-3 line-clamp-3 transition-colors">
+                        <h4 className="feed-title feed-title-hoverable text-base lg:text-lg leading-tight mb-3 line-clamp-3">
                             {article.title}
                         </h4>
 
                         {/* Metadata */}
-                        <div className="mt-auto space-y-2">
-                            <div className="flex items-center justify-between text-xs feed-meta">
-                                {authorLabel && (
-                                    <span className="truncate max-w-[120px]" title={authorLabel}>
-                                        {authorLabel}
-                                    </span>
-                                )}
-                            </div>
-                            <time className="feed-meta text-xs block" dateTime={article.pubDate.toISOString()}>
+                        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+                            {authorLabel && (
+                                <span className="feed-meta text-[11px] truncate max-w-[180px]" title={authorLabel}>
+                                    {authorLabel}
+                                </span>
+                            )}
+                            <time className="feed-meta feed-meta-hoverable text-[10px] uppercase tracking-[0.18em] block w-fit" dateTime={article.pubDate.toISOString()}>
                                 {timeSince(article.pubDate)}
                             </time>
                         </div>

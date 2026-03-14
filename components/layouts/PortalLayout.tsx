@@ -13,7 +13,7 @@ interface PortalLayoutProps {
 
 export const PortalSkeleton: React.FC = () => {
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className="feed-top-clearance container mx-auto px-4 pb-8 space-y-8">
       {/* HERO SECTION SKELETON */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 h-[500px] feed-skeleton-block rounded-xl" />
@@ -48,7 +48,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
   const feed = articles.slice(8);
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-500">
+    <div className="feed-top-clearance container mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-8 animate-in fade-in duration-500">
       {/* Top Section: Main Featured + 2 Sub Featured */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Featured (8 cols) */}
@@ -74,7 +74,13 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                 />
 
                 <div className="absolute bottom-0 p-4 w-full">
-                  <span className="feed-chip text-[10px] font-bold uppercase bg-black/40 px-2 py-1 rounded mb-2 inline-block truncate max-w-full">{article.sourceTitle}</span>
+                  <div className="mb-2 flex items-center gap-2 min-w-0 text-[10px] uppercase tracking-[0.22em] text-white/70">
+                    <span className="truncate">{article.sourceTitle}</span>
+                    <span className="h-px w-4 flex-shrink-0 bg-white/20" />
+                    <span className="flex-shrink-0">
+                      {article.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  </div>
                   <h3 className="text-white font-bold text-lg leading-tight group-hover:underline line-clamp-2">{article.title}</h3>
                 </div>
               </a>
@@ -118,12 +124,12 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
               </div>
 
               <div className="flex-1 flex flex-col p-1 relative">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="feed-chip text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded shadow-sm">
+                <div className="mb-2 flex items-center gap-2 min-w-0 text-[10px] uppercase tracking-[0.22em]">
+                  <span className="feed-meta truncate max-w-[220px]">
                     {article.sourceTitle}
                   </span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center">
-                    <span className="mx-1.5 opacity-30">•</span>
+                  <span className="h-px w-4 flex-shrink-0 bg-[rgb(var(--color-border))]/35" />
+                  <span className="feed-meta flex-shrink-0">
                     {article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -134,20 +140,20 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                   rel="noopener noreferrer"
                   className="group/title block"
                 >
-                  <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-2 group-hover/title:text-white transition-colors line-clamp-2">
+                  <h3 className="feed-title text-base sm:text-lg font-bold leading-tight mb-2 transition-colors line-clamp-2">
                     {article.title}
                   </h3>
                 </a>
 
                 {article.description && (
-                  <p className="text-gray-400 text-sm line-clamp-3 mb-4">
+                  <p className="feed-desc text-sm line-clamp-3 mb-4">
                     {article.description}
                   </p>
                 )}
 
                 <div className="flex items-center justify-between mt-auto">
                   {article.author && article.author !== article.sourceTitle && (
-                    <p className="text-xs font-bold text-white/60 italic bg-white/5 px-2 py-0.5 rounded">{`Por ${article.author}`}</p>
+                    <p className="feed-meta text-xs italic">{`Por ${article.author}`}</p>
                   )}
                 </div>
               </div>
@@ -158,19 +164,19 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
         {/* Sidebar (4 cols) */}
         <div className="lg:col-span-4">
           <div className="sticky top-24">
-            <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-4 flex items-center">
+            <h3 className="feed-title text-lg font-bold uppercase tracking-wider mb-4 flex items-center">
               <span className="w-2 h-2 bg-[rgba(var(--color-accent),0.6)] rounded-full mr-2"></span>
               Em Alta
             </h3>
-            <div className="feed-surface rounded-2xl p-6 border border-white/12 space-y-4 shadow-md">
+            <div className="feed-surface rounded-2xl p-6 space-y-4 shadow-md">
               {sidebar.map((article, idx) => (
-                <div key={idx} className="group cursor-pointer border-b border-white/10 last:border-0 pb-4 last:pb-0">
+                <div key={idx} className="group cursor-pointer border-b border-[rgb(var(--color-border))]/20 last:border-0 pb-4 last:pb-0">
                   <div className="flex justify-between items-start gap-3">
                     <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0" onClick={(e) => { e.preventDefault(); setReadingArticle(article); }}>
-                      <span className="text-[10px] font-black feed-accent-text mb-1 block uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-all">
+                      <span className="feed-meta text-[10px] font-bold mb-1 block uppercase tracking-[0.22em] opacity-80 group-hover:opacity-100 transition-all">
                         {idx + 1}. {article.sourceTitle}
                       </span>
-                      <h4 className="text-sm font-bold text-white group-hover:text-white group-hover:underline transition-all line-clamp-2 leading-tight">
+                      <h4 className="feed-title text-sm font-bold transition-all line-clamp-2 leading-tight">
                         {article.title}
                       </h4>
                     </a>

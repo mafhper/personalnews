@@ -54,4 +54,4 @@ Las contribuciones son bienvenidas y alentadas. Para colaborar:
 Este proyecto está licenciado bajo la Licencia MIT. Consulte el archivo LICENSE incluido en el repositorio para obtener el texto completo de la licencia.
 
 ---
-Desarrollado con ❤.
+Desarrollado con cuidado.

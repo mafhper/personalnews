@@ -187,7 +187,7 @@ export const FeedManagerTools: React.FC = () => {
                             <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                             <div>
                                 <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                                    ✅ API Key Valid
+                                    API Key valid
                                 </p>
                                 {apiKeyStatus.remaining !== undefined && (
                                     <p className="text-xs text-emerald-700 dark:text-emerald-300">
@@ -224,7 +224,7 @@ export const FeedManagerTools: React.FC = () => {
                             <X className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                             <div className="flex-1">
                                 <p className="text-sm font-semibold text-red-900 dark:text-red-100">
-                                    ❌ Invalid API Key
+                                    Invalid API key
                                 </p>
                                 {apiKeyStatus.error && (
                                     <p className="text-xs text-red-700 dark:text-red-300 mt-1">

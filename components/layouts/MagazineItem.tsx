@@ -31,11 +31,13 @@ const MagazineItemComponent: React.FC<MagazineItemProps> = ({ article, onClick }
                 className="group cursor-pointer flex items-start gap-4 p-3 rounded-lg feed-row"
                 onClick={() => onClick(article)}
             >
-                <span className="feed-chip w-24 flex-shrink-0 truncate pt-0.5">
-                    {article.sourceTitle}
-                </span>
+                <div className="w-32 sm:w-40 flex-shrink-0 pt-0.5">
+                    <span className="feed-meta block text-[10px] font-bold uppercase tracking-[0.22em] leading-relaxed break-words line-clamp-2">
+                        {article.sourceTitle}
+                    </span>
+                </div>
                 <div className="flex-1 min-w-0">
-                    <h4 className="feed-title text-sm group-hover:text-white transition-colors line-clamp-2 mb-1">
+                    <h4 className="feed-title text-sm transition-colors line-clamp-2 mb-1">
                         {article.title}
                     </h4>
                     {article.description && (

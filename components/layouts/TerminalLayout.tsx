@@ -12,7 +12,7 @@ interface TerminalLayoutProps {
 
 export const TerminalSkeleton: React.FC = () => {
   return (
-    <div className="min-h-screen terminal-accent pt-3 pb-12 px-3 sm:px-4 md:px-6 font-mono">
+    <div className="feed-top-clearance min-h-screen terminal-accent pb-12 px-3 sm:px-4 md:px-6 font-mono">
       <div className="border terminal-border rounded-lg terminal-surface shadow-xl min-h-[70vh] w-full lg:max-w-[80rem] lg:mx-auto">
         <div className="bg-white/5 border-b border-white/5 p-2 flex items-center gap-2">
           <div className="flex gap-1.5 ml-2">
@@ -45,7 +45,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen terminal-accent pt-3 pb-12 px-3 sm:px-4 md:px-6 font-mono text-sm md:text-base">
+    <div className="feed-top-clearance min-h-screen terminal-accent pb-12 px-3 sm:px-4 md:px-6 font-mono text-sm md:text-base">
 
       {/* Terminal Window */}
       <div
@@ -53,7 +53,7 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
           border terminal-border rounded-lg terminal-surface shadow-xl overflow-hidden
           min-h-[70vh] flex flex-col relative backdrop-blur-sm
 
-          /* 🔑 comportamento desejado */
+          /* comportamento desejado */
           w-full
 
           /* controle em telas grandes */

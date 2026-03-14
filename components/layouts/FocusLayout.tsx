@@ -96,13 +96,21 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
   if (!currentArticle) return null;
 
   return (
-    <div ref={containerRef} className="overflow-hidden bg-black text-white isolate font-sans" style={containerStyle}>
+    <div
+      ref={containerRef}
+      className="overflow-hidden isolate font-sans text-white"
+      style={{
+        ...containerStyle,
+        backgroundColor: 'rgb(8 12 18)',
+        color: 'rgb(255 255 255)',
+      }}
+    >
       {/* Fixed Background with Transition */}
       <div className="absolute inset-0 z-0 transition-opacity duration-700 ease-in-out">
          <div key={currentIndex} className="w-full h-full animate-in fade-in zoom-in-105 duration-1000">
             <OptimizedImage
                 src={currentArticle.imageUrl}
-                className="w-full h-full object-cover opacity-40"
+                className="w-full h-full object-cover opacity-60"
                 alt=""
                 fallbackText={currentArticle.sourceTitle}
                 width={1920}
@@ -110,21 +118,22 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                 priority={true}
             />
          </div>
-         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80 pointer-events-none" />
+         <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/58 to-black/36 pointer-events-none" />
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,0,0,0.04),transparent_26%),linear-gradient(90deg,rgba(0,0,0,0.3),transparent_22%,transparent_78%,rgba(0,0,0,0.3))] pointer-events-none" />
       </div>
 
       {/* Progress Indicator */}
       <div className="absolute top-8 right-8 z-20 flex flex-col gap-2 items-end">
-        <span className="text-4xl font-bold font-mono text-white/20">
+        <span className="text-4xl font-bold font-mono text-white/30">
             {String(currentIndex + 1).padStart(2, '0')}
         </span>
-        <div className="h-32 w-1 bg-white/10 rounded-full relative overflow-hidden">
+        <div className="h-32 w-1 bg-white/12 rounded-full relative overflow-hidden">
             <div
-                className="absolute top-0 left-0 w-full bg-white/50 transition-all duration-300"
+                className="absolute top-0 left-0 w-full bg-white/60 transition-all duration-300"
                 style={{ height: `${((currentIndex + 1) / articles.length) * 100}%` }}
             />
         </div>
-        <span className="text-xs font-mono text-white/20">
+        <span className="text-xs font-mono text-white/30">
             {String(articles.length).padStart(2, '0')}
         </span>
       </div>
@@ -133,39 +142,39 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
       <div className="relative z-10 h-full flex flex-col justify-center px-8 md:px-24 max-w-6xl mx-auto">
          <div key={currentIndex} className="group animate-in slide-in-from-bottom-10 fade-in duration-500 flex flex-col justify-center h-full pb-12">
             <div className="flex items-center gap-4 mb-8 min-w-0">
-                <span className="feed-chip px-3 py-1 rounded border border-white/15 bg-black/30 backdrop-blur-md truncate max-w-[200px] md:max-w-[300px]">
+                <span className="inline-flex max-w-[220px] md:max-w-[320px] truncate rounded-full border border-white/15 bg-black/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur-md">
                     {currentArticle.sourceTitle}
                 </span>
-                <span className="text-xs text-gray-400 font-mono tracking-widest">
+                <span className="text-xs text-white/60 font-mono tracking-widest">
                     {new Date(currentArticle.pubDate).toLocaleDateString().split('/').join('.')}
                 </span>
                 <FavoriteButton 
                   article={currentArticle} 
                   size="medium"
                   position="inline"
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="bg-black/40 hover:bg-black/70 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
                 />
             </div>
 
             <h2
                 onClick={() => setReadingArticle(currentArticle)}
-                className={`font-bold leading-none mb-8 cursor-pointer hover:text-white transition-colors tracking-tight break-words
+                className={`font-bold leading-none mb-8 cursor-pointer transition-colors tracking-tight break-words
                   ${currentArticle.title.length > 80 ? 'text-4xl md:text-6xl lg:text-7xl' : 'text-5xl md:text-7xl lg:text-8xl'}
                 `}
             >
                 {currentArticle.title}
             </h2>
 
-            <p className="text-xl md:text-2xl text-gray-300 max-w-3xl leading-relaxed mb-12 line-clamp-3 font-light">
+            <p className="text-xl md:text-2xl text-white/75 max-w-3xl leading-relaxed mb-12 line-clamp-3 font-light">
                 {currentArticle.description}
             </p>
 
             <button
               onClick={() => setReadingArticle(currentArticle)}
-              className="group flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:text-white transition-colors self-start"
+              className="group flex items-center gap-4 text-sm font-bold uppercase tracking-widest transition-colors self-start"
             >
               <span>{t('article.read_full')}</span>
-              <div className="w-12 h-[1px] bg-white/30 group-hover:bg-white transition-colors relative overflow-hidden">
+              <div className="w-12 h-[1px] bg-white/32 transition-colors relative overflow-hidden">
                  <div className="absolute inset-0 bg-white w-full -translate-x-full group-hover:translate-x-0 transition-transform duration-300"/>
               </div>
             </button>
@@ -173,7 +182,7 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
       </div>
 
       {/* Scroll Hint */}
-       <div className="absolute bottom-8 right-8 z-20 flex gap-4 text-white/30 text-xs uppercase tracking-widest animate-pulse">
+       <div className="absolute bottom-8 right-8 z-20 flex gap-4 text-white/35 text-xs uppercase tracking-widest animate-pulse">
         <span>{t('article.scroll_hint')}</span>
       </div>
 

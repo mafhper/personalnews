@@ -50,7 +50,7 @@ export const FeaturedArticle: React.FC<{
           ></div>
 
           {/* Source badge */}
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 feed-chip backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider truncate max-w-[150px] sm:max-w-[200px]">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 feed-overlay-chip truncate max-w-[150px] sm:max-w-[200px]">
             {article.sourceTitle}
           </div>
 
@@ -65,7 +65,7 @@ export const FeaturedArticle: React.FC<{
           <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 lg:p-8 xl:p-10 text-white">
             <h3
               id="featured-article-title"
-              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-tight drop-shadow-lg group-hover:underline transition-all duration-300"
+              className="feed-overlay-title text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-tight group-hover:underline transition-all duration-300"
               style={{
                 lineHeight: "1.1",
                 textShadow: "0 4px 8px rgba(0,0,0,0.8)",
@@ -75,23 +75,25 @@ export const FeaturedArticle: React.FC<{
             >
               {article.title}
             </h3>
-            <p className="mt-2 lg:mt-6 text-sm md:text-base lg:text-lg xl:text-xl text-gray-200 drop-shadow-md block leading-relaxed max-w-4xl line-clamp-2 md:line-clamp-none">
+            <p className="feed-overlay-desc mt-2 lg:mt-6 text-sm md:text-base lg:text-lg xl:text-xl drop-shadow-md block leading-relaxed max-w-4xl line-clamp-2 md:line-clamp-none">
               {sanitizeArticleDescription(article.description || "")}
             </p>
-            <footer className="mt-4 lg:mt-8 flex flex-wrap items-center gap-4 lg:gap-6 text-xs lg:text-sm font-black uppercase text-white min-w-0">
+            <footer className="feed-overlay-meta mt-4 lg:mt-8 flex flex-wrap items-center gap-3 lg:gap-4 text-[10px] lg:text-xs uppercase tracking-[0.22em] min-w-0 text-white/70">
               {authorLabel && (
                 <span
-                  className="truncate max-w-[200px] sm:max-w-[300px] bg-black/40 px-2 py-1 rounded"
+                  className="truncate max-w-[200px] sm:max-w-[300px]"
                   aria-label={`Author: ${authorLabel}`}
                 >
                   {authorLabel}
                 </span>
               )}
-              <span className="text-white/40 font-normal" aria-hidden="true">
-                |
-              </span>
+              {authorLabel && (
+                <span className="text-white/30 font-normal" aria-hidden="true">
+                  •
+                </span>
+              )}
               <time
-                className="text-white drop-shadow-md bg-white/10 px-2 py-1 rounded"
+                className="drop-shadow-md"
                 dateTime={article.pubDate.toISOString()}
                 aria-label={`Published on ${article.pubDate.toLocaleDateString()}`}
               >

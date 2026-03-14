@@ -16,10 +16,10 @@ const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
 
 export const MinimalSkeleton: React.FC = () => {
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-12 md:py-20">
+    <div className="feed-page-frame feed-page-frame--wide">
       {/* HERO SKELETON */}
-      <div className="mb-32 flex flex-col lg:grid lg:grid-cols-12 h-[500px] border border-white/5 rounded overflow-hidden">
-        <div className="lg:col-span-1 border-r border-white/5 feed-skeleton-block" />
+      <div className="mb-32 flex flex-col lg:grid lg:grid-cols-12 h-[500px] rounded overflow-hidden border border-[rgb(var(--color-border))]/22">
+        <div className="lg:col-span-1 border-r border-[rgb(var(--color-border))]/22 feed-skeleton-block" />
         <div className="lg:col-span-6 feed-skeleton-block" />
         <div className="lg:col-span-5 p-16 flex flex-col justify-center space-y-8">
           <Bone className="h-4 w-32" />
@@ -31,7 +31,7 @@ export const MinimalSkeleton: React.FC = () => {
       {/* LIST SKELETON */}
       <div className="max-w-[1400px] mx-auto space-y-16">
         {[1, 2, 3].map(i => (
-          <div key={i} className="flex flex-col md:flex-row h-64 border border-white/5 rounded overflow-hidden">
+          <div key={i} className="flex flex-col md:flex-row h-64 rounded overflow-hidden border border-[rgb(var(--color-border))]/22">
             <div className="md:w-2/5 feed-skeleton-block" />
             <div className="flex-1 p-8 space-y-4">
               <Bone className="h-3 w-24" />
@@ -71,7 +71,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
 
   return (
     <>
-      <div className="max-w-[1400px] mx-auto px-6 py-12 md:py-20 animate-in fade-in duration-1000">
+    <div className="feed-page-frame feed-page-frame--wide pt-16 md:pt-24 animate-in fade-in duration-1000">
 
         {/* Integrated Hero Section */}
         {heroArticle && (
@@ -79,14 +79,14 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
             className="mb-32 group cursor-pointer relative"
             onClick={() => setReadingIndex(0)}
           >
-            <div className="flex flex-col lg:grid lg:grid-cols-12 gap-0 items-stretch border border-[rgb(var(--color-border))]/40 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/40 backdrop-blur-xl">
+            <div className="feed-surface-strong flex flex-col lg:grid lg:grid-cols-12 gap-0 items-stretch rounded-sm overflow-hidden">
 
               {/* Vertical Side Header */}
               <div className="lg:col-span-1 flex lg:flex-col items-center justify-between py-6 lg:py-10 border-b lg:border-b-0 lg:border-r border-[rgb(var(--color-border))]/30 px-4">
                 <span className="text-[9px] font-black uppercase tracking-[0.5em] feed-accent-text lg:[writing-mode:vertical-lr] lg:rotate-180">
                   {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                 </span>
-                <span className="text-[9px] font-bold opacity-30 uppercase tracking-widest hidden lg:block">Vol. {new Date().getFullYear()}</span>
+                <span className="feed-meta text-[9px] font-bold uppercase tracking-widest hidden lg:block">Vol. {new Date().getFullYear()}</span>
               </div>
 
               {/* Hero Image Side */}
@@ -101,25 +101,25 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                     priority={true}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                    <span className="text-xs font-serif italic text-white/20">aesthetic visual content</span>
+                  <div className="w-full h-full flex items-center justify-center bg-[rgb(var(--theme-surface-readable))]">
+                    <span className="feed-meta text-xs font-serif italic">visual local</span>
                   </div>
                 )}
                 {/* Visual texture overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent mix-blend-overlay" />
-                <div className="absolute inset-0 ring-1 ring-inset ring-white/5" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-[rgb(var(--color-border))]/16" />
               </div>
 
               {/* Hero Content Side */}
-              <div className="lg:col-span-5 flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-white/5 backdrop-blur-sm order-last lg:order-none min-w-0">
+              <div className="lg:col-span-5 flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-[rgb(var(--theme-surface-readable))]/76 backdrop-blur-sm order-last lg:order-none min-w-0">
                 <div className="space-y-8 min-w-0">
-                  <div className="flex items-center gap-4 text-[10px] tracking-[0.4em] uppercase text-[rgb(var(--color-textSecondary))] font-black min-w-0">
+                  <div className="feed-meta flex items-center gap-4 text-[10px] tracking-[0.4em] uppercase font-black min-w-0">
                     <span className="feed-accent-text truncate max-w-[150px] md:max-w-[250px]">{heroArticle.sourceTitle}</span>
                     <span className="w-10 h-px bg-[rgba(var(--color-accent),0.25)] flex-shrink-0" />
                     <time className="flex-shrink-0">{formatTimeAgo(heroArticle.pubDate)}</time>
                   </div>
 
-                  <h1 className={`font-serif font-black text-[rgb(var(--color-text))] leading-[1.05] tracking-tighter group-hover:text-white transition-colors duration-500 break-words line-clamp-4 ${heroArticle.title.length > 100
+                  <h1 className={`feed-title font-serif font-black leading-[1.05] tracking-tighter transition-colors duration-500 break-words line-clamp-4 ${heroArticle.title.length > 100
                     ? 'text-3xl md:text-5xl xl:text-6xl'
                     : heroArticle.title.length > 60
                       ? 'text-4xl md:text-6xl xl:text-7xl'
@@ -128,12 +128,12 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                     {heroArticle.title}
                   </h1>
 
-                  <p className="text-lg md:text-xl text-[rgb(var(--color-textSecondary))] leading-relaxed font-light line-clamp-4 italic">
-                    "{heroArticle.description}"
+                  <p className="feed-desc text-lg md:text-xl leading-relaxed font-light line-clamp-4 italic">
+                    {heroArticle.description}
                   </p>
 
                   <div className="pt-4 flex items-center gap-8">
-                    <button className="relative py-2 text-[10px] font-black uppercase tracking-[0.3em] text-[rgb(var(--color-text))] group/btn">
+                    <button className="feed-title relative py-2 text-[10px] font-black uppercase tracking-[0.3em] group/btn">
                       {t('action.read_article') || 'Ler artigo'}
                       <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[rgba(var(--color-accent),0.5)] transform origin-left scale-x-50 group-hover/btn:scale-x-100 transition-transform duration-500" />
                     </button>
@@ -142,7 +142,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       article={heroArticle}
                       size="large"
                       position="inline"
-                      className="bg-white/10 hover:bg-[rgb(var(--color-accent))]/10 border border-white/10 transition-all duration-500 opacity-0 group-hover:opacity-100"
+                      className="bg-[rgb(var(--theme-control-bg))]/72 hover:bg-[rgb(var(--theme-control-bg))]/92 border border-[rgb(var(--color-border))]/24 transition-all duration-500 opacity-0 group-hover:opacity-100"
                     />
                   </div>
                 </div>
@@ -162,10 +162,10 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                 className="group cursor-pointer relative"
                 onClick={() => setReadingIndex(index + 1)}
               >
-                <div className={`flex flex-col ${isFullWidth ? '' : 'md:flex-row'} items-stretch border border-[rgb(var(--color-border))]/30 rounded-sm overflow-hidden bg-[rgb(var(--color-surface))]/40 backdrop-blur-md hover:bg-[rgb(var(--color-surface))]/60 transition-colors duration-500`}>
+                <div className={`feed-surface flex flex-col ${isFullWidth ? '' : 'md:flex-row'} items-stretch rounded-sm overflow-hidden hover:bg-[rgb(var(--theme-surface-elevated))]/88 transition-colors duration-500`}>
 
                   {/* Small Vertical Indicator/Source */}
-                  <div className={`flex ${isFullWidth ? 'flex-row' : 'md:flex-col'} items-center justify-between p-3 md:p-4 border-b ${isFullWidth ? '' : 'md:border-b-0 md:border-r'} border-[rgb(var(--color-border))]/20 bg-white/5 min-w-0 max-w-full overflow-hidden`}>
+                  <div className={`flex ${isFullWidth ? 'flex-row' : 'md:flex-col'} items-center justify-between p-3 md:p-4 border-b ${isFullWidth ? '' : 'md:border-b-0 md:border-r'} border-[rgb(var(--color-border))]/20 bg-[rgb(var(--theme-surface-readable))]/44 min-w-0 max-w-full overflow-hidden`}>
                     <span className={`text-[8px] font-black uppercase tracking-[0.3em] feed-accent-text truncate ${isFullWidth ? 'max-w-[150px]' : 'md:max-h-[120px] md:[writing-mode:vertical-lr] md:rotate-180'}`}>
                       {article.sourceTitle}
                     </span>
@@ -189,7 +189,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-[10px] font-serif italic opacity-20">no visual</span>
+                        <span className="feed-meta text-[10px] font-serif italic">sem visual</span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -197,20 +197,20 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
 
                   {/* Content Section */}
                   <div className={`flex-1 p-6 md:p-8 flex flex-col justify-center ${isFullWidth ? 'text-center items-center' : ''}`}>
-                    <div className={`flex items-center gap-3 text-[9px] tracking-[0.2em] uppercase text-[rgb(var(--color-textSecondary))] mb-4 ${isFullWidth ? 'justify-center' : ''}`}>
+                    <div className={`feed-meta flex items-center gap-3 text-[9px] tracking-[0.2em] uppercase mb-4 ${isFullWidth ? 'justify-center' : ''}`}>
                       <time>{formatTimeAgo(article.pubDate)}</time>
                     </div>
 
-                    <h2 className={`font-serif font-bold text-[rgb(var(--color-text))] leading-tight mb-4 group-hover:text-white transition-colors ${isFullWidth ? 'text-3xl md:text-4xl' : 'text-xl md:text-2xl'}`}>
+                    <h2 className={`feed-title font-serif font-bold leading-tight mb-4 transition-colors ${isFullWidth ? 'text-3xl md:text-4xl' : 'text-xl md:text-2xl'}`}>
                       {article.title}
                     </h2>
 
-                    <p className={`text-[rgb(var(--color-textSecondary))] leading-relaxed font-light line-clamp-2 ${isFullWidth ? 'text-base max-w-2xl' : 'text-sm'}`}>
+                    <p className={`feed-desc leading-relaxed font-light line-clamp-2 ${isFullWidth ? 'text-base max-w-2xl' : 'text-sm'}`}>
                       {article.description}
                     </p>
 
                     <div className={`mt-6 ${isFullWidth ? '' : 'flex'}`}>
-                      <span className="inline-flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-[rgb(var(--color-text))] group-hover:gap-5 transition-all">
+                      <span className="feed-title inline-flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] group-hover:gap-5 transition-all">
                         {t('action.read_article') || 'Ler artigo'}
                         <div className="w-6 h-px bg-current" />
                       </span>

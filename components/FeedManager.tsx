@@ -384,14 +384,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   ];
 
   return (
-    <div className="relative flex flex-col h-full w-full bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] overflow-hidden">
+    <div className="relative flex flex-col h-full w-full bg-[rgb(var(--color-background))] text-[rgb(var(--theme-text-readable))] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_55%)]" />
 
       {/* Clean Header */}
-      <div className="border-b border-white/10 bg-[rgb(var(--color-surface))]/30 shrink-0">
+      <div className="border-b border-[rgba(var(--color-border),0.15)] bg-[rgb(var(--theme-surface-readable))]/30 shrink-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--color-text))] flex items-center gap-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--theme-text-readable))] flex items-center gap-3">
               <span className="p-2 bg-[rgba(var(--color-accent),0.1)] rounded-lg feed-accent-text">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11c3.866 0 7 3.134 7 7m-7-7v7" />
@@ -406,7 +406,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
           <button
             onClick={closeModal}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-white/12 hover:border-white/20 transition-all duration-200"
+            className="p-2 rounded-lg bg-[rgba(var(--color-text),0.05)] border border-[rgba(var(--color-border),0.15)] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--theme-text-readable))] hover:bg-black/10 dark:hover:bg-white/12 hover:border-[rgba(var(--color-border),0.3)] transition-all duration-200"
             aria-label="Close"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,15 +417,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-white/10 bg-[rgb(var(--color-surface))]/15 overflow-x-auto scrollbar-hide shrink-0">
+      <div className="border-b border-[rgba(var(--color-border),0.15)] bg-[rgb(var(--theme-surface-readable))]/15 overflow-x-auto scrollbar-hide shrink-0">
         <div className="max-w-6xl mx-auto flex">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={`flex-1 px-4 py-3 sm:py-4 text-sm font-medium transition-colors whitespace-nowrap min-w-[60px] sm:min-w-[110px] flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${activeTab === tab.id
-              ? "text-[rgb(var(--color-text))] border-b-2 border-[rgba(var(--color-accent),0.28)] bg-[rgba(255,255,255,0.05)]"
-              : "text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgba(255,255,255,0.035)]"
+              ? "text-[rgb(var(--theme-text-readable))] border-b-2 border-[rgba(var(--color-accent),0.28)] bg-[rgba(var(--color-text),0.05)]"
+              : "text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--theme-text-readable))] hover:bg-[rgba(var(--color-text),0.05)]"
                 }`}
               title={tab.label}
             >
@@ -438,7 +438,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   className={`text-[10px] px-2 py-0.5 rounded-full border ${
                     tab.id === "statistics" && tab.badge
                     ? "border-rose-400/30 text-rose-200/90 bg-rose-500/10"
-                    : "border-white/10 text-[rgb(var(--color-text))]/80 bg-white/5"
+                    : "border-[rgba(var(--color-border),0.15)] text-[rgb(var(--theme-text-readable))]/80 bg-[rgba(var(--color-text),0.05)]"
                   }`}
                 >
                   {tab.badge}
@@ -569,17 +569,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       {showImportModal && (
         createPortal(
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-            <div className="bg-[rgb(var(--color-surface))]/95 text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))]/30 rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-[rgb(var(--color-text))] mb-4">Importar Listas Curadas</h3>
+            <div className="bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] border border-[rgb(var(--color-border))]/30 rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-[rgb(var(--theme-text-readable))] mb-4">Importar Listas Curadas</h3>
               <select
                 value={selectedListType}
                 onChange={(e) => setSelectedListType(e.target.value)}
-                className="w-full bg-[rgb(var(--color-surface))]/70 text-[rgb(var(--color-text))] p-2 rounded mb-4 border border-[rgb(var(--color-border))]/30"
+                className="w-full bg-[rgb(var(--theme-surface-readable))]/70 text-[rgb(var(--theme-text-readable))] p-2 rounded mb-4 border border-[rgb(var(--color-border))]/30"
               >
                 {Object.keys(DEFAULT_CURATED_LISTS).map(k => <option key={k} value={k}>{k}</option>)}
               </select>
               <div className="flex gap-2">
-                <button onClick={() => handleImportCurated('merge')} className="flex-1 bg-[rgba(var(--color-accent),0.2)] text-[rgb(var(--color-text))] py-2 rounded border border-[rgba(var(--color-accent),0.3)]">Mesclar</button>
+                <button onClick={() => handleImportCurated('merge')} className="flex-1 bg-[rgba(var(--color-accent),0.2)] text-[rgb(var(--theme-text-readable))] py-2 rounded border border-[rgba(var(--color-accent),0.3)]">Mesclar</button>
                 <button onClick={() => handleImportCurated('replace')} className="flex-1 bg-rose-600/15 text-rose-300 py-2 rounded border border-rose-500/30">Substituir Tudo</button>
               </div>
               <button onClick={() => setShowImportModal(false)} className="w-full mt-2 text-[rgb(var(--color-textSecondary))] py-2">Cancelar</button>
@@ -591,10 +591,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
       {showProxySettings && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-          <div className="bg-[rgb(var(--color-surface))]/95 text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))]/30 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-white/10 flex justify-between items-center">
-              <h3 className="text-[rgb(var(--color-text))] font-semibold">Configuração de Proxies</h3>
-              <button onClick={() => setShowProxySettings(false)} className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]">✕</button>
+          <div className="bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] border border-[rgb(var(--color-border))]/30 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-[rgba(var(--color-border),0.15)] flex justify-between items-center">
+              <h3 className="text-[rgb(var(--theme-text-readable))] font-semibold">Configuração de Proxies</h3>
+              <button onClick={() => setShowProxySettings(false)} className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--theme-text-readable))]">✕</button>
             </div>
             <div className="p-6 overflow-y-auto">
               <Suspense fallback={<div className="text-[rgb(var(--color-textSecondary))] text-sm">Carregando configurações...</div>}>
@@ -609,9 +609,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       {/* Error Details Modal */}
       {showErrorModal && selectedErrorFeed && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-          <div className="bg-[rgb(var(--color-surface))]/95 text-[rgb(var(--color-text))] border border-[rgb(var(--color-border))]/30 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-white/10 flex justify-between">
-              <h3 className="text-[rgb(var(--color-text))] font-bold">Detalhes do Erro</h3>
+          <div className="bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] border border-[rgb(var(--color-border))]/30 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-[rgba(var(--color-border),0.15)] flex justify-between">
+              <h3 className="text-[rgb(var(--theme-text-readable))] font-bold">Detalhes do Erro</h3>
               <button onClick={() => setShowErrorModal(false)} className="text-[rgb(var(--color-textSecondary))]">✕</button>
             </div>
             <div className="p-6 overflow-y-auto">

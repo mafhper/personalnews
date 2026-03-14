@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { FeedSource, Article } from '../types';
+import { FeedSource, Article, FeedLoadRequest } from '../types';
 import { FeedLoadingState } from '../hooks/useProgressiveFeedLoading';
 
 export interface FeedContextType {
@@ -7,11 +7,11 @@ export interface FeedContextType {
     setFeeds: (feeds: FeedSource[] | ((val: FeedSource[]) => FeedSource[])) => void;
     articles: Article[];
     loadingState: FeedLoadingState;
-    loadFeeds: (forceRefresh?: boolean, priorityCategoryId?: string) => Promise<void>;
+    loadFeeds: (request?: FeedLoadRequest) => Promise<void>;
     startInitialLoad: () => Promise<void>;
     retryFailedFeeds: () => Promise<void>;
     cancelLoading: () => void;
-    refreshFeeds: (categoryFilter?: string) => void;
+    refreshFeeds: (request?: FeedLoadRequest) => void;
 }
 
 export const FeedContext = createContext<FeedContextType | undefined>(undefined);

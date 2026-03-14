@@ -30,13 +30,13 @@ const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon, onClick, 
   const getColors = () => {
     switch (variant) {
       case 'danger':
-        return 'bg-[rgba(255,255,255,0.025)] border-rose-400/12 hover:border-rose-400/25 text-rose-200/80 hover:bg-[rgba(255,255,255,0.05)]';
+        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-error),0.2)] hover:border-[rgba(var(--color-error),0.5)] text-[rgb(var(--color-error))] hover:bg-[rgba(var(--color-error),0.03)] shadow-sm hover:shadow-md';
       case 'warning':
-        return 'bg-[rgba(255,255,255,0.025)] border-amber-300/12 hover:border-amber-300/25 text-amber-200/80 hover:bg-[rgba(255,255,255,0.05)]';
+        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-warning),0.2)] hover:border-[rgba(var(--color-warning),0.5)] text-[rgb(var(--color-warning))] hover:bg-[rgba(var(--color-warning),0.03)] shadow-sm hover:shadow-md';
       case 'success':
-        return 'bg-[rgba(255,255,255,0.025)] border-emerald-300/12 hover:border-emerald-300/25 text-emerald-200/80 hover:bg-[rgba(255,255,255,0.05)]';
+        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-success),0.2)] hover:border-[rgba(var(--color-success),0.5)] text-[rgb(var(--color-success))] hover:bg-[rgba(var(--color-success),0.03)] shadow-sm hover:shadow-md';
       default:
-        return 'bg-[rgba(255,255,255,0.025)] border-white/8 hover:border-white/16 text-slate-200/90 hover:bg-[rgba(255,255,255,0.05)]';
+        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-border),0.15)] hover:border-[rgba(var(--color-border),0.3)] text-[rgb(var(--theme-text-readable))] hover:bg-[rgba(var(--color-text),0.04)] shadow-sm hover:shadow-lg dark:hover:shadow-blue-900/5';
     }
   };
 
@@ -46,11 +46,11 @@ const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon, onClick, 
       className={`flex flex-col items-start p-5 rounded-xl border transition-all duration-200 group text-left h-full ${getColors()} animate-in fade-in zoom-in-95`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="mb-3 p-2 rounded-lg bg-black/25 group-hover:scale-105 transition-transform duration-200">
+      <div className="mb-3 p-2 rounded-lg bg-[rgba(var(--color-text),0.05)] group-hover:scale-105 transition-transform duration-200">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-[rgb(var(--color-text))] mb-1">{title}</h3>
-      <p className="text-sm text-slate-400/90 leading-relaxed">{description}</p>
+      <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))] mb-1">{title}</h3>
+      <p className="text-sm text-[rgba(var(--color-textSecondary),0.9)] leading-relaxed">{description}</p>
     </button>
   );
 };
@@ -77,7 +77,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
 
         {/* Header Section */}
         <div className="text-center mb-6 sm:mb-8 animate-in slide-in-from-top-4 duration-500">
-          <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--color-text))] mb-2">Funções de Gerenciamento</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--theme-text-readable))] mb-2">Funções de Gerenciamento</h2>
           <p className="text-sm sm:text-base text-[rgb(var(--color-textSecondary))]">
             Acesse as principais funções para gerenciar seus feeds, fazer backups e manutenção.
           </p>
@@ -121,7 +121,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
 
           <ToolCard
             title="Listas Curadas"
-            description="Descubra e importe coleções de feeds selecionadas manualmente por categorias (Tech, Notícias, Dev)."
+            description="Compare coleções prontas, revise os sites incluídos em cada categoria e escolha como importar."
             icon={
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -235,18 +235,18 @@ const SummaryPill: React.FC<{
   tone: "neutral" | "success" | "warning" | "danger";
 }> = ({ label, value, tone }) => {
   const styles = {
-    neutral: "from-white/5 to-white/0 text-slate-200/90 border-white/10",
-    success: "from-emerald-500/10 to-transparent text-emerald-200/90 border-emerald-400/20",
-    warning: "from-amber-500/10 to-transparent text-amber-200/90 border-amber-400/20",
-    danger: "from-rose-500/10 to-transparent text-rose-200/90 border-rose-400/20",
+    neutral: "from-[rgba(var(--color-text),0.05)] to-transparent text-[rgb(var(--theme-text-readable))] border-[rgba(var(--color-border),0.1)] shadow-sm",
+    success: "from-[rgba(var(--color-success),0.08)] to-transparent text-[rgb(var(--color-success))] border-[rgba(var(--color-success),0.15)] shadow-sm",
+    warning: "from-[rgba(var(--color-warning),0.08)] to-transparent text-[rgb(var(--color-warning))] border-[rgba(var(--color-warning),0.15)] shadow-sm",
+    danger: "from-[rgba(var(--color-error),0.08)] to-transparent text-[rgb(var(--color-error))] border-[rgba(var(--color-error),0.15)] shadow-sm",
   } as const;
 
   return (
-    <div className={`rounded-xl border bg-gradient-to-br ${styles[tone]} px-3 py-2 flex items-center justify-between`}>
-      <span className="text-[10px] uppercase tracking-widest font-semibold">
+    <div className={`rounded-xl border bg-gradient-to-br ${styles[tone]} px-4 py-3 flex items-center justify-between transition-all hover:scale-[1.02] shadow-sm`}>
+      <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-80">
         {label}
       </span>
-      <span className="text-lg font-bold">{value}</span>
+      <span className="text-xl font-bold">{value}</span>
     </div>
   );
 };

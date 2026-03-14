@@ -4,7 +4,7 @@ import { useProgressiveFeedLoading } from "../hooks/useProgressiveFeedLoading";
 import { useInitialLoadGuard } from "../hooks/useVisibilityRecovery";
 import { useNotification } from "../hooks/useNotification";
 import { getDefaultFeeds, migrateFeeds } from "../utils/feedMigration";
-import { FeedSource } from "../types";
+import { FeedLoadRequest, FeedSource } from "../types";
 import { FeedContext } from "./FeedContextState";
 import { useLogger } from "../services/logger";
 
@@ -33,7 +33,7 @@ export const FeedProvider: React.FC<{
 
       if (migrationResult.reason?.includes("Upgraded from legacy")) {
         showNotification(
-          "🎉 Feeds atualizados! Agora você tem 16 feeds organizados por categoria.",
+          "Feeds atualizados. Agora você tem 16 feeds organizados por categoria.",
           { type: "success", duration: 8000 },
         );
       } else if (
@@ -41,7 +41,7 @@ export const FeedProvider: React.FC<{
         migrationResult.reason?.includes("Synchronized")
       ) {
         showNotification(
-          "✨ Seus feeds foram sincronizados com as configurações do sistema.",
+          "Seus feeds foram sincronizados com as configurações do sistema.",
           { type: "info", duration: 6000 },
         );
       }
@@ -88,7 +88,10 @@ export const FeedProvider: React.FC<{
 
     loadGuard.setLoadStarted();
     isInitialized.current = true;
-    await loadFeeds(false, currentCategory);
+    await loadFeeds({
+      categoryId: currentCategory,
+      mode: currentCategory === "all" ? "all" : "category",
+    });
   }, [feeds.length, loadFeeds, loadGuard, logger, autoStart]);
 
   // Inicializar carregamento automaticamente quando permitido
@@ -145,8 +148,11 @@ export const FeedProvider: React.FC<{
   }, [autoStart, feeds.length, logger, startInitialLoad]);
 
   const refreshFeeds = useCallback(
-    (categoryFilter?: string) => {
-      loadFeeds(true, categoryFilter);
+    (request?: FeedLoadRequest) => {
+      void loadFeeds({
+        ...request,
+        forceRefresh: true,
+      });
     },
     [loadFeeds],
   );

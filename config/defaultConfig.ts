@@ -43,10 +43,8 @@ export const DEFAULT_HEADER_CONFIG: HeaderConfig = {
     showTitle: true,           // Mostrar título no header
     showLogo: true,             // Mostrar logo no header
     customTitle: 'Personal News',
-    logoUrl: null,              // URL do logo customizado
+    logoUrl: null,
     logoSize: 'md',             // 'sm' | 'md' | 'lg' | 'xl'
-    logoColorMode: 'original',  // 'original' | 'monochrome' | 'inverted'
-    syncFavicon: true,          // Sincronizar favicon com logo
     backgroundOpacity: 60,      // Opacidade do fundo (0-100)
     blurIntensity: 'heavy',     // 'none' | 'light' | 'medium' | 'heavy'
     borderColor: '#ffffff',

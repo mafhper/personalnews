@@ -14,7 +14,7 @@ const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div clas
 
 export const PocketFeedsSkeleton: React.FC = () => {
   return (
-    <div className="container mx-auto p-6 md:p-8 space-y-8">
+    <div className="feed-top-clearance container mx-auto px-6 pb-8 md:px-8 space-y-8">
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
         <div className="flex gap-3">
           <div className="w-6 h-6 feed-skeleton-block rounded" />
@@ -94,7 +94,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
   };
 
   return (
-    <div className="container mx-auto bg-[rgba(var(--color-background),0.5)] p-6 md:p-8">
+    <div className="feed-top-clearance container mx-auto bg-[rgba(var(--color-background),0.5)] px-6 pb-8 md:px-8">
       {/* Hidden audio element for playback */}
       <audio
         ref={audioRef}

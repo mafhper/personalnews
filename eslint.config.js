@@ -62,7 +62,7 @@ export default tseslint.config(
     },
   },
 
-  // 🧠 CORE / SERVICES (Strict)
+  // CORE / SERVICES (Strict)
   {
     files: ['services/**/*.ts', 'quality-core/**/*.ts'],
     rules: {
@@ -72,7 +72,7 @@ export default tseslint.config(
     },
   },
 
-  // 🧪 TESTS (Relaxed)
+  // TESTS (Relaxed)
   {
     files: ['**/__tests__/**/*', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
@@ -84,7 +84,7 @@ export default tseslint.config(
     },
   },
 
-  // ⚙️ SCRIPTS (Pragmatic)
+  // SCRIPTS (Pragmatic)
   {
     files: ['quality-core/scripts/**/*'],
     rules: {

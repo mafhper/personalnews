@@ -96,7 +96,7 @@ interface FeedSkeletonProps {
  * Generic Grid Fallback (Safety net only)
  */
 const GridFallback: React.FC<{ count: number }> = ({ count }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 lg:gap-6 container mx-auto px-4 py-8">
+  <div className="feed-top-clearance grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 lg:gap-6 container mx-auto px-4 pb-8">
     {Array.from({ length: count }).map((_, i) => (
       <div key={i} className="space-y-4 bg-white/5 animate-pulse rounded-2xl p-4 flex flex-col h-[380px]">
         <div className="w-full aspect-[4/3] sm:aspect-[3/2] bg-white/10 rounded-xl" />
@@ -104,21 +104,6 @@ const GridFallback: React.FC<{ count: number }> = ({ count }) => (
         <div className="h-4 w-2/3 bg-white/10 rounded" />
       </div>
     ))}
-  </div>
-);
-
-const GridSkeleton: React.FC = () => (
-  <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 lg:gap-6">
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className="space-y-4 bg-white/5 animate-pulse rounded-2xl p-4 flex flex-col h-[360px]">
-          <div className="w-full aspect-[4/3] bg-white/10 rounded-xl" />
-          <div className="h-5 w-full bg-white/10 rounded" />
-          <div className="h-3 w-2/3 bg-white/10 rounded" />
-          <div className="mt-auto h-3 w-1/3 bg-white/10 rounded" />
-        </div>
-      ))}
-    </div>
   </div>
 );
 
@@ -147,7 +132,7 @@ const SKELETON_COMPONENTS: Record<string, React.ComponentType> = {
   minimal: MinimalSkeleton,
   portal: PortalSkeleton,
   list: PortalSkeleton,
-  grid: GridSkeleton,
+  grid: ModernPortalSkeleton,
 };
 
 /**

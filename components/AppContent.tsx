@@ -62,11 +62,13 @@ const BackgroundLayer = lazy(() =>
 );
 import { useLogger } from "../services/logger";
 import { areUrlsEqual } from "../utils/urlUtils";
+import type { FeedLoadRequest } from "../types";
 
 // Lazy load non-critical components
 const PerformanceDebugger = lazy(() => import("./PerformanceDebugger"));
 
 import { useFeeds } from "../contexts/FeedContextState";
+import { LoadingSpinner } from "./ProgressIndicator";
 
 // AppContent component doesn't require props for now
 const AppContent: React.FC = () => {
@@ -83,6 +85,37 @@ const AppContent: React.FC = () => {
     retryFailedFeeds,
     cancelLoading,
   } = useFeeds();
+
+  const buildLoadRequest = useCallback(
+    (
+      categoryId: string,
+      feedUrl?: string | null,
+      forceRefresh: boolean = false,
+    ): FeedLoadRequest => {
+      if (feedUrl) {
+        return {
+          forceRefresh,
+          categoryId,
+          feedUrl,
+          mode: "single-feed",
+        };
+      }
+
+      if (!categoryId || categoryId === "all") {
+        return {
+          forceRefresh,
+          mode: "all",
+        };
+      }
+
+      return {
+        forceRefresh,
+        categoryId,
+        mode: "category",
+      };
+    },
+    [],
+  );
 
   // App Shell removal logic
   useEffect(() => {
@@ -149,11 +182,49 @@ const AppContent: React.FC = () => {
     applyLayoutPreset,
     refreshAppearance,
     activeLayoutId,
+    contentConfig,
   } = useAppearance();
 
   // Feed categories system
   const { categories, getCategorizedFeeds } = useFeedCategories();
   const categorizedFeeds = getCategorizedFeeds(feeds);
+
+  // T35: SMART LAYOUT DETECTION - ATOMIC & EQUALITARIAN
+  const currentLayoutMode = useMemo(() => {
+    // 1. HIGHEST PRIORITY: The Lock (Frozen during transition)
+    if (activeTransitionLayout) {
+      return activeTransitionLayout;
+    }
+
+    // 2. Category Priority (from Context)
+    const categoryId = selectedCategory || "all";
+    const activeCatObj = categories.find((c) => c.id === categoryId);
+    if (activeCatObj?.layoutMode) {
+      return activeCatObj.layoutMode;
+    }
+
+    // 3. Manual content layout fallback
+    if (contentConfig.layoutMode && contentConfig.layoutMode !== "default") {
+      return contentConfig.layoutMode;
+    }
+
+    // 4. Global Preset Priority
+    if (activeLayoutId) {
+      const preset = BUILT_LAYOUT_PRESETS.find((p) => p.id === activeLayoutId);
+      if (preset?.content.layoutMode) {
+        return preset.content.layoutMode;
+      }
+    }
+
+    // 5. Default System Fallback (No intelligent inference allowed)
+    return INITIAL_APP_CONFIG.layout || "modern";
+  }, [
+    activeTransitionLayout,
+    selectedCategory,
+    categories,
+    contentConfig.layoutMode,
+    activeLayoutId,
+  ]);
 
   // Legacy settings for backward compatibility
   const [timeFormat, setTimeFormat] = useLocalStorage<"12h" | "24h">(
@@ -176,32 +247,6 @@ const AppContent: React.FC = () => {
   const contentContainerClass =
     "mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12";
   const headerPaddingClass = "pt-0";
-
-  // T35: SMART LAYOUT DETECTION - ATOMIC & EQUALITARIAN
-  const currentLayoutMode = useMemo(() => {
-    // 1. HIGHEST PRIORITY: The Lock (Frozen during transition)
-    if (activeTransitionLayout) {
-      return activeTransitionLayout;
-    }
-
-    // 2. Category Priority (from Context)
-    const categoryId = selectedCategory || "all";
-    const activeCatObj = categories.find((c) => c.id === categoryId);
-    if (activeCatObj?.layoutMode) {
-      return activeCatObj.layoutMode;
-    }
-
-    // 3. Global Preset Priority
-    if (activeLayoutId) {
-      const preset = BUILT_LAYOUT_PRESETS.find((p) => p.id === activeLayoutId);
-      if (preset?.content.layoutMode) {
-        return preset.content.layoutMode;
-      }
-    }
-
-    // 4. Default System Fallback (No intelligent inference allowed)
-    return INITIAL_APP_CONFIG.layout || "modern";
-  }, [activeTransitionLayout, selectedCategory, categories, activeLayoutId]);
 
   // Handle theme changes with animation
   useEffect(() => {
@@ -229,17 +274,25 @@ const AppContent: React.FC = () => {
 
       const id = setInterval(() => {
         logger.debugTag("SYSTEM", "Triggering auto-refresh...");
-        refreshFeeds();
+        refreshFeeds(buildLoadRequest(selectedCategory, selectedFeedUrl));
       }, intervalMs);
 
       return () => clearInterval(id);
     }
-  }, [layoutSettings.autoRefreshInterval, feeds.length, refreshFeeds, logger]);
+  }, [
+    buildLoadRequest,
+    feeds.length,
+    layoutSettings.autoRefreshInterval,
+    logger,
+    refreshFeeds,
+    selectedCategory,
+    selectedFeedUrl,
+  ]);
 
   // Pass selectedCategory to prioritize feeds from the current category
   const handleRefresh = useCallback(() => {
-    refreshFeeds(selectedCategory);
-  }, [refreshFeeds, selectedCategory]);
+    refreshFeeds(buildLoadRequest(selectedCategory, selectedFeedUrl));
+  }, [buildLoadRequest, refreshFeeds, selectedCategory, selectedFeedUrl]);
 
   // T36: Release the lock once content is confirmed to be on screen
   const handleContentMounted = useCallback(() => {
@@ -406,12 +459,20 @@ const AppContent: React.FC = () => {
   // Enhanced pagination system with URL persistence and reset triggers
   const pagination = usePagination(
     displayArticles.length,
-    layoutSettings.articlesPerPage,
+    Math.max(12, layoutSettings.articlesPerPage || 21),
     {
       persistInUrl: true,
-      resetTriggers: [selectedCategory, isSearchActive, searchQuery],
+      resetTriggers: [selectedCategory, isSearchActive, searchQuery, contentConfig.paginationType],
     },
   );
+
+  // T12 & T36: Progressive pagination support
+  const paginatedArticles = useMemo(() => {
+    if (contentConfig.paginationType === 'loadMore') {
+      return displayArticles.slice(0, (pagination.currentPage + 1) * layoutSettings.articlesPerPage);
+    }
+    return displayArticles.slice(pagination.startIndex, pagination.endIndex);
+  }, [displayArticles, pagination.startIndex, pagination.endIndex, pagination.currentPage, layoutSettings.articlesPerPage, contentConfig.paginationType]);
 
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
@@ -425,6 +486,11 @@ const AppContent: React.FC = () => {
 
       if (categoryObj?.layoutMode) {
         targetMode = categoryObj.layoutMode;
+      } else if (
+        contentConfig.layoutMode &&
+        contentConfig.layoutMode !== "default"
+      ) {
+        targetMode = contentConfig.layoutMode;
       } else if (activeLayoutId) {
         const preset = BUILT_LAYOUT_PRESETS.find(
           (p) => p.id === activeLayoutId,
@@ -440,7 +506,7 @@ const AppContent: React.FC = () => {
       setSelectedFeedUrl(feedUrl || null);
 
       // TRIGGER CONTENT LOAD
-      loadFeeds(false, category);
+      loadFeeds(buildLoadRequest(category, feedUrl));
 
       // Apply visual updates through context
       if (categoryObj && categoryObj.layoutMode) {
@@ -465,6 +531,8 @@ const AppContent: React.FC = () => {
       pagination,
       applyLayoutPreset,
       activeLayoutId,
+      contentConfig.layoutMode,
+      buildLoadRequest,
       refreshAppearance,
       loadFeeds,
       logger,
@@ -483,6 +551,11 @@ const AppContent: React.FC = () => {
 
     if (categoryObj?.layoutMode) {
       targetMode = categoryObj.layoutMode;
+    } else if (
+      contentConfig.layoutMode &&
+      contentConfig.layoutMode !== "default"
+    ) {
+      targetMode = contentConfig.layoutMode;
     } else if (activeLayoutId) {
       const preset = BUILT_LAYOUT_PRESETS.find((p) => p.id === activeLayoutId);
       if (preset?.content.layoutMode) targetMode = preset.content.layoutMode;
@@ -492,6 +565,7 @@ const AppContent: React.FC = () => {
     setIsNavigating(true);
     setSelectedCategory(category);
     setSelectedFeedUrl(null);
+    loadFeeds(buildLoadRequest(category));
 
     if (categoryObj && categoryObj.layoutMode) {
       applyLayoutPreset(categoryObj.layoutMode, false);
@@ -511,6 +585,9 @@ const AppContent: React.FC = () => {
     pagination,
     applyLayoutPreset,
     activeLayoutId,
+    contentConfig.layoutMode,
+    buildLoadRequest,
+    loadFeeds,
     refreshAppearance,
     selectedCategory,
     selectedFeedUrl,
@@ -637,11 +714,6 @@ const AppContent: React.FC = () => {
       }
     },
   });
-
-  const paginatedArticles = displayArticles.slice(
-    pagination.startIndex,
-    pagination.endIndex,
-  );
 
   // Swipe gestures for mobile category navigation
   const swipeRef = useSwipeGestures({
@@ -777,7 +849,7 @@ const AppContent: React.FC = () => {
               {paginatedArticles.length > 0 ? (
                 <Suspense
                   fallback={
-                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+                    <div className="feed-page-frame">
                       <FeedSkeleton
                         count={layoutSettings.articlesPerPage}
                         layoutMode={currentLayoutMode as string}
@@ -786,7 +858,7 @@ const AppContent: React.FC = () => {
                   }
                 >
                   <FeedContent
-                    key={selectedCategory + (selectedFeedUrl || "")}
+                    key={`${selectedCategory}-${selectedFeedUrl || "all"}-${currentLayoutMode}`}
                     articles={paginatedArticles}
                     timeFormat={timeFormat}
                     selectedCategory={selectedCategory}
@@ -795,7 +867,7 @@ const AppContent: React.FC = () => {
                   />
                 </Suspense>
               ) : (
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+                <div className="feed-page-frame">
                   {isSearchActive ? (
                     <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
                       <div className="mb-4">
@@ -853,49 +925,52 @@ const AppContent: React.FC = () => {
                 </div>
               )}
 
-              {!showSkeleton && pagination.totalPages > 1 && (
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 mt-8 flex flex-col items-center space-y-4">
-                  <Suspense
-                    fallback={
-                      <div className="h-8 w-32 bg-gray-800 rounded animate-pulse" />
-                    }
-                  >
-                    <PaginationControls
-                      currentPage={pagination.currentPage}
-                      totalPages={pagination.totalPages}
-                      onPageChange={pagination.setPage}
-                      isNavigating={pagination.isNavigating}
-                      compact={false}
-                    />
-                  </Suspense>
-                  <div className="sm:hidden text-center text-[rgb(var(--color-textSecondary))] text-xs">
+              {/* Pagination Area */}
+              {!showSkeleton && (
+                <div className="feed-page-frame mt-12 pb-12 flex flex-col items-center space-y-6">
+                  {contentConfig.paginationType === 'loadMore' ? (
+                    // Load More Button
+                    pagination.currentPage < pagination.totalPages - 1 && (
+                      <button
+                        onClick={() => pagination.setPage(pagination.currentPage + 1)}
+                        className={`px-8 py-3 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))] border border-[rgb(var(--color-border))]/30 rounded-full text-[rgb(var(--color-text))] font-bold shadow-lg hover:shadow-xl hover:bg-[rgb(var(--color-accent))]/10 transition-all active:scale-95 ${pagination.isNavigating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={pagination.isNavigating}
+                      >
+                        {pagination.isNavigating ? (
+                          <span className="flex items-center gap-2">
+                             <LoadingSpinner size="sm" /> Carregando...
+                          </span>
+                        ) : 'Carregar mais artigos'}
+                      </button>
+                    )
+                  ) : (
+                    // Numbered Pagination
+                    pagination.totalPages > 1 && (
+                      <Suspense
+                        fallback={
+                          <div className="h-10 w-48 bg-gray-800/50 rounded-full animate-pulse" />
+                        }
+                      >
+                        <PaginationControls
+                          currentPage={pagination.currentPage}
+                          totalPages={pagination.totalPages}
+                          onPageChange={pagination.setPage}
+                          isNavigating={pagination.isNavigating}
+                          compact={false}
+                        />
+                      </Suspense>
+                    )
+                  )}
+
+                  {/* Mobile gesture hint */}
+                  <div className="sm:hidden text-center text-[rgb(var(--color-textSecondary))] text-xs opacity-60">
                     <div className="flex items-center justify-center space-x-2">
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16l-4-4m0 0l4-4m-4 4h18"
-                        />
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
                       </svg>
-                      <span>Swipe to change category</span>
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 8l4 4m0 0l-4 4m4-4H3"
-                        />
+                      <span>Deslize para trocar de categoria</span>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
                     </div>
                   </div>
@@ -915,7 +990,9 @@ const AppContent: React.FC = () => {
               setFeeds={setFeeds}
               closeModal={closeFeedManager}
               articles={articles}
-              onRefreshFeeds={() => loadFeeds(true)}
+              onRefreshFeeds={() =>
+                loadFeeds(buildLoadRequest(selectedCategory, selectedFeedUrl, true))
+              }
             />
           </Modal>
           <SettingsSidebar

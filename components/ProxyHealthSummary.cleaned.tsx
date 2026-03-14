@@ -179,7 +179,7 @@ export const ProxyHealthSummary: React.FC = () => {
 
                 {stats.consecutiveFailures > 2 && (
                   <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded">
-                    <p className="text-xs text-red-700 dark:text-red-300 font-medium">⚠️ {proxyName} has {stats.consecutiveFailures} consecutive failures</p>
+                    <p className="text-xs text-red-700 dark:text-red-300 font-medium">{proxyName} has {stats.consecutiveFailures} consecutive failures</p>
                   </div>
                 )}
               </div>
@@ -189,7 +189,7 @@ export const ProxyHealthSummary: React.FC = () => {
       </div>
 
       <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
-        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">💡 Stats refresh every 5 seconds. Proxy health is calculated from success rate and response times.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Stats refresh every 5 seconds. Proxy health is calculated from success rate and response times.</p>
       </div>
     </div>
   );

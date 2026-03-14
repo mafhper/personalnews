@@ -26,6 +26,12 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
   const [downloadFormat, setDownloadFormat] = useState<'svg' | 'jpeg'>('svg');
   const [downloadSize, setDownloadSize] = useState<'s' | 'm' | 'x' | 'xg'>('m');
   const [isDownloading, setIsDownloading] = useState(false);
+  const secondaryTextClass =
+    'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]';
+  const subtleSurfaceClass =
+    'border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 text-[rgb(var(--theme-text-on-surface,var(--color-text)))]';
+  const thumbnailButtonClass =
+    'border border-[rgb(var(--color-border))]/24 hover:border-[rgb(var(--color-text))]/28 transition-all shadow-sm';
 
   // Download Size Options
   const DOWNLOAD_SIZES = {
@@ -267,7 +273,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
   return (
     <div className="space-y-4">
       {/* Type Selector */}
-      <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg">
+      <div className="flex space-x-1 rounded-lg border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/60 p-1">
         {['solid', 'aura', 'image'].map((type) => (
           <button
             key={type}
@@ -275,7 +281,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
             className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
               activeTab === type 
                 ? 'bg-[rgb(var(--color-accent))] text-white shadow-md' 
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                : 'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] hover:text-[rgb(var(--theme-text-on-surface,var(--color-text)))] hover:bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/65'
             }`}
           >
             {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -284,10 +290,10 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
       </div>
 
       {/* Controls based on type */}
-      <Card variant="glass" className="p-4 bg-black/20 border-white/5">
+      <Card variant="glass" className="border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/52 p-4">
         {activeTab === 'solid' && (
           <div className="space-y-3">
-            <label className="block text-xs font-medium text-gray-400">Cor Sólida</label>
+            <label className="block text-xs font-medium text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">Cor Sólida</label>
             <div className="flex items-center space-x-3">
               <input
                 type="color"
@@ -316,7 +322,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
             {/* Controls */}
             <div className="space-y-3">
-                <label className="block text-xs font-medium text-gray-400">Cor Base</label>
+                <label className="block text-xs font-medium text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">Cor Base</label>
                 <div className="flex items-center space-x-3">
                     <input
                         type="color"
@@ -335,19 +341,19 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="block text-[10px] text-gray-400 mb-1">Ruído: {auraConfig.noise}%</label>
+                    <label className="mb-1 block text-[10px] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">Ruído: {auraConfig.noise}%</label>
                     <input 
                         type="range" min="0" max="100" value={auraConfig.noise} 
                         onChange={(e) => setAuraConfig(prev => ({ ...prev, noise: parseInt(e.target.value) }))}
-                        className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        className="h-1 w-full cursor-pointer appearance-none rounded-lg bg-[rgb(var(--color-border))]/45"
                     />
                 </div>
                 <div>
-                    <label className="block text-[10px] text-gray-400 mb-1">Escala Ruído: {auraConfig.noiseScale.toFixed(1)}</label>
+                    <label className="mb-1 block text-[10px] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">Escala Ruído: {auraConfig.noiseScale.toFixed(1)}</label>
                     <input 
                         type="range" min="0.1" max="5" step="0.1" value={auraConfig.noiseScale} 
                         onChange={(e) => setAuraConfig(prev => ({ ...prev, noiseScale: parseFloat(e.target.value) }))}
-                        className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        className="h-1 w-full cursor-pointer appearance-none rounded-lg bg-[rgb(var(--color-border))]/45"
                     />
                 </div>
             </div>
@@ -365,13 +371,13 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
             </Button>
 
             {/* Download Section */}
-            <div className="pt-3 border-t border-white/10">
-              <label className="block text-[10px] text-gray-400 mb-2">Baixar Wallpaper</label>
+            <div className="border-t border-[rgb(var(--color-border))]/22 pt-3">
+              <label className="mb-2 block text-[10px] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">Baixar Wallpaper</label>
               <div className="flex gap-2 mb-2">
                 <select
                   value={downloadFormat}
                   onChange={(e) => setDownloadFormat(e.target.value as 'svg' | 'jpeg')}
-                  className="flex-1 bg-gray-800/50 text-white text-xs px-2 py-1.5 rounded-md border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                  className="flex-1 rounded-md border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 px-2 py-1.5 text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))] focus:outline-none focus:border-[rgb(var(--color-accent))]"
                 >
                   <option value="svg">SVG (Vetorial)</option>
                   <option value="jpeg">JPEG (Imagem)</option>
@@ -379,7 +385,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                 <select
                   value={downloadSize}
                   onChange={(e) => setDownloadSize(e.target.value as 's' | 'm' | 'x' | 'xg')}
-                  className="flex-1 bg-gray-800/50 text-white text-xs px-2 py-1.5 rounded-md border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                  className="flex-1 rounded-md border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 px-2 py-1.5 text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))] focus:outline-none focus:border-[rgb(var(--color-accent))]"
                 >
                   <option value="s">S (1280×720)</option>
                   <option value="m">M (1920×1080)</option>
@@ -413,7 +419,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
             {/* Presets */}
             <div>
-              <label className="block text-[10px] text-gray-400 mb-2">Presets</label>
+              <label className={`mb-2 block text-[11px] font-medium ${secondaryTextClass}`}>Presets</label>
               <div className="flex gap-2 flex-wrap max-h-[100px] overflow-y-auto custom-scrollbar">
                 {PRESETS.map((preset) => (
                   <button
@@ -426,7 +432,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                         auraSettings: { ...auraConfig, ...preset.config } 
                       });
                     }}
-                    className="w-12 h-8 rounded-md border border-white/10 hover:border-white/30 transition-all shadow-sm"
+                    className={`h-8 w-12 rounded-md ${thumbnailButtonClass}`}
                     style={{ background: preset.thumbnail }}
                     title={preset.name}
                   />
@@ -437,7 +443,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
             {/* Variations */}
             {variations.length > 0 && (
                 <div>
-                    <label className="block text-[10px] text-gray-400 mb-2">Variações</label>
+                    <label className={`mb-2 block text-[11px] font-medium ${secondaryTextClass}`}>Variações</label>
                     <div className="flex gap-2 flex-wrap max-h-[100px] overflow-y-auto custom-scrollbar">
                         {variations.map((variant, index) => (
                             <button
@@ -450,7 +456,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                                       auraSettings: variant 
                                     });
                                 }}
-                                className="w-12 h-8 rounded-md border border-white/10 hover:border-white/30 transition-all shadow-sm"
+                                className={`h-8 w-12 rounded-md ${thumbnailButtonClass}`}
                             >
                                 <AuraWallpaperRenderer config={variant} className="w-full h-full" lowQuality={true} />
                             </button>
@@ -463,21 +469,21 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
         {activeTab === 'image' && (
           <div className="space-y-3">
-            <label className="block text-xs text-gray-400">Carregar Imagem</label>
+            <label className={`block text-xs font-medium ${secondaryTextClass}`}>Carregar Imagem</label>
             <div className="flex items-center gap-3">
-              <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition-colors text-xs">
+              <label className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${subtleSurfaceClass}`}>
                 Escolher Arquivo
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </label>
               {config.customImage && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-green-400 flex items-center gap-1">
+                  <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-300">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
                     Imagem carregada
                   </span>
                   <button 
                     onClick={() => onChange({ type: 'solid', value: '#121212', customImage: null })}
-                    className="text-xs text-red-400 hover:text-red-300"
+                    className="text-xs font-medium text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200"
                   >
                     Remover
                   </button>

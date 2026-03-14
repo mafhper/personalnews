@@ -920,7 +920,7 @@ export const proxyManager = new ProxyManager();
 
 // Utility functions for components
 export const getProxyStatusIcon = (isHealthy: boolean): string => {
-  return isHealthy ? "🟢" : "🔴";
+  return isHealthy ? "OK" : "ERR";
 };
 
 export const getProxyHealthColor = (healthScore: number): string => {

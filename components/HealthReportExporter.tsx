@@ -47,46 +47,46 @@ export const HealthReportExporter: React.FC<{
             })
             .sort((a, b) => b.stats.healthScore - a.stats.healthScore);
 
-        let markdown = `# 📊 Relatório de Saúde - Personal News\n\n`;
+        let markdown = `# Relatório de Saúde - Personal News\n\n`;
         markdown += `**Gerado em:** ${timestamp}\n`;
-        markdown += `**Versão do Sistema:** ${isDev ? '🔧 Desenvolvimento' : '📦 Produção (GitHub Pages)'}\n`;
+        markdown += `**Versão do Sistema:** ${isDev ? 'Desenvolvimento' : 'Produção (GitHub Pages)'}\n`;
         markdown += `**Feeds Monitorados:** ${feeds.length}\n`;
         markdown += `**Proxies Configurados:** ${Object.keys(proxyStats).length}\n\n`;
 
         // System Configuration Section
-        markdown += `## ⚙️ Configuração do Sistema\n\n`;
+        markdown += `## Configuração do Sistema\n\n`;
         markdown += `- **Ambiente:** ${isDev ? 'Desenvolvimento (localhost:5175)' : 'Produção'}\n`;
 
         // API Key Section with Origin
         if (apiKey) {
             const maskedKey = apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4);
-            const originLabel = apiKeyOrigin === 'env.local' ? '📁 .env.local'
-                : apiKeyOrigin === 'localStorage' ? '💾 localStorage (salva anterior)'
-                    : '✋ Configurada manualmente';
-            markdown += `- **API Key RSS2JSON:** ✅ Configurada\n`;
+            const originLabel = apiKeyOrigin === 'env.local' ? '.env.local'
+                : apiKeyOrigin === 'localStorage' ? 'localStorage (salva anterior)'
+                    : 'Configurada manualmente';
+            markdown += `- **API Key RSS2JSON:** Configurada\n`;
             markdown += `  - Chave: \`${maskedKey}\`\n`;
             markdown += `  - Origem: ${originLabel}\n`;
             markdown += `  - Status: Ativa e validada\n`;
             markdown += `  - Limite: 10.000 requisições/dia\n`;
         } else {
-            markdown += `- **API Key RSS2JSON:** ❌ Não configurada\n`;
+            markdown += `- **API Key RSS2JSON:** Não configurada\n`;
             markdown += `  - Limite atual: 50 requisições/dia\n`;
             markdown += `  - Para configurar:\n`;
             markdown += `    1. Crie um arquivo \`.env.local\` na raiz do projeto\n`;
             markdown += `    2. Adicione: \`VITE_RSS2JSON_API_KEY=sua-chave-aqui\`\n`;
             markdown += `    3. Reinicie o servidor\n`;
         }
-        markdown += `- **Preferência de Proxy:** ${prefersLocalProxy ? '🏠 Local Proxy (dev)' : '☁️ Proxies em nuvem'}\n`;
+        markdown += `- **Preferência de Proxy:** ${prefersLocalProxy ? 'Proxy local (dev)' : 'Proxies em nuvem'}\n`;
         markdown += `- **Proxy Saudáveis:** ${overallStats.healthyProxies}/${overallStats.totalProxies}\n`;
         markdown += `- **Total de Requisições:** ${overallStats.totalRequests}\n`;
         markdown += `- **Taxa de Sucesso Geral:** ${overallStats.totalRequests > 0 ? Math.round((overallStats.totalSuccesses / overallStats.totalRequests) * 100) : 0}%\n`;
         markdown += `- **Tempo Médio de Resposta:** ${overallStats.averageResponseTime.toFixed(0)}ms\n\n`;
 
         // Feed Health Section
-        markdown += `## 📰 Status dos Feeds (${feeds.length} feeds)\n\n`;
+        markdown += `## Status dos Feeds (${feeds.length} feeds)\n\n`;
 
         if (feeds.length === 0) {
-            markdown += `⚠️ Nenhum feed está sendo monitorado ainda. Adicione feeds para começar.\n\n`;
+            markdown += `Nenhum feed está sendo monitorado ainda. Adicione feeds para começar.\n\n`;
         } else {
             const feedsByStatus = {
                 working: feeds.filter(f => f.status === 'working'),
@@ -95,7 +95,7 @@ export const HealthReportExporter: React.FC<{
             };
 
             if (feedsByStatus.working.length > 0) {
-                markdown += `### ✅ Feeds Funcionando (${feedsByStatus.working.length})\n\n`;
+                markdown += `### Feeds Funcionando (${feedsByStatus.working.length})\n\n`;
                 feedsByStatus.working.slice(0, 10).forEach(feed => {
                     markdown += `- **${feed.title}**\n`;
                     if (reportType === 'full') {
@@ -111,7 +111,7 @@ export const HealthReportExporter: React.FC<{
             }
 
             if (feedsByStatus.warning.length > 0) {
-                markdown += `### ⚠️ Feeds com Aviso (${feedsByStatus.warning.length})\n\n`;
+                markdown += `### Feeds com Aviso (${feedsByStatus.warning.length})\n\n`;
                 feedsByStatus.warning.forEach(feed => {
                     markdown += `- **${feed.title}**\n`;
                     if (reportType === 'full') {
@@ -125,7 +125,7 @@ export const HealthReportExporter: React.FC<{
             }
 
             if (feedsByStatus.error.length > 0) {
-                markdown += `### ❌ Feeds com Erro (${feedsByStatus.error.length})\n\n`;
+                markdown += `### Feeds com Erro (${feedsByStatus.error.length})\n\n`;
                 feedsByStatus.error.slice(0, 5).forEach(feed => {
                     markdown += `- **${feed.title}**\n`;
                     if (reportType === 'full') {
@@ -143,12 +143,12 @@ export const HealthReportExporter: React.FC<{
         }
 
         // Proxy Performance Section
-        markdown += `## 🔗 Performance dos Proxies\n\n`;
+        markdown += `## Performance dos Proxies\n\n`;
         markdown += `| Proxy | Status | Taxa Sucesso | Requisições | Tempo Médio | Falhas Consecutivas |\n`;
         markdown += `|-------|--------|--------------|-------------|-------------|---------------------|\n`;
 
         proxySummary.forEach(({ name, stats, successRate }) => {
-            const status = stats.healthScore >= 0.8 ? '🟢' : stats.healthScore >= 0.5 ? '🟡' : '🔴';
+            const status = stats.healthScore >= 0.8 ? 'Alta' : stats.healthScore >= 0.5 ? 'Media' : 'Baixa';
             markdown += `| ${name} | ${status} | ${successRate}% | ${stats.totalRequests} | ${stats.avgResponseTime.toFixed(0)}ms | ${stats.consecutiveFailures} |\n`;
         });
         markdown += '\n';
@@ -175,11 +175,11 @@ export const HealthReportExporter: React.FC<{
         }
 
         // Health Score Explanation
-        markdown += `## 🔍 Entendendo os Scores de Saúde\n\n`;
+        markdown += `## Entendendo os Scores de Saúde\n\n`;
         markdown += `O **Score de Saúde (0-100%)** indica quanto um proxy está funcionando bem:\n\n`;
-        markdown += `- **🟢 Verde (80-100%):** Proxy saudável, use com confiança\n`;
-        markdown += `- **🟡 Amarelo (50-80%):** Proxy com problemas ocasionais, monitorar\n`;
-        markdown += `- **🔴 Vermelho (0-50%):** Proxy com problemas graves ou morto\n\n`;
+        markdown += `- **Alta (80-100%):** Proxy saudável, use com confiança\n`;
+        markdown += `- **Media (50-80%):** Proxy com problemas ocasionais, monitorar\n`;
+        markdown += `- **Baixa (0-50%):** Proxy com problemas graves ou morto\n\n`;
 
         markdown += `### Por que os proxies podem estar em 0%?\n\n`;
         markdown += `1. **Nenhuma requisição ainda:** Se é a primeira execução, os proxies não fizeram nenhuma requisição\n`;
@@ -195,7 +195,7 @@ export const HealthReportExporter: React.FC<{
             ? proxySummary.reduce((sum, { stats }) => sum + stats.healthScore, 0) / proxySummary.length
             : 0;
 
-        markdown += `## 📈 Resumo Executivo\n\n`;
+        markdown += `## Resumo Executivo\n\n`;
         markdown += `- **Saúde Geral dos Proxies:** ${(avgHealthScore * 100).toFixed(1)}%\n`;
         if (feeds.length > 0) {
             const feedsByStatus = {
@@ -209,7 +209,7 @@ export const HealthReportExporter: React.FC<{
         }
         markdown += `- **Requisições Bem-Sucedidas:** ${overallStats.totalSuccesses}/${overallStats.totalRequests}\n`;
         markdown += `- **Proxy Mais Rápido:** ${proxySummary[0]?.name || 'N/A'} (${proxySummary[0]?.stats.avgResponseTime.toFixed(0) || 0}ms)\n`;
-        markdown += `- **Recomendação:** ${avgHealthScore >= 0.8 ? '✅ Sistema saudável - Nenhuma ação necessária' : avgHealthScore >= 0.5 ? '⚠️ Atenção necessária - Monitore a situação' : avgHealthScore > 0 ? '🔧 Problemas detectados - Verifique proxies' : '❌ Crítico - Nenhum proxy funcional'}\n\n`;
+        markdown += `- **Recomendação:** ${avgHealthScore >= 0.8 ? 'Sistema saudável - Nenhuma ação necessária' : avgHealthScore >= 0.5 ? 'Atenção necessária - Monitore a situação' : avgHealthScore > 0 ? 'Problemas detectados - Verifique proxies' : 'Crítico - Nenhum proxy funcional'}\n\n`;
 
         // Footer
         markdown += `---\n\n`;
@@ -292,7 +292,7 @@ export const HealthReportExporter: React.FC<{
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400">
-                💡 Use este relatório para documentar a saúde do seu sistema e monitorar tendências ao longo do tempo.
+                Use este relatório para documentar a saúde do seu sistema e monitorar tendências ao longo do tempo.
             </p>
         </div>
     );

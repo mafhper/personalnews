@@ -13,13 +13,13 @@ const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div clas
 
 export const ModernPortalSkeleton: React.FC = () => {
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 flex flex-col gap-8 pb-12">
+    <div className="feed-page-frame flex flex-col gap-8 pb-12">
       {/* HERO SECTION SKELETON */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6">
-        <div className="lg:col-span-8 h-[420px] md:h-[480px] lg:h-[520px] feed-skeleton-block rounded-2xl" />
-        <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-4 md:gap-5">
-          <div className="flex-1 h-[220px] md:h-[230px] feed-skeleton-block rounded-2xl" />
-          <div className="flex-1 h-[220px] md:h-[230px] feed-skeleton-block rounded-2xl" />
+      <section className="grid grid-cols-1 gap-5 md:gap-6 lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)]">
+        <div className="h-[340px] md:h-[400px] lg:h-[470px] feed-skeleton-block rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-5">
+          <div className="h-[180px] md:h-[200px] lg:h-[210px] feed-skeleton-block rounded-2xl" />
+          <div className="h-[180px] md:h-[200px] lg:h-[210px] feed-skeleton-block rounded-2xl" />
         </div>
       </section>
 
@@ -35,21 +35,22 @@ export const ModernPortalSkeleton: React.FC = () => {
       </section>
 
       {/* MAIN FEED SKELETON */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-        <div className="lg:col-span-8 space-y-8">
-          <div className="h-[360px] md:h-[400px] feed-skeleton-block rounded-2xl" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <section className="space-y-6">
+        <Bone className="h-6 w-48" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)]">
+          <div className="h-[320px] md:h-[360px] feed-skeleton-block rounded-2xl" />
+          <div className="space-y-4">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="space-y-4">
-                <Bone className="h-48" />
-                <Bone className="h-4 w-full" />
-              </div>
+              <div key={i} className="h-24 feed-skeleton-block rounded-xl" />
             ))}
           </div>
         </div>
-        <div className="lg:col-span-4 space-y-6">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-24 feed-skeleton-block rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="space-y-4">
+              <Bone className="h-48" />
+              <Bone className="h-4 w-full" />
+            </div>
           ))}
         </div>
       </section>
@@ -65,9 +66,11 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
   // Slicing the data for different sections
   const heroArticle = articles[0];
   const topStories = articles.slice(1, 3); // 2 articles next to hero
-  const featuredStrip = articles.slice(3, 7); // 4 articles in a strip
-  const mainFeed = articles.slice(7, 13); // Main grid articles
-  const sidebarFeed = articles.slice(13); // Rest go to sidebar or bottom list
+  const featuredStrip = articles.slice(3, 7);
+  const latestArticles = articles.slice(7);
+  const leadStory = latestArticles[0];
+  const sidebarFeed = latestArticles.slice(1, 5);
+  const continuationFeed = latestArticles.slice(5);
 
   const handleOpenReader = (article: Article) => {
     setReadingArticle(article);
@@ -90,21 +93,27 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 xl:px-12 flex flex-col gap-8 pb-12">
+    <div className="feed-page-frame flex flex-col gap-[var(--feed-section-gap)] pb-12">
 
-      {/* SECTION 1: HERO GRID (Desktop: 2/3 + 1/3 split) */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+      {/* SECTION 1: HERO GRID */}
+      <section
+        className={`grid grid-cols-1 gap-[var(--feed-page-gap)] items-stretch ${
+          topStories.length > 0
+            ? "lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)]"
+            : ""
+        }`}
+      >
 
         {/* Main Hero */}
         <div
-          className="lg:col-span-8 group relative overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[380px] md:min-h-[420px] lg:min-h-[520px] shadow-xl cursor-pointer"
+          className="group relative overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[340px] md:min-h-[390px] lg:min-h-[450px] xl:min-h-[500px] shadow-xl cursor-pointer"
           onClick={() => handleOpenReader(heroArticle)}
         >
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
             style={{ backgroundImage: `url(${heroArticle.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070'})` }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-85" />
 
           <FavoriteButton
             article={heroArticle}
@@ -113,11 +122,11 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
             className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/15 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
           />
 
-          <div className="absolute bottom-0 left-0 p-6 lg:p-10 max-w-3xl">
+          <div className="absolute bottom-0 left-0 p-6 lg:p-8 xl:p-10 max-w-[38rem]">
             <span className="feed-chip mb-4 shadow-sm shadow-black/30">
-              Top Story
+              Matéria principal
             </span>
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-xl">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-xl tracking-tight">
               <a
                 href={heroArticle.link}
                 target="_blank"
@@ -128,10 +137,10 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 {heroArticle.title}
               </a>
             </h1>
-            <p className="hidden md:block text-lg text-gray-100 line-clamp-2 mb-4 max-w-2xl drop-shadow-sm">
+            <p className="hidden md:block text-lg text-white/84 line-clamp-2 mb-4 max-w-2xl drop-shadow-sm">
               {heroArticle.description}
             </p>
-            <div className="flex items-center text-sm font-bold min-w-0">
+            <div className="flex items-center text-sm font-bold min-w-0 text-white">
               <span className="feed-chip truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/10">{heroArticle.sourceTitle}</span>
               <span className="mx-2 flex-shrink-0 text-white">•</span>
               <span className="truncate text-white font-black">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -140,11 +149,11 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
         </div>
 
         {/* Right Column: Top Stories */}
-        <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 lg:flex lg:flex-col gap-4 md:gap-5 lg:gap-6">
+        <div className="grid grid-cols-1 gap-[var(--feed-page-gap)] sm:grid-cols-2 lg:grid-cols-1 lg:auto-rows-fr">
           {topStories.map((article) => (
             <div
               key={article.link}
-              className="relative flex-1 rounded-2xl overflow-hidden group min-h-[200px] sm:min-h-[220px] md:min-h-[240px] aspect-[4/3] md:aspect-auto shadow-md cursor-pointer"
+              className="relative h-full rounded-2xl overflow-hidden group min-h-[180px] sm:min-h-[200px] md:min-h-[220px] lg:min-h-[200px] aspect-[4/3] md:aspect-auto shadow-md cursor-pointer"
               onClick={() => handleOpenReader(article)}
             >
               <div
@@ -159,21 +168,21 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
               />
               <div className="absolute bottom-0 left-0 p-5 w-full">
-                <h2 className="text-lg font-bold text-white leading-snug mb-2 drop-shadow-lg">
+                <h2 className="text-lg font-bold text-white leading-snug mb-2 drop-shadow-lg tracking-tight">
                   <a
                     href={article.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-yellow-400 transition-colors"
+                    className="transition-colors hover:text-white/90"
                     onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
                   >
                     {article.title}
                   </a>
                 </h2>
-                <div className="flex items-center text-xs font-bold min-w-0">
+                <div className="flex items-center text-xs font-bold min-w-0 text-white">
                   <span className="feed-chip truncate max-w-[120px] shadow-sm shadow-black/10">{article.sourceTitle}</span>
                   <span className="mx-2 flex-shrink-0 text-white">•</span>
-                  <span className="text-gray-200">{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-white/80">{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               </div>
             </div>
@@ -182,20 +191,18 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
       </section>
 
       {/* SECTION 2: VISUAL STRIP (4 cols) */}
-      <section className="border-y border-white/5 py-10 md:py-12 feed-surface rounded-3xl px-4 md:px-8">
-        <div className="flex items-center gap-4 mb-8">
-          <span className="w-1.5 h-6 bg-[rgba(var(--color-accent),0.55)] rounded-full"></span>
+      <section className="feed-surface rounded-[calc(var(--feed-card-radius)*1.1)] px-4 py-8 md:px-8 md:py-10">
+        <div className="feed-section-heading">
             <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] feed-accent-text">
-              Trending Analysis
+              Leituras em destaque
             </h3>
-          <div className="h-px flex-1 bg-gradient-to-r from-[rgb(var(--color-accent))]/30 to-transparent"></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {featuredStrip.map((article) => (
             <ArticleItem
               key={article.link}
               article={article}
-              layoutMode="grid"
+              layoutMode="modern"
               density="compact"
               onClick={handleOpenReader}
               className="[&_.relative.mb-4]:!aspect-[4/3] [&_.relative.mb-4]:!h-auto"
@@ -204,98 +211,98 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
         </div>
       </section>
 
-      {/* SECTION 3: MAIN CONTENT + SIDEBAR */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+      {/* SECTION 3: MAIN CONTENT + CONTINUATION */}
+      {latestArticles.length > 0 && (
+        <section className="space-y-6">
+          <div className="feed-section-heading">
+            <h3 className="feed-title text-xl md:text-2xl font-bold tracking-tight">
+              Últimas leituras
+            </h3>
+          </div>
 
-        {/* Main Feed (Left 8 cols) */}
-        <div className="lg:col-span-8">
-          <div className="max-w-full lg:max-w-[860px] mx-auto lg:mx-0">
-            <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
-              <span className="w-1.5 h-6 bg-[rgb(var(--color-primary))] rounded-full"></span>
-              <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Latest News</h3>
-              <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
-            </div>
-
-            <div className="space-y-8">
-              {/* First item big */}
-              {mainFeed.length > 0 && (
+          {leadStory && (
+            <div
+              className={`grid grid-cols-1 gap-[var(--feed-page-gap)] items-start ${
+                sidebarFeed.length > 0
+                  ? "lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)]"
+                  : ""
+              }`}
+            >
+              <div className="min-w-0">
                 <ArticleItem
-                  article={mainFeed[0]}
-                  layoutMode="newspaper"
+                  article={leadStory}
+                  layoutMode="modern"
+                  density="compact"
+                  onClick={handleOpenReader}
+                  className="[&_.relative.mb-4]:!aspect-[16/10] [&_.relative.mb-4]:!h-auto [&_.relative.mb-4]:max-h-[18rem]"
+                />
+              </div>
+
+              {sidebarFeed.length > 0 && (
+                <div className="feed-surface-strong rounded-[var(--feed-card-radius)] p-6">
+                  <h4 className="feed-section-heading text-lg font-bold mb-4">
+                    Para não perder
+                  </h4>
+                  <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 lg:block lg:space-y-4">
+                    {sidebarFeed.map((article, index) => (
+                      <div
+                        key={article.link}
+                        className="group cursor-pointer feed-card feed-card--flat rounded-[calc(var(--feed-card-radius)*0.9)] p-4 transition-all duration-300"
+                        onClick={() => handleOpenReader(article)}
+                      >
+                        <div className="flex gap-4 items-start">
+                          <span className="text-2xl font-black feed-accent-text opacity-40 font-serif group-hover:opacity-100 transition-opacity">
+                            {index + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                              <h5 className="feed-title feed-title-hoverable font-bold leading-tight transition-all text-sm mb-2 line-clamp-2">
+                                {article.title}
+                              </h5>
+                              <FavoriteButton
+                                article={article}
+                                size="small"
+                                position="inline"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[rgb(var(--color-textSecondary))]"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="feed-chip text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded truncate max-w-full">
+                                {article.sourceTitle}
+                              </span>
+                              <span className="feed-meta feed-meta-hoverable text-[10px] font-bold transition-colors">
+                                {new Date(article.pubDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="w-full mt-6 py-3 text-sm font-medium text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] border-t border-[rgb(var(--color-border))]/45 transition-colors">
+                    Ver arquivo completo
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {continuationFeed.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {continuationFeed.map((article) => (
+                <ArticleItem
+                  key={article.link}
+                  article={article}
+                  layoutMode="modern"
                   density="comfortable"
                   onClick={handleOpenReader}
-                  className="[&_.relative.mb-4]:!aspect-[16/9] [&_.relative.mb-4]:!h-auto"
+                  className="[&_.relative.mb-4]:!aspect-[4/3] [&_.relative.mb-4]:!h-auto"
                 />
-              )}
-
-              {/* Grid for the rest */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                {mainFeed.slice(1).map(article => (
-                  <ArticleItem
-                    key={article.link}
-                    article={article}
-                    layoutMode="grid"
-                    density="comfortable"
-                    onClick={handleOpenReader}
-                    className="[&_.relative.mb-4]:!aspect-[4/3] [&_.relative.mb-4]:!h-auto"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar (Right 4 cols) */}
-        <div className="lg:col-span-4 space-y-8">
-          {/* Sidebar Widget 1: Most Recent List */}
-          <div className="bg-[rgb(var(--color-surface))] rounded-xl p-6 border border-white/5 lg:sticky lg:top-24">
-            <h4 className="text-lg font-bold text-[rgb(var(--color-text))] mb-4 flex items-center gap-2">
-              <span className="w-2 h-6 bg-[rgba(var(--color-accent),0.45)] rounded-sm"></span>
-              In Case You Missed It
-            </h4>
-            <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 lg:block lg:space-y-4">
-              {sidebarFeed.slice(0, 8).map((article, index) => (
-                <div
-                  key={article.link}
-                  className="group cursor-pointer bg-[rgb(var(--color-surface))]/70 backdrop-blur-xl rounded-xl p-4 border border-white/10 hover:bg-[rgb(var(--color-surface))] hover:border-white/15 transition-all duration-300 shadow-md"
-                  onClick={() => handleOpenReader(article)}
-                >
-                  <div className="flex gap-4 items-start">
-                    <span className="text-2xl font-black feed-accent-text opacity-40 font-serif group-hover:opacity-100 transition-opacity">
-                      {index + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
-                        <h5 className="font-bold text-[rgb(var(--color-text))] leading-tight group-hover:text-white group-hover:underline transition-all text-sm mb-2 line-clamp-2">
-                          {article.title}
-                        </h5>
-                        <FavoriteButton
-                          article={article}
-                          size="small"
-                          position="inline"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[rgb(var(--color-textSecondary))] hover:text-white"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="feed-chip text-[10px] font-black uppercase tracking-wider bg-black/20 px-1.5 py-0.5 rounded truncate max-w-full">
-                          {article.sourceTitle}
-                        </span>
-                        <span className="text-[10px] font-bold text-white/60 group-hover:text-white transition-colors">
-                          {new Date(article.pubDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               ))}
             </div>
-            <button className="w-full mt-6 py-3 text-sm font-medium text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] border-t border-white/10 transition-colors">
-              View All Archives
-            </button>
-          </div>
-        </div>
-
-      </section>
+          )}
+        </section>
+      )}
 
       {readingArticle && (
         <ArticleReaderModal

@@ -28,7 +28,6 @@ const layoutOptions: {
   { value: "cyberpunk", label: "Cyberpunk" },
   { value: "focus", label: "Focus" },
   { value: "gallery", label: "Gallery" },
-  { value: "grid", label: "Grid" },
   { value: "immersive", label: "Immersive" },
   { value: "list", label: "List" },
   { value: "magazine", label: "Magazine" },
@@ -237,7 +236,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                         <option key={option.label} value={option.value}>
                           {option.label}{" "}
                           {(category.layoutMode || "") === option.value
-                            ? " ✓"
+                            ? " (ativo)"
                             : ""}
                         </option>
                       ))}

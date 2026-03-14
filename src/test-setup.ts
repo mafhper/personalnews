@@ -3,12 +3,17 @@ import { expect, afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import '@testing-library/jest-dom';
-import { DOMParser } from 'xmldom';
 
 // 1. ESTABELECER GLOBAIS ANTES DE QUALQUER COISA
 // Prover DOMParser global para o FeedDiscoveryService
-if (typeof global.DOMParser === 'undefined') {
-  (global as unknown as { DOMParser: typeof DOMParser }).DOMParser = DOMParser;
+if (
+  typeof global.DOMParser === 'undefined' &&
+  typeof window !== 'undefined' &&
+  typeof window.DOMParser !== 'undefined'
+) {
+  (
+    global as unknown as { DOMParser: typeof window.DOMParser }
+  ).DOMParser = window.DOMParser;
 }
 
 // Mock robusto para localStorage
@@ -56,6 +61,12 @@ if (typeof window !== 'undefined') {
       })),
     });
   }
+
+  Object.defineProperty(window, 'scrollTo', {
+    writable: true,
+    configurable: true,
+    value: vi.fn(),
+  });
 } else {
   // Ambiente Node puro
   vi.stubGlobal('localStorage', localStorageMock);

@@ -4,6 +4,20 @@ import type { BackgroundConfig, ExtendedTheme } from '../types';
 const AuraWallpaperRenderer = lazy(() => import('./AuraWallpaperRenderer'));
 
 export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgroundConfig: BackgroundConfig, currentTheme: ExtendedTheme }) => (
+  (() => {
+    const isLightTheme = currentTheme.id.includes('light');
+    const overlayClass =
+      backgroundConfig.type === 'solid'
+        ? ''
+        : isLightTheme
+          ? backgroundConfig.type === 'image'
+            ? 'bg-white/25'
+            : 'bg-white/40' // Less aggressive wash than before 
+          : backgroundConfig.type === 'image'
+            ? 'bg-black/30'
+            : 'bg-black/40';
+
+    return (
   <div
     className={`fixed inset-0 z-[-1] transition-colors duration-500 ease-in-out ${backgroundConfig.type === 'solid' ? "bg-[rgb(var(--color-background))]" : ""}`}
     style={
@@ -33,7 +47,7 @@ export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: {
     )}
     {/* Overlay para melhorar a legibilidade - menos intenso para imagens */}
     {backgroundConfig.type !== 'solid' && (
-      <div className={`absolute inset-0 ${backgroundConfig.type === 'image' ? 'bg-black/30' : 'bg-black/40'}`}></div>
+      <div className={`absolute inset-0 ${overlayClass}`}></div>
     )}
 
     {/* Gradiente de transição para o fundo */}
@@ -46,4 +60,6 @@ export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: {
       ></div>
     )}
   </div>
+    );
+  })()
 ));

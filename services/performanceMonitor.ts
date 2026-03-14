@@ -156,7 +156,7 @@ class PerformanceMonitor {
 
     if (this.logToConsole) {
       console.error(
-        `❌ [Performance] Failed: ${metric.name} (${duration.toFixed(2)}ms)`,
+        `[Performance:failed] ${metric.name} (${duration.toFixed(2)}ms)`,
         {
           error,
           ...failedMetric.metadata,
@@ -556,7 +556,7 @@ class PerformanceMonitor {
           entries.forEach((entry) => {
             if (entry.entryType === "navigation") {
               const navEntry = entry as PerformanceNavigationTiming;
-              console.log(`🌐 [Performance] Navigation timing:`, {
+              console.log(`[Performance:navigation]`, {
                 domContentLoaded:
                   navEntry.domContentLoadedEventEnd -
                   navEntry.domContentLoadedEventStart,
