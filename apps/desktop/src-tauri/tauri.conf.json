@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PersonalNews Desktop",
+  "version": "0.1.0",
+  "identifier": "io.mafhper.personalnews",
+  "build": {
+    "beforeDevCommand": "bun run --cwd ../.. dev:local",
+    "beforeBuildCommand": "bun run --cwd ../.. build:app:desktop && bun run prepare:backend",
+    "devUrl": "http://127.0.0.1:5173/#feed",
+    "frontendDist": "../../../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "PersonalNews",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 980,
+        "minHeight": 680,
+        "resizable": true,
+        "maximized": false,
+        "decorations": true,
+        "transparent": false,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "externalBin": [
+      "binaries/personalnews-backend"
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser",
+        "startMenuFolder": "PersonalNews",
+        "installerHooks": "windows/hooks.nsh"
+      },
+      "wix": {
+        "language": [
+          "pt-BR",
+          "en-US"
+        ]
+      }
+    },
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": false
+  }
+}

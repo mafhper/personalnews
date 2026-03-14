@@ -1038,8 +1038,6 @@ async function fetchRssFeed(
   throw new Error(`Failed to fetch RSS feed: ${lastError.message}`);
 }
 
-// function fetchRssFeed removed (replaced by new implementation above)
-
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
