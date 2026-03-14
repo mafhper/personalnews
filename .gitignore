@@ -59,6 +59,7 @@ ehthumbs.db
 .eslintcache
 .cache
 .parcel-cache
+*.db
 
 # Rust / Tauri
 **/target/
