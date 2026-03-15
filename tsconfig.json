@@ -18,8 +18,8 @@
     "noEmit": true,
     "allowJs": true,
     "jsx": "react-jsx",
-    /* Suporte ao NodeJS */
-    "types": ["node", "bun-types"],
+    /* Node only for root tsc (backend excluded; Bun types not required in CI) */
+    "types": ["node"],
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,
