@@ -1,4 +1,4 @@
-import { DOMParser } from "xmldom";
+import { DOMParser } from "@xmldom/xmldom";
 import type { ArticleWire } from "../../../shared/contracts/backend";
 import { BackendHttpError } from "./errors";
 
