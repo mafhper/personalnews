@@ -41,7 +41,7 @@ jobs:
         run: bun install
 
       - name: prepare backend
-        run: bun run prepare:backend
+        run: node scripts/prepare-backend.mjs
 
       - uses: tauri-apps/tauri-action@v0
         env:

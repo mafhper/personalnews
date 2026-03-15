@@ -19,9 +19,7 @@
     "allowJs": true,
     "jsx": "react-jsx",
     /* Suporte ao NodeJS */
-    "types": [
-      "node"
-    ],
+    "types": ["node", "bun-types"],
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,
@@ -40,6 +38,7 @@
     "myrssfeed/**/*",
     "dist/**/*",
     "node_modules/**/*",
+    "apps/backend/**/*",
     "apps/desktop/src-tauri/target/**/*",
     "apps/desktop/src-tauri/binaries/**/*",
     "quality-core/dashboard-v2/**/*",
@@ -48,3 +47,4 @@
     "_template_v0/**/*"
   ]
 }
+
