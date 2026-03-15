@@ -1,0 +1,7 @@
+{
+  "identifier": "allow-open-external-url",
+  "description": "Permite abrir URLs externas",
+  "commands": [
+    "open_external_url"
+  ]
+}

@@ -316,10 +316,10 @@ function parseXml(body: string): Document {
       warning() {
         // noop
       },
-      error(message) {
+      error(message: string) {
         throw new BackendHttpError(422, `XML parse error: ${message}`);
       },
-      fatalError(message) {
+      fatalError(message: string) {
         throw new BackendHttpError(422, `XML fatal error: ${message}`);
       },
     },

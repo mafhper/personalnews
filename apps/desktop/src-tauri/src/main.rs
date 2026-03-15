@@ -3,6 +3,7 @@
 use std::{fs, sync::Mutex};
 use tauri::{AppHandle, Manager, RunEvent};
 use tauri_plugin_shell::{process::CommandChild, ShellExt};
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(Default)]
 struct BackendSidecarState {
@@ -98,8 +99,8 @@ fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
         return Err("unsupported external url scheme".to_string());
     }
 
-    app.shell()
-        .open(parsed.to_string(), None)
+    app.opener()
+        .open_url(parsed.to_string(), None::<String>)
         .map_err(|e| format!("failed to open external url: {e}"))?;
     Ok(())
 }
@@ -107,6 +108,7 @@ fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(BackendSidecarState::default())
         .setup(|app| {
             if !cfg!(debug_assertions) {

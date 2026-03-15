@@ -53,9 +53,26 @@ class LoggerService {
   }
 
   private addLog(type: LogMessage['type'], args: unknown[]) {
-    const message = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ');
+    // Optimization: limit stringification for large objects/arrays to avoid blocking the main thread
+    const message = args.map(arg => {
+      if (arg === null || arg === undefined) return String(arg);
+      
+      if (typeof arg === 'object') {
+        try {
+          // Simple check for circular references or massive objects
+          const str = JSON.stringify(arg);
+          if (str.length > 2000) {
+            return `[Large Object: ${str.substring(0, 100)}...]`;
+          }
+          return str;
+        } catch (e) {
+          return '[Unserializable Object]';
+        }
+      }
+      
+      const str = String(arg);
+      return str.length > 2000 ? str.substring(0, 2000) + '...' : str;
+    }).join(' ');
 
     const log: LogMessage = {
       id: Math.random().toString(36).substr(2, 9),

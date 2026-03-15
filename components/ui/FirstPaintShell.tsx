@@ -12,7 +12,7 @@ export const FirstPaintShell: React.FC<{ layoutMode?: string }> = ({ layoutMode 
         : "fixed top-0 left-0 right-0 z-50 h-16 border-b border-white/5 bg-[rgb(10,10,12)]/80 backdrop-blur-md";
 
     return (
-        <div className="min-h-screen flex flex-col theme-transition-all bg-[rgb(10,10,12)]">
+        <div id="app-shell" className="min-h-screen flex flex-col theme-transition-all bg-[rgb(10,10,12)]">
             {/* Static Header Shell */}
             <header className={headerClass}>
                 <div className={`container mx-auto px-4 h-full flex items-center ${isMagazine ? 'justify-center relative w-full' : 'justify-between'}`}>

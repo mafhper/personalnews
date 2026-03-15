@@ -8,7 +8,9 @@
   /* Legacy support */
   --color-background: 26 32 44;
   /* Dark Gray */
-  --feed-header-gap: 2.5rem;
+  /* Espaço entre o menu de navegação e o conteúdo do feed (ajuste único; metade do anterior) */
+  --feed-header-content-gap: 1.3125rem; /* 21px — era 42px */
+  --feed-header-gap: var(--feed-header-content-gap);
   --feed-header-offset: 0px;
   --feed-page-gap: 2rem;
   --feed-section-gap: 3rem;
@@ -699,11 +701,11 @@ Layout Framework (Restored Base Classes)
   margin-right: auto;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
-  padding-top: calc(var(--feed-header-gap, 28px) + var(--feed-header-offset, 64px));
+  padding-top: calc(var(--feed-header-gap, var(--feed-header-content-gap, 1.3125rem)) + var(--feed-header-offset, 64px));
 }
 
 .feed-top-clearance {
-  padding-top: calc(var(--feed-header-gap, 24px) + var(--feed-header-offset, 56px) + 0.5rem);
+  padding-top: calc(var(--feed-header-gap, var(--feed-header-content-gap, 1.3125rem)) + var(--feed-header-offset, 56px) + 0.25rem);
 }
 
 @media (min-width: 640px) {

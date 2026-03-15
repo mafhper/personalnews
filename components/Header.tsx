@@ -437,24 +437,22 @@ const Header: React.FC<HeaderProps> = (props) => {
               ? 16
               : 12
           : 0;
-      const gap =
-        headerPosition === "floating"
-          ? isMobileViewport
-            ? 18
-            : isWideViewport
-              ? 26
-              : 22
-          : headerPosition === "static"
-            ? isMobileViewport
-              ? 12
-              : 16
-            : isMobileViewport
-              ? 14
-              : 18;
+      // Gap entre menu e conteúdo: usa variável CSS --feed-header-content-gap (ex.: 1.3125rem em index.css)
+      const gapPx = (() => {
+        const cssGap = typeof getComputedStyle !== "undefined"
+          ? getComputedStyle(document.documentElement).getPropertyValue("--feed-header-content-gap").trim()
+          : "";
+        if (cssGap && /^\d+(\.\d+)?(px|rem|em)$/.test(cssGap)) {
+          if (cssGap.endsWith("px")) return parseFloat(cssGap) || 21;
+          const rem = parseFloat(cssGap) || 1.3125;
+          return Math.round(rem * 16);
+        }
+        return 21;
+      })();
       // +2px safety buffer to avoid occasional overlap during dynamic reflow.
       const offset = isFixedMode ? Math.max(0, rect.height + 2) : 0;
       document.documentElement.style.setProperty('--feed-header-offset', `${Math.round(offset)}px`);
-      document.documentElement.style.setProperty('--feed-header-gap', `${Math.round(gap)}px`);
+      document.documentElement.style.setProperty('--feed-header-gap', `${gapPx}px`);
       document.documentElement.style.setProperty('--feed-header-top-gap', `${Math.round(topGap)}px`);
     };
 
@@ -478,7 +476,7 @@ const Header: React.FC<HeaderProps> = (props) => {
         resizeObserver.disconnect();
       }
       document.documentElement.style.setProperty('--feed-header-offset', '0px');
-      document.documentElement.style.setProperty('--feed-header-gap', '14px');
+      document.documentElement.style.setProperty('--feed-header-gap', 'var(--feed-header-content-gap, 1.3125rem)');
       document.documentElement.style.setProperty('--feed-header-top-gap', '0px');
     };
   }, [

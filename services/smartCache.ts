@@ -87,6 +87,7 @@ export class SmartCache {
     sets: 0,
     evictions: 0,
   };
+  private persistenceTimeout: NodeJS.Timeout | null = null;
 
   constructor(options: CacheOptions = {}) {
     this.options = {
@@ -294,7 +295,7 @@ export class SmartCache {
 
     // Persist to storage if enabled
     if (this.options.enablePersistence) {
-      this.persistToStorage();
+      this.persistToStorageDebounced();
     }
   }
 
@@ -311,7 +312,7 @@ export class SmartCache {
       });
 
       if (this.options.enablePersistence) {
-        this.persistToStorage();
+        this.persistToStorageDebounced();
       }
     }
 
@@ -331,7 +332,7 @@ export class SmartCache {
     });
 
     if (this.options.enablePersistence) {
-      this.persistToStorage();
+      this.persistToStorageDebounced();
     }
   }
 
@@ -412,7 +413,7 @@ export class SmartCache {
       });
 
       if (this.options.enablePersistence) {
-        this.persistToStorage();
+        this.persistToStorageDebounced();
       }
     }
 
@@ -528,6 +529,20 @@ export class SmartCache {
       // Clear corrupted storage
       localStorage.removeItem(STORAGE_KEY);
     }
+  }
+
+  /**
+   * Persist cache to localStorage (Debounced)
+   */
+  private persistToStorageDebounced(): void {
+    if (this.persistenceTimeout) {
+      clearTimeout(this.persistenceTimeout);
+    }
+    
+    this.persistenceTimeout = setTimeout(() => {
+      this.persistToStorage();
+      this.persistenceTimeout = null;
+    }, 2000); // Wait 2 seconds of inactivity before persisting
   }
 
   /**

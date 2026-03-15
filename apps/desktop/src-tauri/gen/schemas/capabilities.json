@@ -1,1 +1,1 @@
-{}
+{"main-capability":{"identifier":"main-capability","description":"Capability for the main window","local":true,"windows":["main"],"permissions":["core:default","shell:default",{"identifier":"shell:allow-execute","allow":[{"name":"personalnews-backend","sidecar":true}]},"opener:default"]}}

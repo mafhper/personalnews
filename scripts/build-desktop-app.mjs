@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 const env = {
   ...process.env,
   VITE_APP_BASE: "/",
+  VITE_TAURI: "true",
 };
 
 const steps = [

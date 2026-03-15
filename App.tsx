@@ -97,6 +97,16 @@ const getStoredLayoutForFirstPaint = () => {
 
 const getViewFromHash = () => {
   if (typeof window === "undefined") return "landing";
+  
+  // Force feed view in Tauri environment
+  const isTauri = typeof window !== 'undefined' && (
+    (window as any).__TAURI_INTERNALS__ || 
+    (window as any).__TAURI__ || 
+    window.location.protocol === 'tauri:' || 
+    window.location.protocol === 'app:'
+  );
+  
+  if (isTauri) return "feed";
   return window.location.hash.toLowerCase() === "#feed" ? "feed" : "landing";
 };
 
@@ -117,11 +127,37 @@ const isPrefetchAllowed = () => {
 const FeedBootstrap: React.FC<{ active: boolean }> = ({ active }) => {
   const { startInitialLoad } = useFeeds();
   const hasStartedRef = React.useRef(false);
+  const cancelledRef = React.useRef(false);
 
   useEffect(() => {
-    if (!active || hasStartedRef.current) return;
-    hasStartedRef.current = true;
-    void startInitialLoad();
+    if (!active) {
+      hasStartedRef.current = false;
+      return;
+    }
+    if (hasStartedRef.current) return;
+    cancelledRef.current = false;
+
+    const runLoad = () => {
+      if (cancelledRef.current) return;
+      hasStartedRef.current = true;
+      startInitialLoad();
+    };
+
+    let id: number;
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      id = window.requestIdleCallback(() => void runLoad(), { timeout: 1000 });
+    } else {
+      id = setTimeout(() => void runLoad(), 200) as unknown as number;
+    }
+
+    return () => {
+      cancelledRef.current = true;
+      if (typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(id);
+      } else {
+        clearTimeout(id);
+      }
+    };
   }, [active, startInitialLoad]);
 
   return null;

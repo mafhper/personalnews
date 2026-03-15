@@ -74,7 +74,7 @@ export const resolveFeedLoadScope = (
   return feeds;
 };
 
-const FEED_TIMEOUT_MS = 6000; // 6 seconds per feed (reduzido para mais velocidade)
+const FEED_TIMEOUT_MS = 4000; // 4 seconds per feed (reduzido para mais velocidade inicial)
 const BATCH_SIZE = 8; // Aumentado para 8 feeds por batch
 const BATCH_DELAY_MS = 500; // Reduzido para 500ms entre batches
 const BATCH_DELAY_BACKGROUND_MS = 50; // Delay menor em abas inativas (o navegador vai limitar a 1s de qualquer forma)

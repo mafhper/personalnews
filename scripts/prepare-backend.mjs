@@ -28,17 +28,19 @@ if (!existsSync(binDir)) {
 }
 
 const exeName = `personalnews-backend-${target}${isWin ? '.exe' : ''}`;
-const outputPath = join(binDir, exeName);
 
 console.log(`[prepare:backend] Compilando backend para sidecar: ${exeName}`);
 
+// Use relative paths and cwd=repoRoot so Bun resolves node_modules from monorepo root (xmldom etc.)
+const entryRelative = 'apps/backend/src/server.ts';
+const outfileRelative = join('apps', 'desktop', 'src-tauri', 'binaries', exeName);
 const result = spawnSync('bun', [
   'build',
   '--compile',
-  join(repoRoot, 'apps', 'backend', 'src', 'server.ts'),
+  entryRelative,
   '--outfile',
-  outputPath
-], { stdio: 'inherit', shell: isWin, cwd: repoRoot });
+  outfileRelative
+], { stdio: 'inherit', cwd: repoRoot });
 
 if (result.status !== 0) {
   console.error('[prepare:backend] Erro ao compilar backend');

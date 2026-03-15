@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "PersonalNews Desktop",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "identifier": "io.mafhper.personalnews",
   "build": {
     "beforeDevCommand": "bun run --cwd ../.. dev:local",
-    "beforeBuildCommand": "bun run --cwd ../.. build:app:desktop && bun run prepare:backend",
+    "beforeBuildCommand": "bun run --cwd ../.. build:app:desktop && bun run --cwd ../.. prepare:backend",
     "devUrl": "http://127.0.0.1:5173/#feed",
     "frontendDist": "../../../dist"
   },

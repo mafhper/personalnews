@@ -22,9 +22,10 @@ export default defineConfig(({ command, mode }) => {
   const devPort = resolvePort(process.env.DEV_PORT ?? process.env.PORT, 5173);
   const previewPort = resolvePort(process.env.PREVIEW_PORT ?? process.env.PORT, 4175);
   const usePublishedBase = command === 'build' || mode === 'production';
+  const isTauri = process.env.VITE_TAURI === 'true';
 
   return {
-  base: usePublishedBase ? '/personalnews/' : '/',
+  base: isTauri ? '' : (usePublishedBase ? '/personalnews/' : '/'),
   plugins: [
     react(),
     tailwindcss(),

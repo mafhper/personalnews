@@ -65,6 +65,10 @@ ehthumbs.db
 **/target/
 **/node_modules/
 
+# Stash / backup artifacts (do not commit)
+stash_scripts.json
+stash_summary.txt
+
 # Temporary Fix Scripts & Backups
 **/*.exe
 **/*.msi
