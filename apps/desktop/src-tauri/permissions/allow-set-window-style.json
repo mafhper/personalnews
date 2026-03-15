@@ -1,7 +1,0 @@
-{
-  "identifier": "allow-set-window-style",
-  "description": "Permite alterar o estilo da janela",
-  "commands": [
-    "set_window_style"
-  ]
-}

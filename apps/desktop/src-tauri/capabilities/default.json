@@ -16,7 +16,7 @@
       ]
     },
     "opener:default",
-    "personalnews-desktop:allow-set-window-style",
-    "personalnews-desktop:allow-open-external-url"
+    "allow-set-window-style",
+    "allow-open-external-url"
   ]
 }
