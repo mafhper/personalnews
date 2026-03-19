@@ -155,7 +155,7 @@
     "@mui/material": "^7.3.9",
     "@types/dompurify": "^3.2.0",
     "baseline-browser-mapping": "^2.10.8",
-    "caniuse-lite": "^1.0.30001779",
+    "caniuse-lite": "^1.0.30001780",
     "dompurify": "^3.3.3",
     "eslint-plugin-security": "^4.0.0",
     "i18next": "^25.8.18",
