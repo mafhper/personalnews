@@ -65,7 +65,7 @@ class LoggerService {
             return `[Large Object: ${str.substring(0, 100)}...]`;
           }
           return str;
-        } catch (e) {
+        } catch {
           return '[Unserializable Object]';
         }
       }

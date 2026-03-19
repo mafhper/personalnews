@@ -337,10 +337,12 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       "feed-reports": "tools",
     };
 
-    const sectionToOpen = focusMap[focusSection];
-    if (sectionToOpen) setExpandedSection(sectionToOpen);
-
     const timer = window.setTimeout(() => {
+      const sectionToOpen = focusMap[focusSection];
+      if (sectionToOpen) {
+        setExpandedSection(sectionToOpen);
+      }
+
       document.getElementById(focusSection)?.scrollIntoView({
         behavior: "smooth",
         block: "start",

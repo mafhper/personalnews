@@ -22,8 +22,7 @@
     "dev:local": "node scripts/run-local-stack.mjs dev",
     "prepare:backend": "node scripts/prepare-backend.mjs",
     "build:app:desktop": "node scripts/build-desktop-app.mjs",
-    "landing:projects:sync": "node scripts/sync-landing-projects.mjs",
-    "build:app": "npm run promo:changelog && bun run config:sync && bun run landing:projects:sync && bunx tsc --noEmit && bun vite build",
+    "build:app": "npm run promo:changelog && bun run config:sync && bunx tsc --noEmit && bun vite build",
     "build:dashboard": "node quality-core/scripts/build-dashboard.cjs",
     "build": "bun run build:app && bun run build:dashboard",
     "preview": "bun vite preview",
@@ -112,7 +111,7 @@
     "desktop:build": "cd apps/desktop && bunx tauri build"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.2.1",
     "@tailwindcss/vite": "^4.2.1",
@@ -129,7 +128,7 @@
     "@vitest/coverage-v8": "4.1.0",
     "autoprefixer": "^10.4.27",
     "cross-env": "^10.1.0",
-    "eslint": "^10.0.3",
+    "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "fast-check": "^4.6.0",
