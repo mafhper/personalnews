@@ -141,7 +141,7 @@
     "lighthouse": "^13.0.3",
     "playwright": "^1.57.0",
     "postcss": "^8.5.8",
-    "tailwindcss": "^4.1.11",
+    "tailwindcss": "^4.2.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.57.0",
     "bun-types": "^1.2.4",
