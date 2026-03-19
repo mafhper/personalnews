@@ -25,16 +25,13 @@ jobs:
       - name: Install dependencies
         run: bun install --no-cache
 
-      - name: Ensure Node types
-        run: bun add -d @types/node
-
       - name: Type check
         run: bun tsc --noEmit -p tsconfig.json
 
       - name: Run core tests
         run: |
           echo "START: Running Core Tests"
-          bun run test -- --reporter=verbose
+          bun run test
           echo "END: Core Tests Completed"
 
       - name: Run security scan
