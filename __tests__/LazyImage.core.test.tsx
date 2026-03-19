@@ -9,15 +9,41 @@ expect.extend(matchers);
 
 // Mock IntersectionObserver
 const mockIntersectionObserver = vi.fn();
-mockIntersectionObserver.mockReturnValue({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-});
-window.IntersectionObserver = mockIntersectionObserver;
 
 // Mock for testing intersection observer callback
-let intersectionCallback: (entries: IntersectionObserverEntry[]) => void;
+let intersectionCallback: ((entries: IntersectionObserverEntry[]) => void) | undefined;
+
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin: string;
+  readonly thresholds: ReadonlyArray<number>;
+  readonly observe: ReturnType<typeof vi.fn>;
+  readonly unobserve: ReturnType<typeof vi.fn>;
+  readonly disconnect: ReturnType<typeof vi.fn>;
+  readonly takeRecords: ReturnType<typeof vi.fn>;
+
+  constructor(
+    callback: IntersectionObserverCallback,
+    options: IntersectionObserverInit = {}
+  ) {
+    intersectionCallback = callback;
+    this.rootMargin = options.rootMargin ?? '';
+    this.thresholds = Array.isArray(options.threshold)
+      ? options.threshold
+      : [options.threshold ?? 0];
+    this.observe = vi.fn();
+    this.unobserve = vi.fn();
+    this.disconnect = vi.fn();
+    this.takeRecords = vi.fn(() => []);
+    mockIntersectionObserver(callback, options, this);
+  }
+}
+
+Object.defineProperty(globalThis, 'IntersectionObserver', {
+  writable: true,
+  configurable: true,
+  value: MockIntersectionObserver,
+});
 
 // Helper function to create mock intersection observer entry
 const createMockEntry = (target: Element, isIntersecting: boolean): IntersectionObserverEntry => ({
@@ -33,14 +59,7 @@ const createMockEntry = (target: Element, isIntersecting: boolean): Intersection
 beforeEach(() => {
   vi.useFakeTimers();
   mockIntersectionObserver.mockClear();
-  mockIntersectionObserver.mockImplementation((callback) => {
-    intersectionCallback = callback;
-    return {
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
-    };
-  });
+  intersectionCallback = undefined;
 });
 
 afterEach(() => {
@@ -70,7 +89,7 @@ describe('LazyImage', () => {
 
     // Simulate intersection observer triggering
     await act(async () => {
-      intersectionCallback([createMockEntry(img, true)]);
+      intersectionCallback?.([createMockEntry(img, true)]);
     });
 
     // Avançar microtasks para que o estado isInView dispare a mudança de src
@@ -88,7 +107,7 @@ describe('LazyImage', () => {
 
     // Simulate intersection observer triggering
     await act(async () => {
-      intersectionCallback([createMockEntry(img, true)]);
+      intersectionCallback?.([createMockEntry(img, true)]);
     });
 
     await act(async () => {
@@ -110,7 +129,7 @@ describe('LazyImage', () => {
 
     // Simulate intersection observer triggering
     await act(async () => {
-      intersectionCallback([createMockEntry(img, true)]);
+      intersectionCallback?.([createMockEntry(img, true)]);
     });
 
     await act(async () => {
@@ -141,7 +160,7 @@ describe('LazyImage', () => {
 
     // Simulate intersection observer triggering
     await act(async () => {
-      intersectionCallback([createMockEntry(img, true)]);
+      intersectionCallback?.([createMockEntry(img, true)]);
     });
 
     await act(async () => {
@@ -183,36 +202,24 @@ describe('LazyImage', () => {
   it('sets up intersection observer with correct options', () => {
     render(<LazyImage {...defaultProps} />);
 
-    expect(mockIntersectionObserver).toHaveBeenCalledWith(
-      expect.any(Function),
-      {
-        rootMargin: '200px',
-        threshold: 0.01,
-      }
-    );
+    expect(mockIntersectionObserver).toHaveBeenCalledTimes(1);
+    expect(mockIntersectionObserver.mock.calls[0]?.[0]).toEqual(expect.any(Function));
+    expect(mockIntersectionObserver.mock.calls[0]?.[1]).toEqual({
+      rootMargin: '200px',
+      threshold: 0.01,
+    });
   });
 
   it('disconnects intersection observer after image comes into view', () => {
-    const mockDisconnect = vi.fn();
-    const mockObserver = {
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: mockDisconnect,
-    };
-
-    mockIntersectionObserver.mockImplementation((callback) => {
-      intersectionCallback = callback;
-      return mockObserver;
-    });
-
     render(<LazyImage {...defaultProps} />);
     const img = screen.getByRole('img');
 
     // Simulate intersection observer triggering
     act(() => {
-      intersectionCallback([createMockEntry(img, true)]);
+      intersectionCallback?.([createMockEntry(img, true)]);
     });
 
-    expect(mockDisconnect).toHaveBeenCalled();
+    const observerInstance = mockIntersectionObserver.mock.calls[0]?.[2] as MockIntersectionObserver | undefined;
+    expect(observerInstance?.disconnect).toHaveBeenCalled();
   });
 });

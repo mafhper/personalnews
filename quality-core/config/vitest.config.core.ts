@@ -20,12 +20,7 @@ export default defineConfig({
     maxConcurrency: 4,
     reporters: [process.env.VITEST_REPORTER || 'dot'],
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        minThreads: 1,
-        maxThreads
-      }
-    },
+    maxWorkers: maxThreads,
     // Whitelist semântica (Contrato Core)
     include: [
       '**/*.core.test.ts',
