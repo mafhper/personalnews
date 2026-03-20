@@ -2,8 +2,6 @@ name: Release Desktop App
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -51,6 +49,6 @@ jobs:
           tagName: v__VERSION__ # tauri-action will replace this
           releaseName: "Personal News v__VERSION__"
           releaseBody: "Automated release of Personal News desktop version."
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.platform == 'ubuntu-22.04' && '--target x86_64-unknown-linux-gnu' || '' }}
