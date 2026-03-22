@@ -1,7 +1,6 @@
 import type { Language } from "../types";
 import {
   APP_BRAND_NAME,
-  DEVELOPER_HANDLE,
   MARK_LEE_URL,
   PERSONAL_NEWS_RELEASES_URL,
   PERSONAL_NEWS_REPO_URL,
