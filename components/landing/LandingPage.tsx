@@ -145,39 +145,6 @@ const ExternalIcon = ({ className = "" }: IconProps) => (
   </svg>
 );
 
-const GithubIcon = ({ className = "" }: IconProps) => (
-  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={className}>
-    <path
-      d="M9 19C4 20.5 4 16.5 2 16"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M22 16V20C22 20.5304 21.7893 21.0391 21.4142 21.4142C21.0391 21.7893 20.5304 22 20 22H16C15.4696 22 14.9609 21.7893 14.5858 21.4142C14.2107 21.0391 14 20.5304 14 20V16C14 14.9391 13.5786 13.9217 12.8284 13.1716C12.0783 12.4214 11.0609 12 10 12C8.93913 12 7.92172 12.4214 7.17157 13.1716C6.42143 13.9217 6 14.9391 6 16V20C6 20.5304 5.78929 21.0391 5.41421 21.4142C5.03914 21.7893 4.53043 22 4 22H2"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M14 4.99997C14.86 4.35448 15.9055 4.00406 16.98 4.00001C18.0546 3.99596 19.1027 4.33849 19.9675 4.97748C20.8324 5.61648 21.4691 6.51867 21.7823 7.54743C22.0955 8.57618 22.0685 9.67865 21.7054 10.6908C21.3423 11.7029 20.6622 12.5729 19.7658 13.169L18 14.3333"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M10 5C9.14 4.35451 8.09451 4.00409 7.02001 4.00004C5.9455 3.99599 4.89734 4.33852 4.03249 4.97752C3.16764 5.61651 2.53091 6.5187 2.21772 7.54746C1.90453 8.57621 1.93153 9.67868 2.29461 10.6908C2.65769 11.703 3.33776 12.573 4.2342 13.169L6 14.3333"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 const VersionIcon = ({
   type,
   className = "",
@@ -257,32 +224,6 @@ const VersionIcon = ({
     </svg>
   );
 };
-
-const DualToneChipIcon = ({ className = "" }: IconProps) => (
-  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={className}>
-    <rect
-      x="4"
-      y="5"
-      width="16"
-      height="14"
-      rx="4"
-      fill="currentColor"
-      opacity="0.14"
-    />
-    <path
-      d="M8 9H16"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-    />
-    <path
-      d="M8 13H13"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-    />
-  </svg>
-);
 
 const resolvePromoPageFromHash = (): PromoPageId => {
   if (typeof window === "undefined") return "home";

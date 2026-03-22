@@ -62,8 +62,6 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const now = new Date();
 
   // Pagination State for Load More
-  const [displayLimit, setDisplayLimit] = useState(20);
-
   // Derive visible articles based on mode
   const paginationType = contentConfig.paginationType || 'numbered';
 
@@ -72,10 +70,6 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
     visibleArticles = articles;
   } else {
     visibleArticles = articles;
-  }
-
-  const handleLoadMore = () => {
-    // Handled globally
   }
 
   const handleOpenReader = (article: Article) => {
@@ -366,18 +360,6 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             </div>
           </div>
         </section>
-      )}
-
-      {/* Load More Button */}
-      {paginationType === 'loadMore' && displayLimit < articles.length && (
-        <div className="flex justify-center py-8">
-          <button
-            onClick={handleLoadMore}
-            className="px-8 py-3 bg-[rgb(var(--color-primary))] text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
-          >
-            {t('action.load_more') || 'Carregar Mais'}
-          </button>
-        </div>
       )}
 
       {/* Reader Modal */}

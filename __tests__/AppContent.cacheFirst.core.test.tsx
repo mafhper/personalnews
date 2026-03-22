@@ -331,7 +331,7 @@ describe("AppContent cache-first rendering", () => {
     };
   });
 
-  it("shows the dominant skeleton on cold start without cache", () => {
+  it("shows the dominant skeleton on cold start without cache", async () => {
     mockFeedState.articles = [];
     mockFeedState.loadingState = createLoadingState({
       status: "loading",
@@ -343,8 +343,9 @@ describe("AppContent cache-first rendering", () => {
       currentAction: "Initializing feed engine...",
     });
 
-    act(() => {
+    await act(async () => {
       render(<AppContent />);
+      await Promise.resolve();
     });
 
     expect(screen.getByTestId("feed-skeleton")).toBeInTheDocument();
