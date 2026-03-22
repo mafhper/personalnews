@@ -1,57 +1,94 @@
-# Personal News Dashboard
+# Personal News
 
-## Introduction
-Personal News Dashboard is a modern RSS feed aggregator developed to provide a centralized, secure, and highly customizable reading experience. The project prioritizes performance and design, allowing users to consume content from various sources in a fluid interface adaptable to different devices. Through a modular system, the application combines visual flexibility with a robust data processing engine.
+![Personal News interface preview](public/assets/screen.png)
 
-## Installation
-To set up the project locally, follow the instructions below. Using Bun is recommended for the best development experience and package management.
+Personal News is a feed reader designed to work as a fast personal homepage for the web and as a packaged desktop app. It combines curated defaults, category-specific layouts, resilient feed parsing, and cache-first navigation so previously loaded content stays visible while the app refreshes in the background.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/seu-usuario/personalnews.git
-   cd personalnews
-   ```
+Also available in [Portuguese](README.pt-BR.md) and [Spanish](README.es.md).
 
-2. Install dependencies:
-   ```bash
-   bun install
-   ```
+## What the application does
 
-3. Start the development environment:
-   ```bash
-   bun dev
-   ```
+- Aggregates RSS, Atom, RDF, and YouTube feeds in a single interface.
+- Ships with curated categories such as Design, Games, Technology, Politics, and Videos.
+- Allows each category to use a different presentation mode, including bento, list, immersive, and brutalist layouts.
+- Uses cache-first feed loading with background revalidation to avoid blank states during navigation.
+- Supports feed discovery, category management, import/export, favorites, and desktop packaging.
 
-4. Build for production:
-   ```bash
-   bun run build
-   ```
+## Current highlights
 
-## Usage
-The application is designed to be intuitive and powerful:
-- Feed Management: Add new RSS, Atom, or YouTube channel feeds through the automatic discovery tool.
-- Categorization: Organize your news sources into customizable categories, allowing specific layouts for each type of content.
-- Advanced Navigation: Use keyboard shortcuts (Ctrl+K for search, Ctrl+R to refresh) and swipe gestures on mobile devices.
-- Immersive Reader: Access a clean version of articles, optimized for reading and free of ads, with full control over typography and spacing.
-- Backup and Portability: Export or import your complete collection of feeds and categories using the universal OPML standard.
+### Cache-first navigation
 
-## Feed Processing Technologies
-The application uses a multi-layer architecture to ensure data availability and integrity:
+The feed now favors locally cached content first and refreshes network data in the background. This keeps category switches responsive and reduces the perceived loading cost of large feed sets.
 
-- Parsing Engine: Custom implementation capable of processing RSS 2.0, Atom, and RDF. Includes recovery routines for malformed XML and metadata normalization between different syndication standards.
-- Full Content Extraction: Integration with the Readability algorithm to identify and isolate the main content of articles, allowing users to read the complete article without leaving the application.
-- Proxy System and Availability: Failover strategy with multiple proxy providers to bypass CORS restrictions and ensure content delivery even when direct sources are inaccessible.
-- Security and Sanitization: Rigorous validation against external entity attacks (XXE) in the XML parser and deep sanitization via DOMPurify to prevent XSS, ensuring third-party content is rendered securely.
-- Smart Cache and Performance: Stale-while-revalidate strategy with persistent storage in SmartCache, minimizing network requests and enabling instant interface loading.
+### Mixed content model
 
-## Contribution
-Contributions are welcome and encouraged. To collaborate:
-- Check reported issues in Issues or open a new report.
-- Propose new visual layouts or accessibility improvements.
-- Follow the development guidelines described in CONTRIBUTING.md, ensuring new features maintain strict typing and code quality standards.
+The default catalog combines traditional news feeds with YouTube channels. Video-heavy categories can use a dedicated visual system without affecting the layout of the rest of the app.
+
+### Reading and sanitization pipeline
+
+The app normalizes external feed data, extracts useful article metadata, and sanitizes rendered content before it reaches the UI. The goal is to keep third-party content readable without trusting source markup blindly.
+
+## Tech stack
+
+- React 19
+- TypeScript 5
+- Vite 8
+- Bun for package management and most local scripts
+- Vitest and Playwright for testing
+- Tauri for desktop packaging
+- Quality Core tooling for repo-level validation and reports
+
+## Quick start
+
+### Requirements
+
+- Bun 1.2+
+- Node.js 20+ for ecosystem compatibility
+
+### Run locally
+
+```bash
+git clone https://github.com/mafhper/personalnews.git
+cd personalnews
+bun install
+bun run dev
+```
+
+### Useful validation commands
+
+```bash
+bun run type-check
+bun run test:core
+bun run build
+```
+
+### Local stack with helper services
+
+```bash
+bun run dev:local
+```
+
+Use this when you want the app and its local support stack to start together.
+
+## Project structure
+
+- `components/`: UI building blocks and layout systems.
+- `hooks/`: application state hooks, including progressive feed loading.
+- `services/`: parsing, caching, import/export, and content processing logic.
+- `constants/`: curated categories and starter feeds.
+- `apps/desktop/`: desktop shell and release packaging.
+- `docs/`: technical reference for contributors and evaluators.
+
+## Documentation
+
+- [Technical overview](docs/technical-overview.md)
+- [Package scripts guide](docs/package-scripts-guia.md)
+- [Contributing](CONTRIBUTING.md)
+
+## Contributing
+
+Issues and pull requests are welcome. If you plan to contribute code, start with [CONTRIBUTING.md](CONTRIBUTING.md) and run the project validation commands before opening a PR.
 
 ## License
-This project is licensed under the MIT License. See the LICENSE file included in the repository for the full license text.
 
----
-Developed with care.
+This project is available under the [MIT License](LICENSE).

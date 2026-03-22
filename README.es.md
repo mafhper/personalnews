@@ -1,57 +1,94 @@
-# Personal News Dashboard
+# Personal News
 
-## Introducción
-Personal News Dashboard es un agregador moderno de feeds RSS desarrollado para proporcionar una experiencia de lectura centralizada, segura y altamente personalizable. El proyecto prioriza el rendimiento y el diseño, permitiendo a los usuarios consumir contenido de diversas fuentes en una interfaz fluida y adaptable a diferentes dispositivos. A través de un sistema modular, la aplicación combina flexibilidad visual con un motor robusto de procesamiento de datos.
+![Vista previa de la interfaz de Personal News](public/assets/screen.png)
 
-## Instalación
-Para configurar el proyecto localmente, siga las instrucciones a continuación. Se recomienda el uso de Bun para una mejor experiencia de desarrollo y gestión de paquetes.
+Personal News es un lector de feeds pensado para funcionar como página de inicio personal en la web y también como aplicación de escritorio. Combina categorías curadas, diseños por tipo de contenido, parsing resistente y navegación cache-first para mantener contenido visible mientras la actualización ocurre en segundo plano.
 
-1. Clone el repositorio:
-   ```bash
-   git clone https://github.com/seu-usuario/personalnews.git
-   cd personalnews
-   ```
+También disponible en [inglés](README.md) y [portugués](README.pt-BR.md).
 
-2. Instale las dependencias:
-   ```bash
-   bun install
-   ```
+## Qué hace la aplicación
 
-3. Inicie el entorno de desarrollo:
-   ```bash
-   bun dev
-   ```
+- Agrega feeds RSS, Atom, RDF y YouTube en una sola interfaz.
+- Incluye categorías preconfiguradas como Design, Games, Tecnología, Política y Vídeos.
+- Permite que cada categoría use un modo visual diferente, como bento, lista, inmersivo y brutalista.
+- Usa carga cache-first con revalidación en segundo plano para evitar pantallas vacías durante la navegación.
+- Soporta descubrimiento de feeds, gestión de categorías, importación/exportación, favoritos y empaquetado desktop.
 
-4. Construya para producción:
-   ```bash
-   bun run build
-   ```
+## Aspectos destacados
 
-## Uso
-La aplicación está diseñada para ser intuitiva y potente:
-- Gestión de Feeds: Añada nuevos feeds RSS, Atom o canales de YouTube a través de la herramienta de descubrimiento automático.
-- Categorización: Organice sus fuentes de noticias en categorías personalizables, permitiendo diseños específicos para cada tipo de contenido.
-- Navegación Avanzada: Use atajos de teclado (Ctrl+K para búsqueda, Ctrl+R para actualizar) y gestos de deslizamiento en dispositivos móviles.
-- Lector Inmersivo: Acceda a una versión limpia de los artículos, optimizada para la lectura y libre de anuncios, con control total sobre la tipografía y el espaciado.
-- Copia de Seguridad y Portabilidad: Exporte o importe su colección completa de feeds y categorías utilizando el estándar universal OPML.
+### Navegación cache-first
 
-## Tecnologías de Procesamiento de Feeds
-La aplicación utiliza una arquitectura de múltiples capas para garantizar la disponibilidad y la integridad de los datos:
+El feed prioriza contenido ya almacenado localmente y actualiza los datos de red en segundo plano. Esto hace que el cambio de categorías se sienta más rápido y reduce la percepción de espera en catálogos amplios.
 
-- Motor de Análisis: Implementación personalizada capaz de procesar RSS 2.0, Atom y RDF. Incluye rutinas de recuperación para XML mal formado y normalización de metadatos entre diferentes estándares de sindicación.
-- Extracción de Contenido Completo: Integración con el algoritmo Readability para identificar y aislar el contenido principal de los artículos, permitiendo al usuario leer el artículo completo sin salir de la aplicación.
-- Sistema de Proxy y Disponibilidad: Estrategia de conmutación por error con múltiples proveedores de proxy para evitar restricciones de CORS y garantizar la entrega del contenido incluso cuando las fuentes directas son inaccesibles.
-- Seguridad y Sanitización: Validación rigurosa contra ataques de entidades externas (XXE) en el analizador de XML y sanitización profunda a través de DOMPurify para prevenir XSS, asegurando que el contenido de terceros se renderice de forma segura.
-- Caché Inteligente y Rendimiento: Estrategia de stale-while-revalidate con almacenamiento persistente en SmartCache, minimizando las solicitudes de red y permitiendo la carga instantánea de la interfaz.
+### Modelo mixto de contenido
+
+El catálogo predeterminado combina feeds tradicionales de noticias con canales de YouTube. Las categorías centradas en vídeo pueden usar un sistema visual específico sin contaminar el resto de la interfaz.
+
+### Pipeline de lectura y sanitización
+
+La aplicación normaliza datos de fuentes externas, extrae metadatos útiles de los artículos y sanitiza el contenido antes de renderizarlo. La idea es mantener la legibilidad sin confiar ciegamente en el marcado de terceros.
+
+## Stack técnica
+
+- React 19
+- TypeScript 5
+- Vite 8
+- Bun como gestor de paquetes y ejecutor principal de scripts
+- Vitest y Playwright para pruebas
+- Tauri para empaquetado desktop
+- Quality Core para validación y reportes del repositorio
+
+## Inicio rápido
+
+### Requisitos
+
+- Bun 1.2+
+- Node.js 20+ para compatibilidad del ecosistema
+
+### Ejecutar localmente
+
+```bash
+git clone https://github.com/mafhper/personalnews.git
+cd personalnews
+bun install
+bun run dev
+```
+
+### Comandos útiles de validación
+
+```bash
+bun run type-check
+bun run test:core
+bun run build
+```
+
+### Stack local con servicios auxiliares
+
+```bash
+bun run dev:local
+```
+
+Use este flujo cuando quiera levantar la app junto con su stack local de apoyo.
+
+## Estructura del proyecto
+
+- `components/`: bloques de UI y sistemas de layout.
+- `hooks/`: hooks de estado, incluida la carga progresiva del feed.
+- `services/`: parsing, caché, importación/exportación y procesamiento de contenido.
+- `constants/`: categorías curadas y feeds iniciales.
+- `apps/desktop/`: shell de escritorio y empaquetado.
+- `docs/`: referencia técnica para contribuidores y evaluadores.
+
+## Documentación
+
+- [Visión técnica de la aplicación](docs/technical-overview.md)
+- [Guía de scripts de package.json](docs/package-scripts-guia.md)
+- [Cómo contribuir](CONTRIBUTING.md)
 
 ## Contribución
-Las contribuciones son bienvenidas y alentadas. Para colaborar:
-- Verifique los problemas reportados en Issues o abra un nuevo reporte.
-- Proponga nuevos diseños visuales o mejoras de accesibilidad.
-- Siga las directrices de desarrollo descritas en CONTRIBUTING.md, asegurando que las nuevas funcionalidades mantengan la tipificación estricta y los estándares de calidad del código.
+
+Los issues y pull requests son bienvenidos. Si vas a contribuir con código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y ejecuta los comandos de validación antes de abrir un PR.
 
 ## Licencia
-Este proyecto está licenciado bajo la Licencia MIT. Consulte el archivo LICENSE incluido en el repositorio para obtener el texto completo de la licencia.
 
----
-Desarrollado con cuidado.
+Este proyecto se distribuye bajo la [Licencia MIT](LICENSE).

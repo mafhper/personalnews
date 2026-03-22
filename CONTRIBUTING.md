@@ -1,243 +1,115 @@
-# Contributing to Personal News Dashboard
+# Contributing to Personal News
 
-Thank you for your interest in contributing to Personal News Dashboard! This document provides guidelines and information for contributors.
+Thanks for your interest in contributing. This document focuses on the current workflow of the project and the minimum checks expected before opening a pull request.
 
-## Code of Conduct
+## Before you start
 
-By participating in this project, you agree to abide by our Code of Conduct. Please be respectful and constructive in all interactions.
+- Search existing issues and pull requests before opening a new proposal.
+- Prefer small, focused changes instead of broad refactors mixed with product work.
+- Keep documentation aligned with visible behavior whenever you change the user experience.
 
-## How to Contribute
+## Local setup
 
-### Reporting Issues
+### Requirements
 
-1. **Search existing issues** first to avoid duplicates
-2. **Use the issue template** when creating new issues
-3. **Provide detailed information** including:
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Browser and OS information
-   - Screenshots if applicable
-
-### Suggesting Features
-
-1. **Check existing feature requests** to avoid duplicates
-2. **Describe the problem** your feature would solve
-3. **Explain your proposed solution** in detail
-4. **Consider the impact** on existing users
-
-### Contributing Code
-
-#### Prerequisites
-
-- Node.js 18.0.0 or higher
-- npm 9.0.0 or higher
+- Bun 1.2+
+- Node.js 20+
 - Git
-- Basic knowledge of React, TypeScript, and Tailwind CSS
 
-#### Development Setup
+### Install and run
 
-1. **Fork the repository**
-
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/personal-news-dashboard.git
-   cd personal-news-dashboard
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-
-   ```bash
-   npm start
-   ```
-
-4. **Run tests**
-   ```bash
-   npm test
-   ```
-
-#### Making Changes
-
-1. **Create a feature branch**
-
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes**
-
-   - Follow the existing code style
-   - Write tests for new functionality
-   - Update documentation as needed
-
-3. **Test your changes**
-
-   ```bash
-   npm test
-   npm run build
-   ```
-
-4. **Commit your changes**
-
-   ```bash
-   git commit -m "feat: add your feature description"
-   ```
-
-5. **Push to your fork**
-
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-6. **Create a Pull Request**
-   - Use the PR template
-   - Provide a clear description
-   - Link related issues
-
-## Development Guidelines
-
-### Code Style
-
-- **TypeScript**: Use strict mode and proper typing
-- **React**: Functional components with hooks
-- **Styling**: Tailwind CSS utility classes
-- **Naming**: Use descriptive, camelCase names
-- **Comments**: Document complex logic and public APIs
-
-### Component Structure
-
-```typescript
-import React from 'react';
-import { ComponentProps } from './types';
-
-interface Props extends ComponentProps {
-  // Component-specific props
-}
-
-export const ComponentName: React.FC<Props> = ({
-  // Props destructuring
-}) => {
-  // Hooks and state
-
-  // Event handlers
-
-  // Effects
-
-  // Render helpers
-
-  return (
-    // JSX with proper accessibility
-  );
-};
+```bash
+git clone https://github.com/mafhper/personalnews.git
+cd personalnews
+bun install
+bun run dev
 ```
 
-### Testing
+If you need the local helper stack as well:
 
-- **Unit tests** for utilities and hooks
-- **Integration tests** for components
-- **Accessibility tests** for UI components
-- **Performance tests** for critical paths
-
-#### Test Structure
-
-```typescript
-import { render, screen } from "@testing-library/react";
-import { ComponentName } from "./ComponentName";
-
-describe("ComponentName", () => {
-  it("should render correctly", () => {
-    render(<ComponentName />);
-    expect(screen.getByRole("button")).toBeInTheDocument();
-  });
-
-  it("should handle user interactions", async () => {
-    // Test user interactions
-  });
-
-  it("should be accessible", async () => {
-    // Accessibility tests
-  });
-});
+```bash
+bun run dev:local
 ```
 
-### Accessibility
+## Where to work
 
-- **Semantic HTML**: Use proper HTML elements
-- **ARIA labels**: Add labels for screen readers
-- **Keyboard navigation**: Ensure all functionality is keyboard accessible
-- **Color contrast**: Maintain WCAG AA compliance
-- **Focus management**: Proper focus handling
+- `components/`: feed UI, layouts, article cards, reader surfaces.
+- `hooks/`: state orchestration and progressive loading flows.
+- `services/`: parsing, caching, sanitization, import/export, and feed processing.
+- `constants/`: curated starter feeds and categories.
+- `apps/desktop/`: desktop packaging and Tauri integration.
+- `docs/`: public technical documentation.
 
-### Performance
+## Recommended workflow
 
-- **React.memo**: Use for expensive components
-- **useMemo/useCallback**: Optimize expensive calculations
-- **Lazy loading**: Implement for large components
-- **Bundle size**: Monitor and optimize imports
+1. Create a branch for the change.
+2. Implement the smallest viable update.
+3. Add or update tests when behavior changes.
+4. Update user-facing documentation when the product surface changes.
+5. Run the relevant validation commands.
+6. Open a pull request with a clear summary and testing notes.
 
-## Commit Messages
+## Validation commands
 
-Use conventional commit format:
+### Minimum checks
 
-- `feat:` new features
-- `fix:` bug fixes
-- `docs:` documentation changes
-- `style:` formatting changes
-- `refactor:` code refactoring
-- `test:` test changes
-- `chore:` maintenance tasks
-- `perf:` performance improvements
-
-Examples:
-
-```
-feat: add dark mode toggle
-fix: resolve RSS parsing issue
-docs: update installation guide
+```bash
+bun run type-check
+bun run test:core
 ```
 
-## Pull Request Process
+### Useful targeted checks
 
-1. **Update documentation** if needed
-2. **Add tests** for new functionality
-3. **Ensure all tests pass**
-4. **Update CHANGELOG.md** if applicable
-5. **Request review** from maintainers
+```bash
+bun run lint:components
+bun run lint:services
+bun run test:e2e
+bun run test:feeds
+```
 
-### PR Checklist
+### Full local quality pass
 
-- [ ] Code follows project style guidelines
-- [ ] Tests pass locally
-- [ ] New tests added for new functionality
-- [ ] Documentation updated
-- [ ] Accessibility considerations addressed
-- [ ] Performance impact considered
-- [ ] Breaking changes documented
+```bash
+bun run quality:gate:local-silent
+```
 
-## Release Process
+Use the full gate when a change touches multiple layers or when you want a release-grade local check.
 
-1. **Version bump** following semantic versioning
-2. **Update CHANGELOG.md** with new features and fixes
-3. **Create release tag** with release notes
-4. **Deploy to production** after testing
+## Coding guidelines
 
-## Getting Help
+- Keep TypeScript strict and prefer explicit, readable types.
+- Preserve category-specific UI behavior instead of forcing one layout model across the app.
+- Avoid blank states during feed transitions unless the target view truly has no content.
+- Treat third-party feed content as untrusted input and keep sanitization intact.
+- Follow the existing component and service boundaries instead of adding new global state casually.
 
-- **Documentation**: Check the docs/ directory
-- **Issues**: Search existing issues for solutions
-- **Discussions**: Use GitHub Discussions for questions
-- **Discord**: Join our community Discord (if available)
+## Tests and documentation
 
-## Recognition
+- Add or update tests when fixing regressions in feed loading, parsing, layout behavior, or navigation.
+- Update `README` and `docs/` when the product behavior or setup steps change.
+- Prefer concise user-facing explanations over internal process notes in public docs.
 
-Contributors will be recognized in:
+## Pull requests
 
-- README.md contributors section
-- Release notes
-- Project documentation
+Each pull request should include:
 
-Thank you for contributing to Personal News Dashboard.
+- what changed
+- why the change was needed
+- how it was tested
+- any follow-up risks or known limitations
+
+Screenshots or short recordings are useful when the change affects layout, navigation, or the article-reading experience.
+
+## Reporting issues
+
+When opening an issue, include:
+
+- steps to reproduce
+- expected behavior
+- actual behavior
+- browser or OS details
+- screenshots when the bug is visual or layout-related
+
+## License
+
+By contributing, you agree that your contributions will be distributed under the [MIT License](LICENSE).
