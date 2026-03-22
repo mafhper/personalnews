@@ -10,6 +10,7 @@ export interface EnvironmentConfig {
   isProduction: boolean;
   isGitHubPages: boolean;
   isLocalhost: boolean;
+  isTauri: boolean;
   proxyUrl: string | null;
   useProductionParser: boolean;
   corsMode: 'local-proxy' | 'public-apis' | 'mixed';
@@ -43,27 +44,32 @@ export function detectEnvironment(): EnvironmentConfig {
   // Determine if this is production
   const isProduction = !isDevelopment || isSecure || isGitHubPages;
 
-  // Check if localhost proxy is available (development only)
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  // Check if running in Tauri environment
+  const isTauri = typeof window !== 'undefined' && 
+    (!!(window as any).__TAURI__ || !!(window as any).__TAURI_INTERNALS__);
+
+  // Check if localhost proxy is available (development or Tauri)
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'tauri.localhost' || isTauri;
 
   // Determine proxy configuration
   let proxyUrl: string | null = null;
   let corsMode: 'local-proxy' | 'public-apis' | 'mixed' = 'public-apis';
 
-  if (isDevelopment && isLocalhost) {
-    // Try to use local proxy in development
+  if ((isDevelopment && isLocalhost) || isTauri) {
+    // Try to use local proxy in development or Tauri Desktop
     proxyUrl = 'http://localhost:3001/rss?url=';
     corsMode = 'mixed'; // Try local first, fallback to public
   }
 
   // Determine which parser to use
-  const useProductionParser = isProduction || !isLocalhost;
+  const useProductionParser = (isProduction || !isLocalhost) && !isTauri;
 
   return {
     isDevelopment,
     isProduction,
     isGitHubPages,
     isLocalhost,
+    isTauri,
     proxyUrl,
     useProductionParser,
     corsMode,

@@ -88,8 +88,8 @@ export async function parseRssUrl(
   // Determine parsing strategy
   let useProductionParser = env.useProductionParser || forceProduction;
   
-  // In development, check if local proxy is available
-  if (env.isDevelopment && !forceProduction) {
+  // In development or Tauri, check if local proxy is available
+  if ((env.isDevelopment || env.isTauri) && !forceProduction) {
     try {
       const localProxyAvailable = await checkLocalProxyAvailability();
       if (localProxyAvailable) {
@@ -155,7 +155,7 @@ export async function parseRssUrl(
     });
 
     // Try fallback strategy if not already tried
-    if (!useProductionParser && env.isDevelopment) {
+    if (!useProductionParser && (env.isDevelopment || env.isTauri)) {
       logger.info(`Attempting fallback to production parser`, {
         component: "unifiedRssParser",
         additionalData: { feedUrl: url },
