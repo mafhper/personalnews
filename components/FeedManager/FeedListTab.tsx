@@ -155,7 +155,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
               <button
                 type="submit"
                 disabled={processingUrl !== null}
-                className="rounded-2xl border border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.14)] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))] transition-colors hover:bg-[rgba(var(--color-accent),0.2)] disabled:opacity-50"
+                className="rounded-2xl border border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.14)] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--color-accent))] transition-colors hover:bg-[rgba(var(--color-accent),0.2)] disabled:opacity-50"
               >
                 {processingUrl ? "Processando..." : "Adicionar"}
               </button>
