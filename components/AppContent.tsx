@@ -50,7 +50,6 @@ import { useUI } from "../hooks/useUI";
 
 import { useKeyboardNavigation } from "../hooks/useKeyboardNavigation";
 import { useAppearance } from "../hooks/useAppearance";
-import { BUILT_LAYOUT_PRESETS } from "../config/layoutPresets.config";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { usePagination } from "../hooks/usePagination";
 import { useSwipeGestures } from "../hooks/useSwipeGestures";
@@ -161,13 +160,9 @@ const AppContent: React.FC = () => {
   >(null);
 
   // Transition state for category navigation
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  // T2 & T13: Simplified loading state - depends on status, navigation, AND resolution
-  const showSkeleton =
-    (loadingState.status === "loading" && !loadingState.isBackgroundRefresh) ||
-    !loadingState.isResolved ||
-    isNavigating;
+  const [heldArticles, setHeldArticles] = useState<Article[]>([]);
+  const [heldCategory, setHeldCategory] = useState<string>("all");
+  const [heldLayoutMode, setHeldLayoutMode] = useState<string | null>(null);
 
   const [selectedCategory, setSelectedCategory] = useState<string>(
     () => new URLSearchParams(window.location.search).get("category") || "all",
@@ -181,7 +176,7 @@ const AppContent: React.FC = () => {
     backgroundConfig,
     applyLayoutPreset,
     refreshAppearance,
-    activeLayoutId,
+    resolveBaseLayoutMode,
     contentConfig,
   } = useAppearance();
 
@@ -203,27 +198,13 @@ const AppContent: React.FC = () => {
       return activeCatObj.layoutMode;
     }
 
-    // 3. Manual content layout fallback
-    if (contentConfig.layoutMode && contentConfig.layoutMode !== "default") {
-      return contentConfig.layoutMode;
-    }
-
-    // 4. Global Preset Priority
-    if (activeLayoutId) {
-      const preset = BUILT_LAYOUT_PRESETS.find((p) => p.id === activeLayoutId);
-      if (preset?.content.layoutMode) {
-        return preset.content.layoutMode;
-      }
-    }
-
-    // 5. Default System Fallback (No intelligent inference allowed)
-    return INITIAL_APP_CONFIG.layout || "modern";
+    // 3. Base appearance fallback (manual override, persisted preset, or default)
+    return resolveBaseLayoutMode();
   }, [
     activeTransitionLayout,
     selectedCategory,
     categories,
-    contentConfig.layoutMode,
-    activeLayoutId,
+    resolveBaseLayoutMode,
   ]);
 
   // Legacy settings for backward compatibility
@@ -296,10 +277,12 @@ const AppContent: React.FC = () => {
 
   // T36: Release the lock once content is confirmed to be on screen
   const handleContentMounted = useCallback(() => {
+    if (loadingState.isHoldingPreviousContent) {
+      return;
+    }
     logger.debugTag("APPEARANCE", "Handshake Received: Releasing layout lock");
     setActiveTransitionLayout(null);
-    setIsNavigating(false);
-  }, [logger]);
+  }, [loadingState.isHoldingPreviousContent, logger]);
 
   // Search handlers
   const handleSearch = useCallback((query: string, filters: SearchFilters) => {
@@ -351,8 +334,7 @@ const AppContent: React.FC = () => {
       return false;
     };
 
-    // T12: Do NOT filter until data is resolved and we have items
-    if (!loadingState.isResolved || sourceArticles.length === 0) {
+    if (sourceArticles.length === 0) {
       return [];
     }
 
@@ -452,9 +434,20 @@ const AppContent: React.FC = () => {
     categories,
     feeds,
     selectedFeedUrl,
-    loadingState.isResolved,
     logger,
   ]);
+
+  const shouldHoldPreviousContent =
+    !!loadingState.isHoldingPreviousContent && heldArticles.length > 0;
+
+  const showSkeleton =
+    feeds.length > 0 &&
+    !loadingState.hasScopedCache &&
+    !shouldHoldPreviousContent &&
+    (
+      !loadingState.isResolved ||
+      (loadingState.status === "loading" && !loadingState.isBackgroundRefresh)
+    );
 
   // Enhanced pagination system with URL persistence and reset triggers
   const pagination = usePagination(
@@ -474,6 +467,12 @@ const AppContent: React.FC = () => {
     return displayArticles.slice(pagination.startIndex, pagination.endIndex);
   }, [displayArticles, pagination.startIndex, pagination.endIndex, pagination.currentPage, layoutSettings.articlesPerPage, contentConfig.paginationType]);
 
+  const renderedArticles = shouldHoldPreviousContent ? heldArticles : paginatedArticles;
+  const renderedCategory = shouldHoldPreviousContent ? heldCategory : selectedCategory;
+  const renderedLayoutMode = shouldHoldPreviousContent
+    ? (heldLayoutMode || (currentLayoutMode as string))
+    : (currentLayoutMode as string);
+
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
       logger.debugTag("APPEARANCE", "handleNavigation called", {
@@ -482,25 +481,17 @@ const AppContent: React.FC = () => {
 
       // T37: ATOMIC LOCK - Find target layout FIRST
       const categoryObj = categories.find((c) => c.id === category);
-      let targetMode: string = INITIAL_APP_CONFIG.layout || "modern";
+      let targetMode: string = resolveBaseLayoutMode();
 
       if (categoryObj?.layoutMode) {
         targetMode = categoryObj.layoutMode;
-      } else if (
-        contentConfig.layoutMode &&
-        contentConfig.layoutMode !== "default"
-      ) {
-        targetMode = contentConfig.layoutMode;
-      } else if (activeLayoutId) {
-        const preset = BUILT_LAYOUT_PRESETS.find(
-          (p) => p.id === activeLayoutId,
-        );
-        if (preset?.content.layoutMode) targetMode = preset.content.layoutMode;
       }
 
+      setHeldArticles(paginatedArticles);
+      setHeldCategory(selectedCategory);
+      setHeldLayoutMode(currentLayoutMode);
       // T37: Apply lock BEFORE changing category or loading
       setActiveTransitionLayout(targetMode);
-      setIsNavigating(true);
 
       setSelectedCategory(category);
       setSelectedFeedUrl(feedUrl || null);
@@ -511,8 +502,7 @@ const AppContent: React.FC = () => {
       // Apply visual updates through context
       if (categoryObj && categoryObj.layoutMode) {
         applyLayoutPreset(categoryObj.layoutMode, false);
-      }
-      if (category === "all") {
+      } else {
         refreshAppearance();
       }
 
@@ -521,7 +511,6 @@ const AppContent: React.FC = () => {
 
       // Backup timer to release lock if mount fails
       const timer = setTimeout(() => {
-        setIsNavigating(false);
         setActiveTransitionLayout(null);
       }, 2000);
       return () => clearTimeout(timer);
@@ -530,53 +519,50 @@ const AppContent: React.FC = () => {
       categories,
       pagination,
       applyLayoutPreset,
-      activeLayoutId,
-      contentConfig.layoutMode,
       buildLoadRequest,
       refreshAppearance,
+      resolveBaseLayoutMode,
       loadFeeds,
       logger,
+      currentLayoutMode,
+      paginatedArticles,
+      selectedCategory,
     ],
   );
 
   const handleTitleNavigation = useCallback(() => {
     const category = "all";
-    if (selectedCategory === category && !selectedFeedUrl) {
-      pagination.resetPagination();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
+      if (selectedCategory === category && !selectedFeedUrl) {
+        pagination.resetPagination();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
     const categoryObj = categories.find((c) => c.id === category);
-    let targetMode: string = INITIAL_APP_CONFIG.layout || "modern";
+    let targetMode: string = resolveBaseLayoutMode();
 
     if (categoryObj?.layoutMode) {
       targetMode = categoryObj.layoutMode;
-    } else if (
-      contentConfig.layoutMode &&
-      contentConfig.layoutMode !== "default"
-    ) {
-      targetMode = contentConfig.layoutMode;
-    } else if (activeLayoutId) {
-      const preset = BUILT_LAYOUT_PRESETS.find((p) => p.id === activeLayoutId);
-      if (preset?.content.layoutMode) targetMode = preset.content.layoutMode;
     }
 
+    setHeldArticles(paginatedArticles);
+    setHeldCategory(selectedCategory);
+    setHeldLayoutMode(currentLayoutMode);
+
     setActiveTransitionLayout(targetMode);
-    setIsNavigating(true);
     setSelectedCategory(category);
     setSelectedFeedUrl(null);
     loadFeeds(buildLoadRequest(category));
 
     if (categoryObj && categoryObj.layoutMode) {
       applyLayoutPreset(categoryObj.layoutMode, false);
+    } else {
+      refreshAppearance();
     }
-    refreshAppearance();
 
     pagination.resetPagination();
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     const timer = setTimeout(() => {
-      setIsNavigating(false);
       setActiveTransitionLayout(null);
     }, 1200);
     return () => clearTimeout(timer);
@@ -584,13 +570,14 @@ const AppContent: React.FC = () => {
     categories,
     pagination,
     applyLayoutPreset,
-    activeLayoutId,
-    contentConfig.layoutMode,
     buildLoadRequest,
     loadFeeds,
     refreshAppearance,
+    resolveBaseLayoutMode,
     selectedCategory,
     selectedFeedUrl,
+    currentLayoutMode,
+    paginatedArticles,
   ]);
 
   const handleLogoToLanding = useCallback(() => {
@@ -781,7 +768,8 @@ const AppContent: React.FC = () => {
           }}
           tabIndex={-1}
         >
-          {loadingState.status === "loading" && (
+          {loadingState.status === "loading" &&
+            (!loadingState.hasScopedCache || loadingState.isHoldingPreviousContent) && (
             <FeedLoadingProgress
               loadedFeeds={loadingState.loadedFeeds}
               totalFeeds={loadingState.totalFeeds}
@@ -846,23 +834,23 @@ const AppContent: React.FC = () => {
             </div>
           ) : (
             <>
-              {paginatedArticles.length > 0 ? (
+              {renderedArticles.length > 0 ? (
                 <Suspense
                   fallback={
                     <div className="feed-page-frame">
                       <FeedSkeleton
                         count={layoutSettings.articlesPerPage}
-                        layoutMode={currentLayoutMode as string}
+                        layoutMode={renderedLayoutMode}
                       />
                     </div>
                   }
                 >
                   <FeedContent
-                    key={`${selectedCategory}-${selectedFeedUrl || "all"}-${currentLayoutMode}`}
-                    articles={paginatedArticles}
+                    key={`${renderedCategory}-${selectedFeedUrl || "all"}-${renderedLayoutMode}`}
+                    articles={renderedArticles}
                     timeFormat={timeFormat}
-                    selectedCategory={selectedCategory}
-                    layoutMode={currentLayoutMode as string}
+                    selectedCategory={renderedCategory}
+                    layoutMode={renderedLayoutMode}
                     onMounted={handleContentMounted}
                   />
                 </Suspense>

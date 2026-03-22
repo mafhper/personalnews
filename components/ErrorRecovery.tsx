@@ -11,6 +11,7 @@
 
 import React, { useState } from "react";
 import { LoadingSpinner } from "./ProgressIndicator";
+import { categorizeFeedError } from "../services/feedErrorCategorization";
 
 export interface FeedError {
   url: string;
@@ -679,35 +680,7 @@ export const QuickFixSuggestions: React.FC<QuickFixSuggestionsProps> = ({
 /**
  * Utility function to categorize errors by type
  */
-export const categorizeError = (error: string): FeedError["errorType"] => {
-  const errorLower = error.toLowerCase();
-
-  if (errorLower.includes("timeout") || errorLower.includes("abort")) {
-    return "timeout";
-  }
-
-  if (
-    errorLower.includes("network") ||
-    errorLower.includes("fetch") ||
-    errorLower.includes("connection")
-  ) {
-    return "network";
-  }
-
-  if (
-    errorLower.includes("parse") ||
-    errorLower.includes("xml") ||
-    errorLower.includes("json")
-  ) {
-    return "parse";
-  }
-
-  if (errorLower.includes("cors") || errorLower.includes("cross-origin")) {
-    return "cors";
-  }
-
-  return "unknown";
-};
+export const categorizeError = categorizeFeedError;
 
 /**
  * Enhanced error processing function

@@ -1048,9 +1048,10 @@ async function parseRssUrlWithRetry(
     timeout?: number;
     maxRetries?: number;
     signal?: AbortSignal;
+    skipCache?: boolean;
   } = {}
 ): Promise<{ title: string; articles: Article[] }> {
-  const { maxRetries = MAX_RETRY_ATTEMPTS, signal } = options;
+  const { maxRetries = MAX_RETRY_ATTEMPTS, signal, skipCache = false } = options;
   let lastError: Error = new Error("Unknown error");
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -1082,7 +1083,7 @@ async function parseRssUrlWithRetry(
   });
 
   // Try to use cached content before failing completely
-  const cachedArticles = getCachedArticles(url);
+  const cachedArticles = skipCache ? null : getCachedArticles(url);
   if (cachedArticles && cachedArticles.length > 0) {
     logger.warn(`Using stale cache as fallback for ${url}`, {
       component: "rssParser",

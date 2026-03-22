@@ -1,33 +1,21 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { buildImagePlaceholderDataUri } from '../utils/imagePlaceholders';
 
-const DEFAULT_PLACEHOLDER = `data:image/svg+xml;base64,${btoa(`
-  <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#374151;stop-opacity:1" />
-        <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
-      </linearGradient>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#grad)" />
-  </svg>
-`)}`;
+const DEFAULT_PLACEHOLDER = buildImagePlaceholderDataUri({
+  width: 1200,
+  height: 800,
+  label: 'Personal News',
+  tone: 'brand',
+  variant: 'ambient',
+});
 
-const DEFAULT_ERROR_PLACEHOLDER = `data:image/svg+xml;base64,${btoa(`
-  <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="gradError" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
-        <stop offset="100%" style="stop-color:#111827;stop-opacity:1" />
-      </linearGradient>
-      <pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-        <circle cx="2" cy="2" r="1" fill="#374151" />
-      </pattern>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#gradError)" />
-    <rect width="100%" height="100%" fill="url(#pattern)" />
-    <path d="M30 50 L50 30 L70 50 L50 70 Z" fill="none" stroke="#374151" stroke-width="2" opacity="0.5" />
-  </svg>
-`)}`;
+const DEFAULT_ERROR_PLACEHOLDER = buildImagePlaceholderDataUri({
+  width: 1200,
+  height: 800,
+  label: 'Personal News',
+  tone: 'neutral',
+  variant: 'ambient',
+});
 
 interface LazyImageProps {
   src: string | undefined | null;

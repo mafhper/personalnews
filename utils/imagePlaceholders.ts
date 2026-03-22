@@ -65,6 +65,7 @@ export interface ImagePlaceholderOptions {
   eyebrow?: string;
   headline?: string;
   tone?: keyof typeof tonePalette;
+  variant?: "editorial" | "ambient";
 }
 
 export const buildImagePlaceholderDataUri = ({
@@ -74,6 +75,7 @@ export const buildImagePlaceholderDataUri = ({
   eyebrow = "Visual local",
   headline,
   tone = "brand",
+  variant = "editorial",
 }: ImagePlaceholderOptions) => {
   const palette = tonePalette[tone];
   const safeLabel = escapeXml(label.trim().slice(0, 48) || "Personal News");
@@ -113,6 +115,62 @@ export const buildImagePlaceholderDataUri = ({
       `,
     )
     .join("");
+
+  if (variant === "ambient") {
+    const orbPrimary = tone === "brand" ? palette.accent : "#8eb6ff";
+    const orbSecondary = tone === "brand" ? "#7c3aed" : "#94a3b8";
+    const glowBand = tone === "brand" ? "rgba(130,230,213,0.22)" : "rgba(142,182,255,0.18)";
+    const noiseOpacity = tone === "brand" ? "0.08" : "0.06";
+
+    const ambientMarkup = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="${palette.start}" />
+            <stop offset="55%" stop-color="${palette.end}" />
+            <stop offset="100%" stop-color="#090d14" />
+          </linearGradient>
+          <radialGradient id="orbA" cx="16%" cy="18%" r="58%">
+            <stop offset="0%" stop-color="${orbPrimary}" stop-opacity="0.28" />
+            <stop offset="100%" stop-color="${orbPrimary}" stop-opacity="0" />
+          </radialGradient>
+          <radialGradient id="orbB" cx="82%" cy="20%" r="48%">
+            <stop offset="0%" stop-color="${orbSecondary}" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="${orbSecondary}" stop-opacity="0" />
+          </radialGradient>
+          <radialGradient id="orbC" cx="54%" cy="76%" r="54%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08" />
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+          </radialGradient>
+          <linearGradient id="band" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="${glowBand}" />
+            <stop offset="50%" stop-color="rgba(255,255,255,0.08)" />
+            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+          </linearGradient>
+          <pattern id="noise" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="5" r="1" fill="rgba(255,255,255,${noiseOpacity})" />
+            <circle cx="20" cy="16" r="1" fill="rgba(255,255,255,0.05)" />
+            <circle cx="30" cy="10" r="1" fill="rgba(255,255,255,0.04)" />
+            <path d="M0 35h36" stroke="${palette.line}" stroke-width="1" opacity="0.2" />
+          </pattern>
+          <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="${Math.max(18, Math.round(width * 0.02))}" />
+          </filter>
+        </defs>
+        <rect width="100%" height="100%" rx="32" fill="url(#bg)" />
+        <rect width="100%" height="100%" rx="32" fill="url(#noise)" />
+        <ellipse cx="${Math.round(width * 0.2)}" cy="${Math.round(height * 0.18)}" rx="${Math.round(width * 0.2)}" ry="${Math.round(height * 0.14)}" fill="url(#orbA)" filter="url(#blur)" />
+        <ellipse cx="${Math.round(width * 0.78)}" cy="${Math.round(height * 0.2)}" rx="${Math.round(width * 0.22)}" ry="${Math.round(height * 0.16)}" fill="url(#orbB)" filter="url(#blur)" />
+        <ellipse cx="${Math.round(width * 0.52)}" cy="${Math.round(height * 0.78)}" rx="${Math.round(width * 0.3)}" ry="${Math.round(height * 0.18)}" fill="url(#orbC)" filter="url(#blur)" />
+        <rect x="${Math.round(width * 0.08)}" y="${Math.round(height * 0.14)}" width="${Math.round(width * 0.66)}" height="${Math.max(14, Math.round(height * 0.08))}" rx="999" fill="rgba(5,10,20,0.52)" />
+        <rect x="${Math.round(width * 0.1)}" y="${Math.round(height * 0.32)}" width="${Math.round(width * 0.34)}" height="${Math.max(10, Math.round(height * 0.03))}" rx="999" fill="rgba(255,255,255,0.09)" />
+        <rect x="${Math.round(width * 0.1)}" y="${Math.round(height * 0.42)}" width="${Math.round(width * 0.22)}" height="${Math.max(10, Math.round(height * 0.025))}" rx="999" fill="rgba(255,255,255,0.06)" />
+        <rect x="${Math.round(width * 0.08)}" y="${Math.round(height * 0.76)}" width="${Math.round(width * 0.84)}" height="${Math.max(12, Math.round(height * 0.022))}" rx="999" fill="url(#band)" />
+      </svg>
+    `;
+
+    return `data:image/svg+xml,${encodeURIComponent(ambientMarkup)}`;
+  }
 
   const markup = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
