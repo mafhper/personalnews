@@ -76,8 +76,14 @@ const Header: React.FC<HeaderProps> = (props) => {
     const normalized = (value || "").trim();
     const compact = normalized.toLowerCase().replace(/\s+/g, "");
     const canonicalCompact = APP_BRAND_NAME.toLowerCase().replace(/\s+/g, "");
+    const legacyLocalizedAliases = new Set([
+      canonicalCompact,
+      "noticiaspessoais",
+      "notíciaspessoais",
+      "personalnewsrss",
+    ]);
 
-    if (!normalized || compact === canonicalCompact) {
+    if (!normalized || legacyLocalizedAliases.has(compact)) {
       return APP_BRAND_NAME;
     }
 
@@ -608,7 +614,9 @@ const Header: React.FC<HeaderProps> = (props) => {
                   onClick={handleTitleClick}
                   style={{ color: headerTextColor }}
                 >
-                  <span>{resolvedBrandTitle}</span>
+                  <span className="notranslate" translate="no" lang="en">
+                    {resolvedBrandTitle}
+                  </span>
                 </h1>
               ) : (
                 <h1 className="sr-only">{t('app.title')}</h1>

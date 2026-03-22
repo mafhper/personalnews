@@ -388,7 +388,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_42%),radial-gradient(circle_at_top_right,rgba(var(--color-accent),0.09),transparent_32%)]" />
 
       <div className="relative shrink-0 px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-5 py-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 rounded-[28px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] px-5 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.14)] backdrop-blur-xl sm:px-6">
           <div>
             <h2 className="flex items-center gap-3 text-xl font-bold text-[rgb(var(--theme-text-readable))] sm:text-2xl">
               <span className="feed-accent-text rounded-2xl bg-[rgba(var(--color-accent),0.12)] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
@@ -405,14 +405,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-readable))]/92">
+              <span className="rounded-full border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/78 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">
                 {currentFeeds.length} {t('feeds.stats.monitored')}
               </span>
-              <span className="rounded-full border border-white/8 bg-black/10 px-3 py-1.5 text-xs text-[rgb(var(--color-textSecondary))]">
+              <span className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/72 px-3 py-1.5 text-xs text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
                 {categories.length} categorias ativas
               </span>
               {invalidCount > 0 && (
-                <span className="rounded-full border border-rose-500/20 bg-rose-500/12 px-3 py-1.5 text-xs font-medium text-rose-200">
+                <span className="rounded-full border border-[rgba(var(--color-error),0.24)] bg-[rgba(var(--color-error),0.12)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--color-error))]">
                   {invalidCount} feeds pedem atenção
                 </span>
               )}
@@ -420,7 +420,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
             <button
               onClick={closeModal}
-              className="rounded-2xl border border-white/10 bg-black/10 p-2.5 text-[rgb(var(--color-textSecondary))] transition-all duration-200 hover:border-white/20 hover:bg-white/10 hover:text-[rgb(var(--theme-text-readable))]"
+              className="rounded-2xl border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/82 p-2.5 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-all duration-200 hover:border-[rgb(var(--color-border))]/28 hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))] hover:text-[rgb(var(--theme-text-readable))]"
               aria-label="Close"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -430,15 +430,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           </div>
 
           <div className="overflow-x-auto scrollbar-hide">
-            <div className="inline-flex min-w-full gap-2 rounded-[22px] border border-white/8 bg-black/12 p-1.5 backdrop-blur-sm">
+            <div className="inline-flex min-w-full gap-2 rounded-[22px] border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/78 p-1.5 backdrop-blur-sm">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as TabType)}
                   className={`flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-medium transition-all ${
                     activeTab === tab.id
-                      ? "bg-white/10 text-[rgb(var(--theme-text-readable))] shadow-[0_10px_32px_rgba(0,0,0,0.22)] ring-1 ring-white/12"
-                      : "text-[rgb(var(--color-textSecondary))] hover:bg-white/6 hover:text-[rgb(var(--theme-text-readable))]"
+                      ? "bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/98 text-[rgb(var(--theme-text-on-surface,var(--color-text)))] shadow-[0_10px_32px_rgba(15,23,42,0.12)] ring-1 ring-[rgb(var(--color-border))]/18"
+                      : "text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))] hover:bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/72 hover:text-[rgb(var(--theme-text-on-surface,var(--color-text)))]"
                   }`}
                   title={tab.label}
                 >
@@ -450,8 +450,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                         tab.id === "statistics" && tab.badge
-                          ? "bg-rose-500/16 text-rose-200"
-                          : "bg-white/8 text-[rgb(var(--theme-text-readable))]/75"
+                          ? "bg-[rgba(var(--color-error),0.14)] text-[rgb(var(--color-error))]"
+                          : "bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]"
                       }`}
                     >
                       {tab.badge}
@@ -467,7 +467,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       {/* Main Content Area */}
       <div className="relative flex-1 overflow-hidden px-4 pb-4 sm:px-6 sm:pb-6">
         <div className="pointer-events-none absolute inset-x-4 inset-y-0 rounded-[30px] bg-gradient-to-b from-white/3 via-transparent to-transparent sm:inset-x-6" />
-        <div className="relative mx-auto h-full max-w-6xl overflow-hidden rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] shadow-[0_28px_100px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+        <div className="relative mx-auto h-full max-w-6xl overflow-hidden rounded-[30px] border border-[rgb(var(--color-border))]/16 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.94),rgba(var(--theme-surface-readable,var(--color-surface)),0.88))] shadow-[0_28px_100px_rgba(15,23,42,0.16)] backdrop-blur-xl">
         {activeTab === 'feeds' && (
           <FeedListTab
             feeds={currentFeeds}

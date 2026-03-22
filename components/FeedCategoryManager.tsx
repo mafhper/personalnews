@@ -136,7 +136,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   ];
 
   const secondaryActionClass =
-    "inline-flex items-center justify-center gap-2 rounded-2xl border border-white/8 bg-white/5 px-4 py-2.5 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-white/9 hover:text-white";
+    "inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-4 py-2.5 text-sm font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))] transition-all hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]";
 
   const handleDragStart = useCallback(
     (
@@ -585,10 +585,10 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     >
       {/* Title handled by parent Modal - this component is embedded */}
 
-      <div className="mb-8 rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
+      <div className="mb-8 rounded-[26px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] p-5 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-readable))]">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
               Curadoria de Categorias
             </div>
             <h3 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
@@ -659,7 +659,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
             </button>
             <button
               onClick={handleResetToDefaults}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 transition-all hover:bg-red-500/16"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(var(--color-error),0.24)] bg-[rgba(var(--color-error),0.12)] px-4 py-2.5 text-sm font-medium text-[rgb(var(--color-error))] transition-all hover:bg-[rgba(var(--color-error),0.18)]"
             >
               <svg
                 className="h-5 w-5"

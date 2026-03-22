@@ -8,6 +8,7 @@ import { FEED_LAYOUT_IDS } from '../config/feedLayoutCatalog';
 import { INITIAL_APP_CONFIG } from '../constants/curatedFeeds';
 import { useLogger } from '../services/logger';
 import { DEFAULT_HEADER_CONFIG, DEFAULT_CONTENT_CONFIG } from '../config/defaultConfig';
+import { APP_BRAND_NAME } from '../config/brand';
 
 const defaultHeaderConfig: HeaderConfig = DEFAULT_HEADER_CONFIG;
 
@@ -87,6 +88,50 @@ export const useAppearance = () => {
       }));
     }
   }, [contentConfig.layoutMode, logger, setContentConfig]);
+
+  useEffect(() => {
+    const compactTitle = (headerConfig.customTitle || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '');
+    const aliasTitles = new Set([
+      '',
+      'personalnews',
+      'noticiaspessoais',
+      'notíciaspessoais',
+      'personalnewsrss',
+    ]);
+
+    if (!aliasTitles.has(compactTitle) || headerConfig.customTitle === APP_BRAND_NAME) {
+      return;
+    }
+
+    logger.info('Normalizing persisted brand title to canonical app name', {
+      additionalData: { previousTitle: headerConfig.customTitle },
+    });
+
+    setHeaderConfig((prev) => ({
+      ...prev,
+      customTitle: APP_BRAND_NAME,
+    }));
+
+    setUserOverrides((prev) => {
+      if (!prev?.header) return prev;
+
+      return {
+        ...prev,
+        header: {
+          ...prev.header,
+          customTitle: APP_BRAND_NAME,
+        },
+      };
+    });
+  }, [
+    headerConfig.customTitle,
+    logger,
+    setHeaderConfig,
+    setUserOverrides,
+  ]);
 
   useEffect(() => {
     const hasDeprecatedHeaderControls = Boolean(

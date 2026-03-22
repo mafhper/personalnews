@@ -134,7 +134,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   const surfaceButtonClass =
     "bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 text-[rgb(var(--theme-text-on-surface,var(--color-text)))] border border-[rgb(var(--color-border))]/35 hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]";
   const resetCardBaseClass =
-    "w-full rounded-2xl border px-4 py-3 text-left transition-all shadow-[0_12px_32px_rgba(0,0,0,0.12)]";
+    "w-full rounded-2xl border px-4 py-3 text-left transition-all shadow-[0_12px_32px_rgba(15,23,42,0.1)] hover:translate-y-[-1px]";
 
   if (!isOpen) return null;
 
@@ -460,26 +460,26 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
                 <button
                   onClick={handleResetStyles}
-                  className={`${resetCardBaseClass} border-amber-400/18 bg-[linear-gradient(180deg,rgba(245,158,11,0.14),rgba(255,255,255,0.02))] hover:bg-[linear-gradient(180deg,rgba(245,158,11,0.2),rgba(255,255,255,0.03))]`}
+                  className={`${resetCardBaseClass} border-[rgba(var(--color-warning),0.24)] bg-[linear-gradient(180deg,rgba(var(--color-warning),0.16),rgba(var(--theme-surface-elevated,var(--color-surface)),0.94))] hover:bg-[linear-gradient(180deg,rgba(var(--color-warning),0.22),rgba(var(--theme-surface-elevated,var(--color-surface)),0.98))]`}
                 >
-                  <span className="block text-sm font-semibold text-amber-100">Resetar Estilos</span>
-                  <span className="mt-1 block text-[11px] leading-relaxed text-amber-50/80">Restaura tema, layout, cores e header sem mexer em feeds ou categorias.</span>
+                  <span className="block text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Resetar Estilos</span>
+                  <span className="mt-1 block text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">Restaura tema, layout, cores e header sem mexer em feeds ou categorias.</span>
                 </button>
 
                 <button
                   onClick={handleResetCategories}
-                  className={`${resetCardBaseClass} border-orange-400/18 bg-[linear-gradient(180deg,rgba(249,115,22,0.14),rgba(255,255,255,0.02))] hover:bg-[linear-gradient(180deg,rgba(249,115,22,0.2),rgba(255,255,255,0.03))]`}
+                  className={`${resetCardBaseClass} border-[rgba(249,115,22,0.24)] bg-[linear-gradient(180deg,rgba(249,115,22,0.14),rgba(var(--theme-surface-elevated,var(--color-surface)),0.94))] hover:bg-[linear-gradient(180deg,rgba(249,115,22,0.2),rgba(var(--theme-surface-elevated,var(--color-surface)),0.98))]`}
                 >
-                  <span className="block text-sm font-semibold text-orange-100">Resetar Categorias</span>
-                  <span className="mt-1 block text-[11px] leading-relaxed text-orange-50/80">Remove categorias personalizadas e restaura a organização padrão.</span>
+                  <span className="block text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Resetar Categorias</span>
+                  <span className="mt-1 block text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">Remove categorias personalizadas e restaura a organização padrão.</span>
                 </button>
 
                 <button
                   onClick={handleResetComplete}
-                  className={`${resetCardBaseClass} border-red-400/20 bg-[linear-gradient(180deg,rgba(239,68,68,0.16),rgba(255,255,255,0.02))] hover:bg-[linear-gradient(180deg,rgba(239,68,68,0.22),rgba(255,255,255,0.03))]`}
+                  className={`${resetCardBaseClass} border-[rgba(var(--color-error),0.24)] bg-[linear-gradient(180deg,rgba(var(--color-error),0.15),rgba(var(--theme-surface-elevated,var(--color-surface)),0.94))] hover:bg-[linear-gradient(180deg,rgba(var(--color-error),0.2),rgba(var(--theme-surface-elevated,var(--color-surface)),0.98))]`}
                 >
-                  <span className="block text-sm font-semibold text-red-100">Reset Completo</span>
-                  <span className="mt-1 block text-[11px] leading-relaxed text-red-50/84">Apaga feeds, categorias, estilos, favoritos e histórico local. Use apenas quando quiser recomeçar do zero.</span>
+                  <span className="block text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Reset Completo</span>
+                  <span className="mt-1 block text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">Apaga feeds, categorias, estilos, favoritos e histórico local. Use apenas quando quiser recomeçar do zero.</span>
                 </button>
               </div>
             </div>
@@ -498,10 +498,10 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => (
-  <div className="overflow-hidden rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] shadow-[0_14px_36px_rgba(0,0,0,0.14)]">
+  <div className="overflow-hidden rounded-[22px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] shadow-[0_14px_36px_rgba(15,23,42,0.1)]">
     <button
       onClick={onToggle}
-      className="flex w-full items-center justify-between bg-black/10 p-3 transition-colors hover:bg-black/16"
+      className="flex w-full items-center justify-between bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/74 p-3 transition-colors hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/92"
     >
       <span className="flex items-center gap-2 text-sm font-medium text-[rgb(var(--color-text))]">
         {title}
@@ -519,7 +519,7 @@ const AccordionSection: React.FC<{
       </div>
     </button>
     {isOpen && (
-      <div className="animate-in slide-in-from-top-2 bg-white/4 p-4 duration-200">
+      <div className="animate-in slide-in-from-top-2 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/72 p-4 duration-200">
         {children}
       </div>
     )}

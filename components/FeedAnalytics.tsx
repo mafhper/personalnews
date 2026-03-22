@@ -15,9 +15,9 @@ interface FeedAnalyticsProps {
 type AccordionSection = "validation" | "insights" | "health" | "tools";
 
 const SURFACE_CLASS =
-  "overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.022))] shadow-[0_24px_70px_rgba(0,0,0,0.2)] backdrop-blur-xl";
+  "overflow-hidden rounded-[28px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] shadow-[0_24px_70px_rgba(15,23,42,0.12)] backdrop-blur-xl";
 const PANEL_CLASS =
-  "rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] transition-all duration-300 shadow-[0_18px_46px_rgba(0,0,0,0.14)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.026))]";
+  "rounded-[22px] border border-[rgb(var(--color-border))]/16 bg-[linear-gradient(180deg,rgba(var(--theme-surface-readable,var(--color-surface)),0.98),rgba(var(--theme-surface-elevated,var(--color-surface)),0.92))] transition-all duration-300 shadow-[0_18px_46px_rgba(15,23,42,0.1)] hover:bg-[linear-gradient(180deg,rgba(var(--theme-surface-readable,var(--color-surface)),1),rgba(var(--theme-surface-elevated,var(--color-surface)),0.96))]";
 const MUTED_TEXT_CLASS =
   "text-[rgb(var(--theme-text-secondary-readable))] opacity-90";
 const TITLE_TEXT_CLASS =
@@ -83,14 +83,14 @@ const Accordion: React.FC<{
           <div className="flex flex-wrap items-center gap-3">
             <h3 className={`text-lg font-semibold ${TITLE_TEXT_CLASS}`}>{title}</h3>
             {badge && (
-              <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              <span className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
                 {badge}
               </span>
             )}
           </div>
           <p className={`mt-2 text-sm leading-relaxed ${MUTED_TEXT_CLASS}`}>{description}</p>
         </div>
-        <span className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-white/5 text-[rgb(var(--theme-text-secondary-readable))] transition-all hover:bg-white/8">
+        <span className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/82 text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))] transition-all hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]">
           <svg
             className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
@@ -131,7 +131,7 @@ const MetricCard: React.FC<{
         <div className={`text-[10px] uppercase tracking-[0.25em] font-black ${MUTED_TEXT_CLASS} opacity-60 group-hover:opacity-100 transition-opacity`}>
           {label}
         </div>
-        <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[rgb(var(--color-border))]/35" />
       </div>
       <div className="mt-4">
         <div className={`text-4xl font-extrabold tracking-tight ${toneClass}`}>{value}</div>
@@ -404,10 +404,10 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
 
   return (
     <div className="space-y-5">
-      <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5 shadow-[0_24px_72px_rgba(0,0,0,0.18)]">
+      <div className="rounded-[28px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] p-5 shadow-[0_24px_72px_rgba(15,23,42,0.12)]">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-readable))]">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
               Panorama Operacional
             </div>
             <h3 className={`text-xl font-semibold ${TITLE_TEXT_CLASS}`}>Leitura rápida da saúde e da atividade do seu ecossistema de feeds.</h3>
@@ -416,14 +416,14 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-readable))]/92">
+            <span className="rounded-full border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">
               {feeds.length} feeds monitorados
             </span>
-            <span className="rounded-full border border-white/8 bg-black/10 px-3 py-1.5 text-xs text-[rgb(var(--color-textSecondary))]">
+            <span className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/72 px-3 py-1.5 text-xs text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
               {articles.length} artigos no cache
             </span>
             {healthStats.invalid > 0 && (
-              <span className="rounded-full border border-rose-500/20 bg-rose-500/12 px-3 py-1.5 text-xs font-medium text-rose-200">
+              <span className="rounded-full border border-[rgba(var(--color-error),0.24)] bg-[rgba(var(--color-error),0.12)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--color-error))]">
                 {healthStats.invalid} com atenção
               </span>
             )}
@@ -533,7 +533,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
             <button
               type="button"
               onClick={() => setShowAllRows((current) => !current)}
-              className="rounded-full border border-white/8 bg-white/5 px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-white/9"
+              className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/82 px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))] transition-all hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]"
             >
               {showAllRows ? "Mostrar menos" : `Mostrar todos os ${feedRows.length} feeds`}
             </button>
@@ -676,7 +676,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
                 <button
                   type="button"
                   onClick={() => setShowAllIssues((current) => !current)}
-                  className="rounded-full border border-white/8 bg-white/5 px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-white/9"
+                  className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/82 px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))] transition-all hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]"
                 >
                   {showAllIssues ? "Mostrar menos alertas" : `Mostrar todos os ${healthStats.issues.length} alertas`}
                 </button>

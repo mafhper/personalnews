@@ -30,23 +30,23 @@ const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon, onClick, 
   const getColors = () => {
     switch (variant) {
       case 'danger':
-        return 'border-[rgba(var(--color-error),0.22)] bg-[linear-gradient(180deg,rgba(var(--color-error),0.08),rgba(255,255,255,0.02))] text-[rgb(var(--color-error))] hover:bg-[linear-gradient(180deg,rgba(var(--color-error),0.12),rgba(255,255,255,0.03))]';
+        return 'border-[rgba(var(--color-error),0.24)] bg-[linear-gradient(180deg,rgba(var(--color-error),0.12),rgba(var(--theme-surface-readable,var(--color-surface)),0.94))] text-[rgb(var(--color-error))] hover:bg-[linear-gradient(180deg,rgba(var(--color-error),0.16),rgba(var(--theme-surface-readable,var(--color-surface)),0.98))]';
       case 'warning':
-        return 'border-[rgba(var(--color-warning),0.22)] bg-[linear-gradient(180deg,rgba(var(--color-warning),0.08),rgba(255,255,255,0.02))] text-[rgb(var(--color-warning))] hover:bg-[linear-gradient(180deg,rgba(var(--color-warning),0.12),rgba(255,255,255,0.03))]';
+        return 'border-[rgba(var(--color-warning),0.24)] bg-[linear-gradient(180deg,rgba(var(--color-warning),0.12),rgba(var(--theme-surface-readable,var(--color-surface)),0.94))] text-[rgb(var(--color-warning))] hover:bg-[linear-gradient(180deg,rgba(var(--color-warning),0.16),rgba(var(--theme-surface-readable,var(--color-surface)),0.98))]';
       case 'success':
-        return 'border-[rgba(var(--color-success),0.22)] bg-[linear-gradient(180deg,rgba(var(--color-success),0.08),rgba(255,255,255,0.02))] text-[rgb(var(--color-success))] hover:bg-[linear-gradient(180deg,rgba(var(--color-success),0.12),rgba(255,255,255,0.03))]';
+        return 'border-[rgba(var(--color-success),0.24)] bg-[linear-gradient(180deg,rgba(var(--color-success),0.12),rgba(var(--theme-surface-readable,var(--color-surface)),0.94))] text-[rgb(var(--color-success))] hover:bg-[linear-gradient(180deg,rgba(var(--color-success),0.16),rgba(var(--theme-surface-readable,var(--color-surface)),0.98))]';
       default:
-        return 'border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-[rgb(var(--theme-text-readable))] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.065),rgba(255,255,255,0.025))]';
+        return 'border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-readable,var(--color-surface)),0.98),rgba(var(--theme-surface-elevated,var(--color-surface)),0.92))] text-[rgb(var(--theme-text-on-surface,var(--color-text)))] hover:bg-[linear-gradient(180deg,rgba(var(--theme-surface-readable,var(--color-surface)),1),rgba(var(--theme-surface-elevated,var(--color-surface)),0.98))]';
     }
   };
 
   return (
     <button
       onClick={onClick}
-      className={`group flex h-full flex-col items-start rounded-[24px] border p-5 text-left transition-all duration-200 shadow-[0_18px_48px_rgba(0,0,0,0.16)] hover:translate-y-[-2px] ${getColors()} animate-in fade-in zoom-in-95`}
+      className={`group flex h-full flex-col items-start rounded-[24px] border p-5 text-left transition-all duration-200 shadow-[0_18px_48px_rgba(15,23,42,0.12)] hover:translate-y-[-2px] ${getColors()} animate-in fade-in zoom-in-95`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="mb-4 rounded-2xl bg-white/6 p-2.5 transition-transform duration-200 group-hover:scale-105">
+      <div className="mb-4 rounded-2xl bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/86 p-2.5 transition-transform duration-200 group-hover:scale-105">
         {icon}
       </div>
       <h3 className="mb-2 text-lg font-semibold text-[rgb(var(--theme-text-readable))]">{title}</h3>
@@ -75,10 +75,10 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
     <div className="h-full overflow-y-auto p-4 sm:p-6 custom-scrollbar">
       <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
 
-        <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5 shadow-[0_24px_72px_rgba(0,0,0,0.18)] animate-in slide-in-from-top-4 duration-500">
+        <div className="rounded-[28px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] p-5 shadow-[0_24px_72px_rgba(15,23,42,0.12)] animate-in slide-in-from-top-4 duration-500">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-readable))]">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
                 Centro de Operações
               </div>
               <h2 className="mb-2 text-xl font-bold text-[rgb(var(--theme-text-readable))] sm:text-2xl">Funções de gerenciamento e manutenção</h2>
@@ -88,16 +88,16 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-readable))]/92">
+              <span className="rounded-full border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">
                 {feedCount} feeds
               </span>
               {invalidCount > 0 && (
-                <span className="rounded-full border border-rose-500/20 bg-rose-500/12 px-3 py-1.5 text-xs font-medium text-rose-200">
+                <span className="rounded-full border border-[rgba(var(--color-error),0.24)] bg-[rgba(var(--color-error),0.12)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--color-error))]">
                   {invalidCount} com erro
                 </span>
               )}
               {pendingCount > 0 && (
-                <span className="rounded-full border border-amber-500/18 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-200">
+                <span className="rounded-full border border-[rgba(var(--color-warning),0.22)] bg-[rgba(var(--color-warning),0.1)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--color-warning))]">
                   {pendingCount} pendentes
                 </span>
               )}
@@ -266,14 +266,14 @@ const SummaryPill: React.FC<{
   tone: "neutral" | "success" | "warning" | "danger";
 }> = ({ label, value, tone }) => {
   const styles = {
-    neutral: "from-[rgba(var(--color-text),0.05)] to-transparent text-[rgb(var(--theme-text-readable))] border-white/8",
+    neutral: "from-[rgba(var(--color-text),0.05)] to-[rgba(var(--theme-surface-readable,var(--color-surface)),0.92)] text-[rgb(var(--theme-text-on-surface,var(--color-text)))] border-[rgb(var(--color-border))]/18",
     success: "from-[rgba(var(--color-success),0.08)] to-transparent text-[rgb(var(--color-success))] border-[rgba(var(--color-success),0.15)]",
     warning: "from-[rgba(var(--color-warning),0.08)] to-transparent text-[rgb(var(--color-warning))] border-[rgba(var(--color-warning),0.15)]",
     danger: "from-[rgba(var(--color-error),0.08)] to-transparent text-[rgb(var(--color-error))] border-[rgba(var(--color-error),0.15)]",
   } as const;
 
   return (
-    <div className={`flex items-center justify-between rounded-[18px] border bg-gradient-to-br px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.02] ${styles[tone]}`}>
+    <div className={`flex items-center justify-between rounded-[18px] border bg-gradient-to-br px-4 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.1)] transition-all hover:scale-[1.02] ${styles[tone]}`}>
       <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-80">
         {label}
       </span>
