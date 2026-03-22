@@ -415,6 +415,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
           author,
           categories,
           sourceTitle: channelTitle,
+          feedUrl: _feedUrl,
         });
       }
     } catch {
@@ -913,6 +914,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           author: author || undefined,
           categories,
           sourceTitle: channelTitle,
+          feedUrl: _feedUrl,
           audioUrl: audioUrl || undefined,
           audioDuration: audioDuration || undefined,
         });

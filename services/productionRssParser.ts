@@ -449,6 +449,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
         author: sanitizeHtmlContent(item.author || '') || undefined,
         categories: item.categories || [],
         sourceTitle: sanitizeHtmlContent(data.feed?.title) || 'Unknown Feed',
+        feedUrl: feedUrl,
       });
     } catch {
       // Skip invalid items
@@ -907,6 +908,7 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
           author: author || undefined,
           categories,
           sourceTitle: channelTitle,
+          feedUrl: feedUrl,
         });
       }
     } catch {
