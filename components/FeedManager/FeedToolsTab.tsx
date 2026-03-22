@@ -30,27 +30,27 @@ const ToolCard: React.FC<ToolCardProps> = ({ title, description, icon, onClick, 
   const getColors = () => {
     switch (variant) {
       case 'danger':
-        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-error),0.2)] hover:border-[rgba(var(--color-error),0.5)] text-[rgb(var(--color-error))] hover:bg-[rgba(var(--color-error),0.03)] shadow-sm hover:shadow-md';
+        return 'border-[rgba(var(--color-error),0.22)] bg-[linear-gradient(180deg,rgba(var(--color-error),0.08),rgba(255,255,255,0.02))] text-[rgb(var(--color-error))] hover:bg-[linear-gradient(180deg,rgba(var(--color-error),0.12),rgba(255,255,255,0.03))]';
       case 'warning':
-        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-warning),0.2)] hover:border-[rgba(var(--color-warning),0.5)] text-[rgb(var(--color-warning))] hover:bg-[rgba(var(--color-warning),0.03)] shadow-sm hover:shadow-md';
+        return 'border-[rgba(var(--color-warning),0.22)] bg-[linear-gradient(180deg,rgba(var(--color-warning),0.08),rgba(255,255,255,0.02))] text-[rgb(var(--color-warning))] hover:bg-[linear-gradient(180deg,rgba(var(--color-warning),0.12),rgba(255,255,255,0.03))]';
       case 'success':
-        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-success),0.2)] hover:border-[rgba(var(--color-success),0.5)] text-[rgb(var(--color-success))] hover:bg-[rgba(var(--color-success),0.03)] shadow-sm hover:shadow-md';
+        return 'border-[rgba(var(--color-success),0.22)] bg-[linear-gradient(180deg,rgba(var(--color-success),0.08),rgba(255,255,255,0.02))] text-[rgb(var(--color-success))] hover:bg-[linear-gradient(180deg,rgba(var(--color-success),0.12),rgba(255,255,255,0.03))]';
       default:
-        return 'bg-[rgb(var(--theme-surface-readable))] border-[rgba(var(--color-border),0.15)] hover:border-[rgba(var(--color-border),0.3)] text-[rgb(var(--theme-text-readable))] hover:bg-[rgba(var(--color-text),0.04)] shadow-sm hover:shadow-lg dark:hover:shadow-blue-900/5';
+        return 'border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-[rgb(var(--theme-text-readable))] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.065),rgba(255,255,255,0.025))]';
     }
   };
 
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-start p-5 rounded-xl border transition-all duration-200 group text-left h-full ${getColors()} animate-in fade-in zoom-in-95`}
+      className={`group flex h-full flex-col items-start rounded-[24px] border p-5 text-left transition-all duration-200 shadow-[0_18px_48px_rgba(0,0,0,0.16)] hover:translate-y-[-2px] ${getColors()} animate-in fade-in zoom-in-95`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="mb-3 p-2 rounded-lg bg-[rgba(var(--color-text),0.05)] group-hover:scale-105 transition-transform duration-200">
+      <div className="mb-4 rounded-2xl bg-white/6 p-2.5 transition-transform duration-200 group-hover:scale-105">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))] mb-1">{title}</h3>
-      <p className="text-sm text-[rgba(var(--color-textSecondary),0.9)] leading-relaxed">{description}</p>
+      <h3 className="mb-2 text-lg font-semibold text-[rgb(var(--theme-text-readable))]">{title}</h3>
+      <p className="text-sm leading-relaxed text-[rgba(var(--color-textSecondary),0.9)]">{description}</p>
     </button>
   );
 };
@@ -72,27 +72,57 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   pendingCount
 }) => {
   return (
-    <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar h-full">
-      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+      <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
 
-        {/* Header Section */}
-        <div className="text-center mb-6 sm:mb-8 animate-in slide-in-from-top-4 duration-500">
-          <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--theme-text-readable))] mb-2">Funções de Gerenciamento</h2>
-          <p className="text-sm sm:text-base text-[rgb(var(--color-textSecondary))]">
-            Acesse as principais funções para gerenciar seus feeds, fazer backups e manutenção.
-          </p>
+        <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5 shadow-[0_24px_72px_rgba(0,0,0,0.18)] animate-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-readable))]">
+                Centro de Operações
+              </div>
+              <h2 className="mb-2 text-xl font-bold text-[rgb(var(--theme-text-readable))] sm:text-2xl">Funções de gerenciamento e manutenção</h2>
+              <p className="text-sm leading-relaxed text-[rgb(var(--color-textSecondary))] sm:text-base">
+                Backups, importações, relatórios e rotinas de limpeza ficam concentrados aqui para evitar ruído nas outras abas.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-readable))]/92">
+                {feedCount} feeds
+              </span>
+              {invalidCount > 0 && (
+                <span className="rounded-full border border-rose-500/20 bg-rose-500/12 px-3 py-1.5 text-xs font-medium text-rose-200">
+                  {invalidCount} com erro
+                </span>
+              )}
+              {pendingCount > 0 && (
+                <span className="rounded-full border border-amber-500/18 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-200">
+                  {pendingCount} pendentes
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Quick Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <SummaryPill label="Total" value={feedCount} tone="neutral" />
           <SummaryPill label="Válidos" value={validCount} tone="success" />
           <SummaryPill label="Com erro" value={invalidCount} tone="danger" />
           <SummaryPill label="Pendentes" value={pendingCount} tone="warning" />
         </div>
 
-        {/* Tools Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+        <div className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">Ações disponíveis</h3>
+              <p className="mt-1 text-sm text-[rgb(var(--theme-text-secondary-readable))]">
+                Escolha a operação que deseja executar. Os blocos abaixo priorizam leitura e consequência.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 sm:gap-4">
 
           <ToolCard
             title="Exportar Feeds (OPML)"
@@ -223,6 +253,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
             delay={450}
           />
 
+          </div>
         </div>
       </div>
     </div>
@@ -235,14 +266,14 @@ const SummaryPill: React.FC<{
   tone: "neutral" | "success" | "warning" | "danger";
 }> = ({ label, value, tone }) => {
   const styles = {
-    neutral: "from-[rgba(var(--color-text),0.05)] to-transparent text-[rgb(var(--theme-text-readable))] border-[rgba(var(--color-border),0.1)] shadow-sm",
-    success: "from-[rgba(var(--color-success),0.08)] to-transparent text-[rgb(var(--color-success))] border-[rgba(var(--color-success),0.15)] shadow-sm",
-    warning: "from-[rgba(var(--color-warning),0.08)] to-transparent text-[rgb(var(--color-warning))] border-[rgba(var(--color-warning),0.15)] shadow-sm",
-    danger: "from-[rgba(var(--color-error),0.08)] to-transparent text-[rgb(var(--color-error))] border-[rgba(var(--color-error),0.15)] shadow-sm",
+    neutral: "from-[rgba(var(--color-text),0.05)] to-transparent text-[rgb(var(--theme-text-readable))] border-white/8",
+    success: "from-[rgba(var(--color-success),0.08)] to-transparent text-[rgb(var(--color-success))] border-[rgba(var(--color-success),0.15)]",
+    warning: "from-[rgba(var(--color-warning),0.08)] to-transparent text-[rgb(var(--color-warning))] border-[rgba(var(--color-warning),0.15)]",
+    danger: "from-[rgba(var(--color-error),0.08)] to-transparent text-[rgb(var(--color-error))] border-[rgba(var(--color-error),0.15)]",
   } as const;
 
   return (
-    <div className={`rounded-xl border bg-gradient-to-br ${styles[tone]} px-4 py-3 flex items-center justify-between transition-all hover:scale-[1.02] shadow-sm`}>
+    <div className={`flex items-center justify-between rounded-[18px] border bg-gradient-to-br px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.02] ${styles[tone]}`}>
       <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-80">
         {label}
       </span>

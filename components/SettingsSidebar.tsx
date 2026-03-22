@@ -133,6 +133,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     "bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/82 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] border border-[rgb(var(--color-border))]/28 hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/96";
   const surfaceButtonClass =
     "bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 text-[rgb(var(--theme-text-on-surface,var(--color-text)))] border border-[rgb(var(--color-border))]/35 hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]";
+  const resetCardBaseClass =
+    "w-full rounded-2xl border px-4 py-3 text-left transition-all shadow-[0_12px_32px_rgba(0,0,0,0.12)]";
 
   if (!isOpen) return null;
 
@@ -145,10 +147,10 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
       />
 
       {/* Sidebar */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[rgb(var(--color-background))]/92 border-l border-[rgb(var(--color-border))] z-50 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col backdrop-blur-xl">
+      <div className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-l border-white/8 bg-[rgb(var(--color-background))]/92 shadow-[0_30px_90px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in slide-in-from-right duration-300">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))]/70 backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 backdrop-blur-xl">
           <h2 className="text-lg font-bold text-[rgb(var(--color-text))] flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -167,7 +169,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto space-y-4 p-4">
 
           {/* Appearance Section */}
           <AccordionSection
@@ -453,31 +455,31 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               </div>
 
               {/* Reset Options */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className={fieldLabelClass}>Opções de Reset</label>
 
                 <button
                   onClick={handleResetStyles}
-                  className="w-full py-2 px-3 bg-yellow-900/20 hover:bg-yellow-900/40 text-yellow-400 text-xs rounded-lg transition-colors border border-yellow-800/30 text-left"
+                  className={`${resetCardBaseClass} border-amber-400/18 bg-[linear-gradient(180deg,rgba(245,158,11,0.14),rgba(255,255,255,0.02))] hover:bg-[linear-gradient(180deg,rgba(245,158,11,0.2),rgba(255,255,255,0.03))]`}
                 >
-                  Resetar Estilos
-                  <span className="block text-[10px] text-yellow-600 mt-0.5">Tema, layout, cores e header</span>
+                  <span className="block text-sm font-semibold text-amber-100">Resetar Estilos</span>
+                  <span className="mt-1 block text-[11px] leading-relaxed text-amber-50/80">Restaura tema, layout, cores e header sem mexer em feeds ou categorias.</span>
                 </button>
 
                 <button
                   onClick={handleResetCategories}
-                  className="w-full py-2 px-3 bg-orange-900/20 hover:bg-orange-900/40 text-orange-400 text-xs rounded-lg transition-colors border border-orange-800/30 text-left"
+                  className={`${resetCardBaseClass} border-orange-400/18 bg-[linear-gradient(180deg,rgba(249,115,22,0.14),rgba(255,255,255,0.02))] hover:bg-[linear-gradient(180deg,rgba(249,115,22,0.2),rgba(255,255,255,0.03))]`}
                 >
-                  Resetar Categorias
-                  <span className="block text-[10px] text-orange-600 mt-0.5">Remove categorias personalizadas</span>
+                  <span className="block text-sm font-semibold text-orange-100">Resetar Categorias</span>
+                  <span className="mt-1 block text-[11px] leading-relaxed text-orange-50/80">Remove categorias personalizadas e restaura a organização padrão.</span>
                 </button>
 
                 <button
                   onClick={handleResetComplete}
-                  className="w-full py-2 px-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs rounded-lg transition-colors border border-red-800/50 text-left"
+                  className={`${resetCardBaseClass} border-red-400/20 bg-[linear-gradient(180deg,rgba(239,68,68,0.16),rgba(255,255,255,0.02))] hover:bg-[linear-gradient(180deg,rgba(239,68,68,0.22),rgba(255,255,255,0.03))]`}
                 >
-                  Reset Completo
-                  <span className="block text-[10px] text-red-600 mt-0.5">Apaga TUDO: feeds, categorias, estilos</span>
+                  <span className="block text-sm font-semibold text-red-100">Reset Completo</span>
+                  <span className="mt-1 block text-[11px] leading-relaxed text-red-50/84">Apaga feeds, categorias, estilos, favoritos e histórico local. Use apenas quando quiser recomeçar do zero.</span>
                 </button>
               </div>
             </div>
@@ -496,10 +498,10 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => (
-  <div className="border border-white/10 rounded-xl overflow-hidden bg-[rgba(var(--color-surface),0.45)]">
+  <div className="overflow-hidden rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] shadow-[0_14px_36px_rgba(0,0,0,0.14)]">
     <button
       onClick={onToggle}
-      className="w-full flex items-center justify-between p-3 bg-[rgba(var(--color-background),0.5)] hover:bg-[rgba(var(--color-background),0.7)] transition-colors"
+      className="flex w-full items-center justify-between bg-black/10 p-3 transition-colors hover:bg-black/16"
     >
       <span className="flex items-center gap-2 text-sm font-medium text-[rgb(var(--color-text))]">
         {title}
@@ -517,7 +519,7 @@ const AccordionSection: React.FC<{
       </div>
     </button>
     {isOpen && (
-      <div className="p-4 bg-[rgba(var(--color-surface),0.6)] animate-in slide-in-from-top-2 duration-200">
+      <div className="animate-in slide-in-from-top-2 bg-white/4 p-4 duration-200">
         {children}
       </div>
     )}

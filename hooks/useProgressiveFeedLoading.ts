@@ -229,24 +229,36 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
       clearTimeout(timeoutId);
 
-      if (
-        skipCache &&
-        cachedSnapshot &&
-        cachedSnapshot.length > 0 &&
-        isUnavailablePayload(result.articles)
-      ) {
-        logger.warn(`Revalidation failed; preserving cached articles for ${feed.url}`, {
+      if (isUnavailablePayload(result.articles)) {
+        if (cachedSnapshot && cachedSnapshot.length > 0) {
+          logger.warn(`Revalidation failed; preserving cached articles for ${feed.url}`, {
+            additionalData: {
+              feedUrl: feed.url,
+              cachedArticles: cachedSnapshot.length,
+            }
+          });
+
+          return {
+            url: feed.url,
+            articles: cachedSnapshot,
+            title: cachedSnapshot[0]?.sourceTitle || feed.customTitle || feed.url,
+            success: true,
+          };
+        }
+
+        logger.warn(`Feed returned unavailable payload for ${feed.url}`, {
           additionalData: {
             feedUrl: feed.url,
-            cachedArticles: cachedSnapshot.length,
+            parserTitle: result.title,
           }
         });
 
         return {
           url: feed.url,
-          articles: cachedSnapshot,
-          title: cachedSnapshot[0]?.sourceTitle || feed.customTitle || feed.url,
-          success: true,
+          articles: [],
+          title: feed.customTitle || result.title || feed.url,
+          success: false,
+          error: 'Feed temporarily unavailable',
         };
       }
 

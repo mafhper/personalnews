@@ -15,9 +15,9 @@ interface FeedAnalyticsProps {
 type AccordionSection = "validation" | "insights" | "health" | "tools";
 
 const SURFACE_CLASS =
-  "rounded-[1.5rem] border border-[rgba(var(--color-border),0.2)] bg-[rgb(var(--theme-surface-readable))] shadow-2xl backdrop-blur-xl overflow-hidden";
+  "overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.022))] shadow-[0_24px_70px_rgba(0,0,0,0.2)] backdrop-blur-xl";
 const PANEL_CLASS =
-  "rounded-2xl border border-[rgba(var(--color-border),0.12)] bg-[rgba(var(--color-text),0.02)] hover:bg-[rgba(var(--color-text),0.05)] hover:border-[rgba(var(--color-border),0.25)] transition-all duration-300 shadow-sm hover:shadow-md";
+  "rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] transition-all duration-300 shadow-[0_18px_46px_rgba(0,0,0,0.14)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.026))]";
 const MUTED_TEXT_CLASS =
   "text-[rgb(var(--theme-text-secondary-readable))] opacity-90";
 const TITLE_TEXT_CLASS =
@@ -83,14 +83,14 @@ const Accordion: React.FC<{
           <div className="flex flex-wrap items-center gap-3">
             <h3 className={`text-lg font-semibold ${TITLE_TEXT_CLASS}`}>{title}</h3>
             {badge && (
-              <span className="rounded-full border border-[rgb(var(--color-border))]/24 bg-[rgba(var(--color-text),0.05)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
                 {badge}
               </span>
             )}
           </div>
           <p className={`mt-2 text-sm leading-relaxed ${MUTED_TEXT_CLASS}`}>{description}</p>
         </div>
-        <span className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(var(--color-border),0.15)] bg-[rgba(var(--color-text),0.03)] text-[rgb(var(--theme-text-secondary-readable))] group-hover:bg-[rgba(var(--color-text),0.06)] group-hover:scale-105 transition-all">
+        <span className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-white/5 text-[rgb(var(--theme-text-secondary-readable))] transition-all hover:bg-white/8">
           <svg
             className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
             fill="none"
@@ -102,7 +102,7 @@ const Accordion: React.FC<{
         </span>
       </button>
       {isExpanded && (
-        <div className="border-t border-[rgb(var(--color-border))]/16 px-5 py-5 sm:px-6">
+        <div className="border-t border-white/8 px-5 py-5 sm:px-6">
           {children}
         </div>
       )}
@@ -126,13 +126,16 @@ const MetricCard: React.FC<{
           : TITLE_TEXT_CLASS;
 
   return (
-    <div className={`${PANEL_CLASS} p-6 flex flex-col justify-between h-full border-t-4 border-t-[rgba(var(--color-primary),0.1)] group`}>
-      <div className={`text-[10px] uppercase tracking-[0.25em] font-black ${MUTED_TEXT_CLASS} opacity-60 group-hover:opacity-100 transition-opacity`}>
-        {label}
+    <div className={`${PANEL_CLASS} flex h-full flex-col justify-between p-6 group`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className={`text-[10px] uppercase tracking-[0.25em] font-black ${MUTED_TEXT_CLASS} opacity-60 group-hover:opacity-100 transition-opacity`}>
+          {label}
+        </div>
+        <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
       </div>
-      <div className="mt-4 flex items-baseline gap-2">
+      <div className="mt-4">
         <div className={`text-4xl font-extrabold tracking-tight ${toneClass}`}>{value}</div>
-        {hint && <div className={`text-[10px] ${MUTED_TEXT_CLASS} font-medium`}>• {hint}</div>}
+        {hint && <div className={`mt-2 text-[11px] ${MUTED_TEXT_CLASS} font-medium`}>{hint}</div>}
       </div>
     </div>
   );
@@ -400,8 +403,34 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="space-y-5">
+      <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5 shadow-[0_24px_72px_rgba(0,0,0,0.18)]">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-readable))]">
+              Panorama Operacional
+            </div>
+            <h3 className={`text-xl font-semibold ${TITLE_TEXT_CLASS}`}>Leitura rápida da saúde e da atividade do seu ecossistema de feeds.</h3>
+            <p className={`mt-2 text-sm leading-relaxed ${MUTED_TEXT_CLASS}`}>
+              Esta aba resume validação, volume de conteúdo, temas recorrentes e ferramentas de diagnóstico sem transformar tudo em uma parede de métricas.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/8 bg-white/6 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-readable))]/92">
+              {feeds.length} feeds monitorados
+            </span>
+            <span className="rounded-full border border-white/8 bg-black/10 px-3 py-1.5 text-xs text-[rgb(var(--color-textSecondary))]">
+              {articles.length} artigos no cache
+            </span>
+            {healthStats.invalid > 0 && (
+              <span className="rounded-full border border-rose-500/20 bg-rose-500/12 px-3 py-1.5 text-xs font-medium text-rose-200">
+                {healthStats.invalid} com atenção
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Feeds monitorados" value={feeds.length} hint="Base total cadastrada" />
         <MetricCard
           label="Artigos associados"
@@ -421,6 +450,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
           hint="Ainda não verificados"
           tone={healthStats.unchecked > 0 ? "warning" : "neutral"}
         />
+        </div>
       </div>
 
       <Accordion
@@ -439,7 +469,13 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
             <MetricCard label="Sem atividade" value={activityStats.leastActive.length} hint="Entre os exibidos" />
           </div>
 
-          <div className={`${PANEL_CLASS} p-4`}>
+          <div className={`${PANEL_CLASS} p-5`}>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Distribuição de status</h4>
+                <p className={`mt-1 text-xs ${MUTED_TEXT_CLASS}`}>Uma barra composta para leitura rápida, sem espalhar números em excesso.</p>
+              </div>
+            </div>
             <div className="flex h-3 overflow-hidden rounded-full bg-[rgba(var(--color-text),0.1)]">
               <div className="bg-[rgb(var(--color-success))] transition-all duration-500" style={{ width: `${(healthStats.valid / totalFeedsSafe) * 100}%` }} title="Válidos" />
               <div className="bg-[rgb(var(--color-warning))] transition-all duration-500" style={{ width: `${(healthStats.invalid / totalFeedsSafe) * 100}%` }} title="Com erro" />
@@ -454,7 +490,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
 
           <div className="space-y-3">
             {visibleRows.map((row) => (
-              <div key={row.url} className={`${PANEL_CLASS} flex flex-col gap-3 p-4 lg:flex-row lg:items-start lg:justify-between`}>
+              <div key={row.url} className={`${PANEL_CLASS} flex flex-col gap-3 p-5 lg:flex-row lg:items-start lg:justify-between`}>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h4 className={`truncate text-sm font-semibold ${TITLE_TEXT_CLASS}`}>{row.title}</h4>
@@ -497,7 +533,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
             <button
               type="button"
               onClick={() => setShowAllRows((current) => !current)}
-              className="rounded-full border border-[rgba(var(--color-border),0.2)] bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgba(var(--color-text),0.1)] hover:border-[rgba(var(--color-border),0.4)]"
+              className="rounded-full border border-white/8 bg-white/5 px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-white/9"
             >
               {showAllRows ? "Mostrar menos" : `Mostrar todos os ${feedRows.length} feeds`}
             </button>
@@ -515,7 +551,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
           <div className="space-y-4">
-            <div className={`${PANEL_CLASS} p-4`}>
+            <div className={`${PANEL_CLASS} p-5`}>
               <div className="flex items-center justify-between gap-3">
                 <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Assuntos mais frequentes</h4>
                 <span className={`text-xs ${MUTED_TEXT_CLASS}`}>{topicTrends.length} tópicos</span>
@@ -540,7 +576,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
               </div>
             </div>
 
-            <div className={`${PANEL_CLASS} p-4`}>
+            <div className={`${PANEL_CLASS} p-5`}>
               <div className="flex items-center justify-between gap-3">
                 <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Feeds mais ativos</h4>
                 <span className={`text-xs ${MUTED_TEXT_CLASS}`}>Top 6</span>
@@ -565,7 +601,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
           </div>
 
           <div className="space-y-4">
-            <div className={`${PANEL_CLASS} p-4`}>
+            <div className={`${PANEL_CLASS} p-5`}>
               <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Qualidade da contagem</h4>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <MetricCard label="Associados com segurança" value={activityStats.matchedArticles} tone="success" />
@@ -580,7 +616,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
               </p>
             </div>
 
-            <div className={`${PANEL_CLASS} p-4`}>
+            <div className={`${PANEL_CLASS} p-5`}>
               <div className="flex items-center justify-between gap-3">
                 <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>Sem atividade</h4>
                 <span className={`text-xs ${MUTED_TEXT_CLASS}`}>Top 6</span>
@@ -622,7 +658,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
 
               <div className="space-y-3">
                 {visibleIssues.map((issue) => (
-                  <div key={issue.url} className={`${PANEL_CLASS} p-4`}>
+                  <div key={issue.url} className={`${PANEL_CLASS} p-5`}>
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className={`text-sm font-semibold ${TITLE_TEXT_CLASS}`}>{issue.title}</h4>
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${getStatusTone(issue.status)}`}>
@@ -640,14 +676,14 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
                 <button
                   type="button"
                   onClick={() => setShowAllIssues((current) => !current)}
-                  className="rounded-full border border-[rgba(var(--color-border),0.2)] bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgba(var(--color-text),0.1)] hover:border-[rgba(var(--color-border),0.4)]"
+                  className="rounded-full border border-white/8 bg-white/5 px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] transition-all hover:bg-white/9"
                 >
                   {showAllIssues ? "Mostrar menos alertas" : `Mostrar todos os ${healthStats.issues.length} alertas`}
                 </button>
               )}
             </>
           ) : (
-            <div className="rounded-[2rem] border border-[rgba(var(--color-success),0.2)] bg-[rgba(var(--color-success),0.03)] px-8 py-10 text-center shadow-inner">
+            <div className="rounded-[2rem] border border-[rgba(var(--color-success),0.18)] bg-[linear-gradient(180deg,rgba(var(--color-success),0.06),rgba(255,255,255,0.02))] px-8 py-10 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-[rgba(var(--color-success),0.3)] bg-[rgba(var(--color-success),0.1)] text-[rgb(var(--color-success))] shadow-lg">
                 <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -677,7 +713,7 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
               </p>
             </div>
             <div className={PANEL_CLASS}>
-              <div className="p-4">
+              <div className="p-5">
                 <ProxyHealthSummary />
               </div>
             </div>
@@ -690,24 +726,24 @@ ${activityStats.leastActive.slice(0, 6).map((feed, index) => `${index + 1}. ${fe
                 Exporte o estado atual da sua base sem espalhar esses controles pelo restante da tela.
               </p>
             </div>
-            <div className={`${PANEL_CLASS} p-4`}>
+            <div className={`${PANEL_CLASS} p-5`}>
               <HealthReportExporter />
             </div>
           </div>
 
-          <div className={`${PANEL_CLASS} p-4`}>
+          <div className={`${PANEL_CLASS} p-5`}>
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={exportJsonReport}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(var(--color-primary),0.3)] bg-[rgba(var(--color-primary),0.1)] px-5 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.2)]"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(var(--color-primary),0.3)] bg-[rgba(var(--color-primary),0.1)] px-5 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.18)]"
               >
                 Exportar JSON
               </button>
               <button
                 type="button"
                 onClick={exportMarkdownReport}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(var(--color-success),0.3)] bg-[rgba(var(--color-success),0.1)] px-5 py-2 text-sm font-semibold text-[rgb(var(--color-success))] transition-all hover:bg-[rgba(var(--color-success),0.2)]"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(var(--color-success),0.3)] bg-[rgba(var(--color-success),0.1)] px-5 py-2 text-sm font-semibold text-[rgb(var(--color-success))] transition-all hover:bg-[rgba(var(--color-success),0.18)]"
               >
                 Exportar Markdown
               </button>

@@ -107,8 +107,8 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto w-full">
       {/* Summary Row */}
-      <div className="px-3 sm:px-4 pt-4 pb-3 border-b border-[rgba(var(--color-border),0.15)]">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="px-3 pb-3 pt-4 sm:px-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <SummaryCard label="Total" value={totalFeeds} tone="neutral" />
           <SummaryCard label={t("analytics.valid") || "Válidos"} value={validCount} tone="success" />
           <SummaryCard label={t("analytics.issues") || "Com erro"} value={invalidCount} tone="danger" />
@@ -119,15 +119,16 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
       {typeof onSubmit === "function" &&
         setNewFeedUrl &&
         setNewFeedCategory && (
-          <div className="px-3 sm:px-4 pt-3 pb-2 bg-transparent border-b border-[rgba(var(--color-border),0.15)]">
-            <div className="mb-2 flex items-center gap-2 text-xs text-[rgb(var(--theme-text-secondary-readable))]">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-[rgba(var(--color-accent),0.12)] text-[rgba(var(--color-accent),0.85)]">
+          <div className="px-3 pb-3 sm:px-4">
+            <div className="rounded-[22px] border border-white/8 bg-[linear-gradient(180deg,rgba(var(--color-accent),0.08),rgba(255,255,255,0.02))] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[rgb(var(--theme-text-secondary-readable))]">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-[rgba(var(--color-accent),0.14)] text-[rgba(var(--color-accent),0.92)]">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </span>
-              <span className="font-semibold">Adicionar novo feed</span>
-              <span className="text-[10px] text-[rgba(var(--color-textSecondary),0.7)]">cole a URL e escolha a categoria</span>
+              <span className="font-semibold text-[rgb(var(--theme-text-readable))]">Adicionar novo feed</span>
+              <span className="text-[10px] text-[rgba(var(--color-textSecondary),0.72)]">Cole a URL, categorize e deixe o sistema validar em seguida.</span>
             </div>
             <form onSubmit={onSubmit} className="flex flex-col sm:flex-row items-stretch gap-2">
               <input
@@ -136,13 +137,13 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                 value={newFeedUrl || ""}
                 onChange={(e) => setNewFeedUrl(e.target.value)}
                 disabled={processingUrl !== null}
-                className="flex-1 bg-[rgb(var(--theme-control-bg))] text-[rgb(var(--theme-control-text))] px-3 py-2 rounded-lg border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:border-[rgba(var(--color-accent),0.5)] focus:bg-[rgb(var(--theme-surface-elevated))] text-sm disabled:opacity-50 transition-colors"
+                className="flex-1 rounded-2xl border border-white/8 bg-black/12 px-3 py-2.5 text-sm text-[rgb(var(--theme-control-text))] transition-colors focus:border-[rgba(var(--color-accent),0.5)] focus:bg-black/18 focus:outline-none disabled:opacity-50"
               />
               <select
                 value={newFeedCategory || ""}
                 onChange={(e) => setNewFeedCategory(e.target.value)}
                 disabled={processingUrl !== null}
-                className="bg-[rgb(var(--theme-control-bg))] text-[rgb(var(--theme-control-text))] px-3 py-2 rounded-lg border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:border-[rgba(var(--color-accent),0.5)] focus:bg-[rgb(var(--theme-surface-elevated))] text-sm disabled:opacity-50 transition-colors sm:w-44"
+                className="rounded-2xl border border-white/8 bg-black/12 px-3 py-2.5 text-sm text-[rgb(var(--theme-control-text))] transition-colors focus:border-[rgba(var(--color-accent),0.5)] focus:bg-black/18 focus:outline-none disabled:opacity-50 sm:w-44"
               >
                 <option value="">Sem categoria</option>
                 {categories.map((cat) => (
@@ -154,25 +155,27 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
               <button
                 type="submit"
                 disabled={processingUrl !== null}
-                className="bg-[rgba(var(--color-accent),0.12)] hover:bg-[rgba(var(--color-accent),0.18)] text-[rgba(var(--color-accent),0.95)] px-4 py-2 rounded-lg border border-[rgba(var(--color-accent),0.28)] font-semibold text-sm transition-colors disabled:opacity-50"
+                className="rounded-2xl border border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.14)] px-4 py-2.5 text-sm font-semibold text-[rgba(var(--color-accent),0.98)] transition-colors hover:bg-[rgba(var(--color-accent),0.2)] disabled:opacity-50"
               >
                 {processingUrl ? "Processando..." : "Adicionar"}
               </button>
             </form>
             {processingUrl && discoveryProgress?.get(processingUrl) && (
-              <div className="mt-2 text-xs text-[rgb(var(--color-textSecondary))]">
+              <div className="mt-3 text-xs text-[rgb(var(--color-textSecondary))]">
                 {discoveryProgress.get(processingUrl)?.status} (
                 {discoveryProgress.get(processingUrl)?.progress}%)
               </div>
             )}
+            </div>
           </div>
         )}
 
       {/* Search and Filter Bar */}
-      <div className="p-3 sm:p-4 bg-[rgba(var(--color-text),0.05)] border-b border-[rgba(var(--color-border),0.15)] flex flex-col sm:flex-row gap-3 sm:gap-4 animate-in fade-in shrink-0">
+      <div className="px-3 pb-3 sm:px-4">
+        <div className="flex flex-col gap-3 rounded-[22px] border border-white/8 bg-white/4 p-3.5 animate-in fade-in shadow-[0_16px_42px_rgba(0,0,0,0.14)] sm:flex-row sm:gap-4">
         <div className="relative flex-1">
           <svg
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[rgb(var(--color-textSecondary))]/70"
+            className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[rgb(var(--color-textSecondary))]/70"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -189,14 +192,14 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
             placeholder={t("search.placeholder") || "Buscar..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[rgba(var(--color-surface),0.45)] text-[rgb(var(--theme-control-text))] pl-10 pr-4 py-2 rounded-lg border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:border-[rgba(var(--color-accent),0.45)] focus:bg-[rgba(var(--color-surface),0.65)] transition-colors"
+            className="w-full rounded-2xl border border-white/8 bg-black/10 py-2.5 pl-10 pr-4 text-[rgb(var(--theme-control-text))] transition-colors focus:border-[rgba(var(--color-accent),0.45)] focus:bg-black/16 focus:outline-none"
           />
         </div>
         <div className="flex gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="flex-1 sm:flex-none bg-[rgba(var(--color-surface),0.45)] text-[rgb(var(--theme-control-text))] px-4 py-2 rounded-lg border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:border-[rgba(var(--color-accent),0.45)] focus:bg-[rgba(var(--color-surface),0.65)] transition-colors"
+            className="flex-1 rounded-2xl border border-white/8 bg-black/10 px-4 py-2.5 text-[rgb(var(--theme-control-text))] transition-colors focus:border-[rgba(var(--color-accent),0.45)] focus:bg-black/16 focus:outline-none sm:flex-none"
           >
             <option value="all">Todos</option>
             <option value="valid">{t("analytics.valid")}</option>
@@ -215,7 +218,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                   onRefreshAll();
                 }
               }}
-              className="bg-white/5 hover:bg-white/10 text-sky-200/80 p-2 rounded-lg border border-[rgba(var(--color-border),0.15)] transition-colors"
+              className="rounded-2xl border border-white/8 bg-black/10 p-2.5 text-sky-200/80 transition-colors hover:bg-black/16"
               title="Forçar Revalidação"
             >
               <svg
@@ -233,6 +236,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
               </svg>
             </button>
           )}
+        </div>
         </div>
       </div>
 
@@ -263,7 +267,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
 
         {/* Issues Section */}
         {issueFeeds.length > 0 && (
-          <div className="border border-[rgba(var(--color-border),0.15)] rounded-2xl overflow-hidden animate-in fade-in slide-in-from-left-2 bg-[rgba(var(--color-text),0.05)]">
+          <div className="overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] animate-in fade-in slide-in-from-left-2 shadow-[0_18px_46px_rgba(0,0,0,0.16)]">
             <button
               onClick={() => toggleSection("issues")}
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-[rgba(255,80,80,0.12)] via-[rgba(255,255,255,0.02)] to-transparent hover:from-[rgba(255,80,80,0.18)] transition-colors"
@@ -302,7 +306,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
             </button>
 
             {expandedSection === "issues" && (
-              <div className="p-4 bg-[rgba(var(--color-text),0.05)] space-y-2">
+              <div className="space-y-2 bg-black/8 p-4">
                 {issueFeeds.map((feed, index) => (
                   <FeedItem
                     key={`${feed.url}-issues-${index}`}
@@ -328,7 +332,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
 
         {/* Valid Section */}
         {validFeeds.length > 0 && (
-          <div className="border border-[rgba(var(--color-border),0.15)] rounded-2xl overflow-hidden animate-in fade-in slide-in-from-left-2 delay-75 bg-[rgba(var(--color-text),0.05)]">
+          <div className="overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] animate-in fade-in slide-in-from-left-2 delay-75 shadow-[0_18px_46px_rgba(0,0,0,0.16)]">
             <button
               onClick={() => toggleSection("valid")}
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-[rgba(16,185,129,0.12)] via-[rgba(255,255,255,0.02)] to-transparent hover:from-[rgba(16,185,129,0.18)] transition-colors"
@@ -366,7 +370,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
               </svg>
             </button>
             {expandedSection === "valid" && (
-              <div className="p-4 bg-[rgba(var(--color-text),0.05)] space-y-2">
+              <div className="space-y-2 bg-black/8 p-4">
                 {validFeeds.map((feed, index) => (
                   <FeedItem
                     key={`${feed.url}-valid-${index}`}
@@ -392,7 +396,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
 
         {/* Unchecked Section */}
         {uncheckedFeeds.length > 0 && (
-          <div className="border border-[rgba(var(--color-border),0.15)] rounded-2xl overflow-hidden animate-in fade-in slide-in-from-left-2 delay-100 bg-[rgba(var(--color-text),0.05)]">
+          <div className="overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] animate-in fade-in slide-in-from-left-2 delay-100 shadow-[0_18px_46px_rgba(0,0,0,0.16)]">
             <button
               onClick={() => toggleSection("unchecked")}
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-[rgba(148,163,184,0.12)] via-[rgba(255,255,255,0.02)] to-transparent hover:from-[rgba(148,163,184,0.2)] transition-colors"
@@ -430,7 +434,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
               </svg>
             </button>
             {expandedSection === "unchecked" && (
-              <div className="p-4 bg-[rgba(var(--color-text),0.1)] space-y-2">
+              <div className="space-y-2 bg-black/8 p-4">
                 {uncheckedFeeds.map((feed, index) => (
                   <FeedItem
                     key={`${feed.url}-unchecked-${index}`}
@@ -464,7 +468,7 @@ const SummaryCard: React.FC<{
   tone: "neutral" | "success" | "warning" | "danger";
 }> = ({ label, value, tone }) => {
   const toneClasses = {
-    neutral: "from-[rgba(var(--color-text),0.05)] to-transparent text-[rgb(var(--theme-text-readable))] border-[rgba(var(--color-border),0.1)]",
+    neutral: "from-[rgba(var(--color-text),0.05)] to-transparent text-[rgb(var(--theme-text-readable))] border-white/8",
     success: "from-[rgba(var(--color-success),0.08)] to-transparent text-[rgb(var(--color-success))] border-[rgba(var(--color-success),0.15)]",
     warning: "from-[rgba(var(--color-warning),0.08)] to-transparent text-[rgb(var(--color-warning))] border-[rgba(var(--color-warning),0.15)]",
     danger: "from-[rgba(var(--color-error),0.08)] to-transparent text-[rgb(var(--color-error))] border-[rgba(var(--color-error),0.15)]",
@@ -472,7 +476,7 @@ const SummaryCard: React.FC<{
 
   return (
     <div
-      className={`rounded-xl border bg-gradient-to-br ${toneClasses[tone]} px-3 py-2 flex items-center justify-between`}
+      className={`flex items-center justify-between rounded-[18px] border bg-gradient-to-br px-3 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.12)] ${toneClasses[tone]}`}
     >
       <span className="text-[10px] uppercase tracking-widest font-semibold">
         {label}

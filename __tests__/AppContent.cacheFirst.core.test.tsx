@@ -18,7 +18,7 @@ const designFeed: FeedSource = {
 
 const videoFeed: FeedSource = {
   url: "https://example.com/videos.xml",
-  categoryId: "videos",
+  categoryId: "youtube",
   customTitle: "Videos",
 };
 
@@ -33,12 +33,13 @@ const categories = [
     isDefault: true,
   },
   {
-    id: "videos",
-    name: "Videos",
+    id: "youtube",
+    name: "Vídeos",
     color: "#ef4444",
     order: 3,
     isDefault: true,
     layoutMode: "brutalist",
+    autoDiscovery: false,
   },
 ];
 
@@ -57,7 +58,7 @@ const makeArticle = (
 
 const techArticle = makeArticle("Tech One", techFeed, "tech");
 const designArticle = makeArticle("Design One", designFeed, "design");
-const videoArticle = makeArticle("Video One", videoFeed, "videos");
+const videoArticle = makeArticle("Video One", videoFeed, "youtube");
 
 const mockLoadFeeds = vi.fn(async () => {});
 const mockRefreshFeeds = vi.fn();
@@ -138,7 +139,7 @@ vi.mock("../hooks/useFeedCategories", () => ({
       all: feeds,
       tech: feeds.filter((feed) => feed.categoryId === "tech"),
       design: feeds.filter((feed) => feed.categoryId === "design"),
-      videos: feeds.filter((feed) => feed.categoryId === "videos"),
+      youtube: feeds.filter((feed) => feed.categoryId === "youtube"),
     }),
   }),
 }));
@@ -228,7 +229,7 @@ vi.mock("../components/Header", () => ({
   default: (props: { onNavigation: (category: string) => void; onGoAll?: () => void }) => (
     <div data-testid="header">
       <button onClick={() => props.onNavigation("design")}>Go design</button>
-      <button onClick={() => props.onNavigation("videos")}>Go videos</button>
+      <button onClick={() => props.onNavigation("youtube")}>Go videos</button>
       <button onClick={() => props.onGoAll?.()}>Go all</button>
     </div>
   ),
@@ -429,7 +430,7 @@ describe("AppContent cache-first rendering", () => {
   });
 
   it("restores the base layout when returning to all from a category-specific layout", async () => {
-    window.history.replaceState({}, "", "/?category=videos");
+    window.history.replaceState({}, "", "/?category=youtube");
     mockFeedState.articles = [videoArticle];
 
     mockLoadFeeds.mockImplementation(async (request?: { mode?: string }) => {
@@ -455,7 +456,7 @@ describe("AppContent cache-first rendering", () => {
       await Promise.resolve();
     });
 
-    expect(await screen.findByText("videos")).toBeInTheDocument();
+    expect(await screen.findByText("youtube")).toBeInTheDocument();
     expect(screen.getByText("brutalist")).toBeInTheDocument();
 
     await act(async () => {
@@ -468,5 +469,39 @@ describe("AppContent cache-first rendering", () => {
     expect(await screen.findByText("all")).toBeInTheDocument();
     expect(screen.getByText("modern")).toBeInTheDocument();
     expect(screen.queryByText("brutalist")).not.toBeInTheDocument();
+  });
+
+  it("shows the public category name instead of the internal youtube id when video feeds are unavailable", async () => {
+    window.history.replaceState({}, "", "/?category=youtube");
+    mockFeedState.articles = [
+      {
+        title: "RSS Feed Temporarily Unavailable",
+        link: videoFeed.url,
+        pubDate: new Date("2026-03-22T12:00:00.000Z"),
+        sourceTitle: "System Notice",
+        feedUrl: videoFeed.url,
+        categories: ["system", "unavailable"],
+      },
+    ];
+    mockFeedState.loadingState = createLoadingState({
+      errors: [
+        {
+          url: videoFeed.url,
+          error: "Feed temporarily unavailable",
+        },
+      ],
+    });
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByText('Unable to load the feeds for "Vídeos" right now. Try again in a moment.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/No articles found for the category "youtube"\./),
+    ).not.toBeInTheDocument();
   });
 });

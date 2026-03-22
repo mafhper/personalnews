@@ -437,6 +437,17 @@ const AppContent: React.FC = () => {
     logger,
   ]);
 
+  const selectedCategoryDisplayName = useMemo(() => {
+    return categories.find((category) => category.id === selectedCategory)?.name || selectedCategory;
+  }, [categories, selectedCategory]);
+
+  const shouldShowCategoryUnavailableMessage =
+    !isSearchActive &&
+    selectedCategory !== "all" &&
+    selectedCategory !== "All" &&
+    loadingState.errors.length > 0 &&
+    !loadingState.isHoldingPreviousContent;
+
   const shouldHoldPreviousContent =
     !!loadingState.isHoldingPreviousContent && heldArticles.length > 0;
 
@@ -888,14 +899,26 @@ const AppContent: React.FC = () => {
                       </button>
                     </div>
                   ) : articles.length > 0 ? (
-                    <p className="text-center text-[rgb(var(--color-textSecondary))]">
-                      No articles found for the category "{selectedCategory}".
-                    </p>
+                    shouldShowCategoryUnavailableMessage ? (
+                      <p className="text-center text-[rgb(var(--color-textSecondary))]">
+                        Unable to load the feeds for "{selectedCategoryDisplayName}" right now. Try again in a moment.
+                      </p>
+                    ) : (
+                      <p className="text-center text-[rgb(var(--color-textSecondary))]">
+                        No articles found for the category "{selectedCategoryDisplayName}".
+                      </p>
+                    )
                   ) : feeds.length > 0 ? (
-                    <p className="text-center text-[rgb(var(--color-textSecondary))]">
-                      No articles found from the provided feeds. Check your
-                      network or the feed URLs.
-                    </p>
+                    shouldShowCategoryUnavailableMessage ? (
+                      <p className="text-center text-[rgb(var(--color-textSecondary))]">
+                        Unable to load the feeds for "{selectedCategoryDisplayName}" right now. Try again in a moment.
+                      </p>
+                    ) : (
+                      <p className="text-center text-[rgb(var(--color-textSecondary))]">
+                        No articles found from the provided feeds. Check your
+                        network or the feed URLs.
+                      </p>
+                    )
                   ) : (
                     <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
                       <h2 className="text-2xl font-bold mb-4">
