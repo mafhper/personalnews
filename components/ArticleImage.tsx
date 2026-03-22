@@ -39,16 +39,15 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
     width: placeholderWidth,
     height: placeholderHeight,
     label: article.sourceTitle || 'Personal News',
-    eyebrow: 'Visual local',
     tone: 'brand',
+    variant: 'ambient',
   });
   const offlineFallback = buildImagePlaceholderDataUri({
     width: placeholderWidth,
     height: placeholderHeight,
     label: article.sourceTitle || 'Personal News',
-    eyebrow: 'Offline',
-    headline: 'Imagem indisponivel',
     tone: 'neutral',
+    variant: 'ambient',
   });
 
   const sourcesChain = [

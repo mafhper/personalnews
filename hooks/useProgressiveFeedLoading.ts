@@ -14,10 +14,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Article, FeedLoadRequest, FeedSource } from '../types';
 import { parseRssUrl } from '../services/rssParser';
-import { getCachedArticles, isCacheFresh } from '../services/smartCache';
+import { getCachedArticles } from '../services/smartCache';
 import { useLogger } from '../services/logger';
-import { categorizeError } from '../components/ErrorRecovery';
-import { areUrlsEqual } from '../utils/urlUtils';
+import { categorizeFeedError } from '../services/feedErrorCategorization';
+import {
+  buildFeedLoadScopeKey,
+  resolveFeedLoadScope,
+  resolveFeedVisibilityState,
+  resolveScopeMode,
+} from '../services/feedLoadingStrategy';
 // import { schedulePreload } from '../services/feedPreloader';
 
 export interface FeedLoadingState {
@@ -30,6 +35,9 @@ export interface FeedLoadingState {
   currentAction?: string;
   priorityFeedsLoaded?: boolean;  // True when priority feeds (category + healthy) are loaded
   isResolved: boolean; // NEW: True when data is consistent and ready for UI filtering
+  hasScopedCache?: boolean;
+  isHoldingPreviousContent?: boolean;
+  scopeKey?: string;
 }
 
 export interface FeedError {
@@ -47,32 +55,6 @@ interface FeedResult {
   success: boolean;
   error?: string;
 }
-
-const resolveScopeMode = (
-  request?: FeedLoadRequest,
-): NonNullable<FeedLoadRequest["mode"]> => {
-  if (request?.mode) return request.mode;
-  if (request?.feedUrl) return "single-feed";
-  if (request?.categoryId && request.categoryId !== "all") return "category";
-  return "all";
-};
-
-export const resolveFeedLoadScope = (
-  feeds: FeedSource[],
-  request?: FeedLoadRequest,
-): FeedSource[] => {
-  const mode = resolveScopeMode(request);
-
-  if (mode === "single-feed" && request?.feedUrl) {
-    return feeds.filter((feed) => areUrlsEqual(feed.url, request.feedUrl!));
-  }
-
-  if (mode === "category" && request?.categoryId) {
-    return feeds.filter((feed) => feed.categoryId === request.categoryId);
-  }
-
-  return feeds;
-};
 
 const FEED_TIMEOUT_MS = 4000; // 4 seconds per feed (reduzido para mais velocidade inicial)
 const BATCH_SIZE = 8; // Aumentado para 8 feeds por batch
@@ -108,6 +90,23 @@ const waitForBatchDelay = (delayMs: number, backgroundDelayMs: number): Promise<
   });
 };
 
+const isSystemNoticeArticle = (article: Article): boolean => {
+  const title = (article.title || "").toLowerCase();
+  const sourceTitle = (article.sourceTitle || "").toLowerCase();
+
+  return (
+    sourceTitle === "system notice" ||
+    title.includes("rss feed temporarily unavailable") ||
+    title.includes("feed temporarily unavailable") ||
+    title.includes("feed unavailable")
+  );
+};
+
+const isUnavailablePayload = (articles: Article[]): boolean => {
+  if (articles.length === 0) return true;
+  return articles.every(isSystemNoticeArticle);
+};
+
 /**
  * Custom hook for progressive feed loading with enhanced performance
  */
@@ -115,6 +114,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
   const logger = useLogger('useProgressiveFeedLoading');
   const abortControllerRef = useRef<AbortController | null>(null);
   const feedsRef = useRef<FeedSource[]>(feeds);
+  const articlesRef = useRef<Article[]>([]);
+  const visibleScopeKeyRef = useRef<string>("all");
 
   const [loadingState, setLoadingState] = useState<FeedLoadingState>({
     status: 'idle',
@@ -129,6 +130,24 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [feedResults, setFeedResults] = useState<Map<string, FeedResult>>(new Map());
+
+  const collectArticlesFromFeedResults = useCallback((results: Map<string, FeedResult>): Article[] => {
+    const allArticles: Article[] = [];
+
+    results.forEach((result) => {
+      if (result.success && result.articles.length > 0) {
+        const articlesWithFeedUrl = result.articles.map(article => ({
+          ...article,
+          feedUrl: article.feedUrl || result.url
+        }));
+        allArticles.push(...articlesWithFeedUrl);
+      }
+    });
+
+    return allArticles.sort(
+      (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+    );
+  }, []);
 
   /**
    * Get cached articles for immediate display using smart cache
@@ -159,14 +178,43 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     }
   }, [logger]);
 
+  const getCachedFeedResultsFromSmartCache = useCallback((targetFeeds: FeedSource[]): Map<string, FeedResult> => {
+    const cachedResults = new Map<string, FeedResult>();
+
+    try {
+      targetFeeds.forEach((feed) => {
+        const cachedArticles = getCachedArticles(feed.url);
+        if (!cachedArticles || cachedArticles.length === 0) return;
+
+        const normalizedArticles = cachedArticles.map((article) => ({
+          ...article,
+          feedUrl: article.feedUrl || feed.url,
+        }));
+
+        cachedResults.set(feed.url, {
+          url: feed.url,
+          articles: normalizedArticles,
+          title: normalizedArticles[0]?.sourceTitle || feed.customTitle || feed.url,
+          success: true,
+        });
+      });
+    } catch (error) {
+      logger.error('Error building cached feed results from smart cache', error as Error);
+    }
+
+    return cachedResults;
+  }, [logger]);
+
   /**
    * Load a single feed with timeout and error handling
    */
   const loadSingleFeedWithTimeout = useCallback(async (
     feed: FeedSource,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    skipCache: boolean = false,
   ): Promise<FeedResult> => {
     const timeoutController = new AbortController();
+    const cachedSnapshot = skipCache ? getCachedArticles(feed.url) : null;
 
     // Set timeout
     const timeoutId = setTimeout(() => timeoutController.abort(), FEED_TIMEOUT_MS);
@@ -175,10 +223,32 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       logger.debug(`Loading feed: ${feed.url}`);
 
       const result = await parseRssUrl(feed.url, {
-        signal: signal ? AbortSignal.any([signal, timeoutController.signal]) : timeoutController.signal
+        signal: signal ? AbortSignal.any([signal, timeoutController.signal]) : timeoutController.signal,
+        skipCache,
       });
 
       clearTimeout(timeoutId);
+
+      if (
+        skipCache &&
+        cachedSnapshot &&
+        cachedSnapshot.length > 0 &&
+        isUnavailablePayload(result.articles)
+      ) {
+        logger.warn(`Revalidation failed; preserving cached articles for ${feed.url}`, {
+          additionalData: {
+            feedUrl: feed.url,
+            cachedArticles: cachedSnapshot.length,
+          }
+        });
+
+        return {
+          url: feed.url,
+          articles: cachedSnapshot,
+          title: cachedSnapshot[0]?.sourceTitle || feed.customTitle || feed.url,
+          success: true,
+        };
+      }
 
       // Cache is handled by the RSS parser now with smart cache
       // No need to manually cache here
@@ -217,25 +287,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
    * Update articles from feed results
    */
   const updateArticlesFromFeedResults = useCallback((results: Map<string, FeedResult>) => {
-    const allArticles: Article[] = [];
-
-    results.forEach((result) => {
-      if (result.success && result.articles.length > 0) {
-        // Ensure each article has its source feedUrl for precise filtering
-        const articlesWithFeedUrl = result.articles.map(article => ({
-          ...article,
-          feedUrl: article.feedUrl || result.url
-        }));
-        allArticles.push(...articlesWithFeedUrl);
-      }
-    });
-
-    // Sort by publication date (newest first)
-    const sortedArticles = allArticles.sort(
-      (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
-    );
+    const sortedArticles = collectArticlesFromFeedResults(results);
 
     setArticles(sortedArticles);
+    articlesRef.current = sortedArticles;
 
     logger.info(`Updated articles from ${results.size} feeds`, {
       additionalData: {
@@ -244,7 +299,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         failedFeeds: Array.from(results.values()).filter(r => !r.success).length,
       }
     });
-  }, [logger]);
+  }, [collectArticlesFromFeedResults, logger]);
 
   /**
    * Load feeds progressively with scoped loading.
@@ -254,12 +309,17 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     const currentFeeds = feedsRef.current;
     const scopedFeeds = resolveFeedLoadScope(currentFeeds, request);
     const mode = resolveScopeMode(request);
+    const scopeKey = buildFeedLoadScopeKey(request);
     const priorityCategoryId =
       mode === "category" ? request.categoryId : undefined;
     const forceRefresh = request.forceRefresh ?? false;
+    const previousArticles = articlesRef.current;
+    const previousScopeKey = visibleScopeKeyRef.current;
 
     if (scopedFeeds.length === 0) {
       setArticles([]);
+      articlesRef.current = [];
+      visibleScopeKeyRef.current = scopeKey;
       setFeedResults(new Map());
       setLoadingState({
         status: 'success',
@@ -270,6 +330,9 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         isBackgroundRefresh: false,
         currentAction: currentFeeds.length === 0 ? 'No feeds configured' : 'No feeds matched the selected scope',
         isResolved: true,
+        hasScopedCache: false,
+        isHoldingPreviousContent: false,
+        scopeKey,
       });
       return;
     }
@@ -280,44 +343,69 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     }
     abortControllerRef.current = new AbortController();
 
-    // Check cache first for immediate display
-    let hasValidCache = false;
-    if (!forceRefresh) {
-      const cachedArticles = getCachedArticlesFromSmartCache(scopedFeeds);
-      if (cachedArticles.length > 0) {
-        // Check if at least some feeds have valid cache
-        hasValidCache = scopedFeeds.some(feed => isCacheFresh(feed.url));
+    const cachedArticles = getCachedArticlesFromSmartCache(scopedFeeds);
+    const cachedFeedResults = getCachedFeedResultsFromSmartCache(scopedFeeds);
+    const {
+      hasScopedCache,
+      isHoldingPreviousContent,
+      shouldKeepVisibleContent,
+      preserveVisibleArticlesOnFailure,
+      shouldBypassCache,
+    } = resolveFeedVisibilityState({
+      forceRefresh,
+      cachedArticlesCount: cachedArticles.length,
+      previousArticlesCount: previousArticles.length,
+      previousScopeKey,
+      scopeKey,
+    });
 
-        if (hasValidCache) {
-          setArticles(cachedArticles);
-          setFeedResults(new Map());
-          setLoadingState({
-            status: 'loading',
-            progress: 0,
-            loadedFeeds: 0,
-            totalFeeds: scopedFeeds.length,
-            errors: [],
-            isBackgroundRefresh: true,
-            currentAction:
-              mode === "single-feed"
-                ? 'Updating selected feed...'
-                : 'Updating feeds in background...',
-            isResolved: true,
-          });
+    if (hasScopedCache) {
+      setArticles(cachedArticles);
+      articlesRef.current = cachedArticles;
+      visibleScopeKeyRef.current = scopeKey;
+      setFeedResults(new Map(cachedFeedResults));
+      setLoadingState({
+        status: 'loading',
+        progress: 0,
+        loadedFeeds: 0,
+        totalFeeds: scopedFeeds.length,
+        errors: [],
+        isBackgroundRefresh: true,
+        currentAction:
+          mode === "single-feed"
+            ? 'Updating selected feed...'
+            : 'Updating feeds in background...',
+        isResolved: true,
+        hasScopedCache: true,
+        isHoldingPreviousContent: false,
+        scopeKey,
+      });
 
-          logger.info(`Displaying ${cachedArticles.length} cached articles while refreshing`, {
-            additionalData: {
-              feedsCount: scopedFeeds.length,
-              mode,
-              feedUrl: request.feedUrl,
-            }
-          });
+      logger.info(`Displaying ${cachedArticles.length} cached articles while refreshing`, {
+        additionalData: {
+          feedsCount: scopedFeeds.length,
+          mode,
+          feedUrl: request.feedUrl,
+          scopeKey,
         }
-      }
-    }
-
-    // If no valid cache, show loading state
-    if (!hasValidCache) {
+      });
+    } else if (isHoldingPreviousContent) {
+      setLoadingState({
+        status: 'loading',
+        progress: 0,
+        loadedFeeds: 0,
+        totalFeeds: scopedFeeds.length,
+        errors: [],
+        isBackgroundRefresh: true,
+        currentAction: 'Updating category in background...',
+        isResolved: true,
+        hasScopedCache: false,
+        isHoldingPreviousContent: true,
+        scopeKey,
+      });
+    } else if (!shouldKeepVisibleContent) {
+      setArticles([]);
+      articlesRef.current = [];
       setLoadingState({
         status: 'loading',
         progress: 0,
@@ -330,11 +418,34 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             ? 'Loading selected feed...'
             : 'Initializing feed engine...',
         isResolved: false,
+        hasScopedCache: false,
+        isHoldingPreviousContent: false,
+        scopeKey,
+      });
+    } else {
+      setLoadingState({
+        status: 'loading',
+        progress: 0,
+        loadedFeeds: 0,
+        totalFeeds: scopedFeeds.length,
+        errors: [],
+        isBackgroundRefresh: true,
+        currentAction:
+          mode === "single-feed"
+            ? 'Refreshing selected feed...'
+            : 'Refreshing feeds in background...',
+        isResolved: true,
+        hasScopedCache: false,
+        isHoldingPreviousContent: false,
+        scopeKey,
       });
     }
 
-    setFeedResults(new Map());
-    const newFeedResults = new Map<string, FeedResult>();
+    if (!hasScopedCache) {
+      setFeedResults(new Map());
+    }
+
+    const newFeedResults = new Map<string, FeedResult>(cachedFeedResults);
     const errors: FeedError[] = [];
     let loadedCount = 0;
 
@@ -473,7 +584,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             // Update granular status for single feed start (optional, might flicker too fast)
             // setLoadingState(prev => ({ ...prev, currentAction: `Contacting ${new URL(feed.url).hostname}...` }));
 
-            const result = await loadSingleFeedWithTimeout(feed, abortControllerRef.current?.signal);
+            const result = await loadSingleFeedWithTimeout(feed, abortControllerRef.current?.signal, shouldBypassCache);
 
             // Update progress immediately when each feed completes
             loadedCount++;
@@ -488,6 +599,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
               ...prev,
               loadedFeeds: loadedCount,
               progress,
+              scopeKey,
               priorityFeedsLoaded: priorityComplete,
               // Show what we just finished or generic progress
               currentAction: mode === "single-feed"
@@ -498,12 +610,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             }));
 
             // Add result to map
-            newFeedResults.set(feed.url, result);
-
             if (!result.success) {
               // Track error with categorization
               const errorMessage = result.error || 'Unknown error';
-              const errorType = categorizeError(errorMessage);
+              const errorType = categorizeFeedError(errorMessage);
               errors.push({
                 url: feed.url,
                 error: errorMessage,
@@ -511,6 +621,13 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
                 feedTitle: result.title,
                 errorType: errorType,
               });
+
+              const cachedResult = cachedFeedResults.get(feed.url);
+              if (!cachedResult) {
+                newFeedResults.set(feed.url, result);
+              }
+            } else {
+              newFeedResults.set(feed.url, result);
             }
 
             return result;
@@ -522,6 +639,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
               ...prev,
               loadedFeeds: loadedCount,
               progress,
+              scopeKey,
               currentAction: `Error processing ${feed.customTitle || 'feed'}`
             }));
 
@@ -556,7 +674,15 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             updated.set(url, result);
           });
           // Update the articles state with the accumulated results
-          updateArticlesFromFeedResults(updated);
+          if (!hasScopedCache && !isHoldingPreviousContent) {
+            const nextArticles = collectArticlesFromFeedResults(updated);
+
+            if (nextArticles.length > 0 || !preserveVisibleArticlesOnFailure) {
+              setArticles(nextArticles);
+              articlesRef.current = nextArticles;
+              visibleScopeKeyRef.current = scopeKey;
+            }
+          }
           return updated;
         });
 
@@ -584,8 +710,16 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const results = await Promise.allSettled(feedPromises);
 
       // Update final state
+      const successfulFeeds = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      const resolvedArticles = collectArticlesFromFeedResults(newFeedResults);
+
       setFeedResults(newFeedResults);
-      updateArticlesFromFeedResults(newFeedResults);
+
+      if (resolvedArticles.length > 0 || successfulFeeds > 0 || !preserveVisibleArticlesOnFailure) {
+        setArticles(resolvedArticles);
+        articlesRef.current = resolvedArticles;
+        visibleScopeKeyRef.current = scopeKey;
+      }
 
       setLoadingState({
         status: 'success',
@@ -598,9 +732,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           mode === "single-feed" ? 'Selected feed loaded' : 'All feeds loaded',
         priorityFeedsLoaded: true,
         isResolved: true,
+        hasScopedCache,
+        isHoldingPreviousContent: false,
+        scopeKey,
       });
-
-      const successfulFeeds = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
 
       // Persist error history to localStorage for future prioritization
       // Persist error history to localStorage for future prioritization
@@ -642,8 +777,9 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           failedFeeds: scopedFeeds.length - successfulFeeds,
           errorsCount: errors.length,
           forceRefresh,
-          hadValidCache: hasValidCache,
+          hadScopedCache: hasScopedCache,
           mode,
+          scopeKey,
         }
       });
 
@@ -659,9 +795,18 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         isBackgroundRefresh: false,
         currentAction: 'Error during loading process',
         isResolved: true,
+        hasScopedCache,
+        isHoldingPreviousContent: false,
+        scopeKey,
       });
     }
-  }, [getCachedArticlesFromSmartCache, loadSingleFeedWithTimeout, updateArticlesFromFeedResults, logger]);
+  }, [
+    collectArticlesFromFeedResults,
+    getCachedArticlesFromSmartCache,
+    getCachedFeedResultsFromSmartCache,
+    loadSingleFeedWithTimeout,
+    logger,
+  ]);
 
   /**
    * Retry failed feeds
@@ -684,7 +829,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
     // Load failed feeds
     const retryPromises = failedFeeds.map(async (feed) => {
-      const result = await loadSingleFeedWithTimeout(feed);
+      const result = await loadSingleFeedWithTimeout(feed, undefined, true);
 
       if (result.success) {
         setFeedResults(prev => {
@@ -702,7 +847,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             error: errorMessage,
             timestamp: Date.now(),
             feedTitle: result.title,
-            errorType: categorizeError(errorMessage),
+            errorType: categorizeFeedError(errorMessage),
           }],
         }));
       }
@@ -739,7 +884,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
     // Load selected feeds
     const retryPromises = selectedFeeds.map(async (feed) => {
-      const result = await loadSingleFeedWithTimeout(feed);
+      const result = await loadSingleFeedWithTimeout(feed, undefined, true);
 
       if (result.success) {
         setFeedResults(prev => {
@@ -757,7 +902,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             error: errorMessage,
             timestamp: Date.now(),
             feedTitle: result.title,
-            errorType: categorizeError(errorMessage),
+            errorType: categorizeFeedError(errorMessage),
           }],
         }));
       }
@@ -814,6 +959,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     //   schedulePreload(feeds);
     // }
   }, [feeds]);
+
+  useEffect(() => {
+    articlesRef.current = articles;
+  }, [articles]);
 
   return {
     articles,

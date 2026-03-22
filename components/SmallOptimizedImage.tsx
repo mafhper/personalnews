@@ -48,8 +48,8 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
           width: actualWidth,
           height: actualHeight,
           label: fallbackText || 'Personal News',
-          eyebrow: 'Visual local',
           tone: 'neutral',
+          variant: 'ambient',
         });
       case 2:
       default:
@@ -57,10 +57,9 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
           width: actualWidth,
           height: actualHeight,
           label: fallbackText || 'Personal News',
-          eyebrow: 'Offline',
-          headline: 'Imagem indisponivel',
           tone: 'neutral',
-      });
+          variant: 'ambient',
+        });
     }
   }, [actualHeight, actualWidth, fallbackText]);
   const localPlaceholder = generateFallbackUrl(1, undefined);
@@ -104,13 +103,9 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
       {/* Loading placeholder - prevents layout shift */}
       {imageState === 'loading' && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-center bg-cover"
+          className="absolute inset-0 bg-center bg-cover"
           style={{ backgroundImage: `url("${localPlaceholder}")` }}
-        >
-          <div className="rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-center text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white/58 backdrop-blur-sm">
-            {fallbackLevel === 0 ? 'Carregando visual' : 'Visual local'}
-          </div>
-        </div>
+        />
       )}
 
       {/* Actual image */}
@@ -128,13 +123,9 @@ export const SmallOptimizedImage: React.FC<SmallOptimizedImageProps> = ({
       {/* Error state */}
       {imageState === 'error' && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-center bg-cover"
+          className="absolute inset-0 bg-center bg-cover"
           style={{ backgroundImage: `url("${offlinePlaceholder}")` }}
-        >
-          <div className="rounded-full border border-white/10 bg-black/42 px-3 py-1.5 text-center text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white/52 backdrop-blur-sm">
-            Offline
-          </div>
-        </div>
+        />
       )}
     </div>
   );

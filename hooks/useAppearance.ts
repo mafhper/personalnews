@@ -194,6 +194,49 @@ export const useAppearance = () => {
     setUserOverrides({});
   }, [setUserOverrides]);
 
+  const getBaseAppearanceState = useCallback(() => {
+    const headerOverrides = userOverrides?.header || {};
+    const contentOverrides = userOverrides?.content || {};
+    const preset = activeLayoutId
+      ? LAYOUT_PRESETS.find((item) => item.id === activeLayoutId)
+      : null;
+
+    const mergedHeader = preset
+      ? {
+          ...defaultHeaderConfig,
+          ...preset.header,
+          ...headerOverrides,
+        }
+      : {
+          ...defaultHeaderConfig,
+          ...headerOverrides,
+        };
+
+    const mergedContent = preset
+      ? {
+          ...defaultContentConfig,
+          ...preset.content,
+          ...contentOverrides,
+        }
+      : {
+          ...defaultContentConfig,
+          ...contentOverrides,
+        };
+
+    return {
+      header: mergedHeader,
+      content: mergedContent,
+    };
+  }, [activeLayoutId, userOverrides?.content, userOverrides?.header]);
+
+  const resolveBaseLayoutMode = useCallback(() => {
+    const baseLayout = getBaseAppearanceState().content.layoutMode;
+    if (baseLayout && baseLayout !== "default") {
+      return baseLayout;
+    }
+    return INITIAL_APP_CONFIG.layout || MODERN_LAYOUT_ID;
+  }, [getBaseAppearanceState]);
+
   /**
    * Apply a layout preset.
    * 
@@ -239,37 +282,15 @@ export const useAppearance = () => {
 
   const refreshAppearance = useCallback(() => {
     logger.debugTag('APPEARANCE', 'Refresh Triggered (Restoring State)');
-    // Re-applies the current configuration based on active preset and user overrides.
-    // Useful to clear temporary overrides (like category-specific headers).
-    const headerOverrides = userOverrides?.header || {};
-    const contentOverrides = userOverrides?.content || {};
+    const restoredState = getBaseAppearanceState();
+    setHeaderConfig(restoredState.header);
+    setContentConfig(restoredState.content);
 
-    if (activeLayoutId) {
-      const preset = LAYOUT_PRESETS.find(p => p.id === activeLayoutId);
-      if (preset) {
-        const mergedHeader = {
-          ...defaultHeaderConfig,
-          ...preset.header,
-          ...headerOverrides
-        };
-        const mergedContent = {
-          ...defaultContentConfig,
-          ...preset.content,
-          ...contentOverrides
-        };
-        setHeaderConfig(mergedHeader);
-        setContentConfig(mergedContent);
-        logger.debugTag('APPEARANCE', 'State Restored from Preset:', activeLayoutId);
-        return;
-      }
-    }
-
-    // Fallback or Custom mode: Just re-apply the current active layout if it exists
-    // to clear temporary category-specific overrides.
-    if (activeLayoutId) {
-      applyLayoutPreset(activeLayoutId);
-    }
-  }, [activeLayoutId, applyLayoutPreset, setContentConfig, setHeaderConfig, userOverrides?.content, userOverrides?.header, logger]);
+    logger.debugTag('APPEARANCE', 'State restored from base appearance', {
+      activeLayoutId,
+      layoutMode: restoredState.content.layoutMode,
+    });
+  }, [activeLayoutId, getBaseAppearanceState, setContentConfig, setHeaderConfig, logger]);
 
   const resetAppearance = useCallback(() => {
     setHeaderConfig(defaultHeaderConfig);
@@ -298,5 +319,6 @@ export const useAppearance = () => {
     setCurrentTheme,
     removeCustomTheme,
     refreshAppearance,
+    resolveBaseLayoutMode,
   };
 };
