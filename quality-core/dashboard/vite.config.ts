@@ -93,8 +93,6 @@ export default defineConfig(({ mode }) => ({
         ...(simpleBundle ? {} : { compact: true }),
         generatedCode: {
           preset: 'es2015',
-          arrowFunctions: true,
-          constBindings: true,
         },
       },
     },

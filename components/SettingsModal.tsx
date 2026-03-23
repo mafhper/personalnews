@@ -16,6 +16,9 @@ import { useNotificationReplacements } from '../hooks/useNotificationReplacement
 import { useLanguage } from '../hooks/useLanguage';
 import { Language, HeaderConfig, ContentConfig } from '../types';
 import { FEED_LAYOUT_GROUPS } from '../config/feedLayoutCatalog';
+import pkg from '../package.json';
+
+const version = pkg.version;
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -30,6 +33,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     timeFormat,
     setTimeFormat
 }) => {
+    console.log('[Settings] Current version:', pkg.version);
     const [activeTab, setActiveTab] = useState<'appearance' | 'layouts' | 'display' | 'system'>('appearance');
     const { currentTheme, updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
     const { settings: layoutSettings, updateSettings: updateLayoutSettings } = useArticleLayout();
@@ -540,6 +544,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     {activeTab === 'system' && (
                         <div className="space-y-4 animate-in fade-in duration-200">
+                            {/* Version Label Debug */}
+                            <div className="flex items-center justify-between px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-md mb-2">
+                                <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">DEBUG: v{version}</span>
+                                <span className="text-[9px] text-blue-400/60 uppercase tracking-widest">{pkg.name}</span>
+                            </div>
+
+
                             {/* Backup & Restore */}
                             <Card variant="glass" className="p-4">
                                 <h3 className="text-xs font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-3">{t('settings.backup')}</h3>
@@ -589,7 +600,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             </Card>
 
                             {/* Reset */}
-                            <div className="pt-4">
+                            <div className="pt-4 space-y-4">
                                 <button
                                     onClick={async () => {
                                         if (await confirmDanger('Isso restaurará todas as configurações de aparência para os padrões. Continuar?')) {

@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import pkg from '../package.json';
+const version = pkg.version;
+
 import { ThemeSelector } from './ThemeSelector';
 import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
@@ -426,6 +429,13 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             onToggle={() => toggleSection('system')}
           >
             <div className="space-y-3">
+              {/* Version Label Debug */}
+              <div className="flex items-center justify-between px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-md mb-2">
+                <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">DEBUG: v{version}</span>
+                <span className="text-[9px] text-blue-400/60 uppercase tracking-widest">{pkg.name}</span>
+              </div>
+
+
               {/* Language */}
               <div>
                 <label className={fieldLabelClass}>Idioma</label>

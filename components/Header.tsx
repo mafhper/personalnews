@@ -569,9 +569,9 @@ const Header: React.FC<HeaderProps> = (props) => {
 
           {/* Main header row - on mobile, hidden when scrolled. On desktop, always visible */}
           {/* Auto height when logo and title are both hidden */}
-          <div className={`
+            <div className={`
             flex items-center transition-all duration-300
-            ${(headerConfig.showLogo !== false || headerConfig.showTitle) ? headerHeightClasses[headerConfig.height] : 'h-auto py-2'}
+            ${headerHeightClasses[headerConfig.height] || 'h-14 lg:h-16'}
             ${headerStyleClasses[headerConfig.style]}
             ${!isMobileHeaderVisible ? 'hidden md:flex' : 'flex'}
           `}>
