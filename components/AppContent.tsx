@@ -890,17 +890,21 @@ const AppContent: React.FC = () => {
           {loadingState.status === "loading" &&
             (!loadingState.hasScopedCache ||
               loadingState.isHoldingPreviousContent) && (
-              <FeedLoadingProgress
-                loadedFeeds={loadingState.loadedFeeds}
-                totalFeeds={loadingState.totalFeeds}
-                progress={loadingState.progress}
-                isBackgroundRefresh={loadingState.isBackgroundRefresh}
-                errors={loadingState.errors}
-                currentAction={loadingState.currentAction}
-                onCancel={cancelLoading}
-                onRetryErrors={retryFailedFeeds}
-                mode="overlay"
-              />
+              <div className={contentContainerClass}>
+                <div className="mb-4 flex">
+                  <FeedLoadingProgress
+                    loadedFeeds={loadingState.loadedFeeds}
+                    totalFeeds={loadingState.totalFeeds}
+                    progress={loadingState.progress}
+                    isBackgroundRefresh={loadingState.isBackgroundRefresh}
+                    errors={loadingState.errors}
+                    currentAction={loadingState.currentAction}
+                    onCancel={cancelLoading}
+                    onRetryErrors={retryFailedFeeds}
+                    mode="inline"
+                  />
+                </div>
+              </div>
             )}
 
           {isSearchActive && (
