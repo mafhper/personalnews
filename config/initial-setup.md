@@ -99,7 +99,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Games;
 - ID: games;
 - Cor: #F59E0B;
-- Layout: immersive;
+- Layout: modern;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Lançamentos, reviews e cultura gamer.;
@@ -123,7 +123,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Política;
 - ID: politics;
 - Cor: #EF4444;
-- Layout: list;
+- Layout: newspaper;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Cobertura política nacional e internacional.;
