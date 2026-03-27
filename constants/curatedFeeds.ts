@@ -40,7 +40,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Games",
     "id": "games",
     "color": "#F59E0B",
-    "layoutMode": "immersive",
+    "layoutMode": "modern",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Lançamentos, reviews e cultura gamer."
@@ -62,7 +62,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Política",
     "id": "politics",
     "color": "#EF4444",
-    "layoutMode": "list",
+    "layoutMode": "newspaper",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Cobertura política nacional e internacional."
