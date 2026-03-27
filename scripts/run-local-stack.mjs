@@ -2,6 +2,8 @@
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
+import { existsSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import process from "node:process";
 
 const modeArg = process.argv[2];
@@ -14,6 +16,7 @@ const BACKEND_MAX_PORT = 3015;
 const FRONTEND_PREFERRED_PORT = 5173;
 const FRONTEND_MAX_PORT = 5190;
 const ALLOW_BACKEND_REUSE = process.env.LOCAL_STACK_REUSE_BACKEND === "true";
+const repoRoot = process.cwd();
 
 let shuttingDown = false;
 const children = [];
@@ -39,8 +42,8 @@ async function isBackendHealthy(port) {
     const payload = await response.json().catch(() => null);
     return Boolean(
       payload &&
-        payload.status === "ok" &&
-        payload.service === "personalnews-backend",
+      payload.status === "ok" &&
+      payload.service === "personalnews-backend",
     );
   } catch {
     return false;
@@ -67,7 +70,11 @@ async function resolveBackendPort() {
     return { port: BACKEND_PREFERRED_PORT, useExistingBackend: false };
   }
 
-  for (let port = BACKEND_PREFERRED_PORT + 1; port <= BACKEND_MAX_PORT; port += 1) {
+  for (
+    let port = BACKEND_PREFERRED_PORT + 1;
+    port <= BACKEND_MAX_PORT;
+    port += 1
+  ) {
     if (ALLOW_BACKEND_REUSE && (await isBackendHealthy(port))) {
       return { port, useExistingBackend: true };
     }
@@ -82,7 +89,11 @@ async function resolveBackendPort() {
 }
 
 async function resolveFrontendPort() {
-  for (let port = FRONTEND_PREFERRED_PORT; port <= FRONTEND_MAX_PORT; port += 1) {
+  for (
+    let port = FRONTEND_PREFERRED_PORT;
+    port <= FRONTEND_MAX_PORT;
+    port += 1
+  ) {
     if (await isPortAvailable(port)) {
       return port;
     }
@@ -147,7 +158,24 @@ function spawnScript(name, script, envOverrides = {}) {
   return child;
 }
 
+function clearViteOptimizeCache() {
+  const viteCacheDir = join(repoRoot, "node_modules", ".vite");
+  if (!existsSync(viteCacheDir)) return;
+
+  rmSync(viteCacheDir, {
+    force: true,
+    recursive: true,
+  });
+  console.log(
+    "[local-stack] cache node_modules/.vite limpo para evitar bundles desatualizados.",
+  );
+}
+
 async function main() {
+  if (mode === "dev") {
+    clearViteOptimizeCache();
+  }
+
   const { port: backendPort, useExistingBackend } = await resolveBackendPort();
   const frontendPort = await resolveFrontendPort();
   const backendBaseUrl = `http://${BACKEND_HOST}:${backendPort}`;
@@ -188,7 +216,9 @@ async function main() {
 
     const healthy = await waitForBackendHealth(backendPort, 15000);
     if (!healthy) {
-      throw new Error(`backend nao ficou saudavel em ${backendBaseUrl} dentro do timeout`);
+      throw new Error(
+        `backend nao ficou saudavel em ${backendBaseUrl} dentro do timeout`,
+      );
     }
   }
 

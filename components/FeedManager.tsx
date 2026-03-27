@@ -1,40 +1,45 @@
-/**
- * FeedManager.tsx
- *
- * Componente principal para gerenciamento de feeds RSS.
- * Atua como container e controlador de estado, delegando a renderização
- * para componentes especializados por aba.
- *
- * @author Matheus Pereira
- * @version 3.0.0 (Modular Refactor)
- */
-
-import React, { useState, useRef, useEffect, Suspense } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+} from "@mui/material";
 import type { FeedSource, Article } from "../types";
 import { parseOpml } from "../services/rssParser";
 import { FeedCategoryManager } from "./FeedCategoryManager";
 import { FeedDiscoveryModal } from "./FeedDiscoveryModal";
 import { FeedCleanupModal } from "./FeedCleanupModal";
 import { useLogger } from "../services/logger";
-import { feedValidator, type FeedValidationResult } from "../services/feedValidator";
+import {
+  feedValidator,
+  type FeedValidationResult,
+} from "../services/feedValidator";
 import { type DiscoveredFeed } from "../services/feedDiscoveryService";
 import { OPMLExportService } from "../services/opmlExportService";
-import { feedDuplicateDetector, type DuplicateDetectionResult } from "../services/feedDuplicateDetector";
+import {
+  feedDuplicateDetector,
+  type DuplicateDetectionResult,
+} from "../services/feedDuplicateDetector";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useAppearance } from "../hooks/useAppearance";
-import { resetToDefaultFeeds, addFeedsToCollection } from "../utils/feedMigration";
+import {
+  resetToDefaultFeeds,
+  addFeedsToCollection,
+} from "../utils/feedMigration";
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
-import { FeedAnalytics } from "./FeedAnalytics";
 import { useLanguage } from "../hooks/useLanguage";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
-import type { ProxySettingsProps } from "./ProxySettings";
-
-// New Modular Tabs
 import { FeedListTab } from "./FeedManager/FeedListTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
+import { FeedAnalytics } from "./FeedAnalytics";
+import type { ProxySettingsProps } from "./ProxySettings";
+
 type ProxySettingsModule = {
   default?: React.ComponentType<ProxySettingsProps>;
   ProxySettings?: React.ComponentType<ProxySettingsProps>;
@@ -45,7 +50,7 @@ const ProxySettingsFallback: React.FC<ProxySettingsProps> = () => null;
 const ProxySettings = React.lazy<React.ComponentType<ProxySettingsProps>>(() =>
   import("./ProxySettings").then((mod: ProxySettingsModule) => ({
     default: mod.default ?? mod.ProxySettings ?? ProxySettingsFallback,
-  }))
+  })),
 );
 
 interface FeedManagerProps {
@@ -56,7 +61,36 @@ interface FeedManagerProps {
   onRefreshFeeds?: () => void;
 }
 
-type TabType = 'functions' | 'feeds' | 'categories' | 'statistics';
+type FeedManagerTab = "feeds" | "categories" | "operations" | "diagnostics";
+
+const normalizePersistedTab = (value?: string): FeedManagerTab => {
+  if (value === "diagnostics") return "diagnostics";
+  if (value === "categories") return "categories";
+  if (
+    value === "operations" ||
+    value === "statistics" ||
+    value === "functions"
+  ) {
+    return "operations";
+  }
+  return "feeds";
+};
+
+const shouldOpenDiagnostics = (
+  section?: string,
+  openProxySettings?: boolean,
+): boolean => {
+  if (openProxySettings) return false;
+  if (
+    section === "diagnostics" ||
+    section === "proxy-health" ||
+    section === "feed-status" ||
+    section === "feed-reports"
+  ) {
+    return true;
+  }
+  return false;
+};
 
 export const FeedManager: React.FC<FeedManagerProps> = ({
   currentFeeds,
@@ -69,47 +103,78 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const { categories, createCategory, resetToDefaults } = useFeedCategories();
   const { refreshAppearance } = useAppearance();
   const { t } = useLanguage();
+  const { confirm, alertSuccess, alertError, confirmDanger, confirmWarning } =
+    useNotificationReplacements();
 
-  // State
-  const [activeTab, setActiveTab] = useState<TabType>("functions");
+  const [activeTab, setActiveTab] = useState<FeedManagerTab>("feeds");
+  const [diagnosticsFocus, setDiagnosticsFocus] = useState<string | null>(null);
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedCategory, setNewFeedCategory] = useState<string>("");
   const [processingUrl, setProcessingUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Validation State
-  const [feedValidations, setFeedValidations] = useState<Map<string, FeedValidationResult>>(new Map());
+  const [feedValidations, setFeedValidations] = useState<
+    Map<string, FeedValidationResult>
+  >(new Map());
   const [isValidating, setIsValidating] = useState(false);
-
-  // Notification Hooks
-  const { confirm, alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
-
-  // Discovery State
-  const [discoveryProgress, setDiscoveryProgress] = useState<Map<string, { status: string; progress: number }>>(new Map());
+  const [discoveryProgress, setDiscoveryProgress] = useState<
+    Map<string, { status: string; progress: number }>
+  >(new Map());
   const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
-  const [currentDiscoveryResult, setCurrentDiscoveryResult] = useState<{ originalUrl: string; discoveredFeeds: DiscoveredFeed[] } | null>(null);
-
-  // Modals State
+  const [currentDiscoveryResult, setCurrentDiscoveryResult] = useState<{
+    originalUrl: string;
+    discoveredFeeds: DiscoveredFeed[];
+  } | null>(null);
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [selectedListType, setSelectedListType] = useState<string>('');
+  const [selectedListType, setSelectedListType] = useState<string>("");
   const [showProxySettings, setShowProxySettings] = useState(false);
-  const [analyticsFocus, setAnalyticsFocus] = useState<string | null>(null);
-
-  // Duplicate Detection State
-  const [duplicateWarning, setDuplicateWarning] = useState<{ show: boolean; result: DuplicateDetectionResult; newUrl: string } | null>(null);
-
-  // Error Modal State
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    show: boolean;
+    result: DuplicateDetectionResult;
+    newUrl: string;
+  } | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [selectedErrorFeed, setSelectedErrorFeed] = useState<{ url: string; validation: FeedValidationResult } | null>(null);
+  const [selectedErrorFeed, setSelectedErrorFeed] = useState<{
+    url: string;
+    validation: FeedValidationResult;
+  } | null>(null);
+  const [editingFeedUrl, setEditingFeedUrl] = useState<string | null>(null);
+  const [editUrlDraft, setEditUrlDraft] = useState("");
 
-  // Initialize defaults
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (showImportModal && !selectedListType) {
       const firstList = Object.keys(DEFAULT_CURATED_LISTS)[0];
       if (firstList) setSelectedListType(firstList);
     }
   }, [showImportModal, selectedListType]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.sessionStorage.getItem("feed-manager-focus");
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        tab?: string;
+        section?: string;
+        openProxySettings?: boolean;
+      };
+
+      const nextTab = normalizePersistedTab(parsed.tab);
+      setActiveTab(
+        shouldOpenDiagnostics(parsed.section, parsed.openProxySettings)
+          ? "diagnostics"
+          : nextTab,
+      );
+      if (parsed.section) setDiagnosticsFocus(parsed.section);
+      if (parsed.openProxySettings) setShowProxySettings(true);
+    } catch {
+      // Ignore malformed state.
+    } finally {
+      window.sessionStorage.removeItem("feed-manager-focus");
+    }
+  }, []);
 
   const validateAllFeeds = React.useCallback(async () => {
     if (isValidating) return;
@@ -128,12 +193,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
   }, [currentFeeds, isValidating, logger]);
 
-  // Auto-validate feeds on load (only when in feeds tab)
   useEffect(() => {
-    if (currentFeeds.length > 0 && activeTab === "feeds") {
-      validateAllFeeds();
+    if (
+      currentFeeds.length > 0 &&
+      (activeTab === "feeds" || activeTab === "diagnostics")
+    ) {
+      void validateAllFeeds();
     }
-  }, [activeTab, validateAllFeeds, currentFeeds.length]);
+  }, [activeTab, currentFeeds.length, validateAllFeeds]);
 
   const validateSingleFeed = async (url: string) => {
     try {
@@ -146,11 +213,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   };
 
   const handleEditFeed = (oldUrl: string) => {
-    // Simple prompt for now, could be a modal
-    const newUrl = prompt("Editar URL do feed:", oldUrl);
-    if (newUrl && newUrl !== oldUrl) {
-      handleSaveEdit(oldUrl, newUrl);
-    }
+    setEditingFeedUrl(oldUrl);
+    setEditUrlDraft(oldUrl);
   };
 
   const handleSaveEdit = async (oldUrl: string, newUrlStr: string) => {
@@ -158,12 +222,28 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     if (validation && validation.status === "valid") {
       setFeeds((prev) =>
         prev.map((feed) =>
-          feed.url === oldUrl ? { ...feed, url: newUrlStr } : feed
-        )
+          feed.url === oldUrl ? { ...feed, url: newUrlStr } : feed,
+        ),
       );
     } else {
       await alertError("O novo URL não é um feed RSS válido.");
     }
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditingFeedUrl(null);
+    setEditUrlDraft("");
+  };
+
+  const handleSubmitEditDialog = async () => {
+    if (!editingFeedUrl) return;
+    const nextUrl = editUrlDraft.trim();
+    if (!nextUrl || nextUrl === editingFeedUrl) {
+      handleCloseEditDialog();
+      return;
+    }
+    await handleSaveEdit(editingFeedUrl, nextUrl);
+    handleCloseEditDialog();
   };
 
   const handleRemoveFeed = async (urlToRemove: string) => {
@@ -174,64 +254,73 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const moveFeedToCategory = (feedUrl: string, categoryId: string) => {
     setFeeds((prev) =>
-      prev.map((feed) => {
-        if (feed.url === feedUrl) {
-          return { ...feed, categoryId };
-        }
-        return feed;
-      })
+      prev.map((feed) =>
+        feed.url === feedUrl ? { ...feed, categoryId } : feed,
+      ),
     );
-    alertSuccess("Categoria atualizada!");
+    void alertSuccess("Categoria atualizada!");
   };
 
   const handleToggleHideFromAll = (feedUrl: string) => {
     setFeeds((prev) =>
-      prev.map((feed) => {
-        if (feed.url === feedUrl) {
-          return { ...feed, hideFromAll: !feed.hideFromAll };
-        }
-        return feed;
-      })
+      prev.map((feed) =>
+        feed.url === feedUrl
+          ? { ...feed, hideFromAll: !feed.hideFromAll }
+          : feed,
+      ),
     );
   };
 
   const handleExportOPML = async () => {
-    const opml = await OPMLExportService.generateOPML(currentFeeds, [], { includeCategories: false });
+    const opml = await OPMLExportService.generateOPML(currentFeeds, [], {
+      includeCategories: false,
+    });
     const blob = new Blob([opml], { type: "text/xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `personal_news_feeds_${new Date().toISOString().split('T')[0]}.opml`;
+    a.download = `personal_news_feeds_${new Date().toISOString().split("T")[0]}.opml`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const handleImportCurated = async (mode: 'merge' | 'replace') => {
-    const feedsToImport = DEFAULT_CURATED_LISTS[selectedListType] || DEFAULT_FEEDS;
+  const handleImportCurated = async (mode: "merge" | "replace") => {
+    const feedsToImport =
+      DEFAULT_CURATED_LISTS[selectedListType] || DEFAULT_FEEDS;
 
-    if (mode === 'replace') {
-      if (await confirmDanger("Isso substituirá todos os seus feeds atuais. Continuar?")) {
+    if (mode === "replace") {
+      if (
+        await confirmDanger(
+          "Isso substituirá todos os seus feeds atuais. Continuar?",
+        )
+      ) {
         setFeeds(feedsToImport);
         resetToDefaults();
         await alertSuccess("Feeds substituídos!");
         setShowImportModal(false);
       }
-    } else {
-      const merged = addFeedsToCollection(currentFeeds, feedsToImport);
-      const addedCount = merged.length - currentFeeds.length;
-      if (addedCount === 0) await alertSuccess("Todos os feeds já estão na coleção.");
-      else {
-        setFeeds(merged);
-        await alertSuccess(`${addedCount} novos feeds adicionados!`);
-      }
-      setShowImportModal(false);
+      return;
     }
+
+    const merged = addFeedsToCollection(currentFeeds, feedsToImport);
+    const addedCount = merged.length - currentFeeds.length;
+    if (addedCount === 0) {
+      await alertSuccess("Todos os feeds já estão na coleção.");
+    } else {
+      setFeeds(merged);
+      await alertSuccess(`${addedCount} novos feeds adicionados!`);
+    }
+    setShowImportModal(false);
   };
 
   const handleResetToDefaults = async () => {
-    if (await confirmDanger("Resetar para feeds padrão? Isso apagará seus feeds atuais.")) {
+    if (
+      await confirmDanger(
+        "Resetar para feeds padrão? Isso apagará seus feeds atuais.",
+      )
+    ) {
       const defaultFeeds = resetToDefaultFeeds();
       setFeeds(defaultFeeds);
       refreshAppearance();
@@ -241,7 +330,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const handleDeleteAll = async () => {
     if (currentFeeds.length === 0) return;
-    if (await confirmDanger(`Excluir TODOS os ${currentFeeds.length} feeds? Irreversível.`)) {
+    if (
+      await confirmDanger(
+        `Excluir TODOS os ${currentFeeds.length} feeds? Irreversível.`,
+      )
+    ) {
       setFeeds([]);
       await alertSuccess("Todos os feeds foram removidos.");
     }
@@ -249,42 +342,114 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const content = await file.text();
-      try {
-        const opmlFeeds = parseOpml(content);
-        const newFeeds: FeedSource[] = [];
-        const categoriesToCreate = new Set<string>();
+    if (!file) return;
 
-        opmlFeeds.forEach(feed => {
-          if (!currentFeeds.some(f => f.url === feed.url)) {
-            const newFeed: FeedSource = { url: feed.url, customTitle: feed.title };
-            if (feed.category) {
-              const categoryId = feed.category.toLowerCase().replace(/[^a-z0-9]/g, '-');
-              newFeed.categoryId = categoryId;
-              if (!categories.some(c => c.id === categoryId)) categoriesToCreate.add(feed.category);
+    const content = await file.text();
+    try {
+      const opmlFeeds = parseOpml(content);
+      const newFeeds: FeedSource[] = [];
+      const categoriesToCreate = new Set<string>();
+
+      opmlFeeds.forEach((feed) => {
+        if (!currentFeeds.some((f) => f.url === feed.url)) {
+          const newFeed: FeedSource = {
+            url: feed.url,
+            customTitle: feed.title,
+          };
+          if (feed.category) {
+            const categoryId = feed.category
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "-");
+            newFeed.categoryId = categoryId;
+            if (!categories.some((c) => c.id === categoryId)) {
+              categoriesToCreate.add(feed.category);
             }
-            newFeeds.push(newFeed);
           }
-        });
+          newFeeds.push(newFeed);
+        }
+      });
 
-        categoriesToCreate.forEach(catName => createCategory(catName, '#6B7280'));
-        if (newFeeds.length > 0) setFeeds((prev) => [...prev, ...newFeeds]);
-        await alertSuccess(`${newFeeds.length} feeds importados!`);
-      } catch {
-        await alertError('Falha ao processar arquivo OPML');
-      }
+      categoriesToCreate.forEach((catName) =>
+        createCategory(catName, "#6B7280"),
+      );
+      if (newFeeds.length > 0) setFeeds((prev) => [...prev, ...newFeeds]);
+      await alertSuccess(`${newFeeds.length} feeds importados!`);
+    } catch {
+      await alertError("Falha ao processar arquivo OPML");
+    } finally {
+      if (e.target) e.target.value = "";
     }
   };
 
-  // --- Duplicate & Add Logic ---
-
-  const checkForDuplicates = async (newUrl: string): Promise<DuplicateDetectionResult> => {
+  const checkForDuplicates = async (
+    newUrl: string,
+  ): Promise<DuplicateDetectionResult> => {
     try {
       return await feedDuplicateDetector.detectDuplicate(newUrl, currentFeeds);
     } catch {
-      // Fallback logic could go here
       return { isDuplicate: false, confidence: 0, reason: "Error" };
+    }
+  };
+
+  const proceedWithFeedAddition = async (url: string) => {
+    setProcessingUrl(url);
+    setDiscoveryProgress(
+      (prev) =>
+        new Map(prev.set(url, { status: "Validando...", progress: 10 })),
+    );
+
+    try {
+      const result = await feedValidator.validateFeedWithDiscovery(
+        url,
+        (status, progress) => {
+          setDiscoveryProgress(
+            (prev) => new Map(prev.set(url, { status, progress })),
+          );
+        },
+      );
+
+      if (result.isValid) {
+        setFeeds((prev) => [
+          ...prev,
+          {
+            url: result.url,
+            customTitle: result.title,
+            categoryId: newFeedCategory || undefined,
+          },
+        ]);
+        setNewFeedUrl("");
+        setNewFeedCategory("");
+        await alertSuccess("Feed adicionado com sucesso!");
+        return;
+      }
+
+      if (result.requiresUserSelection && result.discoveredFeeds?.length) {
+        setCurrentDiscoveryResult({
+          originalUrl: url,
+          discoveredFeeds: result.discoveredFeeds,
+        });
+        setShowDiscoveryModal(true);
+        setNewFeedUrl("");
+        return;
+      }
+
+      if (
+        await confirm(
+          `Validação falhou: ${result.error}\n\nDeseja adicionar mesmo assim?`,
+        )
+      ) {
+        setFeeds((prev) => [
+          ...prev,
+          { url, categoryId: newFeedCategory || undefined },
+        ]);
+        setNewFeedUrl("");
+        await alertSuccess("Feed adicionado (sem validação).");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await alertError(`Erro: ${message}`);
+    } finally {
+      setProcessingUrl(null);
     }
   };
 
@@ -297,178 +462,170 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
     const url = newFeedUrl.trim();
     const duplicateResult = await checkForDuplicates(url);
-
     if (duplicateResult.isDuplicate) {
       setDuplicateWarning({ show: true, result: duplicateResult, newUrl: url });
       return;
     }
 
-    proceedWithFeedAddition(url);
-  };
-
-  const proceedWithFeedAddition = async (url: string) => {
-    setProcessingUrl(url);
-    setDiscoveryProgress((prev) => new Map(prev.set(url, { status: "Validando...", progress: 10 })));
-
-    try {
-      const result = await feedValidator.validateFeedWithDiscovery(url, (status, progress) => {
-        setDiscoveryProgress((prev) => new Map(prev.set(url, { status, progress })));
-      });
-
-      if (result.isValid) {
-        setFeeds((prev) => [...prev, { url: result.url, customTitle: result.title, categoryId: newFeedCategory || undefined }]);
-        setNewFeedUrl("");
-        setNewFeedCategory("");
-        await alertSuccess("Feed adicionado com sucesso!");
-      } else if (result.requiresUserSelection && result.discoveredFeeds?.length) {
-        setCurrentDiscoveryResult({ originalUrl: url, discoveredFeeds: result.discoveredFeeds });
-        setShowDiscoveryModal(true);
-        setNewFeedUrl("");
-      } else {
-        // Offer force add
-        if (await confirm(`Validação falhou: ${result.error}\n\nDeseja adicionar mesmo assim?`)) {
-          setFeeds((prev) => [...prev, { url: url, categoryId: newFeedCategory || undefined }]);
-          setNewFeedUrl("");
-          await alertSuccess("Feed adicionado (sem validação).");
-        }
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await alertError(`Erro: ${message}`);
-    } finally {
-      setProcessingUrl(null);
-    }
+    await proceedWithFeedAddition(url);
   };
 
   const handleDuplicateWarningAccept = () => {
-    if (duplicateWarning) proceedWithFeedAddition(duplicateWarning.newUrl);
+    if (duplicateWarning) void proceedWithFeedAddition(duplicateWarning.newUrl);
     setDuplicateWarning(null);
   };
 
   const handleDuplicateWarningReplace = () => {
     if (!duplicateWarning?.result.duplicateOf) return;
-    setFeeds((prev) => prev.filter((f) => f.url !== duplicateWarning.result.duplicateOf!.url));
-    proceedWithFeedAddition(duplicateWarning.newUrl);
+    setFeeds((prev) =>
+      prev.filter((f) => f.url !== duplicateWarning.result.duplicateOf!.url),
+    );
+    void proceedWithFeedAddition(duplicateWarning.newUrl);
     setDuplicateWarning(null);
   };
 
   const handleShowError = (url: string, validation?: FeedValidationResult) => {
-    if (validation) {
-      setSelectedErrorFeed({ url, validation });
-      setShowErrorModal(true);
-    }
+    if (!validation) return;
+    setSelectedErrorFeed({ url, validation });
+    setShowErrorModal(true);
   };
 
-  const navigateToAnalytics = (sectionId?: string) => {
-    setActiveTab('statistics');
-    if (sectionId) {
-      setAnalyticsFocus(sectionId);
-    }
+  const handleConfirmRefreshAll = async () => {
+    if (!onRefreshFeeds) return;
+    const confirmed = await confirmWarning(
+      "Deseja forçar a revalidação de todos os feeds? Isso pode levar alguns instantes.",
+      "Revalidar feeds",
+    );
+    if (confirmed) onRefreshFeeds();
   };
 
-  const handleAnalyticsFocusConsumed = () => {
-    setAnalyticsFocus(null);
+  const navigateToDiagnostics = (sectionId?: string) => {
+    setActiveTab("diagnostics");
+    if (sectionId) setDiagnosticsFocus(sectionId);
   };
 
-  // --- Render ---
-
-  const validCount = Array.from(feedValidations.values()).filter(v => v.isValid).length;
-  const invalidCount = Array.from(feedValidations.values()).filter(v => !v.isValid).length;
+  const validCount = Array.from(feedValidations.values()).filter(
+    (v) => v.isValid,
+  ).length;
+  const invalidCount = Array.from(feedValidations.values()).filter(
+    (v) => !v.isValid,
+  ).length;
   const pendingCount = Math.max(0, currentFeeds.length - feedValidations.size);
 
-  const tabs = [
-    { id: 'functions', label: 'Funções', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
-    { id: 'feeds', label: 'Meus Feeds', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', badge: currentFeeds.length },
-    { id: 'categories', label: t('feeds.tab.categories'), icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
-    { id: 'statistics', label: 'Estatísticas', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', badge: invalidCount > 0 ? invalidCount : undefined }
+  const tabs: Array<{
+    id: FeedManagerTab;
+    label: string;
+    badge?: number;
+  }> = [
+    {
+      id: "feeds",
+      label: "Feeds",
+      badge: currentFeeds.length,
+    },
+    {
+      id: "categories",
+      label: t("feeds.tab.categories"),
+    },
+    {
+      id: "operations",
+      label: "Operações",
+      badge: invalidCount > 0 ? invalidCount : undefined,
+    },
   ];
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-[rgb(var(--color-background))] text-[rgb(var(--theme-text-readable))]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_42%),radial-gradient(circle_at_top_right,rgba(var(--color-accent),0.09),transparent_32%)]" />
-
-      <div className="relative shrink-0 px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 rounded-[28px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] px-5 py-5 shadow-[0_24px_80px_rgba(15,23,42,0.14)] backdrop-blur-xl sm:px-6">
-          <div>
-            <h2 className="flex items-center gap-3 text-xl font-bold text-[rgb(var(--theme-text-readable))] sm:text-2xl">
-              <span className="feed-accent-text rounded-2xl bg-[rgba(var(--color-accent),0.12)] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11c3.866 0 7 3.134 7 7m-7-7v7" />
-                </svg>
-              </span>
-              {t('feeds.title')}
-            </h2>
-            <p className="ml-[3.05rem] mt-1 max-w-2xl text-xs text-[rgb(var(--color-textSecondary))] sm:text-sm">
-              Organize fontes, valide problemas e ajuste categorias sem perder o contexto do feed principal.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/78 px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">
-                {currentFeeds.length} {t('feeds.stats.monitored')}
-              </span>
-              <span className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/72 px-3 py-1.5 text-xs text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
-                {categories.length} categorias ativas
-              </span>
-              {invalidCount > 0 && (
-                <span className="rounded-full border border-[rgba(var(--color-error),0.24)] bg-[rgba(var(--color-error),0.12)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--color-error))]">
-                  {invalidCount} feeds pedem atenção
-                </span>
-              )}
+    <div
+      className="relative flex h-full w-full flex-col overflow-hidden bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-manager-text,var(--color-text)))]"
+      style={
+        {
+          "--theme-surface-readable": "var(--theme-manager-surface)",
+          "--theme-surface-elevated": "var(--theme-manager-elevated)",
+          "--theme-control-bg": "var(--theme-manager-control)",
+          "--theme-chip-bg": "var(--theme-manager-soft)",
+          "--theme-text-readable": "var(--theme-manager-text)",
+          "--theme-text-secondary-readable":
+            "var(--theme-manager-text-secondary)",
+          "--theme-text-on-surface": "var(--theme-manager-text)",
+          "--theme-text-secondary-on-surface":
+            "var(--theme-manager-text-secondary)",
+          "--theme-control-text": "var(--theme-manager-text)",
+        } as React.CSSProperties
+      }
+    >
+      <header className="px-4 py-4 sm:px-6 sm:py-5">
+        <div className="mx-auto flex max-w-[1480px] flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))] sm:text-2xl">
+                {t("feeds.title")}
+              </h2>
             </div>
 
-            <button
-              onClick={closeModal}
-              className="rounded-2xl border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/82 p-2.5 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-all duration-200 hover:border-[rgb(var(--color-border))]/28 hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))] hover:text-[rgb(var(--theme-text-readable))]"
-              aria-label="Close"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-3">
+              <span className="rounded-full bg-[rgb(var(--theme-manager-control))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-manager-text))] shadow-[0_10px_24px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
+                {currentFeeds.length} feeds
+              </span>
+              <button
+                onClick={closeModal}
+                className="rounded-full bg-[rgb(var(--theme-manager-control))] p-2 text-[rgb(var(--theme-manager-text-secondary))] shadow-[0_10px_24px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))]"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="inline-flex min-w-full gap-2 rounded-[22px] border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/78 p-1.5 backdrop-blur-sm">
-              {tabs.map((tab) => (
+          <div className="grid gap-2 md:grid-cols-3">
+            {tabs.map((tab) => {
+              const isActive =
+                tab.id === "operations"
+                  ? activeTab === "operations" || activeTab === "diagnostics"
+                  : activeTab === tab.id;
+              return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-medium transition-all ${
-                    activeTab === tab.id
-                      ? "bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/98 text-[rgb(var(--theme-text-on-surface,var(--color-text)))] shadow-[0_10px_32px_rgba(15,23,42,0.12)] ring-1 ring-[rgb(var(--color-border))]/18"
-                      : "text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))] hover:bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/72 hover:text-[rgb(var(--theme-text-on-surface,var(--color-text)))]"
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (tab.id !== "diagnostics") setDiagnosticsFocus(null);
+                  }}
+                  className={`rounded-[20px] px-4 py-3 text-left shadow-[0_16px_36px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.025)] transition-all ${
+                    isActive
+                      ? "bg-[rgb(var(--theme-manager-surface))] ring-1 ring-[rgba(var(--color-accent),0.28)]"
+                      : "bg-[rgb(var(--theme-manager-bg))] hover:bg-[rgb(var(--theme-manager-control))]"
                   }`}
-                  title={tab.label}
                 >
-                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
-                  </svg>
-                  <span>{tab.label}</span>
-                  {typeof tab.badge !== "undefined" && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        tab.id === "statistics" && tab.badge
-                          ? "bg-[rgba(var(--color-error),0.14)] text-[rgb(var(--color-error))]"
-                          : "bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]"
-                      }`}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                      {tab.label}
+                    </div>
+                    {typeof tab.badge !== "undefined" && (
+                      <span className="rounded-full bg-[rgb(var(--theme-manager-control))] px-2.5 py-1 text-[10px] font-semibold text-[rgb(var(--theme-manager-text-secondary))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </div>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content Area */}
-      <div className="relative flex-1 overflow-hidden px-4 pb-4 sm:px-6 sm:pb-6">
-        <div className="pointer-events-none absolute inset-x-4 inset-y-0 rounded-[30px] bg-gradient-to-b from-white/3 via-transparent to-transparent sm:inset-x-6" />
-        <div className="relative mx-auto h-full max-w-6xl overflow-hidden rounded-[30px] border border-[rgb(var(--color-border))]/16 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.94),rgba(var(--theme-surface-readable,var(--color-surface)),0.88))] shadow-[0_28px_100px_rgba(15,23,42,0.16)] backdrop-blur-xl">
-        {activeTab === 'feeds' && (
+      <div className="flex-1 overflow-hidden">
+        {activeTab === "feeds" && (
           <FeedListTab
             feeds={currentFeeds}
             validations={feedValidations}
@@ -480,6 +637,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             onMoveCategory={moveFeedToCategory}
             onToggleHideFromAll={handleToggleHideFromAll}
             onRefreshAll={onRefreshFeeds}
+            onConfirmRefreshAll={handleConfirmRefreshAll}
             newFeedUrl={newFeedUrl}
             setNewFeedUrl={setNewFeedUrl}
             newFeedCategory={newFeedCategory}
@@ -490,9 +648,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           />
         )}
 
-        {activeTab === 'categories' && (
-          <div className="h-full flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="mx-auto w-full max-w-6xl">
+        {activeTab === "categories" && (
+          <div className="h-full overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+            <div className="mx-auto w-full max-w-[1480px]">
               <FeedCategoryManager
                 feeds={currentFeeds}
                 setFeeds={setFeeds}
@@ -502,7 +660,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           </div>
         )}
 
-        {activeTab === 'functions' && (
+        {activeTab === "operations" && (
           <FeedToolsTab
             onExportOPML={handleExportOPML}
             onImportOPML={() => fileInputRef.current?.click()}
@@ -510,34 +668,65 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             onResetDefaults={handleResetToDefaults}
             onCleanupErrors={() => setShowCleanupModal(true)}
             onDeleteAll={handleDeleteAll}
+            onOpenDiagnostics={() => navigateToDiagnostics("feed-status")}
+            onShowProxySettings={() => setShowProxySettings(true)}
             feedCount={currentFeeds.length}
             validCount={validCount}
             invalidCount={invalidCount}
             pendingCount={pendingCount}
-            onShowReports={() => navigateToAnalytics('feed-reports')}
-            onShowProxySettings={() => setShowProxySettings(true)}
-            onShowProxyHealth={() => navigateToAnalytics('proxy-health')}
-            onShowFeedStatus={() => navigateToAnalytics('feed-status')}
           />
         )}
 
-        {activeTab === 'statistics' && (
-          <div className="h-full flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
-            <div className="mx-auto w-full max-w-6xl">
+        {activeTab === "diagnostics" && (
+          <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] bg-[rgb(var(--theme-manager-surface))] px-5 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("operations")}
+                  className="inline-flex items-center gap-2 rounded-full bg-[rgb(var(--theme-manager-control))] px-3 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  Operações
+                </button>
+
+                <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                  Diagnóstico
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowProxySettings(true)}
+                  className="rounded-full bg-[rgb(var(--theme-manager-control))] px-3 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
+                >
+                  Proxies
+                </button>
+              </div>
+
               <FeedAnalytics
                 feeds={currentFeeds}
                 articles={articles}
                 feedValidations={feedValidations}
-                focusSection={analyticsFocus || undefined}
-                onFocusConsumed={handleAnalyticsFocusConsumed}
+                focusSection={diagnosticsFocus || undefined}
+                onFocusConsumed={() => setDiagnosticsFocus(null)}
               />
             </div>
           </div>
         )}
-        </div>
       </div>
 
-      {/* Hidden File Input for Import */}
       <input
         type="file"
         ref={fileInputRef}
@@ -546,27 +735,34 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         className="hidden"
       />
 
-      {/* --- Modals --- */}
-
       <FeedDuplicateModal
         isOpen={!!duplicateWarning?.show}
         onClose={() => setDuplicateWarning(null)}
         onReplace={handleDuplicateWarningReplace}
         onAddAnyway={handleDuplicateWarningAccept}
         existingFeed={duplicateWarning?.result.duplicateOf || null}
-        newFeedUrl={duplicateWarning?.newUrl || ''}
+        newFeedUrl={duplicateWarning?.newUrl || ""}
         confidence={duplicateWarning?.result.confidence || 0}
       />
 
       {showDiscoveryModal && currentDiscoveryResult && (
         <FeedDiscoveryModal
           isOpen={showDiscoveryModal}
-          onClose={() => { setShowDiscoveryModal(false); setCurrentDiscoveryResult(null); }}
+          onClose={() => {
+            setShowDiscoveryModal(false);
+            setCurrentDiscoveryResult(null);
+          }}
           originalUrl={currentDiscoveryResult.originalUrl}
           discoveredFeeds={currentDiscoveryResult.discoveredFeeds}
           onSelectFeed={async (feed) => {
-            // Quick implementation of select logic
-            setFeeds((prev) => [...prev, { url: feed.url, customTitle: feed.title, categoryId: newFeedCategory || undefined }]);
+            setFeeds((prev) => [
+              ...prev,
+              {
+                url: feed.url,
+                customTitle: feed.title,
+                categoryId: newFeedCategory || undefined,
+              },
+            ]);
             setShowDiscoveryModal(false);
             setCurrentDiscoveryResult(null);
             await alertSuccess("Feed adicionado!");
@@ -574,72 +770,191 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         />
       )}
 
+      <Dialog
+        open={!!editingFeedUrl}
+        onClose={handleCloseEditDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: "rgb(var(--theme-manager-surface))",
+            color: "rgb(var(--theme-manager-text))",
+            border: "1px solid rgba(var(--color-border),0.18)",
+            borderRadius: "12px",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "rgb(var(--theme-manager-text))",
+            borderBottom: "1px solid rgba(var(--color-border),0.18)",
+          }}
+        >
+          Editar URL do feed
+        </DialogTitle>
+        <DialogContent sx={{ paddingTop: 3 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            value={editUrlDraft}
+            onChange={(event) => setEditUrlDraft(event.target.value)}
+            placeholder="https://site.com/rss"
+            variant="outlined"
+            sx={{
+              marginTop: 1,
+              "& .MuiOutlinedInput-root": {
+                color: "rgb(var(--theme-manager-text))",
+                backgroundColor: "rgb(var(--theme-manager-control))",
+                "& fieldset": { borderColor: "rgba(var(--color-border),0.18)" },
+                "&:hover fieldset": {
+                  borderColor: "rgba(var(--color-border),0.28)",
+                },
+                "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ padding: 3 }}>
+          <Button
+            onClick={handleCloseEditDialog}
+            variant="outlined"
+            sx={{ color: "#9ca3af", borderColor: "#4b5563" }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => void handleSubmitEditDialog()}
+            variant="contained"
+            sx={{
+              backgroundColor: "#3b82f6",
+              "&:hover": { backgroundColor: "#2563eb" },
+            }}
+          >
+            Salvar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <FeedCleanupModal
         isOpen={showCleanupModal}
         onClose={() => setShowCleanupModal(false)}
         feeds={currentFeeds}
-        onRemoveFeeds={(urls) => setFeeds(prev => prev.filter(f => !urls.includes(f.url)))}
+        onRemoveFeeds={(urls) =>
+          setFeeds((prev) => prev.filter((f) => !urls.includes(f.url)))
+        }
       />
 
-      {showImportModal && (
+      {showImportModal &&
         createPortal(
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-            <div className="bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] border border-[rgb(var(--color-border))]/30 rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-[rgb(var(--theme-text-readable))] mb-4">Importar Listas Curadas</h3>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/95 p-6 text-[rgb(var(--theme-text-readable))]">
+              <h3 className="mb-4 text-xl font-bold text-[rgb(var(--theme-text-readable))]">
+                Importar listas curadas
+              </h3>
               <select
                 value={selectedListType}
                 onChange={(e) => setSelectedListType(e.target.value)}
-                className="w-full bg-[rgb(var(--theme-surface-readable))]/70 text-[rgb(var(--theme-text-readable))] p-2 rounded mb-4 border border-[rgb(var(--color-border))]/30"
+                className="mb-4 w-full rounded border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/70 p-2 text-[rgb(var(--theme-text-readable))]"
               >
-                {Object.keys(DEFAULT_CURATED_LISTS).map(k => <option key={k} value={k}>{k}</option>)}
+                {Object.keys(DEFAULT_CURATED_LISTS).map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
               </select>
               <div className="flex gap-2">
-                <button onClick={() => handleImportCurated('merge')} className="flex-1 bg-[rgba(var(--color-accent),0.2)] text-[rgb(var(--theme-text-readable))] py-2 rounded border border-[rgba(var(--color-accent),0.3)]">Mesclar</button>
-                <button onClick={() => handleImportCurated('replace')} className="flex-1 bg-rose-600/15 text-rose-300 py-2 rounded border border-rose-500/30">Substituir Tudo</button>
+                <button
+                  onClick={() => void handleImportCurated("merge")}
+                  className="flex-1 rounded border border-[rgba(var(--color-accent),0.3)] bg-[rgba(var(--color-accent),0.2)] py-2 text-[rgb(var(--theme-text-readable))]"
+                >
+                  Mesclar
+                </button>
+                <button
+                  onClick={() => void handleImportCurated("replace")}
+                  className="flex-1 rounded border border-rose-500/30 bg-rose-600/15 py-2 text-rose-300"
+                >
+                  Substituir tudo
+                </button>
               </div>
-              <button onClick={() => setShowImportModal(false)} className="w-full mt-2 text-[rgb(var(--color-textSecondary))] py-2">Cancelar</button>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="mt-2 w-full py-2 text-[rgb(var(--color-textSecondary))]"
+              >
+                Cancelar
+              </button>
             </div>
           </div>,
-          document.body
-        )
-      )}
+          document.body,
+        )}
 
-      {showProxySettings && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-          <div className="bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] border border-[rgb(var(--color-border))]/30 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-[rgba(var(--color-border),0.15)] flex justify-between items-center">
-              <h3 className="text-[rgb(var(--theme-text-readable))] font-semibold">Configuração de Proxies</h3>
-              <button onClick={() => setShowProxySettings(false)} className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--theme-text-readable))]">✕</button>
-            </div>
-            <div className="p-6 overflow-y-auto">
-              <Suspense fallback={<div className="text-[rgb(var(--color-textSecondary))] text-sm">Carregando configurações...</div>}>
-                <ProxySettings detailed />
-              </Suspense>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Error Details Modal */}
-      {showErrorModal && selectedErrorFeed && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-          <div className="bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] border border-[rgb(var(--color-border))]/30 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-[rgba(var(--color-border),0.15)] flex justify-between">
-              <h3 className="text-[rgb(var(--theme-text-readable))] font-bold">Detalhes do Erro</h3>
-              <button onClick={() => setShowErrorModal(false)} className="text-[rgb(var(--color-textSecondary))]">✕</button>
-            </div>
-            <div className="p-6 overflow-y-auto">
-              <p className="text-red-400 font-mono mb-4">{selectedErrorFeed.validation.error}</p>
-              <div className="bg-[rgb(var(--color-background))]/40 p-4 rounded text-sm text-[rgb(var(--color-textSecondary))] font-mono break-all">
-                {selectedErrorFeed.url}
+      {showProxySettings &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-[rgba(var(--color-border),0.15)] p-5">
+                <h3 className="font-semibold text-[rgb(var(--theme-text-readable))]">
+                  Proxies
+                </h3>
+                <button
+                  onClick={() => setShowProxySettings(false)}
+                  className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--theme-text-readable))]"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="overflow-y-auto p-6">
+                <Suspense
+                  fallback={
+                    <div className="text-sm text-[rgb(var(--color-textSecondary))]">
+                      Carregando configurações...
+                    </div>
+                  }
+                >
+                  <ProxySettings detailed />
+                </Suspense>
               </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body,
+        )}
 
+      {showErrorModal &&
+        selectedErrorFeed &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] shadow-2xl">
+              <div className="flex justify-between border-b border-[rgba(var(--color-border),0.15)] p-6">
+                <h3 className="font-bold text-[rgb(var(--theme-text-readable))]">
+                  Detalhes do erro
+                </h3>
+                <button
+                  onClick={() => setShowErrorModal(false)}
+                  className="text-[rgb(var(--color-textSecondary))]"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="overflow-y-auto p-6">
+                <p className="mb-4 font-mono text-red-400">
+                  {selectedErrorFeed.validation.error}
+                </p>
+                <div className="rounded bg-[rgb(var(--color-background))]/40 p-4 font-mono text-sm break-all text-[rgb(var(--color-textSecondary))]">
+                  {selectedErrorFeed.url}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => navigateToDiagnostics("feed-status")}
+                    className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-accent))]"
+                  >
+                    Abrir diagnóstico completo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

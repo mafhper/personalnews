@@ -95,7 +95,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     autoDiscovery: true,
   });
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
-  const [showAllCategories, setShowAllCategories] = useState(false); // Show only first 2 categories by default
+  const [showSecondaryActions, setShowSecondaryActions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const opmlFileInputRef = useRef<HTMLInputElement>(null);
   const [importTargetCategory, setImportTargetCategory] = useState<
@@ -103,12 +103,6 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   >(null);
 
   const categorizedFeeds = getCategorizedFeeds(feeds);
-
-  // Filter categories to show (first 2 if not showAllCategories)
-  const visibleCategories = showAllCategories
-    ? categories
-    : categories.slice(0, 2);
-  const hiddenCategoriesCount = categories.length - visibleCategories.length;
 
   // Layout options for dropdown
   const layoutOptions: {
@@ -136,7 +130,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   ];
 
   const secondaryActionClass =
-    "inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-4 py-2.5 text-sm font-medium text-[rgb(var(--theme-text-on-surface,var(--color-text)))] transition-all hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]";
+    "inline-flex items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] px-4 py-2.5 text-sm font-medium text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[0_12px_30px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.03)] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-surface-elevated,var(--color-surface))))]";
 
   const handleDragStart = useCallback(
     (
@@ -585,24 +579,21 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     >
       {/* Title handled by parent Modal - this component is embedded */}
 
-      <div className="mb-8 rounded-[26px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] p-5 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/84 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
-              Curadoria de Categorias
-            </div>
-            <h3 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
-              Organize seus feeds por superfícies, não por divisões duras.
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))]">
-              Cada categoria funciona como um bloco editorial com identidade própria. Agrupe, reordene e ajuste layouts mantendo a leitura clara.
-            </p>
+      <div className="mb-6 rounded-[22px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-manager-text,var(--theme-text-readable)))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+              {categories.length} categorias
+            </span>
+            <span className="rounded-full bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-manager-text,var(--theme-text-readable)))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+              {feeds.length} feeds
+            </span>
           </div>
 
           <div className="flex flex-wrap gap-2 lg:max-w-[52%] lg:justify-end">
             <button
               onClick={() => setShowNewCategoryForm(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--color-accent))] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--theme-text-readable))] shadow-[0_18px_40px_rgba(var(--color-accent),0.22)] transition-all hover:translate-y-[-1px] hover:bg-[rgb(var(--color-accent))]/92"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--color-accent))] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgb(var(--color-accent))]/92"
             >
               <svg
                 className="h-5 w-5"
@@ -619,27 +610,8 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               </svg>
               {t("action.add")}
             </button>
-            <button onClick={handleExportOPML} className={secondaryActionClass}>
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-              {t("action.export")} OPML
-            </button>
             <button
-              onClick={() => {
-                setImportTargetCategory(null);
-                opmlFileInputRef.current?.click();
-              }}
+              onClick={() => setShowSecondaryActions((current) => !current)}
               className={secondaryActionClass}
             >
               <svg
@@ -652,32 +624,36 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  d="M19 9l-7 7-7-7"
                 />
               </svg>
+              Mais ações
+            </button>
+          </div>
+        </div>
+
+        {showSecondaryActions && (
+          <div className="mt-4 grid gap-3 rounded-[18px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] md:grid-cols-3">
+            <button onClick={handleExportOPML} className={secondaryActionClass}>
+              {t("action.export")} OPML
+            </button>
+            <button
+              onClick={() => {
+                setImportTargetCategory(null);
+                opmlFileInputRef.current?.click();
+              }}
+              className={secondaryActionClass}
+            >
               {t("action.import")} OPML
             </button>
             <button
               onClick={handleResetToDefaults}
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(var(--color-error),0.24)] bg-[rgba(var(--color-error),0.12)] px-4 py-2.5 text-sm font-medium text-[rgb(var(--color-error))] transition-all hover:bg-[rgba(var(--color-error),0.18)]"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
               {t("action.reset")}
             </button>
           </div>
-        </div>
+        )}
       </div>
 
       <input
@@ -877,7 +853,9 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 />
               </svg>
             </span>
-            <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">Edit Category</h3>
+            <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
+              Edit Category
+            </h3>
           </div>
           <form onSubmit={handleSaveEditCategory} className="space-y-6">
             <div>
@@ -1020,14 +998,14 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       )}
 
       <div className="grid grid-cols-1 gap-5 overflow-y-auto custom-scrollbar pb-6 pr-2 lg:grid-cols-2 xl:grid-cols-3 flex-grow">
-        {visibleCategories.map((category) => {
+        {categories.map((category) => {
           return (
             <div
               key={category.id}
-              className={`flex h-full flex-col rounded-[26px] border p-5 transition-all duration-300 ${
+              className={`flex h-full flex-col rounded-[26px] p-5 transition-all duration-300 ${
                 dragState.dragOverCategory === category.id
-                  ? "border-[rgb(var(--color-accent))]/45 bg-[linear-gradient(180deg,rgba(var(--color-accent),0.12),rgba(255,255,255,0.04))] shadow-[0_24px_54px_rgba(var(--color-accent),0.16)]"
-                  : "border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] shadow-[0_18px_50px_rgba(0,0,0,0.2)] hover:border-white/12 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.024))]"
+                  ? "bg-[linear-gradient(180deg,rgba(var(--color-accent),0.14),rgba(var(--color-accent),0.06))] shadow-[0_24px_54px_rgba(var(--color-accent),0.14),inset_0_0_0_1px_rgba(var(--color-accent),0.22)]"
+                  : "bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] shadow-[0_18px_50px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.025)] hover:bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))]"
               }`}
               onDragOver={(e) => handleDragOver(e, category.id)}
               onDragLeave={handleDragLeave}
@@ -1105,7 +1083,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                           ref={(el) => {
                             layoutDropdownRefs.current[category.id] = el;
                           }}
-                          className="fixed w-48 bg-[#0a0a0c] border border-[rgba(var(--color-border),0.15)] rounded-lg shadow-2xl py-1 z-[9999] animate-in fade-in zoom-in-95 duration-100 max-h-[300px] overflow-y-auto custom-scrollbar"
+                          className="fixed z-[9999] max-h-[300px] w-48 overflow-y-auto rounded-lg bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] py-1 shadow-[0_22px_44px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(255,255,255,0.03)] custom-scrollbar animate-in fade-in zoom-in-95 duration-100"
                           style={{
                             top: dropdownPos.top,
                             left: dropdownPos.left,
@@ -1237,7 +1215,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               )}
 
               {/* Feeds in category */}
-              <div className="min-h-[100px] flex-grow space-y-2 rounded-[22px] bg-black/10 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="min-h-[100px] flex-grow space-y-2 rounded-[22px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                 <div className="flex items-center justify-between mb-2 px-1">
                   <span className="text-xs font-medium uppercase tracking-wider text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
                     {categorizedFeeds[category.id]?.length || 0} feeds
@@ -1271,7 +1249,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     className={`group cursor-move rounded-[18px] p-3 transition-all duration-200 ${
                       editingFeedId === feed.url
                         ? "ring-2 ring-[rgb(var(--color-accent))]"
-                        : "bg-white/5 hover:bg-white/8"
+                        : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]"
                     }`}
                     draggable={editingFeedId !== feed.url}
                     onDragStart={(e) =>
@@ -1439,7 +1417,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 )}
 
                 {(categorizedFeeds[category.id] || []).length === 0 && (
-                  <div className="flex h-full flex-col items-center justify-center rounded-[18px] bg-white/4 py-8 text-xs text-[rgb(var(--theme-text-secondary-readable))]/72">
+                  <div className="flex h-full flex-col items-center justify-center rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] py-8 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-readable)))]">
                     <span className="mb-1">Categoria Vazia</span>
                     <span>Arraste feeds aqui</span>
                   </div>
@@ -1449,59 +1427,13 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           );
         })}
 
-        {/* Show more categories button */}
-        {hiddenCategoriesCount > 0 && !showAllCategories && (
-          <button
-            onClick={() => setShowAllCategories(true)}
-            className="flex items-center justify-center gap-2 rounded-[22px] border border-white/8 bg-white/4 p-4 text-[rgba(var(--color-textSecondary),0.84)] transition-all hover:bg-white/7 hover:text-[rgb(var(--theme-text-readable))]"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-            Ver mais {hiddenCategoriesCount} categorias
-          </button>
-        )}
-
-        {/* Show less categories button */}
-        {showAllCategories && categories.length > 2 && (
-          <button
-            onClick={() => setShowAllCategories(false)}
-            className="flex items-center justify-center gap-2 rounded-[22px] border border-white/8 bg-white/4 p-4 text-[rgba(var(--color-textSecondary),0.84)] transition-all hover:bg-white/7 hover:text-[rgb(var(--theme-text-readable))]"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 15l7-7 7 7"
-              />
-            </svg>
-            Mostrar menos
-          </button>
-        )}
-
         {/* Uncategorized feeds */}
         {(categorizedFeeds.uncategorized || []).length > 0 && (
           <div
             className={`flex h-full flex-col rounded-[26px] p-5 transition-all duration-300 ${
               dragState.dragOverCategory === "uncategorized"
-                ? "border border-[rgb(var(--color-accent))]/45 bg-[linear-gradient(180deg,rgba(var(--color-accent),0.12),rgba(255,255,255,0.04))] shadow-[0_24px_54px_rgba(var(--color-accent),0.16)]"
-                : "border border-yellow-500/18 bg-[linear-gradient(180deg,rgba(234,179,8,0.08),rgba(255,255,255,0.02))] shadow-[0_18px_50px_rgba(0,0,0,0.2)]"
+                ? "bg-[linear-gradient(180deg,rgba(var(--color-accent),0.14),rgba(var(--color-accent),0.06))] shadow-[0_24px_54px_rgba(var(--color-accent),0.14),inset_0_0_0_1px_rgba(var(--color-accent),0.22)]"
+                : "bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] shadow-[0_18px_50px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.025)]"
             }`}
             onDragOver={(e) => handleDragOver(e, "uncategorized")}
             onDragLeave={handleDragLeave}
@@ -1517,7 +1449,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               </span>
             </div>
 
-            <div className="min-h-[100px] flex-grow space-y-2 rounded-[22px] bg-black/10 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="min-h-[100px] flex-grow space-y-2 rounded-[22px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
               <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {categorizedFeeds.uncategorized?.length || 0} feeds
@@ -1530,7 +1462,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                   className={`group cursor-move rounded-[18px] p-3 transition-all duration-200 ${
                     editingFeedId === feed.url
                       ? "ring-2 ring-[rgb(var(--color-accent))]"
-                      : "bg-white/5 hover:bg-white/8"
+                      : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]"
                   }`}
                   draggable={editingFeedId !== feed.url}
                   onDragStart={(e) =>
@@ -1647,48 +1579,6 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Instructions */}
-      <div className="mt-8 flex items-start space-x-4 rounded-[26px] border border-white/8 bg-[linear-gradient(180deg,rgba(var(--color-primary),0.08),rgba(255,255,255,0.02))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
-        <div className="p-2.5 bg-[rgba(var(--color-primary),0.1)] rounded-xl text-[rgb(var(--color-primary))] mt-0.5">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <div className="flex-grow">
-          <h4 className="font-bold text-[rgb(var(--theme-text-readable))] text-base mb-2">Dicas de Uso</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-[rgb(var(--theme-text-secondary-readable))]">
-            <div className="flex items-center space-x-3 group">
-              <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-primary))] opacity-60 group-hover:scale-125 transition-transform"></span>
-              <span className="group-hover:text-[rgb(var(--theme-text-readable))] transition-colors">Arraste feeds entre categorias para organizá-los</span>
-            </div>
-            <div className="flex items-center space-x-3 group">
-              <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-primary))] opacity-60 group-hover:scale-125 transition-transform"></span>
-              <span className="group-hover:text-[rgb(var(--theme-text-readable))] transition-colors">
-                Arraste categorias para reordená-las (apenas customizadas)
-              </span>
-            </div>
-            <div className="flex items-center space-x-3 group">
-              <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-primary))] opacity-60 group-hover:scale-125 transition-transform"></span>
-              <span className="group-hover:text-[rgb(var(--theme-text-readable))] transition-colors">Use cores para distinguir categorias visualmente</span>
-            </div>
-            <div className="flex items-center space-x-3 group">
-              <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-primary))] opacity-60 group-hover:scale-125 transition-transform"></span>
-              <span className="group-hover:text-[rgb(var(--theme-text-readable))] transition-colors">Exporte seu setup para compartilhar com outros</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

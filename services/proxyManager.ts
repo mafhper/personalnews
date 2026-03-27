@@ -49,41 +49,86 @@ export interface ProxyManagerConfig {
   defaultTimeout: number;
 }
 
+export interface ProxyTestResult {
+  success: boolean;
+  responseTime: number;
+  statusCode?: number;
+  error?: string;
+  detail: string;
+  route: "backend-health" | "backend-fetch" | "client-proxy";
+}
+
 export class ProxyManager {
-  private static rss2jsonApiKey: string = '';
-  private static rss2jsonApiKeyOrigin: string = 'not-configured'; // 'env.local', 'localStorage', 'manual', 'not-configured'
-  private static corsproxyCIOApiKey: string = '';
-  private static corsproxyCIOApiKeyOrigin: string = 'not-configured';
+  private static rss2jsonApiKey: string = "";
+  private static rss2jsonApiKeyOrigin: string = "not-configured"; // 'env.local', 'localStorage', 'manual', 'not-configured'
+  private static corsproxyCIOApiKey: string = "";
+  private static corsproxyCIOApiKeyOrigin: string = "not-configured";
   private static preferLocalProxy: boolean = false;
+  private static readonly DEFAULT_TEST_FEED =
+    "https://feeds.arstechnica.com/arstechnica/index.rss";
+
+  private static getEnvValue(key: string): string {
+    const env = (
+      import.meta as ImportMeta & {
+        env?: Record<string, string | undefined>;
+      }
+    ).env;
+    return env?.[key] || "";
+  }
+
+  private static isTauriRuntime(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      (!!(window as Window & { __TAURI__?: unknown }).__TAURI__ ||
+        !!(window as Window & { __TAURI_INTERNALS__?: unknown })
+          .__TAURI_INTERNALS__)
+    );
+  }
+
+  private static isBackendRuntimeEnabled(): boolean {
+    return this.getEnvValue("VITE_BACKEND_ENABLED") === "true";
+  }
 
   static setRss2jsonApiKey(key: string, origin?: string) {
     this.rss2jsonApiKey = key;
-    this.rss2jsonApiKeyOrigin = origin || 'manual';
+    this.rss2jsonApiKeyOrigin = key ? origin || "manual" : "not-configured";
     // Update localStorage for persistence
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('rss2json_api_key', key);
-      if (origin) {
-        localStorage.setItem('rss2json_api_key_origin', origin);
+    if (typeof localStorage !== "undefined") {
+      if (key) {
+        localStorage.setItem("rss2json_api_key", key);
+        localStorage.setItem(
+          "rss2json_api_key_origin",
+          this.rss2jsonApiKeyOrigin,
+        );
+      } else {
+        localStorage.removeItem("rss2json_api_key");
+        localStorage.removeItem("rss2json_api_key_origin");
       }
     }
   }
 
   static setCorsproxyCIOApiKey(key: string, origin?: string) {
     this.corsproxyCIOApiKey = key;
-    this.corsproxyCIOApiKeyOrigin = origin || 'manual';
+    this.corsproxyCIOApiKeyOrigin = key ? origin || "manual" : "not-configured";
     // Update localStorage for persistence
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('corsproxy_cio_api_key', key);
-      if (origin) {
-        localStorage.setItem('corsproxy_cio_api_key_origin', origin);
+    if (typeof localStorage !== "undefined") {
+      if (key) {
+        localStorage.setItem("corsproxy_cio_api_key", key);
+        localStorage.setItem(
+          "corsproxy_cio_api_key_origin",
+          this.corsproxyCIOApiKeyOrigin,
+        );
+      } else {
+        localStorage.removeItem("corsproxy_cio_api_key");
+        localStorage.removeItem("corsproxy_cio_api_key_origin");
       }
     }
   }
 
   static setPreferLocalProxy(prefer: boolean) {
     this.preferLocalProxy = prefer;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('prefer_local_proxy', prefer ? 'true' : 'false');
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("prefer_local_proxy", prefer ? "true" : "false");
     }
   }
 
@@ -107,22 +152,59 @@ export class ProxyManager {
     return this.preferLocalProxy;
   }
 
+  static hasConfiguredApiKeys(): boolean {
+    return Boolean(this.rss2jsonApiKey || this.corsproxyCIOApiKey);
+  }
+
   static loadPreferences() {
-    if (typeof localStorage !== 'undefined') {
-      const savedKey = localStorage.getItem('rss2json_api_key');
+    if (typeof localStorage !== "undefined") {
+      const legacyCorsproxyKey = localStorage.getItem("corsproxy_api_key");
+      const savedKey = localStorage.getItem("rss2json_api_key");
       if (savedKey) {
         this.rss2jsonApiKey = savedKey;
-        this.rss2jsonApiKeyOrigin = localStorage.getItem('rss2json_api_key_origin') || 'localStorage';
+        this.rss2jsonApiKeyOrigin =
+          localStorage.getItem("rss2json_api_key_origin") || "localStorage";
       }
 
-      const savedCorsproxyCIOKey = localStorage.getItem('corsproxy_cio_api_key');
+      const savedCorsproxyCIOKey = localStorage.getItem(
+        "corsproxy_cio_api_key",
+      );
       if (savedCorsproxyCIOKey) {
         this.corsproxyCIOApiKey = savedCorsproxyCIOKey;
-        this.corsproxyCIOApiKeyOrigin = localStorage.getItem('corsproxy_cio_api_key_origin') || 'localStorage';
+        this.corsproxyCIOApiKeyOrigin =
+          localStorage.getItem("corsproxy_cio_api_key_origin") ||
+          "localStorage";
+      } else if (legacyCorsproxyKey) {
+        this.setCorsproxyCIOApiKey(legacyCorsproxyKey, "migrated-localStorage");
+        localStorage.removeItem("corsproxy_api_key");
       }
 
-      const savedPrefer = localStorage.getItem('prefer_local_proxy');
-      if (savedPrefer) this.preferLocalProxy = savedPrefer === 'true';
+      const savedPrefer = localStorage.getItem("prefer_local_proxy");
+      const defaultMode =
+        this.getEnvValue("VITE_BACKEND_DEFAULT_MODE") || "auto";
+      const shouldForceLocalPreference =
+        this.isBackendRuntimeEnabled() && defaultMode === "on";
+
+      if (shouldForceLocalPreference) {
+        this.preferLocalProxy = true;
+        localStorage.setItem("prefer_local_proxy", "true");
+      } else if (savedPrefer) {
+        this.preferLocalProxy = savedPrefer === "true";
+      } else {
+        this.preferLocalProxy =
+          this.isTauriRuntime() ||
+          (this.isBackendRuntimeEnabled() && defaultMode !== "off");
+      }
+    }
+
+    const envRss2json = this.getEnvValue("VITE_RSS2JSON_API_KEY");
+    if (envRss2json && !this.rss2jsonApiKey) {
+      this.setRss2jsonApiKey(envRss2json, "env.local");
+    }
+
+    const envCorsproxy = this.getEnvValue("VITE_CORSPROXY_API_KEY");
+    if (envCorsproxy && !this.corsproxyCIOApiKey) {
+      this.setCorsproxyCIOApiKey(envCorsproxy, "env.local");
     }
   }
 
@@ -131,7 +213,8 @@ export class ProxyManager {
       url: "/local-proxy/",
       name: "LocalProxy",
       headers: {
-        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+        Accept:
+          "application/rss+xml, application/atom+xml, application/xml, text/xml",
       },
       timeout: 10000,
       priority: -2,
@@ -194,7 +277,8 @@ export class ProxyManager {
       url: "https://textproxy.io/api/proxy?url=",
       name: "TextProxy",
       headers: {
-        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+        Accept:
+          "application/rss+xml, application/atom+xml, application/xml, text/xml",
         "User-Agent": "Personal News Dashboard/1.0",
       },
       timeout: 10000,
@@ -245,7 +329,10 @@ export class ProxyManager {
   private proxyHealthCheck = new Map<string, boolean>();
   private config: ProxyManagerConfig;
   private healthCheckTimer?: NodeJS.Timeout;
-  private preferredProxyByHost = new Map<string, { name: string; ts: number }>();
+  private preferredProxyByHost = new Map<
+    string,
+    { name: string; ts: number }
+  >();
   private preferredProxyTtlMs = 6 * 60 * 60 * 1000; // 6h
 
   constructor(config?: Partial<ProxyManagerConfig>) {
@@ -270,51 +357,56 @@ export class ProxyManager {
    * Get available proxies sorted by health score and priority
    */
   getAvailableProxies(): ProxyConfig[] {
+    const isTauri = ProxyManager.isTauriRuntime();
     const isLocalhost =
       typeof window !== "undefined" &&
       (window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1" ||
         window.location.hostname.endsWith(".local"));
-    const allowLocalProxy = ProxyManager.preferLocalProxy || isLocalhost;
+    const allowLocalProxy =
+      !isTauri && (ProxyManager.preferLocalProxy || isLocalhost);
 
     // Create a copy to modify priorities dynamically
     const configsToSort = this.PROXY_CONFIGS.filter(
       (proxy) =>
         proxy.enabled &&
         this.isProxyHealthy(proxy.name) &&
-        (proxy.name !== "LocalProxy" || allowLocalProxy)
-    ).map(proxy => {
-      // Adjust LocalProxy priority based on preference
-      if (proxy.name === 'LocalProxy') {
-        return {
-          ...proxy,
-          priority: allowLocalProxy && ProxyManager.preferLocalProxy ? -2 : 999
-        };
-      }
+        (proxy.name !== "LocalProxy" || allowLocalProxy),
+    )
+      .map((proxy) => {
+        // Adjust LocalProxy priority based on preference
+        if (proxy.name === "LocalProxy") {
+          return {
+            ...proxy,
+            priority:
+              allowLocalProxy && ProxyManager.preferLocalProxy ? -2 : 999,
+          };
+        }
 
-      // Adjust RSS2JSON priority based on API key availability
-      if (proxy.name === 'RSS2JSON') {
-        return {
-          ...proxy,
-          priority: ProxyManager.rss2jsonApiKey ? 1 : 5
-        };
-      }
+        // Adjust RSS2JSON priority based on API key availability
+        if (proxy.name === "RSS2JSON") {
+          return {
+            ...proxy,
+            priority: ProxyManager.rss2jsonApiKey ? 1 : 5,
+          };
+        }
 
-      return proxy;
-    }).sort((a, b) => {
-      const statsA = this.proxyStats.get(a.name);
-      const statsB = this.proxyStats.get(b.name);
+        return proxy;
+      })
+      .sort((a, b) => {
+        const statsA = this.proxyStats.get(a.name);
+        const statsB = this.proxyStats.get(b.name);
 
-      // Sort by health score first, then by priority
-      const healthScoreA = statsA?.healthScore || 0;
-      const healthScoreB = statsB?.healthScore || 0;
+        // Sort by health score first, then by priority
+        const healthScoreA = statsA?.healthScore || 0;
+        const healthScoreB = statsB?.healthScore || 0;
 
-      if (Math.abs(healthScoreA - healthScoreB) > 0.1) {
-        return healthScoreB - healthScoreA; // Higher health score first
-      }
+        if (Math.abs(healthScoreA - healthScoreB) > 0.1) {
+          return healthScoreB - healthScoreA; // Higher health score first
+        }
 
-      return a.priority - b.priority; // Lower priority number first
-    });
+        return a.priority - b.priority; // Lower priority number first
+      });
 
     return configsToSort;
   }
@@ -346,19 +438,19 @@ export class ProxyManager {
       }
 
       // Validate response headers for security
-      const contentType = response.headers.get('content-type') || '';
-      const contentLength = response.headers.get('content-length');
+      const contentType = response.headers.get("content-type") || "";
+      const contentLength = response.headers.get("content-length");
 
       // Check for suspicious content types
       const suspiciousTypes = [
-        'application/javascript',
-        'text/javascript',
-        'application/x-executable',
-        'application/x-shockwave-flash',
+        "application/javascript",
+        "text/javascript",
+        "application/x-executable",
+        "application/x-shockwave-flash",
       ];
 
-      const isSuspicious = suspiciousTypes.some(type =>
-        contentType.toLowerCase().includes(type)
+      const isSuspicious = suspiciousTypes.some((type) =>
+        contentType.toLowerCase().includes(type),
       );
 
       if (isSuspicious) {
@@ -370,7 +462,9 @@ export class ProxyManager {
         const size = parseInt(contentLength, 10);
         const MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10MB
         if (size > MAX_RESPONSE_SIZE) {
-          throw new Error(`Response too large: ${size} bytes (max: ${MAX_RESPONSE_SIZE})`);
+          throw new Error(
+            `Response too large: ${size} bytes (max: ${MAX_RESPONSE_SIZE})`,
+          );
         }
       }
 
@@ -378,7 +472,9 @@ export class ProxyManager {
 
       // Validate content structure
       if (!this.validateProxyResponse(content, contentType)) {
-        throw new Error(`Invalid response structure from proxy: ${proxyConfig.name}`);
+        throw new Error(
+          `Invalid response structure from proxy: ${proxyConfig.name}`,
+        );
       }
 
       // Apply response transformation if configured
@@ -435,7 +531,7 @@ export class ProxyManager {
     const preferredName = host ? this.getPreferredProxyName(host) : null;
     if (preferredName) {
       const preferredIndex = availableProxies.findIndex(
-        (proxy) => proxy.name === preferredName
+        (proxy) => proxy.name === preferredName,
       );
       if (preferredIndex > 0) {
         const [preferred] = availableProxies.splice(preferredIndex, 1);
@@ -499,7 +595,7 @@ export class ProxyManager {
 
     // All proxies failed
     throw new Error(
-      `All proxies failed. Last error: ${lastError?.message || "Unknown error"}`
+      `All proxies failed. Last error: ${lastError?.message || "Unknown error"}`,
     );
   }
 
@@ -521,7 +617,7 @@ export class ProxyManager {
     // Update health status
     this.proxyHealthCheck.set(
       proxyName,
-      stats.consecutiveFailures < this.config.failureThreshold
+      stats.consecutiveFailures < this.config.failureThreshold,
     );
 
     // Recalculate health score
@@ -603,6 +699,81 @@ export class ProxyManager {
     return { ...this.config };
   }
 
+  async testProxy(
+    proxyName: string,
+    targetUrl: string = ProxyManager.DEFAULT_TEST_FEED,
+  ): Promise<ProxyTestResult> {
+    const startedAt = Date.now();
+
+    if (proxyName === "LocalProxy" && ProxyManager.isTauriRuntime()) {
+      const { desktopBackendClient } = await import("./desktopBackendClient");
+      const health = await desktopBackendClient.checkHealth(true);
+      const responseTime = Date.now() - startedAt;
+
+      if (!health.available) {
+        return {
+          success: false,
+          responseTime,
+          error: health.error,
+          detail: "Backend local nao respondeu ao health check.",
+          route: "backend-health",
+        };
+      }
+
+      try {
+        const stats = await desktopBackendClient.getProxyStats();
+        return {
+          success: true,
+          responseTime,
+          detail: `Backend local ativo. ${stats.localProxy.totalRequests} requisicoes registradas, ${Math.round(
+            stats.localProxy.successRate,
+          )}% de sucesso.`,
+          route: "backend-fetch",
+        };
+      } catch (error) {
+        return {
+          success: true,
+          responseTime,
+          detail:
+            "Backend local respondeu ao health check, mas as estatisticas nao puderam ser carregadas.",
+          error: error instanceof Error ? error.message : String(error),
+          route: "backend-health",
+        };
+      }
+    }
+
+    const proxyConfig = this.PROXY_CONFIGS.find(
+      (config) => config.name === proxyName,
+    );
+    if (!proxyConfig) {
+      return {
+        success: false,
+        responseTime: 0,
+        error: `Unknown proxy: ${proxyName}`,
+        detail: "Proxy nao encontrado na configuracao ativa.",
+        route: "client-proxy",
+      };
+    }
+
+    try {
+      await this.tryProxy(proxyConfig, targetUrl);
+      return {
+        success: true,
+        responseTime: Date.now() - startedAt,
+        detail: `Consulta real concluida via ${proxyName}.`,
+        route: "client-proxy",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        responseTime: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error),
+        detail: `A consulta real via ${proxyName} falhou.`,
+        route: "client-proxy",
+      };
+    }
+  }
+
   /**
    * Cleanup resources
    */
@@ -635,9 +806,9 @@ export class ProxyManager {
 
   private buildProxyUrl(proxyConfig: ProxyConfig, targetUrl: string): string {
     // For RSS2JSON, dynamically build URL with current API key
-    if (proxyConfig.name === 'RSS2JSON') {
+    if (proxyConfig.name === "RSS2JSON") {
       const apiKey = ProxyManager.rss2jsonApiKey;
-      const baseUrl = 'https://api.rss2json.com/v1/api.json';
+      const baseUrl = "https://api.rss2json.com/v1/api.json";
 
       if (apiKey) {
         // Use API key if available - higher priority
@@ -649,7 +820,7 @@ export class ProxyManager {
     }
 
     // For CorsProxy.io, add API key if available
-    if (proxyConfig.name === 'CorsProxy.io') {
+    if (proxyConfig.name === "CorsProxy.io") {
       const apiKey = ProxyManager.corsproxyCIOApiKey;
       if (apiKey) {
         // If API key is available, use it via authorization header
@@ -681,27 +852,31 @@ export class ProxyManager {
 
     // Reject HTML pages (potential XSS or phishing)
     if (
-      trimmed.toLowerCase().includes('<!doctype html') ||
-      trimmed.toLowerCase().startsWith('<html') ||
-      trimmed.toLowerCase().includes('<script')
+      trimmed.toLowerCase().includes("<!doctype html") ||
+      trimmed.toLowerCase().startsWith("<html") ||
+      trimmed.toLowerCase().includes("<script")
     ) {
       return false;
     }
 
     // Validate expected content types
     const lowerContentType = contentType.toLowerCase();
-    const isJson = lowerContentType.includes('application/json') || trimmed.startsWith('{');
+    const isJson =
+      lowerContentType.includes("application/json") || trimmed.startsWith("{");
     const isXml =
-      lowerContentType.includes('application/xml') ||
-      lowerContentType.includes('text/xml') ||
-      lowerContentType.includes('application/rss+xml') ||
-      lowerContentType.includes('application/atom+xml') ||
-      trimmed.startsWith('<');
+      lowerContentType.includes("application/xml") ||
+      lowerContentType.includes("text/xml") ||
+      lowerContentType.includes("application/rss+xml") ||
+      lowerContentType.includes("application/atom+xml") ||
+      trimmed.startsWith("<");
 
     // Must be either JSON or XML
     if (!isJson && !isXml) {
       // Allow text/plain for some proxies that don't set proper content-type
-      if (!lowerContentType.includes('text/plain') && !lowerContentType.includes('text/html')) {
+      if (
+        !lowerContentType.includes("text/plain") &&
+        !lowerContentType.includes("text/html")
+      ) {
         return false;
       }
     }
@@ -711,7 +886,7 @@ export class ProxyManager {
       try {
         const parsed = JSON.parse(trimmed);
         // Must be an object or array
-        if (typeof parsed !== 'object' || parsed === null) {
+        if (typeof parsed !== "object" || parsed === null) {
           return false;
         }
       } catch {
@@ -723,12 +898,12 @@ export class ProxyManager {
     // For XML responses, validate basic structure
     if (isXml) {
       // Must contain XML-like tags
-      if (!trimmed.includes('<') || !trimmed.includes('>')) {
+      if (!trimmed.includes("<") || !trimmed.includes(">")) {
         return false;
       }
       // Reject if it looks like HTML (potential XSS)
-      const htmlTags = ['<html', '<body', '<head', '<div', '<span'];
-      if (htmlTags.some(tag => trimmed.toLowerCase().includes(tag))) {
+      const htmlTags = ["<html", "<body", "<head", "<div", "<span"];
+      if (htmlTags.some((tag) => trimmed.toLowerCase().includes(tag))) {
         return false;
       }
     }
@@ -742,7 +917,7 @@ export class ProxyManager {
       /<embed/i,
     ];
 
-    if (suspiciousPatterns.some(pattern => pattern.test(trimmed))) {
+    if (suspiciousPatterns.some((pattern) => pattern.test(trimmed))) {
       return false;
     }
 
@@ -868,14 +1043,20 @@ export class ProxyManager {
   }
 
   private loadPreferredProxyCache(): void {
-    if (typeof localStorage === 'undefined') return;
+    if (typeof localStorage === "undefined") return;
     try {
-      const raw = localStorage.getItem('preferred_proxy_by_host');
+      const raw = localStorage.getItem("preferred_proxy_by_host");
       if (!raw) return;
-      const data = JSON.parse(raw) as Record<string, { name: string; ts: number }>;
+      const data = JSON.parse(raw) as Record<
+        string,
+        { name: string; ts: number }
+      >;
       Object.entries(data).forEach(([host, entry]) => {
         if (entry?.name && entry?.ts) {
-          this.preferredProxyByHost.set(host, { name: entry.name, ts: entry.ts });
+          this.preferredProxyByHost.set(host, {
+            name: entry.name,
+            ts: entry.ts,
+          });
         }
       });
     } catch {
@@ -884,13 +1065,13 @@ export class ProxyManager {
   }
 
   private persistPreferredProxyCache(): void {
-    if (typeof localStorage === 'undefined') return;
+    if (typeof localStorage === "undefined") return;
     try {
       const data: Record<string, { name: string; ts: number }> = {};
       this.preferredProxyByHost.forEach((value, host) => {
         data[host] = value;
       });
-      localStorage.setItem('preferred_proxy_by_host', JSON.stringify(data));
+      localStorage.setItem("preferred_proxy_by_host", JSON.stringify(data));
     } catch {
       // ignore
     }

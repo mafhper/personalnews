@@ -29,6 +29,29 @@ interface ErrorDisplayProps {
   className?: string;
 }
 
+const mapLegacyErrorType = (
+  type: ReturnType<typeof categorizeFeedError>,
+): FeedError["errorType"] => {
+  switch (type) {
+    case "timeout":
+      return "timeout";
+    case "parse_error":
+    case "invalid_feed":
+      return "parse";
+    case "cors_error":
+      return "cors";
+    case "network_error":
+    case "backend_unavailable":
+    case "proxy_exhausted":
+    case "rate_limited":
+    case "upstream_error":
+    case "not_found":
+      return "network";
+    default:
+      return "unknown";
+  }
+};
+
 /**
  * Individual error display component for a single feed
  */
@@ -262,11 +285,14 @@ export const ErrorSummary: React.FC<ErrorSummaryProps> = ({
 
   if (errors.length === 0) return null;
 
-  const errorsByType = errors.reduce((acc, error) => {
-    const type = error.errorType || "unknown";
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const errorsByType = errors.reduce(
+    (acc, error) => {
+      const type = error.errorType || "unknown";
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const handleSelectError = (url: string, selected: boolean) => {
     if (selected) {
@@ -680,7 +706,19 @@ export const QuickFixSuggestions: React.FC<QuickFixSuggestionsProps> = ({
 /**
  * Utility function to categorize errors by type
  */
-export const categorizeError = categorizeFeedError;
+export const categorizeError = (message: string): FeedError["errorType"] => {
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes("xml parse") ||
+    lower.includes("invalid json") ||
+    lower.includes("invalid xml")
+  ) {
+    return "parse";
+  }
+
+  return mapLegacyErrorType(categorizeFeedError(message));
+};
 
 /**
  * Enhanced error processing function
@@ -691,7 +729,7 @@ export const processErrors = (
     error: string;
     timestamp: number;
     feedTitle?: string;
-  }>
+  }>,
 ): FeedError[] => {
   return errors.map((error) => ({
     ...error,

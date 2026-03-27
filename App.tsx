@@ -97,24 +97,26 @@ const getStoredLayoutForFirstPaint = () => {
 
 const getViewFromHash = () => {
   if (typeof window === "undefined") return "landing";
-  
+
   // Force feed view in Tauri environment
-  const isTauri = typeof window !== 'undefined' && (
-    (window as any).__TAURI_INTERNALS__ || 
-    (window as any).__TAURI__ || 
-    window.location.protocol === 'tauri:' || 
-    window.location.protocol === 'app:'
-  );
-  
+  const isTauri =
+    typeof window !== "undefined" &&
+    ((window as any).__TAURI_INTERNALS__ ||
+      (window as any).__TAURI__ ||
+      window.location.protocol === "tauri:" ||
+      window.location.protocol === "app:");
+
   if (isTauri) return "feed";
   return window.location.hash.toLowerCase() === "#feed" ? "feed" : "landing";
 };
 
 const isPrefetchAllowed = () => {
   if (typeof navigator === "undefined") return false;
-  const connection = (navigator as Navigator & {
-    connection?: { saveData?: boolean; effectiveType?: string };
-  }).connection;
+  const connection = (
+    navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }
+  ).connection;
 
   if (connection?.saveData) return false;
   if (connection?.effectiveType?.includes("2g")) return false;
@@ -202,7 +204,8 @@ const FeedView: React.FC = () => {
       };
 
       const isBackgroundTab = document.hidden;
-      const useIdleCallback = "requestIdleCallback" in window && !isBackgroundTab;
+      const useIdleCallback =
+        "requestIdleCallback" in window && !isBackgroundTab;
 
       if (useIdleCallback) {
         id = requestIdleCallback(enableInteractivity, { timeout: 500 });
@@ -335,12 +338,6 @@ const App: React.FC = () => {
       proxyManager.getProxyConfigs().forEach((proxy) => {
         proxyManager.enableProxy(proxy.name);
       });
-
-      const envApiKey = import.meta.env.VITE_RSS2JSON_API_KEY;
-      if (envApiKey && !localStorage.getItem("rss2json_api_key")) {
-        localStorage.setItem("rss2json_api_key_origin", "env.local");
-        ProxyManager.setRss2jsonApiKey(envApiKey);
-      }
     });
   }, []);
 

@@ -1,18 +1,23 @@
 /**
  * useProxyConfig.ts
  *
- * Hook for managing and validating proxy API keys and configuration
- * Provides utilities for setting, validating, and loading proxy settings
+ * Hook for managing runtime proxy configuration through ProxyManager.
+ * Proxy metadata still comes from config/proxyConfig, but keys, preference,
+ * testing and runtime health all reflect the live manager state.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   PROXY_CONFIGS,
   validateProxyApiKey,
   getProxiesRequiringApiKeys,
   assessProxyHealth,
-} from '../config/proxyConfig';
-import { ProxyManager, proxyManager } from '../services/proxyManager';
+} from "../config/proxyConfig";
+import {
+  ProxyManager,
+  proxyManager,
+  type ProxyTestResult,
+} from "../services/proxyManager";
 
 export interface ProxyApiKeyStatus {
   proxyId: string;
@@ -21,116 +26,119 @@ export interface ProxyApiKeyStatus {
   isValid: boolean;
   error?: string;
   envVar?: string;
+  origin?: string;
 }
 
-export interface ProxyApiKeysState {
-  rss2json: string;
-  corsproxy: string;
-}
+export type ProxyApiKeysState = Record<string, string>;
+
+const buildKeyState = (): ProxyApiKeysState => ({
+  rss2json: ProxyManager.getRss2jsonApiKey(),
+  "corsproxy-io": ProxyManager.getCorsproxyCIOApiKey(),
+});
+
+const getRuntimeProxyNameSet = () =>
+  new Set(proxyManager.getProxyConfigs().map((config) => config.name));
+
+const isRuntimeSupportedProxy = (proxyId: string) => {
+  const config = PROXY_CONFIGS[proxyId];
+  if (!config) return false;
+  return getRuntimeProxyNameSet().has(config.name);
+};
 
 /**
  * Hook for managing proxy configurations and API keys
  */
 export function useProxyConfig() {
-  const [apiKeys, setApiKeys] = useState<ProxyApiKeysState>({
-    rss2json: '',
-    corsproxy: '',
-  });
-
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [apiKeys, setApiKeys] = useState<ProxyApiKeysState>(() =>
+    buildKeyState(),
+  );
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
+  const [preferLocalProxy, setPreferLocalProxyState] = useState(
+    ProxyManager.getPreferLocalProxy(),
+  );
 
-  // Load API keys from environment and localStorage on mount
+  const syncFromManager = useCallback(() => {
+    ProxyManager.loadPreferences();
+    setApiKeys(buildKeyState());
+    setPreferLocalProxyState(ProxyManager.getPreferLocalProxy());
+    setIsLoading(false);
+  }, []);
+
   useEffect(() => {
-    const loadApiKeys = () => {
-      setIsLoading(true);
+    syncFromManager();
+  }, [syncFromManager]);
 
-      const rss2jsonKey =
-        import.meta.env.VITE_RSS2JSON_API_KEY ||
-        localStorage.getItem('rss2json_api_key') ||
-        '';
-
-      const corsproxyCIOKey =
-        import.meta.env.VITE_CORSPROXY_API_KEY ||
-        localStorage.getItem('corsproxy_api_key') ||
-        '';
-
-      // Load already configured key from ProxyManager
-      const currentRss2json = ProxyManager.getRss2jsonApiKey();
-
-      setApiKeys({
-        rss2json: currentRss2json || rss2jsonKey,
-        corsproxy: corsproxyCIOKey,
-      });
-
-      setIsLoading(false);
+  useEffect(() => {
+    const handleStorageChange = () => {
+      syncFromManager();
     };
 
-    loadApiKeys();
-  }, []);
+    window.addEventListener(
+      "localStorage-change",
+      handleStorageChange as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        "localStorage-change",
+        handleStorageChange as EventListener,
+      );
+    };
+  }, [syncFromManager]);
 
   /**
    * Validate and set an API key for a proxy
    */
-  const setApiKey = useCallback(
-    (proxyId: string, apiKey: string): boolean => {
-      const validation = validateProxyApiKey(proxyId, apiKey);
+  const setApiKey = useCallback((proxyId: string, apiKey: string): boolean => {
+    const validation = validateProxyApiKey(proxyId, apiKey);
 
-      if (!validation.valid) {
-        setValidationErrors((prev) => ({
-          ...prev,
-          [proxyId]: validation.error || 'Invalid API key',
-        }));
-        return false;
-      }
-
-      // Clear error
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[proxyId];
-        return newErrors;
-      });
-
-      // Update state
-      setApiKeys((prev) => ({
+    if (!validation.valid) {
+      setValidationErrors((prev) => ({
         ...prev,
-        [proxyId]: apiKey,
+        [proxyId]: validation.error || "Invalid API key",
       }));
+      return false;
+    }
 
-      // Save to storage and ProxyManager based on proxy type
-      if (proxyId === 'rss2json') {
-        ProxyManager.setRss2jsonApiKey(apiKey, 'manual');
-        localStorage.setItem('rss2json_api_key', apiKey);
-      } else if (proxyId === 'corsproxy') {
-        localStorage.setItem('corsproxy_api_key', apiKey);
-      }
+    setValidationErrors((prev) => {
+      const next = { ...prev };
+      delete next[proxyId];
+      return next;
+    });
 
-      return true;
-    },
-    []
-  );
+    if (proxyId === "rss2json") {
+      ProxyManager.setRss2jsonApiKey(apiKey, "manual");
+    } else if (proxyId === "corsproxy-io") {
+      ProxyManager.setCorsproxyCIOApiKey(apiKey, "manual");
+    }
+
+    setApiKeys(buildKeyState());
+    return true;
+  }, []);
 
   /**
    * Clear an API key
    */
   const clearApiKey = useCallback((proxyId: string) => {
-    setApiKeys((prev) => ({
-      ...prev,
-      [proxyId]: '',
-    }));
+    if (proxyId === "rss2json") {
+      ProxyManager.setRss2jsonApiKey("");
+    } else if (proxyId === "corsproxy-io") {
+      ProxyManager.setCorsproxyCIOApiKey("");
+    }
 
     setValidationErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[proxyId];
-      return newErrors;
+      const next = { ...prev };
+      delete next[proxyId];
+      return next;
     });
+    setApiKeys(buildKeyState());
+  }, []);
 
-    if (proxyId === 'rss2json') {
-      ProxyManager.setRss2jsonApiKey('');
-      localStorage.removeItem('rss2json_api_key');
-    } else if (proxyId === 'corsproxy') {
-      localStorage.removeItem('corsproxy_api_key');
-    }
+  const setPreferLocalProxy = useCallback((prefer: boolean) => {
+    ProxyManager.setPreferLocalProxy(prefer);
+    setPreferLocalProxyState(prefer);
   }, []);
 
   /**
@@ -140,109 +148,146 @@ export function useProxyConfig() {
     const proxiesWithKeys = getProxiesRequiringApiKeys();
 
     return proxiesWithKeys.map((proxy) => {
-      const key = apiKeys[proxy.id as keyof ProxyApiKeysState] || '';
+      const key = apiKeys[proxy.id] || "";
       const validation = validateProxyApiKey(proxy.id, key);
+      const origin =
+        proxy.id === "rss2json"
+          ? ProxyManager.getRss2jsonApiKeyOrigin()
+          : ProxyManager.getCorsproxyCIOApiKeyOrigin();
 
       return {
         proxyId: proxy.id,
         proxyName: proxy.name,
-        hasKey: !!key && key !== 'your-api-key-here',
+        hasKey: !!key && key !== "your-api-key-here",
         isValid: validation.valid && !!key,
         error: validationErrors[proxy.id],
         envVar: proxy.envVar,
+        origin,
       };
     });
   }, [apiKeys, validationErrors]);
 
   /**
-   * Get proxy information with health assessment
+   * Get proxy information with runtime health assessment
    */
   const getProxyInfo = useCallback(
     (proxyId: string) => {
       const config = PROXY_CONFIGS[proxyId];
-      if (!config) return null;
+      if (!config || !isRuntimeSupportedProxy(proxyId)) return null;
 
-      const health = assessProxyHealth(proxyId);
+      const runtimeName = config.name;
+      const runtimeStats = proxyManager.getProxyStatsByName(runtimeName);
+      const runtimeScore =
+        runtimeStats && runtimeStats.totalRequests > 0
+          ? Math.round(runtimeStats.healthScore * 100)
+          : null;
+      const metadataHealth = assessProxyHealth(proxyId);
       const status = getApiKeyStatus().find((s) => s.proxyId === proxyId);
 
       return {
         ...config,
-        health,
+        health: {
+          score: runtimeScore ?? metadataHealth.score,
+          recommendation:
+            runtimeScore !== null
+              ? runtimeScore >= 80
+                ? "Healthy in current session"
+                : runtimeScore >= 50
+                  ? "Degraded in current session"
+                  : "Needs attention in current session"
+              : metadataHealth.recommendation,
+        },
         apiKeyStatus: status,
       };
     },
-    [getApiKeyStatus]
+    [getApiKeyStatus],
   );
 
   /**
-   * Get all configured proxies with their status
+   * Get all configured proxies with live runtime state
    */
   const getAllProxiesStatus = useCallback(() => {
-    return Object.keys(PROXY_CONFIGS).map((proxyId) => {
-      const config = PROXY_CONFIGS[proxyId];
-      const health = assessProxyHealth(proxyId);
-      const apiKeyStatus = getApiKeyStatus().find((s) => s.proxyId === proxyId);
+    const runtimeStats = proxyManager.getProxyStats();
+    const runtimeConfigs = new Map(
+      proxyManager.getProxyConfigs().map((config) => [config.name, config]),
+    );
 
-      return {
-        id: proxyId,
-        name: config.name,
-        reliability: config.reliability,
-        responseTime: config.responseTime,
-        hasApiKey: config.hasApiKey,
-        isConfigured: apiKeyStatus?.hasKey || !config.hasApiKey,
-        health,
-        apiKeyStatus,
-      };
-    });
+    return Object.keys(PROXY_CONFIGS)
+      .filter((proxyId) => isRuntimeSupportedProxy(proxyId))
+      .map((proxyId) => {
+        const config = PROXY_CONFIGS[proxyId];
+        const runtime = runtimeStats[config.name];
+        const runtimeConfig = runtimeConfigs.get(config.name);
+        const apiKeyStatus = getApiKeyStatus().find(
+          (s) => s.proxyId === proxyId,
+        );
+        const fallbackHealth = assessProxyHealth(proxyId);
+
+        return {
+          id: proxyId,
+          name: config.name,
+          reliability: config.reliability,
+          responseTime: config.responseTime,
+          hasApiKey: config.hasApiKey,
+          isConfigured: apiKeyStatus?.hasKey || !config.hasApiKey,
+          enabled: runtimeConfig?.enabled ?? true,
+          health: {
+            score:
+              runtime && runtime.totalRequests > 0
+                ? Math.round(runtime.healthScore * 100)
+                : fallbackHealth.score,
+            recommendation:
+              runtime && runtime.totalRequests > 0
+                ? `Sessao atual: ${runtime.success}/${runtime.totalRequests} sucesso`
+                : fallbackHealth.recommendation,
+          },
+          apiKeyStatus,
+        };
+      });
   }, [getApiKeyStatus]);
 
   /**
-   * Test a proxy with a simple request
+   * Test a proxy with a real request
    */
   const testProxy = useCallback(
-    async (_proxyId: string, _testUrl: string = 'https://www.example.com/'): Promise<{
-      success: boolean;
-      responseTime?: number;
-      error?: string;
-    }> => {
-      try {
-        const startTime = Date.now();
-
-        // We can't test from metadata alone - would need access to proxyManager internals
-        // For now, we'll return a mock success
-        // In production, this should be called from the server or via API
-        return {
-          success: true,
-          responseTime: Date.now() - startTime,
-        };
-      } catch (error) {
+    async (proxyId: string): Promise<ProxyTestResult> => {
+      const config = PROXY_CONFIGS[proxyId];
+      if (!config) {
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          responseTime: 0,
+          error: `Unknown proxy: ${proxyId}`,
+          detail: "Proxy nao encontrado na configuracao.",
+          route: "client-proxy",
         };
       }
+
+      if (!isRuntimeSupportedProxy(proxyId)) {
+        return {
+          success: false,
+          responseTime: 0,
+          error: `Unsupported proxy runtime: ${config.name}`,
+          detail:
+            "Esta rota existe apenas como metadado e ainda nao possui implementacao no runtime ativo.",
+          route: "client-proxy",
+        };
+      }
+
+      return proxyManager.testProxy(config.name);
     },
-    []
+    [],
   );
 
-  /**
-   * Load proxy preferences (for theme/settings panel)
-   */
   const loadProxyPreferences = useCallback(() => {
-    ProxyManager.loadPreferences();
-    const rss2json = ProxyManager.getRss2jsonApiKey();
-    if (rss2json) {
-      setApiKeys((prev) => ({
-        ...prev,
-        rss2json,
-      }));
-    }
-  }, []);
+    syncFromManager();
+  }, [syncFromManager]);
 
   return {
     apiKeys,
     validationErrors,
     isLoading,
+    preferLocalProxy,
+    setPreferLocalProxy,
     setApiKey,
     clearApiKey,
     getApiKeyStatus,
@@ -266,8 +311,8 @@ export function useProxyStats() {
   }, []);
 
   useEffect(() => {
-    // Refresh stats every 10 seconds
-    const interval = setInterval(refresh, 10000);
+    refresh();
+    const interval = setInterval(refresh, 10_000);
     return () => clearInterval(interval);
   }, [refresh]);
 

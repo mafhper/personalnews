@@ -1,6 +1,27 @@
 import { z } from "zod";
 
-export const BACKEND_DEFAULT_URL = "http://127.0.0.1:3001";
+const getImportMetaEnv = () => {
+  const meta = import.meta as ImportMeta & {
+    env?: Record<string, string | undefined>;
+  };
+  return meta.env || {};
+};
+
+const normalizeBaseUrl = (value: string | undefined) => {
+  if (!value) return null;
+  const trimmed = value.trim().replace(/\/$/, "");
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+export const BACKEND_DEFAULT_URL =
+  normalizeBaseUrl(getImportMetaEnv().VITE_LOCAL_BACKEND_URL) ||
+  "http://127.0.0.1:3001";
+
+export const BACKEND_RUNTIME_ENABLED =
+  getImportMetaEnv().VITE_BACKEND_ENABLED === "true";
+
+export const BACKEND_DEFAULT_MODE = (getImportMetaEnv()
+  .VITE_BACKEND_DEFAULT_MODE || "auto") as "auto" | "on" | "off";
 
 export const BackendModeSchema = z.enum(["auto", "on", "off"]);
 export type BackendMode = z.infer<typeof BackendModeSchema>;
@@ -104,6 +125,7 @@ export const FeedValidateResponseSchema = z.object({
   invalid: z.number().int().nonnegative(),
   items: z.array(FeedValidateItemSchema),
 });
+export type FeedValidateResponse = z.infer<typeof FeedValidateResponseSchema>;
 
 export const UserPreferencesV2Schema = z.object({
   backendMode: BackendModeSchema.default("auto"),
@@ -163,6 +185,7 @@ export type BackendProxyStats = z.infer<typeof BackendProxyStatsSchema>;
 export const ProxyStatsResponseSchema = z.object({
   localProxy: BackendProxyStatsSchema,
 });
+export type ProxyStatsResponse = z.infer<typeof ProxyStatsResponseSchema>;
 
 export const CacheClearResponseSchema = z.object({
   cleared: z.number().int().nonnegative(),
