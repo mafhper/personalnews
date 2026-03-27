@@ -218,6 +218,9 @@ const AppContent: React.FC = () => {
   const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
+  const [dismissedScopedWarningKey, setDismissedScopedWarningKey] = useState<
+    string | null
+  >(null);
 
   // Article layout settings
   const { settings: layoutSettings } = useArticleLayout();
@@ -329,8 +332,14 @@ const AppContent: React.FC = () => {
       if (title.includes("rss feed temporarily unavailable")) return true;
       if (title.includes("feed temporarily unavailable")) return true;
       if (title.includes("feed unavailable")) return true;
-      if ((article.sourceTitle || "").toLowerCase() === "system notice") return true;
-      if (article.categories?.some((cat) => ["system", "unavailable"].includes(cat.toLowerCase()))) return true;
+      if ((article.sourceTitle || "").toLowerCase() === "system notice")
+        return true;
+      if (
+        article.categories?.some((cat) =>
+          ["system", "unavailable"].includes(cat.toLowerCase()),
+        )
+      )
+        return true;
       return false;
     };
 
@@ -405,7 +414,9 @@ const AppContent: React.FC = () => {
       }
     }
 
-    const filtered = filteredArticles.filter((article) => !isSystemNotice(article));
+    const filtered = filteredArticles.filter(
+      (article) => !isSystemNotice(article),
+    );
     if (filtered.length > 0) {
       logger.debugTag(
         "FEED",
@@ -438,15 +449,48 @@ const AppContent: React.FC = () => {
   ]);
 
   const selectedCategoryDisplayName = useMemo(() => {
-    return categories.find((category) => category.id === selectedCategory)?.name || selectedCategory;
+    return (
+      categories.find((category) => category.id === selectedCategory)?.name ||
+      selectedCategory
+    );
   }, [categories, selectedCategory]);
 
-  const shouldShowCategoryUnavailableMessage =
-    !isSearchActive &&
-    selectedCategory !== "all" &&
-    selectedCategory !== "All" &&
-    loadingState.errors.length > 0 &&
-    !loadingState.isHoldingPreviousContent;
+  const openFeedManagerFocus = useCallback(
+    (payload: {
+      tab?: "operations" | "feeds" | "categories";
+      section?: string;
+      openProxySettings?: boolean;
+    }) => {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(
+          "feed-manager-focus",
+          JSON.stringify(payload),
+        );
+      }
+      openFeedManager();
+    },
+    [openFeedManager],
+  );
+
+  const scopedFeedUrls = useMemo(() => {
+    if (selectedFeedUrl) return [selectedFeedUrl];
+    if (
+      !selectedCategory ||
+      selectedCategory === "all" ||
+      selectedCategory === "All"
+    ) {
+      return feeds.map((feed) => feed.url);
+    }
+
+    return feeds
+      .filter((feed) => feed.categoryId === selectedCategory)
+      .map((feed) => feed.url);
+  }, [feeds, selectedCategory, selectedFeedUrl]);
+
+  const scopedLoadErrors = useMemo(() => {
+    const scopedSet = new Set(scopedFeedUrls);
+    return loadingState.errors.filter((error) => scopedSet.has(error.url));
+  }, [loadingState.errors, scopedFeedUrls]);
 
   const shouldHoldPreviousContent =
     !!loadingState.isHoldingPreviousContent && heldArticles.length > 0;
@@ -455,10 +499,8 @@ const AppContent: React.FC = () => {
     feeds.length > 0 &&
     !loadingState.hasScopedCache &&
     !shouldHoldPreviousContent &&
-    (
-      !loadingState.isResolved ||
-      (loadingState.status === "loading" && !loadingState.isBackgroundRefresh)
-    );
+    (!loadingState.isResolved ||
+      (loadingState.status === "loading" && !loadingState.isBackgroundRefresh));
 
   // Enhanced pagination system with URL persistence and reset triggers
   const pagination = usePagination(
@@ -466,23 +508,89 @@ const AppContent: React.FC = () => {
     Math.max(12, layoutSettings.articlesPerPage || 21),
     {
       persistInUrl: true,
-      resetTriggers: [selectedCategory, isSearchActive, searchQuery, contentConfig.paginationType],
+      resetTriggers: [
+        selectedCategory,
+        isSearchActive,
+        searchQuery,
+        contentConfig.paginationType,
+      ],
     },
   );
 
   // T12 & T36: Progressive pagination support
   const paginatedArticles = useMemo(() => {
-    if (contentConfig.paginationType === 'loadMore') {
-      return displayArticles.slice(0, (pagination.currentPage + 1) * layoutSettings.articlesPerPage);
+    if (contentConfig.paginationType === "loadMore") {
+      return displayArticles.slice(
+        0,
+        (pagination.currentPage + 1) * layoutSettings.articlesPerPage,
+      );
     }
     return displayArticles.slice(pagination.startIndex, pagination.endIndex);
-  }, [displayArticles, pagination.startIndex, pagination.endIndex, pagination.currentPage, layoutSettings.articlesPerPage, contentConfig.paginationType]);
+  }, [
+    displayArticles,
+    pagination.startIndex,
+    pagination.endIndex,
+    pagination.currentPage,
+    layoutSettings.articlesPerPage,
+    contentConfig.paginationType,
+  ]);
 
-  const renderedArticles = shouldHoldPreviousContent ? heldArticles : paginatedArticles;
-  const renderedCategory = shouldHoldPreviousContent ? heldCategory : selectedCategory;
+  const renderedArticles = shouldHoldPreviousContent
+    ? heldArticles
+    : paginatedArticles;
+  const renderedCategory = shouldHoldPreviousContent
+    ? heldCategory
+    : selectedCategory;
   const renderedLayoutMode = shouldHoldPreviousContent
-    ? (heldLayoutMode || (currentLayoutMode as string))
+    ? heldLayoutMode || (currentLayoutMode as string)
     : (currentLayoutMode as string);
+
+  const shouldShowCategoryUnavailableMessage =
+    !isSearchActive &&
+    selectedCategory !== "all" &&
+    selectedCategory !== "All" &&
+    scopedFeedUrls.length > 0 &&
+    scopedLoadErrors.length >= scopedFeedUrls.length &&
+    renderedArticles.length === 0 &&
+    !loadingState.isHoldingPreviousContent;
+
+  const shouldShowScopedWarningBanner =
+    !isSearchActive &&
+    renderedArticles.length > 0 &&
+    scopedLoadErrors.length > 0;
+
+  const scopedWarningKey = useMemo(() => {
+    if (!shouldShowScopedWarningBanner) return null;
+    const urls = scopedLoadErrors
+      .map((error) => error.url)
+      .sort()
+      .join("|");
+    return `${loadingState.scopeKey || selectedCategory}:${urls}:${scopedLoadErrors.length}`;
+  }, [
+    loadingState.scopeKey,
+    scopedLoadErrors,
+    selectedCategory,
+    shouldShowScopedWarningBanner,
+  ]);
+
+  const showTransientScopedWarning =
+    shouldShowScopedWarningBanner &&
+    !!scopedWarningKey &&
+    dismissedScopedWarningKey !== scopedWarningKey;
+
+  useEffect(() => {
+    if (!scopedWarningKey) {
+      setDismissedScopedWarningKey(null);
+      return;
+    }
+
+    setDismissedScopedWarningKey(null);
+    const timer = window.setTimeout(() => {
+      setDismissedScopedWarningKey(scopedWarningKey);
+    }, 10000);
+
+    return () => window.clearTimeout(timer);
+  }, [scopedWarningKey]);
 
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
@@ -543,11 +651,11 @@ const AppContent: React.FC = () => {
 
   const handleTitleNavigation = useCallback(() => {
     const category = "all";
-      if (selectedCategory === category && !selectedFeedUrl) {
-        pagination.resetPagination();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
+    if (selectedCategory === category && !selectedFeedUrl) {
+      pagination.resetPagination();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     const categoryObj = categories.find((c) => c.id === category);
     let targetMode: string = resolveBaseLayoutMode();
 
@@ -780,19 +888,20 @@ const AppContent: React.FC = () => {
           tabIndex={-1}
         >
           {loadingState.status === "loading" &&
-            (!loadingState.hasScopedCache || loadingState.isHoldingPreviousContent) && (
-            <FeedLoadingProgress
-              loadedFeeds={loadingState.loadedFeeds}
-              totalFeeds={loadingState.totalFeeds}
-              progress={loadingState.progress}
-              isBackgroundRefresh={loadingState.isBackgroundRefresh}
-              errors={loadingState.errors}
-              currentAction={loadingState.currentAction}
-              onCancel={cancelLoading}
-              onRetryErrors={retryFailedFeeds}
-              mode="overlay"
-            />
-          )}
+            (!loadingState.hasScopedCache ||
+              loadingState.isHoldingPreviousContent) && (
+              <FeedLoadingProgress
+                loadedFeeds={loadingState.loadedFeeds}
+                totalFeeds={loadingState.totalFeeds}
+                progress={loadingState.progress}
+                isBackgroundRefresh={loadingState.isBackgroundRefresh}
+                errors={loadingState.errors}
+                currentAction={loadingState.currentAction}
+                onCancel={cancelLoading}
+                onRetryErrors={retryFailedFeeds}
+                mode="overlay"
+              />
+            )}
 
           {isSearchActive && (
             <div className={contentContainerClass}>
@@ -846,25 +955,84 @@ const AppContent: React.FC = () => {
           ) : (
             <>
               {renderedArticles.length > 0 ? (
-                <Suspense
-                  fallback={
-                    <div className="feed-page-frame">
-                      <FeedSkeleton
-                        count={layoutSettings.articlesPerPage}
-                        layoutMode={renderedLayoutMode}
-                      />
+                <>
+                  {showTransientScopedWarning && (
+                    <div className={contentContainerClass}>
+                      <div className="mb-6 rounded-[22px] border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.1)] px-5 py-4 text-[rgb(var(--theme-text-readable))] shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold">
+                              {scopedLoadErrors.length} feed
+                              {scopedLoadErrors.length > 1
+                                ? "s falharam"
+                                : " falhou"}{" "}
+                              nesta atualização
+                            </p>
+                            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                              Os artigos válidos continuam visíveis. Abra os
+                              diagnósticos para ver a rota usada, a causa
+                              classificada e a ação recomendada.
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() =>
+                                openFeedManagerFocus({
+                                  tab: "operations",
+                                  section: "feed-status",
+                                })
+                              }
+                              className="rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.18)]"
+                            >
+                              Abrir diagnósticos
+                            </button>
+                            <button
+                              onClick={() =>
+                                openFeedManagerFocus({
+                                  tab: "operations",
+                                  openProxySettings: true,
+                                })
+                              }
+                              className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgba(var(--color-text),0.08)]"
+                            >
+                              Configurar proxies
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDismissedScopedWarningKey(scopedWarningKey)
+                              }
+                              className="rounded-full border border-[rgb(var(--color-border))]/16 bg-transparent px-3 py-2 text-sm font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-all hover:bg-[rgba(var(--color-text),0.06)]"
+                              aria-label="Fechar aviso"
+                            >
+                              Fechar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  }
-                >
-                  <FeedContent
-                    key={`${renderedCategory}-${selectedFeedUrl || "all"}-${renderedLayoutMode}`}
-                    articles={renderedArticles}
-                    timeFormat={timeFormat}
-                    selectedCategory={renderedCategory}
-                    layoutMode={renderedLayoutMode}
-                    onMounted={handleContentMounted}
-                  />
-                </Suspense>
+                  )}
+
+                  <Suspense
+                    fallback={
+                      <div className="feed-page-frame">
+                        <FeedSkeleton
+                          count={layoutSettings.articlesPerPage}
+                          layoutMode={renderedLayoutMode}
+                        />
+                      </div>
+                    }
+                  >
+                    <FeedContent
+                      key={`${renderedCategory}-${selectedFeedUrl || "all"}-${renderedLayoutMode}`}
+                      articles={renderedArticles}
+                      timeFormat={timeFormat}
+                      selectedCategory={renderedCategory}
+                      layoutMode={renderedLayoutMode}
+                      onMounted={handleContentMounted}
+                    />
+                  </Suspense>
+                </>
               ) : (
                 <div className="feed-page-frame">
                   {isSearchActive ? (
@@ -900,19 +1068,84 @@ const AppContent: React.FC = () => {
                     </div>
                   ) : articles.length > 0 ? (
                     shouldShowCategoryUnavailableMessage ? (
-                      <p className="text-center text-[rgb(var(--color-textSecondary))]">
-                        Unable to load the feeds for "{selectedCategoryDisplayName}" right now. Try again in a moment.
-                      </p>
+                      <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.1)] px-6 py-8 text-center">
+                        <p className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
+                          Unable to load the feeds for "
+                          {selectedCategoryDisplayName}" right now.
+                        </p>
+                        <p className="mt-3 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          Todas as fontes deste escopo falharam na atualização
+                          atual. Abra os diagnósticos para ver a rota usada e a
+                          ação recomendada.
+                        </p>
+                        <div className="mt-5 flex flex-wrap justify-center gap-2">
+                          <button
+                            onClick={() =>
+                              openFeedManagerFocus({
+                                tab: "operations",
+                                section: "feed-status",
+                              })
+                            }
+                            className="rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))]"
+                          >
+                            Abrir diagnósticos
+                          </button>
+                          <button
+                            onClick={() =>
+                              openFeedManagerFocus({
+                                tab: "operations",
+                                openProxySettings: true,
+                              })
+                            }
+                            className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
+                          >
+                            Configurar proxies
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <p className="text-center text-[rgb(var(--color-textSecondary))]">
-                        No articles found for the category "{selectedCategoryDisplayName}".
+                        No articles found for the category "
+                        {selectedCategoryDisplayName}".
                       </p>
                     )
                   ) : feeds.length > 0 ? (
                     shouldShowCategoryUnavailableMessage ? (
-                      <p className="text-center text-[rgb(var(--color-textSecondary))]">
-                        Unable to load the feeds for "{selectedCategoryDisplayName}" right now. Try again in a moment.
-                      </p>
+                      <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.1)] px-6 py-8 text-center">
+                        <p className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
+                          Unable to load the feeds for "
+                          {selectedCategoryDisplayName}" right now.
+                        </p>
+                        <p className="mt-3 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          Todas as fontes deste escopo falharam na atualização
+                          atual. Abra os diagnósticos para ver a rota usada e a
+                          ação recomendada.
+                        </p>
+                        <div className="mt-5 flex flex-wrap justify-center gap-2">
+                          <button
+                            onClick={() =>
+                              openFeedManagerFocus({
+                                tab: "operations",
+                                section: "feed-status",
+                              })
+                            }
+                            className="rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))]"
+                          >
+                            Abrir diagnósticos
+                          </button>
+                          <button
+                            onClick={() =>
+                              openFeedManagerFocus({
+                                tab: "operations",
+                                openProxySettings: true,
+                              })
+                            }
+                            className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
+                          >
+                            Configurar proxies
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <p className="text-center text-[rgb(var(--color-textSecondary))]">
                         No articles found from the provided feeds. Check your
@@ -939,49 +1172,71 @@ const AppContent: React.FC = () => {
               {/* Pagination Area */}
               {!showSkeleton && (
                 <div className="feed-page-frame mt-12 pb-12 flex flex-col items-center space-y-6">
-                  {contentConfig.paginationType === 'loadMore' ? (
-                    // Load More Button
-                    pagination.currentPage < pagination.totalPages - 1 && (
-                      <button
-                        onClick={() => pagination.setPage(pagination.currentPage + 1)}
-                        className={`px-8 py-3 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))] border border-[rgb(var(--color-border))]/30 rounded-full text-[rgb(var(--color-text))] font-bold shadow-lg hover:shadow-xl hover:bg-[rgb(var(--color-accent))]/10 transition-all active:scale-95 ${pagination.isNavigating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        disabled={pagination.isNavigating}
-                      >
-                        {pagination.isNavigating ? (
-                          <span className="flex items-center gap-2">
-                             <LoadingSpinner size="sm" /> Carregando...
-                          </span>
-                        ) : 'Carregar mais artigos'}
-                      </button>
-                    )
-                  ) : (
-                    // Numbered Pagination
-                    pagination.totalPages > 1 && (
-                      <Suspense
-                        fallback={
-                          <div className="h-10 w-48 bg-gray-800/50 rounded-full animate-pulse" />
-                        }
-                      >
-                        <PaginationControls
-                          currentPage={pagination.currentPage}
-                          totalPages={pagination.totalPages}
-                          onPageChange={pagination.setPage}
-                          isNavigating={pagination.isNavigating}
-                          compact={false}
-                        />
-                      </Suspense>
-                    )
-                  )}
+                  {contentConfig.paginationType === "loadMore"
+                    ? // Load More Button
+                      pagination.currentPage < pagination.totalPages - 1 && (
+                        <button
+                          onClick={() =>
+                            pagination.setPage(pagination.currentPage + 1)
+                          }
+                          className={`px-8 py-3 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))] border border-[rgb(var(--color-border))]/30 rounded-full text-[rgb(var(--color-text))] font-bold shadow-lg hover:shadow-xl hover:bg-[rgb(var(--color-accent))]/10 transition-all active:scale-95 ${pagination.isNavigating ? "opacity-50 cursor-not-allowed" : ""}`}
+                          disabled={pagination.isNavigating}
+                        >
+                          {pagination.isNavigating ? (
+                            <span className="flex items-center gap-2">
+                              <LoadingSpinner size="sm" /> Carregando...
+                            </span>
+                          ) : (
+                            "Carregar mais artigos"
+                          )}
+                        </button>
+                      )
+                    : // Numbered Pagination
+                      pagination.totalPages > 1 && (
+                        <Suspense
+                          fallback={
+                            <div className="h-10 w-48 bg-gray-800/50 rounded-full animate-pulse" />
+                          }
+                        >
+                          <PaginationControls
+                            currentPage={pagination.currentPage}
+                            totalPages={pagination.totalPages}
+                            onPageChange={pagination.setPage}
+                            isNavigating={pagination.isNavigating}
+                            compact={false}
+                          />
+                        </Suspense>
+                      )}
 
                   {/* Mobile gesture hint */}
                   <div className="sm:hidden text-center text-[rgb(var(--color-textSecondary))] text-xs opacity-60">
                     <div className="flex items-center justify-center space-x-2">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16l-4-4m0 0l4-4m-4 4h18"
+                        />
                       </svg>
                       <span>Deslize para trocar de categoria</span>
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 8l4 4m0 0l-4 4m4-4H3"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -1002,7 +1257,9 @@ const AppContent: React.FC = () => {
               closeModal={closeFeedManager}
               articles={articles}
               onRefreshFeeds={() =>
-                loadFeeds(buildLoadRequest(selectedCategory, selectedFeedUrl, true))
+                loadFeeds(
+                  buildLoadRequest(selectedCategory, selectedFeedUrl, true),
+                )
               }
             />
           </Modal>

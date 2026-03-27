@@ -226,7 +226,10 @@ vi.mock("../config/layoutPresets.config", () => ({
 }));
 
 vi.mock("../components/Header", () => ({
-  default: (props: { onNavigation: (category: string) => void; onGoAll?: () => void }) => (
+  default: (props: {
+    onNavigation: (category: string) => void;
+    onGoAll?: () => void;
+  }) => (
     <div data-testid="header">
       <button onClick={() => props.onNavigation("design")}>Go design</button>
       <button onClick={() => props.onNavigation("youtube")}>Go videos</button>
@@ -272,7 +275,9 @@ vi.mock("../components/ProgressIndicator", () => ({
 }));
 
 vi.mock("../components/Modal", () => ({
-  Modal: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Modal: ({ children }: { children?: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("../components/FeedManager", () => ({
@@ -498,10 +503,82 @@ describe("AppContent cache-first rendering", () => {
     });
 
     expect(
-      screen.getByText('Unable to load the feeds for "Vídeos" right now. Try again in a moment.'),
+      screen.getByText('Unable to load the feeds for "Vídeos" right now.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Abrir diagnósticos" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/No articles found for the category "youtube"\./),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps visible articles on partial failures and shows a diagnostics CTA", async () => {
+    window.history.replaceState({}, "", "/?category=all");
+    mockFeedState.articles = [techArticle];
+    mockFeedState.loadingState = createLoadingState({
+      errors: [
+        {
+          url: designFeed.url,
+          error: "Network error occurred while fetching the feed",
+        },
+      ],
+    });
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Tech One")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /feed falhou nesta atualização|feeds falharam nesta atualização/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Abrir diagnósticos" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Configurar proxies" }),
+    ).toBeInTheDocument();
+  });
+
+  it("auto-dismisses the partial failure warning after a short delay", async () => {
+    vi.useFakeTimers();
+    window.history.replaceState({}, "", "/?category=all");
+    mockFeedState.articles = [techArticle];
+    mockFeedState.loadingState = createLoadingState({
+      errors: [
+        {
+          url: designFeed.url,
+          error: "Network error occurred while fetching the feed",
+        },
+      ],
+    });
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByText(
+        /feed falhou nesta atualização|feeds falharam nesta atualização/i,
+      ),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(10050);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByText(
+        /feed falhou nesta atualização|feeds falharam nesta atualização/i,
+      ),
+    ).not.toBeInTheDocument();
+
+    vi.useRealTimers();
   });
 });

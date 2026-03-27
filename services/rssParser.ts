@@ -16,9 +16,14 @@ import type { Article } from "../types";
 import { getLogger } from "./logger";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
 import { parseSecureRssXml } from "./secureXmlParser";
-import { proxyManager } from "./proxyManager";
+import { proxyManager, type ProxyAttempt } from "./proxyManager";
 import { getAlternativeUrls } from "./feedUrlMapper";
-import { sanitizeWithDomPurify, sanitizeHtmlContent, sanitizeArticleDescription } from "../utils/sanitization";
+import { type FeedRouteInfo } from "./feedDiagnostics";
+import {
+  sanitizeWithDomPurify,
+  sanitizeHtmlContent,
+  sanitizeArticleDescription,
+} from "../utils/sanitization";
 
 // Configurações otimizadas
 const MAX_RETRY_ATTEMPTS = 2;
@@ -26,8 +31,15 @@ const RETRY_DELAY_BASE_MS = 1000;
 
 const logger = getLogger();
 
-// --- HELPERS ---
+export interface DetailedFeedParseResult {
+  title: string;
+  articles: Article[];
+  route: FeedRouteInfo;
+  attempts: ProxyAttempt[];
+  cached: boolean;
+}
 
+// --- HELPERS ---
 
 function cleanDescription(text: string): string {
   if (!text) return "";
@@ -36,12 +48,16 @@ function cleanDescription(text: string): string {
 
 function sanitizeTitle(title: string): string {
   if (!title) return "No Title";
-  return sanitizeHtmlContent(title).replace(/[\n\r]+/g, " ").trim();
+  return sanitizeHtmlContent(title)
+    .replace(/[\n\r]+/g, " ")
+    .trim();
 }
 
 function sanitizeAuthor(author: string): string {
   if (!author) return "";
-  return sanitizeHtmlContent(author).replace(/[\n\r]+/g, " ").trim();
+  return sanitizeHtmlContent(author)
+    .replace(/[\n\r]+/g, " ")
+    .trim();
 }
 
 /**
@@ -60,24 +76,32 @@ function normalizeImageUrl(url: string, baseUrl?: string): string | null {
   let normalized = url.trim();
 
   // Remove leading/trailing whitespace and quotes
-  normalized = normalized.replace(/^["']|["']$/g, '');
+  normalized = normalized.replace(/^["']|["']$/g, "");
 
   // Skip data URIs and invalid patterns
-  if (normalized.startsWith('data:') || normalized.startsWith('javascript:') || normalized.startsWith('#')) {
+  if (
+    normalized.startsWith("data:") ||
+    normalized.startsWith("javascript:") ||
+    normalized.startsWith("#")
+  ) {
     return null;
   }
 
   // Handle protocol-relative URLs (//example.com/image.jpg)
-  if (normalized.startsWith('//')) {
-    normalized = 'https:' + normalized;
+  if (normalized.startsWith("//")) {
+    normalized = "https:" + normalized;
   }
 
   // Handle relative URLs if we have a base URL
-  if (baseUrl && !normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+  if (
+    baseUrl &&
+    !normalized.startsWith("http://") &&
+    !normalized.startsWith("https://")
+  ) {
     try {
       const base = new URL(baseUrl);
       // If URL starts with /, it's absolute path on same domain
-      if (normalized.startsWith('/')) {
+      if (normalized.startsWith("/")) {
         normalized = base.origin + normalized;
       } else {
         // Relative path
@@ -92,7 +116,7 @@ function normalizeImageUrl(url: string, baseUrl?: string): string | null {
   // Validate final URL
   try {
     const urlObj = new URL(normalized);
-    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+    if (urlObj.protocol !== "http:" && urlObj.protocol !== "https:") {
       return null;
     }
     return normalized;
@@ -107,42 +131,43 @@ function normalizeImageUrl(url: string, baseUrl?: string): string | null {
 function isFeaturedImage(img: Element, parent?: Element | null): boolean {
   // Check parent figure/div classes
   if (parent) {
-    const parentClass = parent.getAttribute('class') || '';
+    const parentClass = parent.getAttribute("class") || "";
     const parentTag = parent.tagName.toLowerCase();
 
     // Common featured image patterns
     if (
-      parentClass.includes('featured') ||
-      parentClass.includes('hero') ||
-      parentClass.includes('cover') ||
-      parentClass.includes('header') ||
-      parentClass.includes('banner') ||
-      (parentTag === 'figure' && (parentClass.includes('image') || parentClass.includes('img')))
+      parentClass.includes("featured") ||
+      parentClass.includes("hero") ||
+      parentClass.includes("cover") ||
+      parentClass.includes("header") ||
+      parentClass.includes("banner") ||
+      (parentTag === "figure" &&
+        (parentClass.includes("image") || parentClass.includes("img")))
     ) {
       return true;
     }
   }
 
   // Check image attributes
-  const imgClass = img.getAttribute('class') || '';
-  const imgId = img.getAttribute('id') || '';
-  const fetchPriority = img.getAttribute('fetchpriority');
+  const imgClass = img.getAttribute("class") || "";
+  const imgId = img.getAttribute("id") || "";
+  const fetchPriority = img.getAttribute("fetchpriority");
 
   if (
-    imgClass.includes('featured') ||
-    imgClass.includes('hero') ||
-    imgClass.includes('cover') ||
-    imgClass.includes('wp-post-image') ||
-    imgId.includes('featured') ||
-    imgId.includes('hero') ||
-    fetchPriority === 'high'
+    imgClass.includes("featured") ||
+    imgClass.includes("hero") ||
+    imgClass.includes("cover") ||
+    imgClass.includes("wp-post-image") ||
+    imgId.includes("featured") ||
+    imgId.includes("hero") ||
+    fetchPriority === "high"
   ) {
     return true;
   }
 
   // Check dimensions - large images are more likely to be featured
-  const width = parseInt(img.getAttribute('width') || '0');
-  const height = parseInt(img.getAttribute('height') || '0');
+  const width = parseInt(img.getAttribute("width") || "0");
+  const height = parseInt(img.getAttribute("height") || "0");
   if (width >= 800 || height >= 600) {
     return true;
   }
@@ -156,7 +181,10 @@ function isFeaturedImage(img: Element, parent?: Element | null): boolean {
 function parseSrcset(srcset: string): { url: string; width: number } | null {
   if (!srcset || srcset.trim().length === 0) return null;
 
-  const sources = srcset.split(',').map(s => s.trim()).filter(s => s);
+  const sources = srcset
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s);
   if (sources.length === 0) return null;
 
   const parsedSources: { url: string; width: number }[] = [];
@@ -166,11 +194,11 @@ function parseSrcset(srcset: string): { url: string; width: number } | null {
     const url = parts[0];
 
     // Look for width descriptor (e.g., "640w")
-    const widthPart = parts.find(p => p.endsWith('w'));
+    const widthPart = parts.find((p) => p.endsWith("w"));
     const width = widthPart ? parseInt(widthPart) : 0;
 
     // Also check for pixel density (e.g., "2x")
-    const densityPart = parts.find(p => p.endsWith('x'));
+    const densityPart = parts.find((p) => p.endsWith("x"));
     const density = densityPart ? parseFloat(densityPart) : 1;
 
     // Estimate width from density if no width specified
@@ -194,19 +222,22 @@ interface ImageCandidate {
   height?: number;
   size?: number; // file size in bytes
   score: number;
-  source: 'enclosure' | 'media:content' | 'media:thumbnail' | 'html';
+  source: "enclosure" | "media:content" | "media:thumbnail" | "html";
   isFeatured?: boolean; // Whether this is likely a featured/hero image
 }
 
 /**
  * Select the best image from candidates
  */
-function selectBestImage(candidates: ImageCandidate[], articleLink?: string): string | undefined {
+function selectBestImage(
+  candidates: ImageCandidate[],
+  articleLink?: string,
+): string | undefined {
   if (candidates.length === 0) return undefined;
 
   // Normalize all URLs first
   const normalizedCandidates = candidates
-    .map(c => {
+    .map((c) => {
       const normalizedUrl = normalizeImageUrl(c.url, articleLink);
       if (!normalizedUrl) return null;
       return { ...c, url: normalizedUrl };
@@ -228,8 +259,12 @@ function selectBestImage(candidates: ImageCandidate[], articleLink?: string): st
     if (!aIsLarge && bIsLarge) return 1;
 
     // 3. Prefer media:content/enclosure over thumbnail/html
-    const scoreA = a.score + (a.source === 'media:content' || a.source === 'enclosure' ? 2 : 0);
-    const scoreB = b.score + (b.source === 'media:content' || b.source === 'enclosure' ? 2 : 0);
+    const scoreA =
+      a.score +
+      (a.source === "media:content" || a.source === "enclosure" ? 2 : 0);
+    const scoreB =
+      b.score +
+      (b.source === "media:content" || b.source === "enclosure" ? 2 : 0);
 
     // 4. Sort by known width
     if (a.width && b.width && a.width !== b.width) return b.width - a.width;
@@ -241,33 +276,39 @@ function selectBestImage(candidates: ImageCandidate[], articleLink?: string): st
   });
 
   // Filter out tiny tracking pixels or icons (unless it's the only option)
-  const viable = normalizedCandidates.filter(c => {
+  const viable = normalizedCandidates.filter((c) => {
     // Allow small images only if they're featured or from reliable sources
     if (c.width && c.width <= 50) {
-      return c.isFeatured || c.source === 'media:content' || c.source === 'enclosure';
+      return (
+        c.isFeatured || c.source === "media:content" || c.source === "enclosure"
+      );
     }
     return true;
   });
 
   // Filter out common placeholder/tracking patterns
-  const filtered = viable.filter(c => {
+  const filtered = viable.filter((c) => {
     const urlLower = c.url.toLowerCase();
     // Skip common tracking/placeholder patterns
     if (
-      urlLower.includes('pixel') ||
-      urlLower.includes('tracking') ||
-      urlLower.includes('beacon') ||
-      urlLower.includes('spacer') ||
-      urlLower.includes('1x1') ||
-      urlLower.includes('blank.gif') ||
-      urlLower.includes('transparent.gif')
+      urlLower.includes("pixel") ||
+      urlLower.includes("tracking") ||
+      urlLower.includes("beacon") ||
+      urlLower.includes("spacer") ||
+      urlLower.includes("1x1") ||
+      urlLower.includes("blank.gif") ||
+      urlLower.includes("transparent.gif")
     ) {
       return false;
     }
     return true;
   });
 
-  return filtered.length > 0 ? filtered[0].url : (viable.length > 0 ? viable[0].url : normalizedCandidates[0].url);
+  return filtered.length > 0
+    ? filtered[0].url
+    : viable.length > 0
+      ? viable[0].url
+      : normalizedCandidates[0].url;
 }
 
 // --- PARSERS ---
@@ -275,7 +316,10 @@ function selectBestImage(candidates: ImageCandidate[], articleLink?: string): st
 /**
  * Parser para resposta JSON (RSS2JSON)
  */
-function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: string; articles: Article[] } {
+function parseRss2JsonResponse(
+  jsonContent: string,
+  _feedUrl: string,
+): { title: string; articles: Article[] } {
   let data;
   try {
     data = JSON.parse(jsonContent);
@@ -283,7 +327,7 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
     throw new Error("Failed to parse JSON response");
   }
 
-  if (data.status !== 'ok' && !data.items) {
+  if (data.status !== "ok" && !data.items) {
     throw new Error("Invalid RSS2JSON response format");
   }
 
@@ -296,8 +340,12 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
       const title = sanitizeTitle(item.title || "No Title");
       const link = item.link || "";
       const pubDate = new Date(item.pubDate || item.created || Date.now());
-      const description = cleanDescription(item.description || item.content || "").substring(0, 500);
-      const content = sanitizeWithDomPurify(item.content || item.description || "");
+      const description = cleanDescription(
+        item.description || item.content || "",
+      ).substring(0, 500);
+      const content = sanitizeWithDomPurify(
+        item.content || item.description || "",
+      );
       const author = sanitizeAuthor(item.author || "");
       const categories = Array.isArray(item.categories) ? item.categories : [];
 
@@ -310,43 +358,46 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
         if (normalized) {
           jsonImageCandidates.push({
             url: normalized,
-            source: 'media:thumbnail',
-            score: 5
+            source: "media:thumbnail",
+            score: 5,
           });
         }
       }
 
       // Check enclosure
-      if (item.enclosure?.link && item.enclosure?.type?.startsWith('image/')) {
+      if (item.enclosure?.link && item.enclosure?.type?.startsWith("image/")) {
         const normalized = normalizeImageUrl(item.enclosure.link, link);
         if (normalized) {
           jsonImageCandidates.push({
             url: normalized,
-            size: item.enclosure.length ? parseInt(item.enclosure.length) : undefined,
-            source: 'enclosure',
-            score: 10
+            size: item.enclosure.length
+              ? parseInt(item.enclosure.length)
+              : undefined,
+            source: "enclosure",
+            score: 10,
           });
         }
       }
 
       // Extract from content/description HTML if available
       const htmlContent = item.content || item.description || "";
-      if (htmlContent && typeof DOMParser !== 'undefined') {
+      if (htmlContent && typeof DOMParser !== "undefined") {
         try {
           const parser = new DOMParser();
-          const doc = parser.parseFromString(htmlContent, 'text/html');
-          const images = doc.getElementsByTagName('img');
+          const doc = parser.parseFromString(htmlContent, "text/html");
+          const images = doc.getElementsByTagName("img");
 
           for (let j = 0; j < Math.min(images.length, 5); j++) {
             const img = images[j];
-            const src = img.getAttribute('src');
-            const srcset = img.getAttribute('srcset');
-            const dataSrc = img.getAttribute('data-src') ||
-              img.getAttribute('data-original') ||
-              img.getAttribute('data-lazy-src');
+            const src = img.getAttribute("src");
+            const srcset = img.getAttribute("srcset");
+            const dataSrc =
+              img.getAttribute("data-src") ||
+              img.getAttribute("data-original") ||
+              img.getAttribute("data-lazy-src");
 
             const isFeatured = isFeaturedImage(img, img.parentElement);
-            const width = parseInt(img.getAttribute('width') || '0');
+            const width = parseInt(img.getAttribute("width") || "0");
 
             if (srcset) {
               const parsed = parseSrcset(srcset);
@@ -356,9 +407,9 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
                   jsonImageCandidates.push({
                     url: normalized,
                     width: parsed.width || width || undefined,
-                    source: 'html',
+                    source: "html",
                     score: isFeatured ? 12 : 8,
-                    isFeatured
+                    isFeatured,
                   });
                 }
               }
@@ -370,9 +421,9 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
                 jsonImageCandidates.push({
                   url: normalized,
                   width: width || undefined,
-                  source: 'html',
+                  source: "html",
                   score: isFeatured ? 10 : 7,
-                  isFeatured
+                  isFeatured,
                 });
               }
             }
@@ -383,9 +434,9 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
                 jsonImageCandidates.push({
                   url: normalized,
                   width: width || undefined,
-                  source: 'html',
+                  source: "html",
                   score: isFeatured ? 8 : 5,
-                  isFeatured
+                  isFeatured,
                 });
               }
             }
@@ -398,10 +449,17 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
       const imageUrl = selectBestImage(jsonImageCandidates, link);
 
       // Log only if no image found (for debugging)
-      if (process.env.NODE_ENV === 'development' && !imageUrl && jsonImageCandidates.length === 0) {
-        console.warn(`[ImageExtraction] No images found for: "${title.substring(0, 50)}..."`, {
-          link: link.substring(0, 60) + '...'
-        });
+      if (
+        process.env.NODE_ENV === "development" &&
+        !imageUrl &&
+        jsonImageCandidates.length === 0
+      ) {
+        console.warn(
+          `[ImageExtraction] No images found for: "${title.substring(0, 50)}..."`,
+          {
+            link: link.substring(0, 60) + "...",
+          },
+        );
       }
 
       if (title !== "No Title" && link) {
@@ -429,7 +487,10 @@ function parseRss2JsonResponse(jsonContent: string, _feedUrl: string): { title: 
 /**
  * Parser para resposta XML pura
  */
-function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string; articles: Article[] } {
+function parseXmlResponse(
+  xmlContent: string,
+  _feedUrl: string,
+): { title: string; articles: Article[] } {
   const xmlDoc = parseSecureRssXml(xmlContent);
 
   const parseErrors = xmlDoc.getElementsByTagName("parsererror");
@@ -459,7 +520,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         const rdfChannels = xmlDoc.getElementsByTagName("channel");
         if (rdfChannels.length > 0) {
           const titleElements = rdfChannels[0].getElementsByTagName("title");
-          channelTitle = titleElements[0]?.textContent?.trim() || "Untitled Feed";
+          channelTitle =
+            titleElements[0]?.textContent?.trim() || "Untitled Feed";
           channelTitle = sanitizeTitle(channelTitle);
         }
         items = rdfItems;
@@ -482,14 +544,18 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       let link = "";
       const linkElements = item.getElementsByTagName("link");
       if (linkElements.length > 0) {
-        link = linkElements[0].textContent?.trim() || linkElements[0].getAttribute("href") || "";
+        link =
+          linkElements[0].textContent?.trim() ||
+          linkElements[0].getAttribute("href") ||
+          "";
       }
 
       let pubDate = new Date();
       const pubDateElements = item.getElementsByTagName("pubDate");
       const publishedElements = item.getElementsByTagName("published");
       const dcDateElements = item.getElementsByTagName("date");
-      const dateElement = pubDateElements[0] || publishedElements[0] || dcDateElements[0];
+      const dateElement =
+        pubDateElements[0] || publishedElements[0] || dcDateElements[0];
       if (dateElement?.textContent) {
         const parsedDate = new Date(dateElement.textContent.trim());
         if (!isNaN(parsedDate.getTime())) {
@@ -503,13 +569,18 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       const descElements = item.getElementsByTagName("description");
       const summaryElements = item.getElementsByTagName("summary");
       const contentElements = item.getElementsByTagName("content");
-      const encodedContentElements = item.getElementsByTagName("content:encoded");
+      const encodedContentElements =
+        item.getElementsByTagName("content:encoded");
       const bodyElements = item.getElementsByTagName("body");
 
       const descEl = descElements[0] || summaryElements[0];
       if (descEl?.textContent) descriptionRaw = descEl.textContent;
 
-      const contentEl = encodedContentElements[0] || contentElements[0] || bodyElements[0] || descElements[0];
+      const contentEl =
+        encodedContentElements[0] ||
+        contentElements[0] ||
+        bodyElements[0] ||
+        descElements[0];
       if (contentEl?.textContent) contentRaw = contentEl.textContent;
 
       if (!descriptionRaw && contentRaw) descriptionRaw = contentRaw;
@@ -522,7 +593,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       const authorElements = item.getElementsByTagName("author");
       const creatorElements = item.getElementsByTagName("creator");
       const dcCreatorElements = item.getElementsByTagName("dc:creator");
-      const authorElement = authorElements[0] || dcCreatorElements[0] || creatorElements[0];
+      const authorElement =
+        authorElements[0] || dcCreatorElements[0] || creatorElements[0];
       if (authorElement?.textContent) {
         author = sanitizeAuthor(authorElement.textContent.trim());
       }
@@ -539,7 +611,6 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       let audioUrl = "";
       let audioDuration = "";
 
-
       // 1. Check Enclosures
       const enclosureElements = item.getElementsByTagName("enclosure");
       for (let j = 0; j < enclosureElements.length; j++) {
@@ -554,8 +625,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
               imageCandidates.push({
                 url: normalized,
                 size: parseInt(getAttr(enc, "length") || "0"),
-                source: 'enclosure',
-                score: 10
+                source: "enclosure",
+                score: 10,
               });
             }
           } else if (type.startsWith("audio/") && !audioUrl) {
@@ -578,8 +649,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
               url: normalized,
               width: width || undefined,
               height: height || undefined,
-              source: 'media:content',
-              score: 10 + (width > 600 ? 5 : 0) // Bonus for high res
+              source: "media:content",
+              score: 10 + (width > 600 ? 5 : 0), // Bonus for high res
             });
           }
         }
@@ -588,11 +659,13 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       const mediaGroups = item.getElementsByTagName("media:group");
       for (let j = 0; j < mediaGroups.length; j++) {
         const contents = mediaGroups[j].getElementsByTagName("media:content");
-        for (let k = 0; k < contents.length; k++) processMediaElement(contents[k]);
+        for (let k = 0; k < contents.length; k++)
+          processMediaElement(contents[k]);
       }
 
       const mediaContents = item.getElementsByTagName("media:content");
-      for (let j = 0; j < mediaContents.length; j++) processMediaElement(mediaContents[j]);
+      for (let j = 0; j < mediaContents.length; j++)
+        processMediaElement(mediaContents[j]);
 
       // 3. Check Media Thumbnail
       const mediaThumbnails = item.getElementsByTagName("media:thumbnail");
@@ -605,8 +678,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
             imageCandidates.push({
               url: normalized,
               width: width || undefined,
-              source: 'media:thumbnail',
-              score: 5
+              source: "media:thumbnail",
+              score: 5,
             });
           }
         }
@@ -615,38 +688,43 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       // 4. Extract from Content/Description HTML
       const htmlContent = contentRaw || descriptionRaw || "";
 
-      if (process.env.NODE_ENV === 'development') {
-        logger.debugTag('FEED', `Starting HTML extraction for: "${title.substring(0, 50)}..."`, {
-          htmlContentLength: htmlContent.length,
-          hasDOMParser: typeof DOMParser !== 'undefined',
-          link: link.substring(0, 60) + '...'
-        });
+      if (process.env.NODE_ENV === "development") {
+        logger.debugTag(
+          "FEED",
+          `Starting HTML extraction for: "${title.substring(0, 50)}..."`,
+          {
+            htmlContentLength: htmlContent.length,
+            hasDOMParser: typeof DOMParser !== "undefined",
+            link: link.substring(0, 60) + "...",
+          },
+        );
       }
 
       try {
         // Use DOMParser if available (browser/jsdom)
-        if (typeof DOMParser !== 'undefined') {
+        if (typeof DOMParser !== "undefined") {
           const parser = new DOMParser();
-          const doc = parser.parseFromString(htmlContent, 'text/html');
+          const doc = parser.parseFromString(htmlContent, "text/html");
 
           // First, try to find featured images in figure/picture elements
-          const figures = doc.getElementsByTagName('figure');
+          const figures = doc.getElementsByTagName("figure");
           for (let f = 0; f < figures.length; f++) {
             const figure = figures[f];
-            const figureImages = figure.getElementsByTagName('img');
+            const figureImages = figure.getElementsByTagName("img");
             if (figureImages.length > 0) {
               const img = figureImages[0];
-              const src = img.getAttribute('src');
-              const srcset = img.getAttribute('srcset');
-              const dataSrc = img.getAttribute('data-src') ||
-                img.getAttribute('data-original') ||
-                img.getAttribute('data-lazy-src') ||
-                img.getAttribute('data-lazy') ||
-                img.getAttribute('data-srcset');
+              const src = img.getAttribute("src");
+              const srcset = img.getAttribute("srcset");
+              const dataSrc =
+                img.getAttribute("data-src") ||
+                img.getAttribute("data-original") ||
+                img.getAttribute("data-lazy-src") ||
+                img.getAttribute("data-lazy") ||
+                img.getAttribute("data-srcset");
 
               const isFeatured = isFeaturedImage(img, figure);
-              const width = parseInt(img.getAttribute('width') || '0');
-              const height = parseInt(img.getAttribute('height') || '0');
+              const width = parseInt(img.getAttribute("width") || "0");
+              const height = parseInt(img.getAttribute("height") || "0");
 
               // Handle srcset first (best quality)
               if (srcset) {
@@ -658,9 +736,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                       url: normalized,
                       width: parsed.width || width || undefined,
                       height: height || undefined,
-                      source: 'html',
+                      source: "html",
                       score: isFeatured ? 15 : 10, // Higher score for featured
-                      isFeatured
+                      isFeatured,
                     });
                   }
                 }
@@ -674,9 +752,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                     url: normalized,
                     width: width || undefined,
                     height: height || undefined,
-                    source: 'html',
+                    source: "html",
                     score: isFeatured ? 12 : 8,
-                    isFeatured
+                    isFeatured,
                   });
                 }
               }
@@ -689,9 +767,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                     url: normalized,
                     width: width || undefined,
                     height: height || undefined,
-                    source: 'html',
+                    source: "html",
                     score: isFeatured ? 10 : 6,
-                    isFeatured
+                    isFeatured,
                   });
                 }
               }
@@ -699,7 +777,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
           }
 
           // Then, process all other images
-          const images = doc.getElementsByTagName('img');
+          const images = doc.getElementsByTagName("img");
           for (let j = 0; j < images.length; j++) {
             const img = images[j];
 
@@ -707,7 +785,7 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
             let alreadyProcessed = false;
             let parent = img.parentElement;
             while (parent) {
-              if (parent.tagName.toLowerCase() === 'figure') {
+              if (parent.tagName.toLowerCase() === "figure") {
                 alreadyProcessed = true;
                 break;
               }
@@ -715,17 +793,18 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
             }
             if (alreadyProcessed) continue;
 
-            const src = img.getAttribute('src');
-            const srcset = img.getAttribute('srcset');
-            const dataSrc = img.getAttribute('data-src') ||
-              img.getAttribute('data-original') ||
-              img.getAttribute('data-lazy-src') ||
-              img.getAttribute('data-lazy') ||
-              img.getAttribute('data-srcset');
+            const src = img.getAttribute("src");
+            const srcset = img.getAttribute("srcset");
+            const dataSrc =
+              img.getAttribute("data-src") ||
+              img.getAttribute("data-original") ||
+              img.getAttribute("data-lazy-src") ||
+              img.getAttribute("data-lazy") ||
+              img.getAttribute("data-srcset");
 
             const isFeatured = isFeaturedImage(img, img.parentElement);
-            const width = parseInt(img.getAttribute('width') || '0');
-            const height = parseInt(img.getAttribute('height') || '0');
+            const width = parseInt(img.getAttribute("width") || "0");
+            const height = parseInt(img.getAttribute("height") || "0");
 
             // Handle srcset (often contains higher res versions)
             if (srcset) {
@@ -737,9 +816,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                     url: normalized,
                     width: parsed.width || width || undefined,
                     height: height || undefined,
-                    source: 'html',
+                    source: "html",
                     score: isFeatured ? 12 : 8,
-                    isFeatured
+                    isFeatured,
                   });
                 }
               }
@@ -753,9 +832,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                   url: normalized,
                   width: width || undefined,
                   height: height || undefined,
-                  source: 'html',
+                  source: "html",
                   score: isFeatured ? 10 : 7,
-                  isFeatured
+                  isFeatured,
                 });
               }
             }
@@ -768,9 +847,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
                   url: normalized,
                   width: width || undefined,
                   height: height || undefined,
-                  source: 'html',
+                  source: "html",
                   score: isFeatured ? 8 : 5,
-                  isFeatured
+                  isFeatured,
                 });
               }
             }
@@ -778,19 +857,25 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
             if (imageCandidates.length > 20) break; // Limit processing
           }
         } else {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[ImageExtraction] DOMParser not available, using regex fallback', {
-              articleTitle: title.substring(0, 50) + '...'
-            });
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "[ImageExtraction] DOMParser not available, using regex fallback",
+              {
+                articleTitle: title.substring(0, 50) + "...",
+              },
+            );
           }
-          throw new Error('DOMParser not available');
+          throw new Error("DOMParser not available");
         }
       } catch (e) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('[ImageExtraction] DOMParser failed, using regex fallback', {
-            error: e instanceof Error ? e.message : String(e),
-            articleTitle: title.substring(0, 50) + '...'
-          });
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "[ImageExtraction] DOMParser failed, using regex fallback",
+            {
+              error: e instanceof Error ? e.message : String(e),
+              articleTitle: title.substring(0, 50) + "...",
+            },
+          );
         }
         // Fallback regex - improved patterns
         const imgPatterns = [
@@ -808,8 +893,8 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
               if (normalized) {
                 imageCandidates.push({
                   url: normalized,
-                  source: 'html',
-                  score: 3
+                  source: "html",
+                  score: 3,
                 });
                 if (imageCandidates.length > 5) break;
               }
@@ -822,8 +907,10 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
       if (audioUrl && !audioDuration) {
         const itunesDuration = item.getElementsByTagName("itunes:duration")[0];
         const plainDuration = item.getElementsByTagName("duration")[0];
-        if (itunesDuration?.textContent) audioDuration = itunesDuration.textContent.trim();
-        else if (plainDuration?.textContent) audioDuration = plainDuration.textContent.trim();
+        if (itunesDuration?.textContent)
+          audioDuration = itunesDuration.textContent.trim();
+        else if (plainDuration?.textContent)
+          audioDuration = plainDuration.textContent.trim();
       }
 
       // Select best image (normalization happens inside selectBestImage)
@@ -837,68 +924,87 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
 
         // Skip common placeholder patterns
         if (
-          urlLower.includes('?text=') ||
+          urlLower.includes("?text=") ||
           urlLower.match(/^[a-z0-9]{6}\?text=/i) ||
-          (urlLower.includes('placeholder') && !urlLower.includes('image')) ||
-          (urlLower.includes('blank') && urlLower.includes('.gif'))
+          (urlLower.includes("placeholder") && !urlLower.includes("image")) ||
+          (urlLower.includes("blank") && urlLower.includes(".gif"))
         ) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[ImageValidation] Rejected placeholder pattern', { url: imageUrl.substring(0, 80) });
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[ImageValidation] Rejected placeholder pattern", {
+              url: imageUrl.substring(0, 80),
+            });
           }
           validImageUrl = undefined;
         } else {
           try {
             const urlObj = new URL(imageUrl);
-            if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+            if (urlObj.protocol === "http:" || urlObj.protocol === "https:") {
               // Check if it looks like an image URL
               const pathname = urlObj.pathname.toLowerCase();
-              const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
-              const hasImageIndicator = pathname.includes('image') || pathname.includes('img') || pathname.includes('photo') || pathname.includes('media');
-              const hasImageParam = urlObj.searchParams.has('image') || urlObj.searchParams.has('img') || urlObj.searchParams.has('photo');
+              const hasImageExtension =
+                /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
+              const hasImageIndicator =
+                pathname.includes("image") ||
+                pathname.includes("img") ||
+                pathname.includes("photo") ||
+                pathname.includes("media");
+              const hasImageParam =
+                urlObj.searchParams.has("image") ||
+                urlObj.searchParams.has("img") ||
+                urlObj.searchParams.has("photo");
 
               // More lenient validation - accept if it has extension, indicator, param, or is from known image CDNs
-              const isKnownImageCdn = urlObj.hostname.includes('cdn') ||
-                urlObj.hostname.includes('images') ||
-                urlObj.hostname.includes('media') ||
-                urlObj.hostname.includes('static') ||
-                urlObj.hostname.includes('assets') ||
-                urlObj.hostname.includes('uploads') ||
-                urlObj.hostname.includes('wp-content');
+              const isKnownImageCdn =
+                urlObj.hostname.includes("cdn") ||
+                urlObj.hostname.includes("images") ||
+                urlObj.hostname.includes("media") ||
+                urlObj.hostname.includes("static") ||
+                urlObj.hostname.includes("assets") ||
+                urlObj.hostname.includes("uploads") ||
+                urlObj.hostname.includes("wp-content");
 
-              if (hasImageExtension || hasImageIndicator || hasImageParam || isKnownImageCdn) {
+              if (
+                hasImageExtension ||
+                hasImageIndicator ||
+                hasImageParam ||
+                isKnownImageCdn
+              ) {
                 validImageUrl = imageUrl;
 
-                if (process.env.NODE_ENV === 'development') {
-                  logger.debugTag('FEED', 'Accepted image URL', {
+                if (process.env.NODE_ENV === "development") {
+                  logger.debugTag("FEED", "Accepted image URL", {
                     url: imageUrl.substring(0, 80),
                     hasImageExtension,
                     hasImageIndicator,
                     hasImageParam,
-                    isKnownImageCdn
+                    isKnownImageCdn,
                   });
                 }
               } else {
-                if (process.env.NODE_ENV === 'development') {
-                  logger.debugTag('FEED', 'Rejected - no image indicators', {
+                if (process.env.NODE_ENV === "development") {
+                  logger.debugTag("FEED", "Rejected - no image indicators", {
                     url: imageUrl.substring(0, 80),
-                    pathname: pathname.substring(0, 50)
+                    pathname: pathname.substring(0, 50),
                   });
                 }
               }
             }
           } catch (e) {
             // Invalid URL - already normalized, so this shouldn't happen, but just in case
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('[ImageValidation] Failed to validate URL', { url: imageUrl.substring(0, 80), error: e });
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[ImageValidation] Failed to validate URL", {
+                url: imageUrl.substring(0, 80),
+                error: e,
+              });
             }
             validImageUrl = undefined;
           }
         }
       } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('[ImageValidation] No image URL selected', {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[ImageValidation] No image URL selected", {
             candidatesCount: imageCandidates.length,
-            articleTitle: title.substring(0, 50) + '...'
+            articleTitle: title.substring(0, 50) + "...",
           });
         }
       }
@@ -920,7 +1026,9 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
         });
       }
     } catch {
-      logger.warn(`Failed to parse article ${i + 1}`, { component: "rssParser" });
+      logger.warn(`Failed to parse article ${i + 1}`, {
+        component: "rssParser",
+      });
     }
   }
 
@@ -934,23 +1042,26 @@ function parseXmlResponse(xmlContent: string, _feedUrl: string): { title: string
 function validateResponse(content: string): boolean {
   if (!content || content.trim().length === 0) return false;
   const trimmed = content.trim();
-  if (trimmed.toLowerCase().includes('<!doctype html') || trimmed.toLowerCase().startsWith('<html')) {
+  if (
+    trimmed.toLowerCase().includes("<!doctype html") ||
+    trimmed.toLowerCase().startsWith("<html")
+  ) {
     return false;
   }
-  return trimmed.startsWith('<') || trimmed.startsWith('{');
+  return trimmed.startsWith("<") || trimmed.startsWith("{");
 }
 
 async function fetchRssFeed(
   url: string,
-  _signal?: AbortSignal
-): Promise<{ title: string; articles: Article[] }> {
+  _signal?: AbortSignal,
+): Promise<DetailedFeedParseResult> {
   const urlsToTry = getAlternativeUrls(url);
   let lastError: Error = new Error("Unknown error");
 
   for (const currentUrl of urlsToTry) {
     try {
       const shouldTryDirectFetch = (() => {
-        if (typeof window === 'undefined') return true;
+        if (typeof window === "undefined") return true;
         try {
           const parsed = new URL(currentUrl, window.location.href);
           return parsed.origin === window.location.origin;
@@ -967,11 +1078,12 @@ async function fetchRssFeed(
           const timeoutId = setTimeout(() => controller.abort(), timeout);
 
           const directResp = await fetch(currentUrl, {
-            method: 'GET',
+            method: "GET",
             signal: controller.signal,
             headers: {
-              'User-Agent': 'Personal News Dashboard/1.0',
-              Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+              "User-Agent": "Personal News Dashboard/1.0",
+              Accept:
+                "application/rss+xml, application/atom+xml, application/xml, text/xml",
             },
           });
 
@@ -981,23 +1093,60 @@ async function fetchRssFeed(
             const directContent = await directResp.text();
             if (validateResponse(directContent)) {
               // Try JSON first
-              if (directContent.trim().startsWith('{')) {
+              if (directContent.trim().startsWith("{")) {
                 try {
-                  const jsonResult = parseRss2JsonResponse(directContent, currentUrl);
-                  if (jsonResult.articles.length > 0) return jsonResult;
+                  const jsonResult = parseRss2JsonResponse(
+                    directContent,
+                    currentUrl,
+                  );
+                  if (jsonResult.articles.length > 0) {
+                    return {
+                      ...jsonResult,
+                      route: {
+                        transport: "client",
+                        routeKind: "direct",
+                        routeName: "DirectFetch",
+                        viaFallback: false,
+                        checkedAt: Date.now(),
+                      },
+                      attempts: [],
+                      cached: false,
+                    };
+                  }
                 } catch {
                   // fall through to XML parsing
                 }
               }
 
-              const xmlResultDirect = parseXmlResponse(directContent, currentUrl);
-              if (xmlResultDirect.articles.length > 0) return xmlResultDirect;
+              const xmlResultDirect = parseXmlResponse(
+                directContent,
+                currentUrl,
+              );
+              if (xmlResultDirect.articles.length > 0) {
+                return {
+                  ...xmlResultDirect,
+                  route: {
+                    transport: "client",
+                    routeKind: "direct",
+                    routeName: "DirectFetch",
+                    viaFallback: false,
+                    checkedAt: Date.now(),
+                  },
+                  attempts: [],
+                  cached: false,
+                };
+              }
             }
           }
         } catch (directError) {
           logger.debug(`Direct fetch failed for ${currentUrl}`, {
-            component: 'rssParser',
-            additionalData: { error: directError instanceof Error ? directError.message : String(directError) },
+            component: "rssParser",
+            additionalData: {
+              error:
+                directError instanceof Error
+                  ? directError.message
+                  : String(directError),
+            },
           });
         }
       }
@@ -1010,14 +1159,29 @@ async function fetchRssFeed(
       const content = result.content;
 
       if (!validateResponse(content)) {
-        throw new Error(`Invalid response format from proxy (${result.proxyUsed})`);
+        throw new Error(
+          `Invalid response format from proxy (${result.proxyUsed})`,
+        );
       }
 
       // Try parsing as JSON first if it looks like JSON
-      if (content.trim().startsWith('{')) {
+      if (content.trim().startsWith("{")) {
         try {
           const jsonResult = parseRss2JsonResponse(content, currentUrl);
-          if (jsonResult.articles.length > 0) return jsonResult;
+          if (jsonResult.articles.length > 0) {
+            return {
+              ...jsonResult,
+              route: {
+                transport: "client",
+                routeKind: "proxy",
+                routeName: result.proxyUsed,
+                viaFallback: true,
+                checkedAt: Date.now(),
+              },
+              attempts: result.attempts,
+              cached: false,
+            };
+          }
         } catch {
           // proceed to XML parsing
         }
@@ -1025,14 +1189,26 @@ async function fetchRssFeed(
 
       // Fallback to XML parsing
       const xmlResult = parseXmlResponse(content, currentUrl);
-      if (xmlResult.articles.length > 0) return xmlResult;
-
+      if (xmlResult.articles.length > 0) {
+        return {
+          ...xmlResult,
+          route: {
+            transport: "client",
+            routeKind: "proxy",
+            routeName: result.proxyUsed,
+            viaFallback: true,
+            checkedAt: Date.now(),
+          },
+          attempts: result.attempts,
+          cached: false,
+        };
+      }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
       logger.warn(`Failed to fetch/parse ${currentUrl} via ProxyManager`, {
-        component: 'rssParser',
-        additionalData: { error: lastError.message }
+        component: "rssParser",
+        additionalData: { error: lastError.message },
       });
     }
   }
@@ -1041,7 +1217,7 @@ async function fetchRssFeed(
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function parseRssUrlWithRetry(
@@ -1051,9 +1227,13 @@ async function parseRssUrlWithRetry(
     maxRetries?: number;
     signal?: AbortSignal;
     skipCache?: boolean;
-  } = {}
-): Promise<{ title: string; articles: Article[] }> {
-  const { maxRetries = MAX_RETRY_ATTEMPTS, signal, skipCache = false } = options;
+  } = {},
+): Promise<DetailedFeedParseResult> {
+  const {
+    maxRetries = MAX_RETRY_ATTEMPTS,
+    signal,
+    skipCache = false,
+  } = options;
   let lastError: Error = new Error("Unknown error");
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -1095,10 +1275,52 @@ async function parseRssUrlWithRetry(
     return {
       title: cachedArticles[0].sourceTitle || "Cached Feed",
       articles: cachedArticles,
+      route: {
+        transport: "client",
+        routeKind: "cache",
+        routeName: "Cache",
+        viaFallback: false,
+        checkedAt: Date.now(),
+      },
+      attempts: [],
+      cached: true,
     };
   }
 
   throw lastError;
+}
+
+export async function parseRssUrlDetailed(
+  url: string,
+  options: {
+    timeout?: number;
+    maxRetries?: number;
+    signal?: AbortSignal;
+    skipCache?: boolean;
+  } = {},
+): Promise<DetailedFeedParseResult> {
+  const { skipCache = false } = options;
+
+  if (!skipCache) {
+    const cachedArticles = getCachedArticles(url);
+    if (cachedArticles && cachedArticles.length > 0) {
+      return {
+        title: cachedArticles[0].sourceTitle || "Cached Feed",
+        articles: cachedArticles,
+        route: {
+          transport: "client",
+          routeKind: "cache",
+          routeName: "Cache",
+          viaFallback: false,
+          checkedAt: Date.now(),
+        },
+        attempts: [],
+        cached: true,
+      };
+    }
+  }
+
+  return parseRssUrlWithRetry(url, options);
 }
 
 export async function parseRssUrl(
@@ -1108,46 +1330,35 @@ export async function parseRssUrl(
     maxRetries?: number;
     signal?: AbortSignal;
     skipCache?: boolean;
-  } = {}
+  } = {},
 ): Promise<{ title: string; articles: Article[] }> {
-  const { skipCache = false } = options;
-
-  if (!skipCache) {
-    const cachedArticles = getCachedArticles(url);
-    if (cachedArticles && cachedArticles.length > 0) {
-      logger.debug(`Using cached articles`, {
-        component: "rssParser",
-        additionalData: { feedUrl: url, cachedCount: cachedArticles.length },
-      });
-
-      return {
-        title: cachedArticles[0].sourceTitle,
-        articles: cachedArticles,
-      };
-    }
-  }
-
   try {
-    return await parseRssUrlWithRetry(url, options);
+    const result = await parseRssUrlDetailed(url, options);
+    return {
+      title: result.title,
+      articles: result.articles,
+    };
   } catch (error) {
     logger.warn(`Creating placeholder for failed feed`, {
       component: "rssParser",
       additionalData: {
         url,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       },
     });
 
     return {
       title: "Feed Unavailable",
-      articles: [{
-        title: "RSS Feed Temporarily Unavailable",
-        link: url,
-        pubDate: new Date(),
-        description: `Unable to fetch this RSS feed. This may be due to CORS restrictions or temporary server issues. The feed will be retried automatically.`,
-        sourceTitle: "System Notice",
-        categories: ["system", "unavailable"],
-      }],
+      articles: [
+        {
+          title: "RSS Feed Temporarily Unavailable",
+          link: url,
+          pubDate: new Date(),
+          description: `Unable to fetch this RSS feed. This may be due to CORS restrictions or temporary server issues. The feed will be retried automatically.`,
+          sourceTitle: "System Notice",
+          categories: ["system", "unavailable"],
+        },
+      ],
     };
   }
 }
@@ -1171,15 +1382,14 @@ export function parseOpml(fileContent: string): OpmlFeed[] {
       feeds.push({
         url: xmlUrl,
         title: text || undefined,
-        category: parentCategory
+        category: parentCategory,
       });
-    }
-    else if (outline.children.length > 0) {
+    } else if (outline.children.length > 0) {
       const categoryName = text || parentCategory;
 
       for (let i = 0; i < outline.children.length; i++) {
         const child = outline.children[i];
-        if (child.tagName.toLowerCase() === 'outline') {
+        if (child.tagName.toLowerCase() === "outline") {
           processOutline(child, categoryName);
         }
       }
@@ -1190,7 +1400,7 @@ export function parseOpml(fileContent: string): OpmlFeed[] {
   if (body) {
     for (let i = 0; i < body.children.length; i++) {
       const child = body.children[i];
-      if (child.tagName.toLowerCase() === 'outline') {
+      if (child.tagName.toLowerCase() === "outline") {
         processOutline(child);
       }
     }

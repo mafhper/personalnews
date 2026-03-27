@@ -306,7 +306,15 @@ const rgbStringToObject = (rgb: string) => {
   return { r, g, b };
 };
 
-const rgbObjectToString = ({ r, g, b }: { r: number; g: number; b: number }): string =>
+const rgbObjectToString = ({
+  r,
+  g,
+  b,
+}: {
+  r: number;
+  g: number;
+  b: number;
+}): string =>
   `${Math.round(Math.max(0, Math.min(255, r)))} ${Math.round(Math.max(0, Math.min(255, g)))} ${Math.round(Math.max(0, Math.min(255, b)))}`;
 
 const composeRgbColors = (
@@ -405,6 +413,21 @@ export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
     theme.colors.background,
     isLightBackground ? 0.96 : 0.88,
   );
+  const managerBackground = composeRgbColors(
+    "0 0 0",
+    theme.colors.background,
+    0.88,
+  );
+  const managerSurface = shiftColor(managerBackground, 0.08, "white");
+  const managerElevated = shiftColor(managerBackground, 0.12, "white");
+  const managerControl = shiftColor(managerBackground, 0.16, "white");
+  const managerSoft = shiftColor(managerBackground, 0.2, "white");
+  const managerText = getBestContrastText(managerSurface, "255 255 255", 7);
+  const managerTextSecondary = composeRgbColors(
+    "255 255 255",
+    managerSurface,
+    0.72,
+  );
 
   return {
     surfaceBackground,
@@ -413,6 +436,11 @@ export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
     badgeBackground,
     controlBackground,
     paginationBackground,
+    managerBackground,
+    managerSurface,
+    managerElevated,
+    managerControl,
+    managerSoft,
     textOnBackground: getBestContrastText(
       theme.colors.background,
       theme.colors.text,
@@ -433,6 +461,8 @@ export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
       paginationBackground,
       theme.colors.text,
     ),
+    managerText,
+    managerTextSecondary,
   };
 };
 
@@ -764,7 +794,10 @@ export const applyThemeToDOM = (theme: ExtendedTheme): void => {
     root.classList.remove("dark");
   }
 
-  root.style.setProperty("--theme-surface-readable", resolved.surfaceBackground);
+  root.style.setProperty(
+    "--theme-surface-readable",
+    resolved.surfaceBackground,
+  );
   root.style.setProperty("--theme-surface-elevated", resolved.elevatedSurface);
   root.style.setProperty("--theme-header-bg", resolved.headerBackground);
   root.style.setProperty("--theme-header-text", resolved.headerText);
@@ -772,8 +805,21 @@ export const applyThemeToDOM = (theme: ExtendedTheme): void => {
   root.style.setProperty("--theme-chip-text", resolved.badgeText);
   root.style.setProperty("--theme-control-bg", resolved.controlBackground);
   root.style.setProperty("--theme-control-text", resolved.controlText);
-  root.style.setProperty("--theme-pagination-bg", resolved.paginationBackground);
+  root.style.setProperty(
+    "--theme-pagination-bg",
+    resolved.paginationBackground,
+  );
   root.style.setProperty("--theme-pagination-text", resolved.paginationText);
+  root.style.setProperty("--theme-manager-bg", resolved.managerBackground);
+  root.style.setProperty("--theme-manager-surface", resolved.managerSurface);
+  root.style.setProperty("--theme-manager-elevated", resolved.managerElevated);
+  root.style.setProperty("--theme-manager-control", resolved.managerControl);
+  root.style.setProperty("--theme-manager-soft", resolved.managerSoft);
+  root.style.setProperty("--theme-manager-text", resolved.managerText);
+  root.style.setProperty(
+    "--theme-manager-text-secondary",
+    resolved.managerTextSecondary,
+  );
   root.style.setProperty("--theme-text-readable", resolved.textOnBackground);
   root.style.setProperty(
     "--theme-text-secondary-readable",
@@ -833,7 +879,6 @@ export const applyThemeToDOM = (theme: ExtendedTheme): void => {
     safeTheme.animations ? "0.2s" : "0s",
   );
 };
-
 
 // Get system theme preference
 export const getSystemThemePreference = (): "light" | "dark" => {

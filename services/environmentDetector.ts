@@ -1,6 +1,6 @@
 /**
  * Environment Detection and Configuration
- * 
+ *
  * Detects the current environment and provides appropriate configuration
  * for RSS parsing, proxy usage, and other environment-specific features.
  */
@@ -13,52 +13,58 @@ export interface EnvironmentConfig {
   isTauri: boolean;
   proxyUrl: string | null;
   useProductionParser: boolean;
-  corsMode: 'local-proxy' | 'public-apis' | 'mixed';
+  corsMode: "local-proxy" | "public-apis" | "mixed";
 }
 
 /**
  * Detect current environment
  */
 export function detectEnvironment(): EnvironmentConfig {
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
-  const port = typeof window !== 'undefined' ? window.location.port : '';
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "localhost";
+  const protocol =
+    typeof window !== "undefined" ? window.location.protocol : "http:";
+  const port = typeof window !== "undefined" ? window.location.port : "";
 
   // Check if running in development
   const isDevelopment =
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname.startsWith('192.168.') ||
-    port === '5173' ||
-    port === '3000' ||
-    process.env.NODE_ENV === 'development';
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.startsWith("192.168.") ||
+    port === "5173" ||
+    port === "3000" ||
+    process.env.NODE_ENV === "development";
 
   // Check if running on GitHub Pages
   const isGitHubPages =
-    hostname.endsWith('.github.io') ||
-    hostname.includes('github.io');
+    hostname.endsWith(".github.io") || hostname.includes("github.io");
 
   // Check if HTTPS is available (production indicator)
-  const isSecure = protocol === 'https:';
+  const isSecure = protocol === "https:";
 
   // Determine if this is production
   const isProduction = !isDevelopment || isSecure || isGitHubPages;
 
   // Check if running in Tauri environment
-  const isTauri = typeof window !== 'undefined' && 
+  const isTauri =
+    typeof window !== "undefined" &&
     (!!(window as any).__TAURI__ || !!(window as any).__TAURI_INTERNALS__);
 
   // Check if localhost proxy is available (development or Tauri)
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'tauri.localhost' || isTauri;
+  const isLocalhost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "tauri.localhost" ||
+    isTauri;
 
   // Determine proxy configuration
   let proxyUrl: string | null = null;
-  let corsMode: 'local-proxy' | 'public-apis' | 'mixed' = 'public-apis';
+  let corsMode: "local-proxy" | "public-apis" | "mixed" = "public-apis";
 
-  if ((isDevelopment && isLocalhost) || isTauri) {
-    // Try to use local proxy in development or Tauri Desktop
-    proxyUrl = 'http://localhost:3001/rss?url=';
-    corsMode = 'mixed'; // Try local first, fallback to public
+  if (isDevelopment && isLocalhost && !isTauri) {
+    // Local web development may still use the Vite local proxy path.
+    proxyUrl = "/local-proxy/";
+    corsMode = "mixed";
   }
 
   // Determine which parser to use
@@ -85,7 +91,7 @@ export function getRssParserConfig() {
   return {
     timeout: env.isDevelopment ? 8000 : 10000, // Longer timeout in production
     maxRetries: env.isDevelopment ? 3 : 2, // Fewer retries in production
-    useLocalProxy: env.corsMode === 'local-proxy' || env.corsMode === 'mixed',
+    useLocalProxy: env.corsMode === "local-proxy" || env.corsMode === "mixed",
     useProductionApis: env.useProductionParser,
     batchSize: env.isDevelopment ? 5 : 3, // Smaller batches in production
     batchDelay: env.isDevelopment ? 1000 : 2000, // Longer delays in production
@@ -98,18 +104,18 @@ export function getRssParserConfig() {
 export async function checkLocalProxyAvailability(): Promise<boolean> {
   const env = detectEnvironment();
 
-  if (!env.isLocalhost || !env.proxyUrl) {
+  if ((!env.isLocalhost && !env.isTauri) || (!env.proxyUrl && !env.isTauri)) {
     return false;
   }
 
   try {
-    const healthUrl = 'http://localhost:3001/health';
+    const healthUrl = `${BACKEND_DEFAULT_URL}/health`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
     const response = await fetch(healthUrl, {
-      method: 'GET',
-      signal: controller.signal
+      method: "GET",
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
@@ -128,16 +134,20 @@ export function getCorsProxies(): string[] {
   const proxies: string[] = [];
 
   // Add local proxy if available in development
-  if (env.proxyUrl && (env.corsMode === 'local-proxy' || env.corsMode === 'mixed')) {
+  if (
+    !env.isTauri &&
+    env.proxyUrl &&
+    (env.corsMode === "local-proxy" || env.corsMode === "mixed")
+  ) {
     proxies.push(env.proxyUrl);
   }
 
   // Add public proxies (always available)
   proxies.push(
-    'https://api.rss2json.com/v1/api.json?rss_url=',
-    'https://api.allorigins.win/get?url=',
-    'https://corsproxy.io/?',
-    'https://proxy.cors.sh/'
+    "https://api.rss2json.com/v1/api.json?rss_url=",
+    "https://api.allorigins.win/get?url=",
+    "https://corsproxy.io/?",
+    "https://proxy.cors.sh/",
   );
 
   return proxies;
@@ -146,22 +156,22 @@ export function getCorsProxies(): string[] {
 /**
  * Log environment information for debugging
  */
-import { logger } from './logger';
+import { logger } from "./logger";
 
 export const logEnvironmentInfo = () => {
   const env = detectEnvironment();
   const config = getRssParserConfig();
 
-  logger.debugTag('SYSTEM', 'Environment Detection', {
+  logger.debugTag("SYSTEM", "Environment Detection", {
     environment: env,
     rssParserConfig: config,
     availableProxies: getCorsProxies(),
-    localProxyUrl: env.proxyUrl
+    localProxyUrl: env.proxyUrl,
   });
 };
 
 // Auto-log environment info in development
-if (typeof window !== 'undefined' && detectEnvironment().isDevelopment) {
+if (typeof window !== "undefined" && detectEnvironment().isDevelopment) {
   setTimeout(logEnvironmentInfo, 1000);
 }
 
@@ -169,17 +179,20 @@ if (typeof window !== 'undefined' && detectEnvironment().isDevelopment) {
  * Check if a URL is cross-origin relative to the current window
  */
 export function isCrossOrigin(url: string): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
 
   try {
     const targetUrl = new URL(url);
     const windowUrl = new URL(window.location.href);
 
-    return targetUrl.protocol !== windowUrl.protocol ||
+    return (
+      targetUrl.protocol !== windowUrl.protocol ||
       targetUrl.hostname !== windowUrl.hostname ||
-      targetUrl.port !== windowUrl.port;
+      targetUrl.port !== windowUrl.port
+    );
   } catch {
     // If URL is invalid, assume it might be cross-origin/external
     return true;
   }
 }
+import { BACKEND_DEFAULT_URL } from "../shared/contracts/backend";
