@@ -729,8 +729,12 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
                 scopeKey,
                 priorityFeedsLoaded: priorityComplete,
                 // Show what we just finished or generic progress
-                    ? `Carregando feeds restantes... (${scopedFeeds.length - loadedCount} faltam)`
-                    : `Processado: ${feed.customTitle || new URL(feed.url).hostname}`,
+                currentAction:
+                  mode === "single-feed"
+                    ? `Processado: ${feed.customTitle || new URL(feed.url).hostname}`
+                    : priorityComplete && loadedCount < scopedFeeds.length
+                      ? `Carregando feeds restantes... (${scopedFeeds.length - loadedCount} faltam)`
+                      : `Processado: ${feed.customTitle || new URL(feed.url).hostname}`,
               }));
 
               // Add result to map
