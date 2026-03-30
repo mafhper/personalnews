@@ -85,7 +85,7 @@ interface FeedLoadingProgressProps {
   onRetryErrors?: () => void;
   className?: string;
   priorityFeedsLoaded?: boolean; // Deprecated in favor of mode, but kept for compatibility
-  mode?: 'overlay' | 'inline';
+  mode?: "overlay" | "inline";
 }
 
 /**
@@ -103,55 +103,94 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   onRetryErrors,
   className = "",
   priorityFeedsLoaded = false,
-  mode = priorityFeedsLoaded ? 'overlay' : 'inline',
+  mode = priorityFeedsLoaded ? "overlay" : "inline",
+
 }) => {
   const hasErrors = errors.length > 0;
   const isComplete = loadedFeeds >= totalFeeds;
-  const statusText = currentAction || (isBackgroundRefresh ? "Atualizando feeds..." : "Carregando feeds...");
+  const statusText =
+    currentAction ||
+    (isBackgroundRefresh ? "Atualizando feeds..." : "Carregando feeds...");
 
   // Overlay / Floating Mode
   // Used for non-intrusive loading updates (initial load or background refresh)
-  if (mode === 'overlay') {
-    if (isComplete) {
+  if (mode === "overlay") {
+    // Only hide if complete AND no errors, OR if explicitly told to ignore errors
+    if (isComplete && !hasErrors) {
       return null;
     }
+
     const overlay = (
-      <div 
-        className={`fixed left-0 right-0 z-[80] flex justify-center pt-1 pointer-events-none text-white ${className}`}
-        style={{ top: "calc(var(--feed-header-offset, 0px) + 0.35rem)" }}
+      <div
+        className={`fixed bottom-8 left-0 right-0 z-[100] pointer-events-none flex justify-center px-4 ${className}`}
       >
-        <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-gray-900/90 border border-white/10 backdrop-blur-md shadow-xl transform transition-all duration-300 animate-in slide-in-from-top-4 text-white">
-          {/* Small spinner */}
-          <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-t-transparent border-[rgb(var(--color-accent))]" />
-          
-          {/* Dynamic text */}
-          <span className="text-xs font-semibold text-white/90">
-            {statusText}
-          </span>
-          
-          {/* Tiny progress bar */}
-          <div className="w-20 h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[rgb(var(--color-accent))] rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+        <div className="pointer-events-auto flex w-full max-w-sm flex-col gap-2 rounded-2xl border border-white/10 bg-[rgba(13,17,23,0.96)] p-4 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-8">
+          <div className="flex w-full items-center gap-3">
+            {/* Custom spinner or status icon */}
+            {!isComplete ? (
+              <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[rgb(var(--color-accent))] border-t-transparent" />
+            ) : hasErrors ? (
+              <div className="h-4 w-4 shrink-0 text-yellow-500">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+            ) : (
+               <div className="h-4 w-4 shrink-0 text-green-500">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+
+            {/* Dynamic text */}
+            <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/95 text-center">
+              {isComplete && hasErrors 
+                ? `${errors.length} fonte(s) com erro` 
+                : statusText}
+            </span>
+
+            {/* Right side actions */}
+            <div className="flex items-center gap-1">
+              {hasErrors && isComplete && onRetryErrors && (
+                <button
+                  onClick={onRetryErrors}
+                  className="rounded-full p-1 text-blue-400 hover:bg-blue-400/10"
+                  title="Tentar novamente"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              )}
+              {onCancel && (
+                <button
+                  onClick={onCancel}
+                  className="shrink-0 rounded-full p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                  title="Fechar"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
 
-          <span className="text-xs text-white/70 font-mono ml-1">
-             {Math.round(progress)}%
-          </span>
-          
-          {/* Cancel button (pointer-events-auto needed because parent is none) */}
-          {onCancel && (
-            <button 
-              onClick={onCancel} 
-              className="text-gray-500 hover:text-white transition-colors ml-1 pointer-events-auto p-1 hover:bg-white/10 rounded-full"
-              title="Cancel"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          {/* Progress bar container */}
+          {!isComplete && (
+            <div className="flex items-center gap-3">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-gray-800">
+                <div
+                  className="h-full rounded-full bg-[rgb(var(--color-accent))] shadow-[0_0_8px_rgb(var(--color-accent))] transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              <span className="shrink-0 text-[10px] font-mono font-medium text-white/60">
+                {Math.round(progress)}%
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -161,6 +200,7 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
     }
     return overlay;
   }
+
 
   // Full loading indicator (Inline Mode)
   // Kept for specific UI contexts where a block element is desired

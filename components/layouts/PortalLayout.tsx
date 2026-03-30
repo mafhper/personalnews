@@ -3,9 +3,9 @@ import { Article } from '../../types';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
-
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 interface PortalLayoutProps {
   articles: Article[];
   timeFormat: '12h' | '24h';
@@ -40,7 +40,6 @@ export const PortalSkeleton: React.FC = () => {
 
 export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { t } = useLanguage();
 
   const mainFeatured = articles[0];
   const subFeatured = articles.slice(1, 3);
@@ -96,8 +95,8 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
           <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">Últimas Notícias</h3>
           {feed.map((article, idx) => (
             <article key={idx} className="feed-card flex gap-4 p-5 rounded-2xl hover:border-[rgba(var(--color-accent),0.25)] transition-all relative group shadow-sm">
-              <div className="flex flex-col gap-3 w-32 sm:w-40 flex-shrink-0">
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
+              <div className="flex flex-col gap-3 w-32 sm:w-48 flex-shrink-0">
+                <div className="relative aspect-square sm:aspect-[4/5] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
                   <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" fallbackText={article.sourceTitle} size={200} />
 
                   {/* Favorite Button (Over image, hover-only) */}
@@ -109,18 +108,6 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                   />
                 </div>
 
-                {/* Preview Button (Under image, hover-only) */}
-                {(!!article.content || (article.description && article.description.length > 200)) && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setReadingArticle(article);
-                    }}
-                    className="w-full text-[10px] bg-[rgba(var(--color-accent),0.75)] text-white px-2 py-1.5 rounded-lg hover:bg-[rgba(var(--color-accent),0.6)] transition-all shadow-md font-black uppercase tracking-widest border border-white/10 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
-                  >
-                    {t('action.preview')}
-                  </button>
-                )}
               </div>
 
               <div className="flex-1 flex flex-col p-1 relative">
@@ -156,6 +143,21 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                     <p className="feed-meta text-xs italic">{`Por ${article.author}`}</p>
                   )}
                 </div>
+        
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => setReadingArticle(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                          className="!mt-4"
+                        />
+                      );
+                    })()}
               </div>
             </article>
           ))}
@@ -164,8 +166,8 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
         {/* Sidebar (4 cols) */}
         <div className="lg:col-span-4">
           <div className="sticky top-24">
-            <h3 className="feed-title text-lg font-bold uppercase tracking-wider mb-4 flex items-center">
-              <span className="w-2 h-2 bg-[rgba(var(--color-accent),0.6)] rounded-full mr-2"></span>
+            <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">
+              
               Em Alta
             </h3>
             <div className="feed-surface rounded-2xl p-6 space-y-4 shadow-md">

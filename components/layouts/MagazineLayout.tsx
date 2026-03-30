@@ -5,6 +5,8 @@ import { useAppearance } from '../../hooks/useAppearance';
 import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface MagazineLayoutProps {
   articles: Article[];
@@ -189,9 +191,21 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 </p>
               )}
 
-              <button className="mt-6 self-start px-6 py-2.5 bg-[rgb(var(--color-primary))] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity">
-                {t('action.read') || 'Ler artigo'}
-              </button>
+              {(() => {
+                const embedUrl = getVideoEmbed(heroArticle.link);
+                return (
+                  <FeedInteractiveActions
+                    articleLink={heroArticle.link}
+                    onRead={() => handleOpenReader(heroArticle)}
+                    showRead={!embedUrl}
+                    showWatch={!!embedUrl}
+                    showVisit={true}
+                    onWatch={embedUrl ? () => window.open(heroArticle.link, '_blank') : undefined}
+                    forceVisible
+                    className="mt-6 self-start"
+                  />
+                );
+              })()}
             </div>
           </div>
         </article>

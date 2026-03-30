@@ -21,6 +21,20 @@ export interface ProxySettingsProps {
 
 const PANEL_CLASS =
   "rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const MANAGER_TEXT_CLASS =
+  "text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]";
+const MANAGER_TEXT_SECONDARY_CLASS =
+  "text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]";
+const MANAGER_CHIP_CLASS =
+  "rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1.5 text-xs font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]";
+const MANAGER_CARD_CLASS =
+  "rounded-[20px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-4 shadow-[0_16px_34px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.03)]";
+const MANAGER_LIST_CARD_CLASS =
+  "rounded-[18px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] px-4 py-3 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[0_14px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.03)]";
+const MANAGER_EXPANDABLE_CLASS =
+  "rounded-[20px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] shadow-[0_18px_36px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.03)]";
+const MANAGER_RESULT_CLASS =
+  "mt-3 rounded-[16px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]";
 
 const originLabels: Record<string, string> = {
   "env.local": ".env.local",
@@ -125,7 +139,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
   if (isLoading && !snapshot.routes.length) {
     return (
       <div className={PANEL_CLASS}>
-        <p className="text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+        <p className={`text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
           Carregando configuração e saúde dos proxies...
         </p>
       </div>
@@ -137,16 +151,16 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
       <div className={PANEL_CLASS}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               Rotas de fetch
             </h3>
-            <p className="mt-1 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+            <p className={`mt-1 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               {snapshot.summary.healthyRoutes}/
               {Math.max(1, snapshot.summary.totalRoutes)} saudáveis,{" "}
               {snapshot.summary.successRate}% de sucesso na sessão.
             </p>
           </div>
-          <div className="rounded-full bg-[#0d0d0d] px-3 py-1 text-xs font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+          <div className={MANAGER_CHIP_CLASS}>
             {snapshot.summary.fallbackActive
               ? "fallback ativo"
               : isLocalBackendRuntime
@@ -163,33 +177,33 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
       <section className={PANEL_CLASS}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
-            <h2 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
+            <h2 className={`text-xl font-semibold ${MANAGER_TEXT_CLASS}`}>
               Configuração de rotas e proxies
             </h2>
           </div>
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-[#0d0d0d] px-3 py-1.5 text-xs font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+            <span className={MANAGER_CHIP_CLASS}>
               {snapshot.summary.totalRoutes} rotas monitoradas
             </span>
-            <span className="rounded-full bg-[#0d0d0d] px-3 py-1.5 text-xs font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+            <span className={MANAGER_CHIP_CLASS}>
               {snapshot.summary.successRate}% de sucesso
             </span>
           </div>
         </div>
 
         <div className="mt-5 grid gap-3 xl:grid-cols-3">
-          <div className="rounded-[20px] bg-[#0e0e0e] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+          <div className={MANAGER_CARD_CLASS}>
+            <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               Rota ativa
             </p>
-            <p className="mt-2 text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            <p className={`mt-2 text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               {snapshot.summary.fallbackActive
                 ? "Fallback em nuvem"
                 : isLocalBackendRuntime
                   ? "Backend local"
                   : "Cliente / proxies"}
             </p>
-            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+            <p className={`mt-2 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               {snapshot.runtime.lastWarning ||
                 (isLocalBackendRuntime && snapshot.backend.available
                   ? "Backend local disponível."
@@ -197,18 +211,18 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
             </p>
           </div>
 
-          <div className="rounded-[20px] bg-[#0e0e0e] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+          <div className={MANAGER_CARD_CLASS}>
+            <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               Backend local
             </p>
-            <p className="mt-2 text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            <p className={`mt-2 text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               {isLocalBackendRuntime
                 ? snapshot.backend.available
                   ? "Ativo"
                   : "Indisponível"
                 : "Não aplicável ao modo web"}
             </p>
-            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+            <p className={`mt-2 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               {snapshot.backend.error ||
                 (isLocalBackendRuntime
                   ? `Requisições do ${localRuntimeLabel} passam pelo backend local.`
@@ -216,16 +230,16 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
             </p>
           </div>
 
-          <div className="rounded-[20px] bg-[#0e0e0e] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+          <div className={MANAGER_CARD_CLASS}>
+            <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               Chaves recomendadas
             </p>
-            <p className="mt-2 text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            <p className={`mt-2 text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               {missingApiKeys.length > 0
                 ? `${missingApiKeys.length} pendentes`
                 : "Todas configuradas"}
             </p>
-            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+            <p className={`mt-2 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               {missingApiKeys.length > 0
                 ? missingApiKeys.join(" • ")
                 : "Todas disponíveis"}
@@ -239,10 +253,10 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 text-[rgb(var(--color-warning))]" />
             <div>
-              <h3 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+              <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
                 Chaves pendentes
               </h3>
-              <p className="mt-2 text-sm text-[rgb(var(--theme-text-readable))]">
+              <p className={`mt-2 text-sm ${MANAGER_TEXT_CLASS}`}>
                 {missingApiKeys.join(" • ")}
               </p>
             </div>
@@ -253,11 +267,11 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
       <section className={PANEL_CLASS}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h3 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               Preferência de rota local
             </h3>
           </div>
-          <label className="inline-flex cursor-pointer items-center gap-3 rounded-full bg-[#0d0d0d] px-4 py-2 text-sm font-medium text-[rgb(var(--theme-text-readable))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <label className="inline-flex cursor-pointer items-center gap-3 rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
             <input
               type="checkbox"
               checked={preferLocalProxy}
@@ -273,7 +287,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
         <section className={PANEL_CLASS}>
           <div className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-[rgb(var(--color-primary))]" />
-            <h3 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               Chaves de API
             </h3>
           </div>
@@ -283,14 +297,14 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               return (
                 <div
                   key={status.proxyId}
-                  className="rounded-[20px] bg-[#0e0e0e] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                  className={MANAGER_CARD_CLASS}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h4 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                      <h4 className={`text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
                         {status.proxyName}
                       </h4>
-                      <p className="mt-1 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      <p className={`mt-1 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                         Origem:{" "}
                         {originLabels[status.origin || "not-configured"] ||
                           status.origin}
@@ -300,7 +314,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                       className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
                         status.isValid
                           ? "border-[rgba(var(--color-success),0.22)] bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]"
-                          : "border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]"
+                          : "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
                       }`}
                     >
                       {status.hasKey ? "configurada" : "ausente"}
@@ -319,7 +333,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                       setApiKey(status.proxyId, value);
                     }}
                     placeholder={`Cole a chave de ${status.proxyName}`}
-                    className="mt-4 w-full rounded-[14px] border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/90 px-3 py-2 text-sm text-[rgb(var(--theme-text-readable))] outline-none transition-all focus:border-[rgba(var(--color-primary),0.35)]"
+                    className="mt-4 w-full rounded-[14px] border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-2 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] outline-none transition-all placeholder:text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] focus:border-[rgba(var(--color-primary),0.35)]"
                   />
 
                   {validationErrors[status.proxyId] && (
@@ -328,7 +342,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                     </p>
                   )}
 
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                  <div className={`mt-3 flex flex-wrap items-center gap-3 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                     <a
                       href={config.apiKeyUrl || config.website}
                       target="_blank"
@@ -358,7 +372,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
         <section className={PANEL_CLASS}>
           <div className="flex items-center gap-2">
             <Route className="h-5 w-5 text-[rgb(var(--color-primary))]" />
-            <h3 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               Ordem de fallback recomendada
             </h3>
           </div>
@@ -371,9 +385,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               .map((proxyId, index) => (
                 <li
                   key={proxyId}
-                  className="rounded-[18px] bg-[#0e0e0e] px-4 py-3 text-sm text-[rgb(var(--theme-text-readable))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                  className={MANAGER_LIST_CARD_CLASS}
                 >
-                  <span className="mr-2 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                  <span className={`mr-2 ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                     {index + 1}.
                   </span>
                   {PROXY_CONFIGS[proxyId].name}
@@ -385,7 +399,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
 
       {detailed && (
         <section className={PANEL_CLASS}>
-          <h3 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+          <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
             Testes reais e saúde por rota
           </h3>
           <div className="mt-4 space-y-3">
@@ -401,7 +415,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               return (
                 <div
                   key={proxy.id}
-                  className="rounded-[20px] bg-[#0f0f0f] shadow-[0_14px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.02)]"
+                  className={MANAGER_EXPANDABLE_CLASS}
                 >
                   <button
                     type="button"
@@ -414,7 +428,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                        <span className={`text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
                           {proxy.name}
                         </span>
                         <span
@@ -431,50 +445,50 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      <p className={`mt-1 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                         {runtimeRoute?.detail ||
                           PROXY_CONFIGS[proxy.id].description}
                       </p>
                     </div>
                     {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]" />
-                    )}
+                        <ChevronDown className={`h-4 w-4 ${MANAGER_TEXT_SECONDARY_CLASS}`} />
+                      ) : (
+                        <ChevronRight className={`h-4 w-4 ${MANAGER_TEXT_SECONDARY_CLASS}`} />
+                      )}
                   </button>
 
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1">
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         <div>
-                          <p className="text-[11px] uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          <p className={`text-[11px] uppercase tracking-[0.14em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                             Configuração
                           </p>
-                          <p className="mt-1 text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                          <p className={`mt-1 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
                             {proxy.isConfigured ? "pronta" : "incompleta"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[11px] uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          <p className={`text-[11px] uppercase tracking-[0.14em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                             Último uso
                           </p>
-                          <p className="mt-1 text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                          <p className={`mt-1 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
                             {formatDate(runtimeRoute?.lastUsedAt)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[11px] uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          <p className={`text-[11px] uppercase tracking-[0.14em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                             Sessão
                           </p>
-                          <p className="mt-1 text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                          <p className={`mt-1 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
                             {runtimeRoute?.totalRequests || 0} requisições
                           </p>
                         </div>
                         <div>
-                          <p className="text-[11px] uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          <p className={`text-[11px] uppercase tracking-[0.14em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                             Latência média
                           </p>
-                          <p className="mt-1 text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                          <p className={`mt-1 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
                             {runtimeRoute?.avgResponseTime
                               ? `${Math.round(runtimeRoute.avgResponseTime)}ms`
                               : "—"}
@@ -515,7 +529,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                       </div>
 
                       {result && (
-                        <div className="mt-3 rounded-[16px] bg-[#090909] p-4 text-sm text-[rgb(var(--theme-text-readable))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+                        <div className={MANAGER_RESULT_CLASS}>
                           <div className="flex items-start gap-3">
                             {result.success ? (
                               <CheckCircle2 className="mt-0.5 h-5 w-5 text-[rgb(var(--color-success))]" />
@@ -524,7 +538,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                             )}
                             <div className="space-y-1">
                               <p>{result.detail}</p>
-                              <p className="text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                              <p className={`text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                                 Latência medida:{" "}
                                 {Math.round(result.responseTime)}ms
                                 {result.error ? ` • erro: ${result.error}` : ""}

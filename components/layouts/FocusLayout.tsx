@@ -4,6 +4,8 @@ import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface FocusLayoutProps {
   articles: Article[];
@@ -169,15 +171,22 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                 {currentArticle.description}
             </p>
 
-            <button
-              onClick={() => setReadingArticle(currentArticle)}
-              className="group flex items-center gap-4 text-sm font-bold uppercase tracking-widest transition-colors self-start"
-            >
-              <span>{t('article.read_full')}</span>
-              <div className="w-12 h-[1px] bg-white/32 transition-colors relative overflow-hidden">
-                 <div className="absolute inset-0 bg-white w-full -translate-x-full group-hover:translate-x-0 transition-transform duration-300"/>
-              </div>
-            </button>
+            {(() => {
+              const embedUrl = getVideoEmbed(currentArticle.link);
+              return (
+                <FeedInteractiveActions
+                  variant="onDarkMedia"
+                  articleLink={currentArticle.link}
+                  onRead={() => setReadingArticle(currentArticle)}
+                  showRead={!embedUrl}
+                  showWatch={!!embedUrl}
+                  showVisit={true}
+                  onWatch={embedUrl ? () => window.open(currentArticle.link, '_blank') : undefined}
+                  forceVisible={true}
+                  className="!mt-0 !opacity-100 !pointer-events-auto !transform-none [&_.feed-btn-action]:text-sm [&_.feed-btn-action]:px-6 [&_.feed-btn-action]:py-3 [&_.feed-link-action]:text-sm"
+                />
+              );
+            })()}
          </div>
       </div>
 

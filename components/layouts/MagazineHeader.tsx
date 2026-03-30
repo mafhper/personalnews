@@ -3,6 +3,8 @@ import { Article } from '../../types';
 import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface MagazineHeaderProps {
     articles: Article[];
@@ -71,11 +73,7 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
 
                         {/* Hero Content */}
                         <div
-                            className="lg:col-span-4 flex flex-col justify-center p-6 md:p-8 xl:p-9"
-                            style={{
-                                background:
-                                    'linear-gradient(135deg, rgb(var(--theme-surface-readable) / 0.76), rgb(var(--theme-surface-elevated) / 0.58))',
-                            }}
+                            className="lg:col-span-4 flex flex-col justify-center p-6 md:p-8 xl:p-9 bg-gradient-to-br from-[rgb(var(--theme-surface-elevated,var(--color-surface)))] to-[rgb(var(--color-background))] border-t border-[rgb(var(--color-border))]/35 lg:border-t-0 lg:border-l"
                         >
                             <div className="mb-4 flex items-center gap-3 min-w-0 text-[10px] uppercase tracking-[0.24em]">
                                 <span className="feed-meta truncate max-w-[220px]">
@@ -101,9 +99,21 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                 </p>
                             )}
 
-                            <button className="mt-6 self-start px-6 py-2.5 bg-[rgba(var(--color-primary),0.8)] text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity">
-                                {t('action.read') || 'Ler artigo'}
-                            </button>
+                            {(() => {
+                                const embedUrl = getVideoEmbed(heroArticle.link);
+                                return (
+                                    <FeedInteractiveActions
+                                        articleLink={heroArticle.link}
+                                        onRead={() => onArticleClick(heroArticle)}
+                                        showRead={!embedUrl}
+                                        showWatch={!!embedUrl}
+                                        showVisit={true}
+                                        onWatch={embedUrl ? () => window.open(heroArticle.link, '_blank') : undefined}
+                                        forceVisible
+                                        className="mt-6 self-start"
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </article>

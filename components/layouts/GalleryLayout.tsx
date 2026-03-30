@@ -3,6 +3,8 @@ import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface GalleryLayoutProps {
   articles: Article[];
@@ -31,7 +33,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
           <div
             key={i}
             onClick={() => setReadingArticle(article)}
-            className="group relative aspect-square overflow-hidden cursor-pointer rounded-2xl bg-[rgb(var(--color-surface))] shadow-lg ring-1 ring-white/5"
+            className="feed-image-card-frame group relative aspect-square cursor-pointer bg-[rgb(var(--color-surface))] shadow-lg ring-1 ring-white/5"
           >
             {article.imageUrl ? (
               <div className="w-full h-full overflow-hidden rounded-[inherit]">
@@ -51,7 +53,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
             )}
 
             {/* Always visible gradient overlay at bottom */}
-            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
+            <div className="feed-image-story-overlay absolute inset-0 pointer-events-none" />
 
             {/* Favorite Button - Fixed Positioning */}
             <FavoriteButton
@@ -63,16 +65,34 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
 
             {/* Post info at bottom-left */}
             <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-              <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/70 min-w-0">
+              <div className="feed-image-story-shell">
+              <div className="feed-image-story-meta mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] min-w-0">
                 <span className="truncate">{article.sourceTitle}</span>
                 <span className="h-px w-4 flex-shrink-0 bg-white/20" />
                 <span className="flex-shrink-0">
                   {new Date(article.pubDate).toLocaleDateString()}
                 </span>
               </div>
-              <h3 className="text-white font-bold text-sm leading-tight line-clamp-2 group-hover:text-white transition-colors">
+              <h3 className="feed-title feed-title-card feed-image-story-title text-sm leading-tight line-clamp-2 transition-colors">
                 {article.title}
               </h3>
+              
+              {(() => {
+                const embedUrl = getVideoEmbed(article.link);
+                return (
+                  <FeedInteractiveActions
+                    variant="onDarkMedia"
+                    articleLink={article.link}
+                    onRead={() => setReadingArticle(article)}
+                    showRead={!embedUrl}
+                    showWatch={!!embedUrl}
+                    showVisit={true}
+                    onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                    className="!mt-3 justify-between"
+                  />
+                );
+              })()}
+              </div>
             </div>
           </div>
         ))}

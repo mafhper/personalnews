@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface SplitLayoutProps {
   articles: Article[];
@@ -36,7 +37,6 @@ export const SplitSkeleton: React.FC = () => {
 
 export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { t } = useLanguage();
 
   return (
     <div className="feed-page-frame feed-page-frame--wide flex flex-col gap-0">
@@ -84,13 +84,20 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
               <div className="flex items-center text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-on-surface))]">
                 {new Date(article.pubDate).toDateString()}
               </div>
-              <button
-                onClick={() => setReadingArticle(article)}
-                className="mt-7 inline-flex items-center gap-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--color-primary))] hover:opacity-80 self-start"
-              >
-                {t('action.preview')}
-                <span aria-hidden="true">-&gt;</span>
-              </button>
+              {(() => {
+                const embedUrl = getVideoEmbed(article.link);
+                return (
+                <FeedInteractiveActions
+                  articleLink={article.link}
+                  onRead={() => setReadingArticle(article)}
+                  showRead={!embedUrl}
+                  showWatch={!!embedUrl}
+                  showVisit={true}
+                  onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                  className="!mt-7 self-start"
+                />
+                );
+              })()}
             </div>
           </div>
         </article>

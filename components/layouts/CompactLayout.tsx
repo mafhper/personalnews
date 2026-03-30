@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface CompactLayoutProps {
   articles: Article[];
@@ -34,7 +35,6 @@ export const CompactSkeleton: React.FC = () => {
 
 export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { t } = useLanguage();
 
   return (
     <div className="feed-page-frame min-h-screen font-mono text-base pb-12">
@@ -42,7 +42,6 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
         <div className="bg-[rgba(var(--color-accent),0.18)] border-b border-[rgb(var(--color-border))]/30 p-3 px-6 flex items-center justify-between">
           <div className="flex items-center">
             <span className="font-bold feed-accent-text mr-4 text-base tracking-tight">Personal News Digest</span>
-            <span className="hidden sm:inline text-[rgb(var(--color-textSecondary))] text-xs opacity-80 uppercase tracking-widest">new | past | comments | ask | jobs</span>
           </div>
           <div className="text-[10px] uppercase font-bold tracking-tighter opacity-70">
             {new Date().toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })}
@@ -97,14 +96,27 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                       <span className="opacity-30 flex-shrink-0">•</span>
                       <span className="opacity-80">{new Date(article.pubDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}</span>
                       <span className="opacity-30 flex-shrink-0">•</span>
-                      <span onClick={() => setReadingArticle(article)} className="cursor-pointer hover:underline hover:text-[rgb(var(--color-text))] transition-colors text-[rgb(var(--color-primary))]">{t('action.preview')}</span>
-                      <span className="opacity-30 flex-shrink-0">•</span>
                       <FavoriteButton
                         article={article}
                         size="small"
                         position="inline"
-                        className="p-0 hover:text-[rgb(var(--color-error))] transition-colors opacity-60 group-hover:opacity-100 transition-opacity"
+                        className="p-0 hover:text-[rgb(var(--color-error))] transition-colors opacity-60 group-hover:opacity-100"
                       />
+                      <span className="opacity-30 flex-shrink-0">•</span>
+                      {(() => {
+                        const embedUrl = getVideoEmbed(article.link);
+                        return (
+                          <FeedInteractiveActions
+                            articleLink={article.link}
+                            onRead={() => setReadingArticle(article)}
+                            showRead={!embedUrl}
+                            showWatch={!!embedUrl}
+                            showVisit={true}
+                            onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                            className="!mt-0 !mb-0 flex-wrap"
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

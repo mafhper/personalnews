@@ -10,7 +10,9 @@ import { APP_BRAND_NAME } from "../config/brand";
 
 interface HeaderProps {
   onManageFeedsClick: () => void;
+  onManageFeedsIconClick?: () => void;
   onRefreshClick: () => void;
+  feedIssueCount?: number;
   selectedCategory: string;
   onNavigation: (category: string, feedUrl?: string) => void;
   categorizedFeeds: Record<string, FeedSource[]>;
@@ -310,6 +312,12 @@ const Header: React.FC<HeaderProps> = (props) => {
   const isCentered = headerConfig.style === 'centered';
   const handleLogoClick = props.onGoLanding || props.onGoHome;
   const handleTitleClick = props.onGoAll || props.onGoHome;
+  const hasFeedIssues = (props.feedIssueCount || 0) > 0;
+  const handleManageFeedsActionClick =
+    props.onManageFeedsIconClick || props.onManageFeedsClick;
+  const feedIssuesLabel = hasFeedIssues
+    ? `${props.feedIssueCount} feed${props.feedIssueCount === 1 ? "" : "s"} com problema`
+    : t('header.manage_feeds');
 
   const activeCategories = props.categories.filter(
     category => category.isPinned || (props.categorizedFeeds[category.id] || []).length > 0
@@ -735,12 +743,18 @@ const Header: React.FC<HeaderProps> = (props) => {
                 </button>
 
                 <button
-                  onClick={props.onManageFeedsClick}
-                  className="feed-header-control"
-                  title={t('header.manage_feeds')}
-                  aria-label={t('header.manage_feeds')}
+                  onClick={handleManageFeedsActionClick}
+                  className="feed-header-control relative"
+                  title={feedIssuesLabel}
+                  aria-label={feedIssuesLabel}
                 >
                   <HeaderIcons.Feeds showBackground={false} size="md" />
+                  {hasFeedIssues && (
+                    <span
+                      className="absolute right-0 top-0 block h-2.5 w-2.5 rounded-full border border-[rgb(var(--color-background))] bg-[rgb(var(--color-warning))]"
+                      aria-hidden="true"
+                    />
+                  )}
                 </button>
               </div>
 
@@ -895,10 +909,20 @@ const Header: React.FC<HeaderProps> = (props) => {
               {/* Actions Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => { props.onManageFeedsClick(); setMobileMenuOpen(false); }}
-                  className="feed-header-drawer-card feed-header-drawer-card--primary"
+                  onClick={() => {
+                    handleManageFeedsActionClick();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="feed-header-drawer-card feed-header-drawer-card--primary relative"
+                  aria-label={feedIssuesLabel}
                 >
                   <HeaderIcons.Feeds showBackground={false} size="md" />
+                  {hasFeedIssues && (
+                    <span
+                      className="absolute right-3 top-3 block h-2.5 w-2.5 rounded-full border border-[rgb(var(--color-background))] bg-[rgb(var(--color-warning))]"
+                      aria-hidden="true"
+                    />
+                  )}
                   <span className="mt-2 text-xs">{t('feeds.tab.feeds')}</span>
                 </button>
                 <button

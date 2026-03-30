@@ -218,10 +218,6 @@ const AppContent: React.FC = () => {
   const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
-  const [dismissedScopedWarningKey, setDismissedScopedWarningKey] = useState<
-    string | null
-  >(null);
-
   // Article layout settings
   const { settings: layoutSettings } = useArticleLayout();
 
@@ -472,6 +468,18 @@ const AppContent: React.FC = () => {
     [openFeedManager],
   );
 
+  const handleManageFeedsHeaderClick = useCallback(() => {
+    if (loadingState.errors.length > 0) {
+      openFeedManagerFocus({
+        tab: "operations",
+        section: "feed-status",
+      });
+      return;
+    }
+
+    openFeedManager();
+  }, [loadingState.errors.length, openFeedManager, openFeedManagerFocus]);
+
   const scopedFeedUrls = useMemo(() => {
     if (selectedFeedUrl) return [selectedFeedUrl];
     if (
@@ -553,44 +561,6 @@ const AppContent: React.FC = () => {
     scopedLoadErrors.length >= scopedFeedUrls.length &&
     renderedArticles.length === 0 &&
     !loadingState.isHoldingPreviousContent;
-
-  const shouldShowScopedWarningBanner =
-    !isSearchActive &&
-    renderedArticles.length > 0 &&
-    scopedLoadErrors.length > 0;
-
-  const scopedWarningKey = useMemo(() => {
-    if (!shouldShowScopedWarningBanner) return null;
-    const urls = scopedLoadErrors
-      .map((error) => error.url)
-      .sort()
-      .join("|");
-    return `${loadingState.scopeKey || selectedCategory}:${urls}:${scopedLoadErrors.length}`;
-  }, [
-    loadingState.scopeKey,
-    scopedLoadErrors,
-    selectedCategory,
-    shouldShowScopedWarningBanner,
-  ]);
-
-  const showTransientScopedWarning =
-    shouldShowScopedWarningBanner &&
-    !!scopedWarningKey &&
-    dismissedScopedWarningKey !== scopedWarningKey;
-
-  useEffect(() => {
-    if (!scopedWarningKey) {
-      setDismissedScopedWarningKey(null);
-      return;
-    }
-
-    setDismissedScopedWarningKey(null);
-    const timer = window.setTimeout(() => {
-      setDismissedScopedWarningKey(scopedWarningKey);
-    }, 10000);
-
-    return () => window.clearTimeout(timer);
-  }, [scopedWarningKey]);
 
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
@@ -862,7 +832,9 @@ const AppContent: React.FC = () => {
           >
             <Header
               onManageFeedsClick={openFeedManager}
+              onManageFeedsIconClick={handleManageFeedsHeaderClick}
               onRefreshClick={handleRefresh}
+              feedIssueCount={loadingState.errors.length}
               selectedCategory={selectedCategory}
               onNavigation={handleNavigation}
               categorizedFeeds={categorizedFeeds}
@@ -890,21 +862,17 @@ const AppContent: React.FC = () => {
           {loadingState.status === "loading" &&
             (!loadingState.hasScopedCache ||
               loadingState.isHoldingPreviousContent) && (
-              <div className={contentContainerClass}>
-                <div className="mb-4 flex">
-                  <FeedLoadingProgress
-                    loadedFeeds={loadingState.loadedFeeds}
-                    totalFeeds={loadingState.totalFeeds}
-                    progress={loadingState.progress}
-                    isBackgroundRefresh={loadingState.isBackgroundRefresh}
-                    errors={loadingState.errors}
-                    currentAction={loadingState.currentAction}
-                    onCancel={cancelLoading}
-                    onRetryErrors={retryFailedFeeds}
-                    mode="inline"
-                  />
-                </div>
-              </div>
+              <FeedLoadingProgress
+                loadedFeeds={loadingState.loadedFeeds}
+                totalFeeds={loadingState.totalFeeds}
+                progress={loadingState.progress}
+                isBackgroundRefresh={loadingState.isBackgroundRefresh}
+                errors={loadingState.errors}
+                currentAction={loadingState.currentAction}
+                onCancel={cancelLoading}
+                onRetryErrors={retryFailedFeeds}
+                mode="overlay"
+              />
             )}
 
           {isSearchActive && (
@@ -960,63 +928,6 @@ const AppContent: React.FC = () => {
             <>
               {renderedArticles.length > 0 ? (
                 <>
-                  {showTransientScopedWarning && (
-                    <div className={contentContainerClass}>
-                      <div className="mb-6 rounded-[22px] border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.1)] px-5 py-4 text-[rgb(var(--theme-text-readable))] shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold">
-                              {scopedLoadErrors.length} feed
-                              {scopedLoadErrors.length > 1
-                                ? "s falharam"
-                                : " falhou"}{" "}
-                              nesta atualização
-                            </p>
-                            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                              Os artigos válidos continuam visíveis. Abra os
-                              diagnósticos para ver a rota usada, a causa
-                              classificada e a ação recomendada.
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() =>
-                                openFeedManagerFocus({
-                                  tab: "operations",
-                                  section: "feed-status",
-                                })
-                              }
-                              className="rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.18)]"
-                            >
-                              Abrir diagnósticos
-                            </button>
-                            <button
-                              onClick={() =>
-                                openFeedManagerFocus({
-                                  tab: "operations",
-                                  openProxySettings: true,
-                                })
-                              }
-                              className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgba(var(--color-text),0.08)]"
-                            >
-                              Configurar proxies
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDismissedScopedWarningKey(scopedWarningKey)
-                              }
-                              className="rounded-full border border-[rgb(var(--color-border))]/16 bg-transparent px-3 py-2 text-sm font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-all hover:bg-[rgba(var(--color-text),0.06)]"
-                              aria-label="Fechar aviso"
-                            >
-                              Fechar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   <Suspense
                     fallback={
                       <div className="feed-page-frame">

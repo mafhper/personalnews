@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { OptimizedImage } from '../OptimizedImage';
-import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface TerminalLayoutProps {
   articles: Article[];
@@ -42,7 +43,6 @@ export const TerminalSkeleton: React.FC = () => {
 
 export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { t } = useLanguage();
 
   return (
     <div className="feed-top-clearance min-h-screen terminal-accent pb-12 px-3 sm:px-4 md:px-6 font-mono text-sm md:text-base">
@@ -164,17 +164,21 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                       </p>
                     )}
 
-                    <button
-                      onClick={() => setReadingArticle(article)}
-                      className="
-                        mt-3 text-[10px] uppercase tracking-widest
-                        text-[rgba(var(--terminal-accent),0.7)] hover:text-[rgba(var(--terminal-accent),0.95)]
-                        border border-[rgba(var(--terminal-accent),0.2)] hover:border-[rgba(var(--terminal-accent),0.55)]
-                        px-2 py-1 rounded-sm transition-all
-                      "
-                    >
-                      open_{t('action.preview')}
-                    </button>
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          variant="terminal"
+                          articleLink={article.link}
+                          onRead={() => setReadingArticle(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                          className="!mt-3"
+                        />
+                      );
+                    })()}
 
                   </div>
                 </div>

@@ -3,6 +3,8 @@ import { Article } from '../../types';
 import { getVideoEmbed } from '../../utils/videoEmbed';
 import { OptimizedImage } from '../OptimizedImage';
 import { FavoriteButton } from '../FavoriteButton';
+import { ArticleReaderModal } from '../ArticleReaderModal';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
 
 interface BrutalistLayoutProps {
   articles: Article[];
@@ -24,70 +26,46 @@ export const BrutalistSkeleton: React.FC = () => {
   );
 };
 
-const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article, index }) => {
+const BrutalistCard: React.FC<{ article: Article; index: number; onRead: (a: Article) => void }> = ({ article, index: _index, onRead }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const embedUrl = getVideoEmbed(article.link);
 
-  const handleToggleVideo = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleToggleVideo = () => {
     setIsExpanded(!isExpanded);
   };
 
   return (
     <article
-      className={`group relative flex flex-col border-4 border-black dark:border-white bg-[rgb(var(--color-surface))] transition-all duration-300 ${isExpanded
+      className={`group relative flex flex-col border-4 border-[rgb(var(--color-text))] bg-[rgb(var(--color-surface))] transition-all duration-300 ${isExpanded
         ? 'md:col-span-2 md:row-span-2 z-20 shadow-[10px_10px_0px_0px_rgba(var(--color-accent),0.6)] scale-[1.015]'
-        : 'hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.9)]'
+        : 'hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.2)] dark:hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.1)]'
         }`}
     >
-      {/* Card Header / System Line */}
-      <div className={`flex items-center justify-between px-3 py-2 border-b-4 border-black dark:border-white text-[10px] font-bold uppercase tracking-wider ${isExpanded ? 'bg-[rgba(var(--color-accent),0.7)] text-white' : 'bg-black text-white dark:bg-white dark:text-black'
-        }`}>
-        <span className="truncate max-w-[60%]">{article.sourceTitle}</span>
-        <span>
-          {isExpanded ? 'PLAYING_NOW' : `IDX_${index.toString().padStart(3, '0')}`}
-        </span>
-      </div>
-
-      {/* Media Area */}
-      <div className={`relative w-full border-b-4 border-black dark:border-white group-hover:border-b-[rgb(var(--color-accent))] transition-colors ${isExpanded ? 'aspect-video h-full bg-black' : 'aspect-video'
-        }`}>
+      {/* Media Content */}
+      <div className={`relative overflow-hidden border-b-4 border-[rgb(var(--color-text))] transition-all duration-500 ${isExpanded ? 'aspect-video' : 'aspect-[4/3]'}`}>
         {isExpanded && embedUrl ? (
           <iframe
             src={embedUrl}
-            title={article.title}
             className="w-full h-full absolute inset-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
         ) : (
           <>
-            {article.imageUrl ? (
-              <OptimizedImage
-                src={article.imageUrl}
-                alt=""
-                fallbackText="NO_SIGNAL"
-                width={600}
-                height={400}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-                <span className="text-xs">NO_SIGNAL</span>
+            <ArticleImage
+              article={article}
+              width={isExpanded ? 1200 : 800}
+              height={isExpanded ? 800 : 600}
+              fill={true}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            {embedUrl && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none">
+                <div className="w-16 h-16 bg-[rgb(var(--color-accent))] border-4 border-black rounded-full flex items-center justify-center translate-y-2 group-hover:translate-y-0 transition-transform">
+                  <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                </div>
               </div>
             )}
-
-            {/* Play Overlay (Only if not expanded) */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[2px] pointer-events-none z-10">
-              <div className="w-12 h-12 bg-[rgba(var(--color-accent),0.75)] border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-
-            <a href={article.link} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-10" aria-label={`Watch ${article.title}`}></a>
           </>
         )}
       </div>
@@ -95,9 +73,9 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
       {/* Content Block */}
       <div className="p-4 flex flex-col flex-1 justify-between">
         <div>
-          <h2 className={`font-bold leading-tight mb-3 uppercase group-hover:text-white transition-colors ${isExpanded ? 'text-xl md:text-2xl' : 'text-lg line-clamp-3'
+          <h2 className={`font-black tracking-tighter leading-[0.95] mb-4 uppercase group-hover:text-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-text))] hover:text-[rgb(var(--color-surface))] feed-title-hoverable transition-all ${isExpanded ? 'text-2xl md:text-3xl lg:text-4xl' : 'text-xl md:text-2xl line-clamp-3'
             }`}>
-            <a href={article.link} target="_blank" rel="noopener noreferrer">
+            <a href={article.link} target="_blank" rel="noopener noreferrer" className="block px-1">
               {article.title}
             </a>
           </h2>
@@ -108,39 +86,28 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
           </p>
         </div>
 
-        <div className="pt-3 border-t-2 border-dashed border-black/20 dark:border-white/20 flex justify-between items-center text-xs font-bold">
+        <div className="pt-3 border-t-2 border-dashed border-[rgb(var(--color-text))]/20 flex justify-between items-center gap-2 text-xs font-bold flex-wrap">
           <div className="flex items-center gap-3">
             <span>{new Date(article.pubDate).toLocaleDateString()}</span>
             <FavoriteButton
               article={article}
               size="small"
               position="inline"
-              className="text-black dark:text-white hover:text-white p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-accent))] p-0 opacity-0 group-hover:opacity-100 transition-opacity"
             />
           </div>
 
-          <div className="flex gap-2 z-20">
-            {embedUrl && (
-              <button
-                onClick={handleToggleVideo}
-                className={`uppercase px-3 py-1 text-xs font-bold border-2 transition-all ${isExpanded
-                  ? 'bg-red-500 text-white border-red-500 hover:bg-transparent hover:text-red-500'
-                  : 'bg-transparent text-black dark:text-white border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
-                  }`}
-              >
-                {isExpanded ? 'CLOSE' : 'WATCH'}
-              </button>
-            )}
-
-            <a
-              href={article.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="uppercase px-3 py-1 text-xs font-bold border-2 border-black dark:border-white text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
-            >
-              LINK
-            </a>
-          </div>
+          <FeedInteractiveActions
+            variant="brutalist"
+            articleLink={article.link}
+            onRead={() => onRead(article)}
+            showRead={!embedUrl}
+            showWatch={!!embedUrl}
+            showVisit={true}
+            onWatch={embedUrl ? handleToggleVideo : undefined}
+            watchActive={!!embedUrl && isExpanded}
+            className="z-20 !mt-2 flex-wrap gap-2"
+          />
         </div>
       </div>
     </article>
@@ -148,11 +115,29 @@ const BrutalistCard: React.FC<{ article: Article; index: number }> = ({ article,
 };
 
 export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({ articles }) => {
+  const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+
+  const handleNextArticle = () => {
+    if (!readingArticle) return;
+    const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
+    if (currentIndex < articles.length - 1) {
+      setReadingArticle(articles[currentIndex + 1]);
+    }
+  };
+
+  const handlePrevArticle = () => {
+    if (!readingArticle) return;
+    const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
+    if (currentIndex > 0) {
+      setReadingArticle(articles[currentIndex - 1]);
+    }
+  };
+
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-10 py-6 font-mono">
       <div className="mx-auto w-full max-w-[1500px]">
         {/* Header Decoration */}
-        <div className="mb-8 border-b-4 border-black dark:border-white pb-2 flex justify-between items-end uppercase">
+        <div className="mb-8 border-b-4 border-[rgb(var(--color-text))] pb-2 flex justify-between items-end uppercase">
           <h1 className="text-4xl md:text-6xl font-black leading-none tracking-tighter">
             VIDEO_FEED
           </h1>
@@ -164,10 +149,42 @@ export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({ articles }) =>
         {/* Uniform Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-7 auto-dense">
           {articles.map((article, index) => (
-            <BrutalistCard key={`${article.link}-${index}`} article={article} index={index} />
+            <BrutalistCard key={`${article.link}-${index}`} article={article} index={index} onRead={setReadingArticle} />
           ))}
         </div>
       </div>
+
+      {readingArticle && (
+        <ArticleReaderModal
+          article={readingArticle}
+          onClose={() => setReadingArticle(null)}
+          onNext={handleNextArticle}
+          onPrev={handlePrevArticle}
+          hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
+          hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
+        />
+      )}
+    </div>
+  );
+};
+
+// Internal ArticleImage proxy for Brutalist consistency
+const ArticleImage: React.FC<{
+  article: Article;
+  width: number;
+  height: number;
+  fill: boolean;
+  className: string;
+  priority?: boolean;
+}> = (props) => {
+  return (
+    <div className={props.className}>
+       <img 
+         src={props.article.imageUrl} 
+         alt="" 
+         className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500"
+         loading={props.priority ? "eager" : "lazy"}
+       />
     </div>
   );
 };

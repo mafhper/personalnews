@@ -4,6 +4,8 @@ import { SmallOptimizedImage } from '../SmallOptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface MinimalLayoutProps {
   articles: Article[];
@@ -132,11 +134,20 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                     {heroArticle.description}
                   </p>
 
-                  <div className="pt-4 flex items-center gap-8">
-                    <button className="feed-title relative py-2 text-[10px] font-black uppercase tracking-[0.3em] group/btn">
-                      {t('action.read_article') || 'Ler artigo'}
-                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[rgba(var(--color-accent),0.5)] transform origin-left scale-x-50 group-hover/btn:scale-x-100 transition-transform duration-500" />
-                    </button>
+                  <div className="pt-4 flex items-center gap-8 flex-wrap">
+                    {(() => {
+                      const embedUrl = getVideoEmbed(heroArticle.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={heroArticle.link}
+                          onRead={() => setReadingIndex(0)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          onWatch={embedUrl ? () => window.open(heroArticle.link, '_blank') : undefined}
+                        />
+                      );
+                    })()}
 
                     <FavoriteButton
                       article={heroArticle}
@@ -209,12 +220,20 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       {article.description}
                     </p>
 
-                    <div className={`mt-6 ${isFullWidth ? '' : 'flex'}`}>
-                      <span className="feed-title inline-flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] group-hover:gap-5 transition-all">
-                        {t('action.read_article') || 'Ler artigo'}
-                        <div className="w-6 h-px bg-current" />
-                      </span>
-                    </div>
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => setReadingIndex(index + 1)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                          className={`mt-6 ${isFullWidth ? 'justify-center' : ''}`}
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               </article>

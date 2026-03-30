@@ -12,7 +12,7 @@ import type { Article } from "../types";
 import { getLogger } from "./logger";
 import { perfDebugger } from "./performanceUtils";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
-import { sanitizeHtmlContent, sanitizeArticleDescription } from "../utils/sanitization";
+import { sanitizeHtmlContent, sanitizeArticleDescription, sanitizeSourceTitle } from "../utils/sanitization";
 
 // Import image extraction utilities from rssParser
 // These functions are shared between parsers
@@ -448,7 +448,7 @@ async function parseRssWithRss2Json(feedUrl: string): Promise<Article[]> {
         imageUrl: validImageUrl,
         author: sanitizeHtmlContent(item.author || '') || undefined,
         categories: item.categories || [],
-        sourceTitle: sanitizeHtmlContent(data.feed?.title) || 'Unknown Feed',
+        sourceTitle: sanitizeSourceTitle(data.feed?.title, feedUrl) || 'Unknown Feed',
         feedUrl: feedUrl,
       });
     } catch {
@@ -523,14 +523,14 @@ function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
   const channels = xmlDoc.getElementsByTagName("channel");
   if (channels.length > 0) {
     const titleElements = channels[0].getElementsByTagName("title");
-    channelTitle = titleElements[0]?.textContent?.trim() || "Unknown Feed";
+    channelTitle = sanitizeSourceTitle(titleElements[0]?.textContent?.trim() || "Unknown Feed", feedUrl);
     items = xmlDoc.getElementsByTagName("item");
   } else {
     // Try Atom format
     const feeds = xmlDoc.getElementsByTagName("feed");
     if (feeds.length > 0) {
       const titleElements = feeds[0].getElementsByTagName("title");
-      channelTitle = titleElements[0]?.textContent?.trim() || "Unknown Feed";
+      channelTitle = sanitizeSourceTitle(titleElements[0]?.textContent?.trim() || "Unknown Feed", feedUrl);
       items = xmlDoc.getElementsByTagName("entry");
     } else {
       // Try RDF format

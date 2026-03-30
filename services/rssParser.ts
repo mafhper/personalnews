@@ -23,6 +23,7 @@ import {
   sanitizeWithDomPurify,
   sanitizeHtmlContent,
   sanitizeArticleDescription,
+  sanitizeSourceTitle,
 } from "../utils/sanitization";
 
 // Configurações otimizadas
@@ -331,7 +332,7 @@ function parseRss2JsonResponse(
     throw new Error("Invalid RSS2JSON response format");
   }
 
-  const channelTitle = sanitizeTitle(data.feed?.title || "Untitled Feed");
+  const channelTitle = sanitizeSourceTitle(data.feed?.title || "Untitled Feed", _feedUrl);
   const articles: Article[] = [];
 
   const items = data.items || [];
@@ -505,14 +506,14 @@ function parseXmlResponse(
   if (channels.length > 0) {
     const titleElements = channels[0].getElementsByTagName("title");
     channelTitle = titleElements[0]?.textContent?.trim() || "Untitled Feed";
-    channelTitle = sanitizeTitle(channelTitle);
+    channelTitle = sanitizeSourceTitle(channelTitle, _feedUrl);
     items = xmlDoc.getElementsByTagName("item");
   } else {
     const feeds = xmlDoc.getElementsByTagName("feed");
     if (feeds.length > 0) {
       const titleElements = feeds[0].getElementsByTagName("title");
       channelTitle = titleElements[0]?.textContent?.trim() || "Untitled Feed";
-      channelTitle = sanitizeTitle(channelTitle);
+      channelTitle = sanitizeSourceTitle(channelTitle, _feedUrl);
       items = xmlDoc.getElementsByTagName("entry");
     } else {
       const rdfItems = xmlDoc.getElementsByTagName("item");
@@ -522,7 +523,7 @@ function parseXmlResponse(
           const titleElements = rdfChannels[0].getElementsByTagName("title");
           channelTitle =
             titleElements[0]?.textContent?.trim() || "Untitled Feed";
-          channelTitle = sanitizeTitle(channelTitle);
+          channelTitle = sanitizeSourceTitle(channelTitle, _feedUrl);
         }
         items = rdfItems;
       } else {

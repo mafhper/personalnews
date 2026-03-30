@@ -5,6 +5,8 @@ import { useWeather } from '../../hooks/useWeather';
 import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface NewspaperLayoutProps {
   articles: Article[];
@@ -232,13 +234,28 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                     </div>
                   </div>
 
-                  <h3 className="font-serif text-lg font-bold leading-snug group-hover:text-white">
+                  <h3 className="font-serif text-lg font-bold leading-snug group-hover:text-[rgb(var(--color-accent))]">
                     {article.title}
                   </h3>
 
                   <span className="text-xs text-[rgb(var(--color-textSecondary))]">
                     {formatTimeAgo(article.pubDate)}
                   </span>
+        
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => setReadingArticle(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                          className="!mt-4"
+                        />
+                      );
+                    })()}
                 </div>
               </article>
             ))}
@@ -277,7 +294,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 </div>
               </div>
 
-              <h3 className="font-serif text-lg font-bold leading-snug mb-2 group-hover:text-white">
+              <h3 className="font-serif text-lg font-bold leading-snug mb-2 group-hover:text-[rgb(var(--color-accent))]">
                 {article.title}
               </h3>
 
@@ -290,6 +307,21 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               <span className="text-xs text-[rgb(var(--color-textSecondary))]">
                 {formatTimeAgo(article.pubDate)}
               </span>
+        
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => setReadingArticle(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                          className="!mt-4"
+                        />
+                      );
+                    })()}
             </article>
           ))}
         </section>

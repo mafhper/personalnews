@@ -255,6 +255,143 @@ export function containsHtml(text: string | null | undefined): boolean {
 }
 
 /**
+ * Sanitiza e simplifica o título da fonte (site)
+ * remove sub-títulos longos e texto desnecessário
+ * 
+ * @param sourceTitle - Título da fonte/site
+ * @param url - URL opcional para conferência
+ * @returns Título simplificado
+ */
+export function sanitizeSourceTitle(sourceTitle: string | null | undefined, url?: string): string {
+  if (!sourceTitle) return "";
+  
+  let cleanTitle = sanitizeTitle(sourceTitle).trim();
+  
+  // Mapa de nomes conhecidos baseado em domínio (prioridade máxima)
+  const knownSiteNames: Record<string, string> = {
+    'adafruit.com': 'Adafruit',
+    'blog.adafruit.com': 'Adafruit',
+    'uxdesign.cc': 'UX Collective',
+    'medium.com': 'Medium',
+    'dezeen.com': 'Dezeen',
+    'theverge.com': 'The Verge',
+    'arstechnica.com': 'Ars Technica',
+    'wired.com': 'Wired',
+    'techcrunch.com': 'TechCrunch',
+    'hackaday.com': 'Hackaday',
+    'makezine.com': 'Make',
+    'engadget.com': 'Engadget',
+    'gizmodo.com': 'Gizmodo',
+    'kotaku.com': 'Kotaku',
+    'polygon.com': 'Polygon',
+    'eurogamer.net': 'Eurogamer',
+    'rockpapershotgun.com': 'RPS',
+    'pcgamer.com': 'PC Gamer',
+    'ign.com': 'IGN',
+    'gamespot.com': 'GameSpot',
+    'destructoid.com': 'Destructoid',
+    'smashingmagazine.com': 'Smashing',
+    'css-tricks.com': 'CSS-Tricks',
+    'dev.to': 'DEV',
+    'news.ycombinator.com': 'Hacker News',
+    'reddit.com': 'Reddit',
+    'producthunt.com': 'Product Hunt',
+    'dribbble.com': 'Dribbble',
+    'behance.net': 'Behance',
+    'designboom.com': 'Designboom',
+    'archdaily.com': 'ArchDaily',
+    'youtube.com': 'YouTube',
+  };
+  
+  // Tenta resolver pelo domínio primeiro
+  if (url) {
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace(/^www\./i, '').toLowerCase();
+      
+      // Verifica nome exato no mapa
+      if (knownSiteNames[hostname]) {
+        return knownSiteNames[hostname];
+      }
+      
+      // Verifica sub-domínios (blog.example.com -> example.com)
+      const hostParts = hostname.split('.');
+      if (hostParts.length > 2) {
+        const baseDomain = hostParts.slice(-2).join('.');
+        if (knownSiteNames[baseDomain]) {
+          return knownSiteNames[baseDomain];
+        }
+      }
+    } catch {
+      // Ignora erro de URL inválida
+    }
+  }
+  
+  // Separadores agressivos: captura Unicode dashes, pipes, bullets, colons, underscores e barras
+  // Regex: 
+  // 1: traços Unicode, pipes, bullets isolados por zero ou mais espaços
+  // 2: traço hifen, dois-pontos, underline ou barra cercados obrigatoriamente por pelo menos um espaço
+  // 3: duplos colons, sublinhados seguidos, traços seguidos (ex: --, __, ::) mesmo sem espaço
+  const separatorRegex = /\s*[\u2013\u2014\u2015\u2012\|\u2022\u25CF]\s*|\s+[-:_/]+\s+|\s*::\s*|\s*--+\s*|\s*__+\s*/;
+  
+  const parts = cleanTitle.split(separatorRegex);
+  if (parts.length > 1 && parts[0].trim().length >= 2) {
+    cleanTitle = parts[0].trim();
+  }
+  
+  // Remove sufixos comuns que não agregam valor no chip
+  cleanTitle = cleanTitle
+    .replace(/\s+(Blog|RSS|Feed|News|Home|Online|Official)$/i, '')
+    .trim();
+
+  // Remove extenções de domínio se estiverem chapadas no título (ex: "Adafruit.com" -> "Adafruit")
+  // e limpa variações maliciosas de www.
+  cleanTitle = cleanTitle
+    .replace(/^www\./i, '')
+    .replace(/\.(com|net|org|io|co|us|uk|br|pt|info|biz|me|cc|tv|so|digital|tech)( \w+)?$/i, '')
+    .trim();
+
+  if (url) {
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace(/^www\./i, '').toLowerCase();
+      const hostParts = hostname.split('.');
+      
+      const mainName = hostParts.length > 2 && hostParts[hostParts.length - 3] !== 'www' 
+          ? hostParts[hostParts.length - 3] 
+          : hostParts[hostParts.length - 2] || hostParts[0];
+          
+      const capitalizedMainName = mainName.charAt(0).toUpperCase() + mainName.slice(1);
+
+      // Lógica de fallback se o título for URL, muito curto, genérico, 
+      // ou se bater quase que identicamente com a URL (ex: title="uxdesign" vs. url="uxdesign.cc")
+      const similarityCheck = cleanTitle.toLowerCase().replace(/\s+/g, '') === mainName.toLowerCase();
+      
+      if (similarityCheck || cleanTitle.length < 2 || cleanTitle.toLowerCase().includes('http') || cleanTitle.toLowerCase() === 'untitled feed') {
+         cleanTitle = capitalizedMainName;
+      }
+    } catch {
+      // Ignora erro de URL inválida
+    }
+  }
+
+  // Limite de segurança para títulos em pílulas (chips)
+  if (cleanTitle.length > 22) {
+    // Tenta cortar no último espaço antes do limite
+    const truncated = cleanTitle.substring(0, 20);
+    const lastSpace = truncated.lastIndexOf(' ');
+    if (lastSpace > 10) {
+      cleanTitle = truncated.substring(0, lastSpace) + '…';
+    } else {
+      cleanTitle = truncated + '…';
+    }
+  }
+
+  return cleanTitle;
+}
+
+
+/**
  * Sanitiza conteúdo de feeds RSS completo
  * 
  * @param feedContent - Objeto com propriedades que podem conter HTML
@@ -281,8 +418,10 @@ export function sanitizeFeedContent<T extends Record<string, unknown>>(feedConte
   }
 
   if ('sourceTitle' in sanitized && typeof sanitized.sourceTitle === 'string') {
-    sanitized.sourceTitle = sanitizeTitle(sanitized.sourceTitle);
+    // Tenta usar o link para conferência se disponível
+    const url = typeof sanitized.link === 'string' ? sanitized.link : undefined;
+    sanitized.sourceTitle = sanitizeSourceTitle(sanitized.sourceTitle, url);
   }
 
   return sanitized as T;
-}
+}

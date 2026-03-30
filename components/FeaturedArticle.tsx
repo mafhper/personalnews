@@ -25,12 +25,12 @@ export const FeaturedArticle: React.FC<{
       role="article"
       aria-labelledby="featured-article-title"
     >
-      <div className="relative group h-full">
+      <div className="relative group h-full overflow-hidden rounded-2xl">
         <a
           href={article.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="block relative h-full"
+          className="block relative h-full overflow-hidden"
           aria-label={`Read featured article: ${article.title} from ${
             authorLabel || article.sourceTitle
           }`}
@@ -38,14 +38,18 @@ export const FeaturedArticle: React.FC<{
           <OptimizedImage
             src={article.imageUrl}
             alt={`Featured image for article: ${article.title}`}
-            className="rounded-lg shadow-2xl"
+            className="w-full h-full object-cover object-center"
             fallbackText={article.sourceTitle}
             width={1200}
             height={800}
             priority={true}
           />
           <div
-            className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent rounded-lg"
+            className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,10,0.14)_0%,rgba(4,6,10,0.28)_24%,rgba(4,6,10,0.72)_62%,rgba(4,6,10,0.96)_100%)]"
+            aria-hidden="true"
+          ></div>
+          <div
+            className="absolute inset-y-0 left-0 w-full sm:w-[85%] bg-[linear-gradient(90deg,rgba(3,5,8,0.92)_0%,rgba(3,5,8,0.7)_45%,rgba(3,5,8,0)_100%)] pointer-events-none"
             aria-hidden="true"
           ></div>
 
@@ -63,53 +67,64 @@ export const FeaturedArticle: React.FC<{
           />
 
           <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 lg:p-8 xl:p-10 text-white">
-            <h3
-              id="featured-article-title"
-              className="feed-overlay-title text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-tight group-hover:underline transition-all duration-300"
-              style={{
-                lineHeight: "1.1",
-                textShadow: "0 4px 8px rgba(0,0,0,0.8)",
-                maxWidth: "100%",
-                overflowWrap: "break-word",
-              }}
-            >
-              {article.title}
-            </h3>
-            <p className="feed-overlay-desc mt-2 lg:mt-6 text-sm md:text-base lg:text-lg xl:text-xl drop-shadow-md block leading-relaxed max-w-4xl line-clamp-2 md:line-clamp-none">
-              {sanitizeArticleDescription(article.description || "")}
-            </p>
-            <footer className="feed-overlay-meta mt-4 lg:mt-8 flex flex-wrap items-center gap-3 lg:gap-4 text-[10px] lg:text-xs uppercase tracking-[0.22em] min-w-0 text-white/70">
-              {authorLabel && (
-                <span
-                  className="truncate max-w-[200px] sm:max-w-[300px]"
-                  aria-label={`Author: ${authorLabel}`}
-                >
-                  {authorLabel}
-                </span>
-              )}
-              {authorLabel && (
-                <span className="text-white/30 font-normal" aria-hidden="true">
-                  •
-                </span>
-              )}
-              <time
-                className="drop-shadow-md"
-                dateTime={article.pubDate.toISOString()}
-                aria-label={`Published on ${article.pubDate.toLocaleDateString()}`}
+            <div className="max-w-4xl px-1 py-1 sm:px-2 sm:py-2 md:px-3">
+              <h3
+                id="featured-article-title"
+                className="feed-overlay-title feed-title feed-title-hero text-xl text-white transition-all duration-300 sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl"
+                style={{
+                  textShadow: "0 6px 18px rgba(0,0,0,0.88)",
+                  maxWidth: "100%",
+                  overflowWrap: "break-word",
+                }}
               >
-                {layoutSettings.showPublicationTime
-                  ? timeFormat === "12h"
-                    ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
-                      "pt-BR",
-                      { hour: "2-digit", minute: "2-digit", hour12: true }
-                    )}`
-                    : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
-                      "pt-BR",
-                      { hour: "2-digit", minute: "2-digit", hour12: false }
-                    )}`
-                  : article.pubDate.toLocaleDateString()}
-              </time>
-            </footer>
+                <span className="feed-link-affordance">{article.title}</span>
+              </h3>
+              <div className="mt-3 max-w-4xl md:mt-5 lg:mt-6">
+                <p
+                  className="feed-overlay-desc block text-sm leading-relaxed text-white/94 line-clamp-2 md:line-clamp-none md:text-base lg:text-lg xl:text-xl"
+                  style={{ textShadow: "0 4px 14px rgba(0,0,0,0.82)" }}
+                >
+                  <span className="feed-image-subtitle-band">
+                    {sanitizeArticleDescription(article.description || "")}
+                  </span>
+                </p>
+              </div>
+              <footer
+                className="feed-overlay-meta mt-4 flex min-w-0 flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-white/90 lg:mt-8 lg:gap-4 lg:text-xs"
+                style={{ textShadow: "0 3px 10px rgba(0,0,0,0.78)" }}
+              >
+                {authorLabel && (
+                  <span
+                    className="max-w-[200px] truncate sm:max-w-[300px]"
+                    aria-label={`Author: ${authorLabel}`}
+                  >
+                    {authorLabel}
+                  </span>
+                )}
+                {authorLabel && (
+                  <span className="font-normal text-white/50" aria-hidden="true">
+                    •
+                  </span>
+                )}
+                <time
+                  className="drop-shadow-md"
+                  dateTime={article.pubDate.toISOString()}
+                  aria-label={`Published on ${article.pubDate.toLocaleDateString()}`}
+                >
+                  {layoutSettings.showPublicationTime
+                    ? timeFormat === "12h"
+                      ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
+                          "pt-BR",
+                          { hour: "2-digit", minute: "2-digit", hour12: true },
+                        )}`
+                      : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
+                          "pt-BR",
+                          { hour: "2-digit", minute: "2-digit", hour12: false },
+                        )}`
+                    : article.pubDate.toLocaleDateString()}
+                </time>
+              </footer>
+            </div>
           </div>
         </a>
       </div>

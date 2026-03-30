@@ -11,7 +11,7 @@ interface ProxyHealthSummaryProps {
 }
 
 const SURFACE_CLASS =
-  "rounded-[24px] bg-[#151515] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
+  "rounded-[24px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.025)]";
 
 const statusStyles: Record<
   ProxyDashboardRoute["status"],
@@ -31,7 +31,7 @@ const statusStyles: Record<
   },
   idle: {
     label: "Sem uso",
-    tone: "border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]",
+    tone: "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]",
   },
 };
 
@@ -131,7 +131,7 @@ export const ProxyHealthSummary: React.FC<ProxyHealthSummaryProps> = ({
                     {route.detail}
                   </p>
                 </div>
-                <div className="rounded-full bg-[#0d0d0d] px-3 py-1 text-xs font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                <div className="rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1 text-xs font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]">
                   {route.transport === "desktop-backend" ? "desktop" : "cloud"}
                 </div>
               </div>
@@ -178,7 +178,7 @@ export const ProxyHealthSummary: React.FC<ProxyHealthSummaryProps> = ({
       </div>
 
       {data.runtime.lastWarning && (
-        <div className="rounded-[22px] bg-[#171208] p-4 text-sm text-[rgb(var(--theme-text-readable))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="rounded-[22px] border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] p-4 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 text-[rgb(var(--color-warning))]" />
             <div className="space-y-1">

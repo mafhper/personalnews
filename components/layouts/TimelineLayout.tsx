@@ -3,6 +3,8 @@ import { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface TimelineLayoutProps {
   articles: Article[];
@@ -40,7 +42,7 @@ export const TimelineSkeleton: React.FC = () => {
 
 export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFormat }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
 
   // Group articles by date
   // We use useMemo to avoid recalculating on every render
@@ -153,16 +155,23 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                       {article.description}
                     </p>
 
-                    {/* Overlay with Preview Button */}
-                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgb(var(--color-surface))] to-transparent flex items-end justify-center pb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                      {/* Button needs pointer-events-auto to work inside pointer-events-none parent */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleOpenReader(article); }}
-                        className="pointer-events-auto bg-[rgba(var(--color-accent),0.75)] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md hover:scale-105 transition-transform"
-                      >
-                        {t('action.preview')}
-                      </button>
-                    </div>
+                    {/* Action Buttons */}
+                    
+        {(() => {
+          const embedUrl = getVideoEmbed(article.link);
+          return (
+            <FeedInteractiveActions
+              articleLink={article.link}
+              onRead={() => handleOpenReader(article)}
+              showRead={!embedUrl}
+              showWatch={!!embedUrl}
+              showVisit={true}
+              onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+              className="!mt-4 !mb-0 pt-4 border-t border-[rgb(var(--color-border))]/50 w-full justify-between"
+            />
+          );
+        })()}
+        
                   </div>
                 </div>
               </article>

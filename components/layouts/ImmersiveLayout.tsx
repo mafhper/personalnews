@@ -9,6 +9,8 @@ import type { Article } from '../../types';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface ImmersiveLayoutProps {
   articles: Article[];
@@ -81,15 +83,12 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
   const hero = uniqueArticles[0];
   const rest = uniqueArticles.slice(1);
 
-  const hasContent = (a: Article) => !!a.content || !!a.description;
-
   return (
     <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-12 pb-20 px-4 sm:px-6 lg:px-8">
 
       <HeroArticle
         article={hero}
         onRead={() => setReadingArticle(hero)}
-        hasContent={hasContent(hero)}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
@@ -98,7 +97,6 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
             key={article.link}
             article={article}
             onRead={() => setReadingArticle(article)}
-            hasContent={hasContent(article)}
           />
         ))}
       </div>
@@ -139,8 +137,7 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
 const HeroArticle: React.FC<{
   article: Article;
   onRead: () => void;
-  hasContent: boolean;
-}> = ({ article, onRead, hasContent }) => {
+}> = ({ article, onRead }) => {
   const gradient = getGradientFromString(article.title);
 
   return (
@@ -162,8 +159,8 @@ const HeroArticle: React.FC<{
 
       {/* Top Controls: Site name and FavoriteButton aligned */}
       <div className="absolute top-0 left-0 right-0 p-6 sm:p-8 md:p-10 flex justify-between items-start z-20">
-        <div className="rounded-full border border-white/10 bg-black/50 px-4 py-2 backdrop-blur-md">
-          <span className="text-xs font-bold uppercase tracking-widest text-white/90">
+        <div className="rounded-full border border-white/10 bg-black/50 px-4 py-2 backdrop-blur-md max-w-[180px] sm:max-w-[300px] truncate">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/90 truncate block">
             {article.sourceTitle}
           </span>
         </div>
@@ -193,24 +190,28 @@ const HeroArticle: React.FC<{
 
           {article.description && (
             <p
-              className="text-base sm:text-lg md:text-xl text-gray-300/95 line-clamp-3 leading-relaxed max-w-3xl"
+              className="text-base sm:text-lg md:text-xl text-white/90 line-clamp-3 leading-relaxed max-w-3xl"
               style={{ textShadow: '0 8px 24px rgba(0, 0, 0, 0.45)' }}
             >
               {article.description}
             </p>
           )}
 
-          {hasContent && (
-            <div className="pt-4">
-              <button
-                onClick={onRead}
-                className="group/btn inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-bold text-xs uppercase tracking-widest transition-all hover:bg-gray-200 active:scale-95"
-              >
-                Ler Artigo
-                <span className="transition-transform group-hover/btn:translate-x-1">→</span>
-              </button>
-            </div>
-          )}
+          {(() => {
+            const embedUrl = getVideoEmbed(article.link);
+            return (
+              <FeedInteractiveActions
+                variant="onDarkMedia"
+                articleLink={article.link}
+                onRead={onRead}
+                showRead={!embedUrl}
+                showWatch={!!embedUrl}
+                showVisit={true}
+                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                className="!mt-0 pt-4"
+              />
+            );
+          })()}
         </div>
       </div>
     </section>
@@ -224,8 +225,7 @@ const HeroArticle: React.FC<{
 const ArticleCard: React.FC<{
   article: Article;
   onRead: () => void;
-  hasContent: boolean;
-}> = ({ article, onRead, hasContent }) => {
+}> = ({ article, onRead }) => {
   const gradient = getGradientFromString(article.title);
 
   return (
@@ -286,7 +286,7 @@ const ArticleCard: React.FC<{
 
             {article.description && (
               <p
-                className="text-xs sm:text-sm text-gray-300/95 line-clamp-2 leading-relaxed"
+                className="text-xs sm:text-sm text-white/90 line-clamp-2 leading-relaxed"
                 style={{ textShadow: '0 8px 20px rgba(0, 0, 0, 0.42)' }}
               >
                 {article.description}
@@ -294,14 +294,21 @@ const ArticleCard: React.FC<{
             )}
           </div>
 
-          {hasContent && (
-            <button
-              onClick={onRead}
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 hover:text-white transition-colors pt-2"
-            >
-              Expandir →
-            </button>
-          )}
+          {(() => {
+            const embedUrl = getVideoEmbed(article.link);
+            return (
+              <FeedInteractiveActions
+                variant="onDarkMedia"
+                articleLink={article.link}
+                onRead={onRead}
+                showRead={!embedUrl}
+                showWatch={!!embedUrl}
+                showVisit={true}
+                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                className="!mt-0"
+              />
+            );
+          })()}
         </div>
       </div>
     </section>

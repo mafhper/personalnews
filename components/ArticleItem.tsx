@@ -6,6 +6,8 @@ import { usePerformance } from "../hooks/usePerformance";
 import { useArticleLayout } from "../hooks/useArticleLayout";
 import { useAppearance } from "../hooks/useAppearance";
 import { ArticleItemLight } from "./ArticleItemLight";
+import { FeedInteractiveActions } from "./FeedInteractiveActions";
+import { getVideoEmbed } from "../utils/videoEmbed";
 
 const ChatBubbleIcon: React.FC = memo(() => (
   <svg
@@ -144,7 +146,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
             href={article.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex flex-col group"
+            className="flex-1 flex flex-col group min-h-0"
             onClick={(e) => {
               if (onClick) {
                 e.preventDefault();
@@ -166,7 +168,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
             )}
 
             {/* Title with better text wrapping */}
-            <h4 className="feed-title feed-title-hoverable text-base lg:text-lg leading-snug mb-2 line-clamp-3">
+            <h4 className="feed-title feed-title-card feed-title-hoverable text-base lg:text-lg mb-2 line-clamp-3 group-hover:underline decoration-current underline-offset-[0.18em]">
               {article.title}
             </h4>
 
@@ -203,6 +205,21 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
               )}
             </div>
           </a>
+
+          {(() => {
+            const embedUrl = getVideoEmbed(article.link);
+            return (
+              <FeedInteractiveActions
+                articleLink={article.link}
+                onRead={() => onClick?.(article)}
+                showRead={!embedUrl && !!onClick}
+                showWatch={!!embedUrl}
+                showVisit={true}
+                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                className="!mt-2 !mb-4"
+              />
+            );
+          })()}
         </div>
       </div>
     </article>

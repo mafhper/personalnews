@@ -3,7 +3,8 @@ import { Article } from '../../types';
 import { ArticleItem } from '../ArticleItem';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { FavoriteButton } from '../FavoriteButton';
-
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 interface ModernPortalLayoutProps {
   articles: Article[];
   timeFormat: '12h' | '24h';
@@ -106,14 +107,14 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
 
         {/* Main Hero */}
         <div
-          className="group relative overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[340px] md:min-h-[390px] lg:min-h-[450px] xl:min-h-[500px] shadow-xl cursor-pointer"
+          className="feed-hero-frame group relative min-h-[280px] sm:min-h-[340px] md:min-h-[390px] lg:min-h-[450px] xl:min-h-[500px] shadow-xl cursor-pointer"
           onClick={() => handleOpenReader(heroArticle)}
         >
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
             style={{ backgroundImage: `url(${heroArticle.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070'})` }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-85" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.18)_0%,rgba(3,5,9,0.28)_20%,rgba(3,5,9,0.74)_64%,rgba(3,5,9,0.97)_100%)]" />
 
           <FavoriteButton
             article={heroArticle}
@@ -122,28 +123,47 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
             className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/15 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
           />
 
-          <div className="absolute bottom-0 left-0 p-6 lg:p-8 xl:p-10 max-w-[38rem]">
-            <span className="feed-chip mb-4 shadow-sm shadow-black/30">
-              Matéria principal
-            </span>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-xl tracking-tight">
-              <a
-                href={heroArticle.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline decoration-4 decoration-[rgba(var(--color-accent),0.45)] underline-offset-8"
-                onClick={(e) => { e.preventDefault(); handleOpenReader(heroArticle); }}
-              >
-                {heroArticle.title}
-              </a>
-            </h1>
-            <p className="hidden md:block text-lg text-white/84 line-clamp-2 mb-4 max-w-2xl drop-shadow-sm">
-              {heroArticle.description}
-            </p>
-            <div className="flex items-center text-sm font-bold min-w-0 text-white">
-              <span className="feed-chip truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/10">{heroArticle.sourceTitle}</span>
-              <span className="mx-2 flex-shrink-0 text-white">•</span>
-              <span className="truncate text-white font-black">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <div className="absolute bottom-0 left-0 p-6 lg:p-8 xl:p-10 max-w-[42rem]">
+            <div className="px-1 py-1 sm:px-2 sm:py-2 md:px-3">
+              <h1 className="feed-title feed-title-hero text-2xl sm:text-3xl lg:text-4xl xl:text-5xl text-white mb-4 drop-shadow-xl">
+                <a
+                  href={heroArticle.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="feed-link-affordance"
+                  onClick={(e) => { e.preventDefault(); handleOpenReader(heroArticle); }}
+                >
+                  {heroArticle.title}
+                </a>
+              </h1>
+              <div className="mb-4 hidden max-w-2xl md:block">
+                <p className="text-lg text-white/92 line-clamp-2 drop-shadow-sm">
+                  <span className="feed-image-subtitle-band">
+                    {heroArticle.description}
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center text-sm font-bold min-w-0 text-white mb-4">
+                <span className="feed-chip truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/10">{heroArticle.sourceTitle}</span>
+                <span className="mx-2 flex-shrink-0 text-white">•</span>
+                <span className="truncate text-white/88 font-black">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              </div>
+              
+              {(() => {
+                const embedUrl = getVideoEmbed(heroArticle.link);
+                return (
+                  <FeedInteractiveActions
+                    variant="onDarkMedia"
+                    articleLink={heroArticle.link}
+                    onRead={() => handleOpenReader(heroArticle)}
+                    showRead={!embedUrl}
+                    showWatch={!!embedUrl}
+                    showVisit={true}
+                    onWatch={embedUrl ? () => window.open(heroArticle.link, '_blank') : undefined}
+                    className="!mt-0 justify-start"
+                  />
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -153,36 +173,54 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
           {topStories.map((article) => (
             <div
               key={article.link}
-              className="relative h-full rounded-2xl overflow-hidden group min-h-[180px] sm:min-h-[200px] md:min-h-[220px] lg:min-h-[200px] aspect-[4/3] md:aspect-auto shadow-md cursor-pointer"
+              className="relative h-full rounded-[calc(var(--feed-card-radius)*1.35)] overflow-hidden group min-h-[180px] sm:min-h-[200px] md:min-h-[220px] lg:min-h-[200px] aspect-[4/3] md:aspect-auto shadow-md cursor-pointer"
               onClick={() => handleOpenReader(article)}
             >
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                 style={{ backgroundImage: `url(${article.imageUrl})` }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+              <div className="feed-image-story-overlay absolute inset-0" />
               <FavoriteButton
                 article={article}
                 size="medium"
                 position="overlay"
                 className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
               />
-              <div className="absolute bottom-0 left-0 p-5 w-full">
-                <h2 className="text-lg font-bold text-white leading-snug mb-2 drop-shadow-lg tracking-tight">
-                  <a
-                    href={article.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-colors hover:text-white/90"
-                    onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
-                  >
-                    {article.title}
-                  </a>
-                </h2>
-                <div className="flex items-center text-xs font-bold min-w-0 text-white">
-                  <span className="feed-chip truncate max-w-[120px] shadow-sm shadow-black/10">{article.sourceTitle}</span>
-                  <span className="mx-2 flex-shrink-0 text-white">•</span>
-                  <span className="text-white/80">{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <div className="absolute bottom-0 left-0 w-full p-5 pt-12">
+                <div className="feed-image-story-shell">
+                  <h2 className="feed-title feed-title-feature feed-image-story-title text-base lg:text-lg mb-2 line-clamp-2">
+                    <a
+                      href={article.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="feed-link-affordance transition-colors hover:text-white/92"
+                      onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
+                    >
+                      {article.title}
+                    </a>
+                  </h2>
+                  <div className="feed-image-story-meta flex items-center text-[10px] sm:text-xs font-bold min-w-0 mb-3">
+                    <span className="feed-chip truncate max-w-[120px] shadow-sm shadow-black/10">{article.sourceTitle}</span>
+                    <span className="mx-2 flex-shrink-0 text-white">•</span>
+                    <span className="text-white/82">{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  
+                  {(() => {
+                    const embedUrl = getVideoEmbed(article.link);
+                    return (
+                      <FeedInteractiveActions
+                        variant="onDarkMedia"
+                        articleLink={article.link}
+                        onRead={() => handleOpenReader(article)}
+                        showRead={!embedUrl}
+                        showWatch={!!embedUrl}
+                        showVisit={true}
+                        onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                        className="!mt-0 justify-between"
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -240,9 +278,6 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
 
               {sidebarFeed.length > 0 && (
                 <div className="feed-surface-strong rounded-[var(--feed-card-radius)] p-6">
-                  <h4 className="feed-section-heading text-lg font-bold mb-4">
-                    Para não perder
-                  </h4>
                   <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 lg:block lg:space-y-4">
                     {sidebarFeed.map((article, index) => (
                       <div
@@ -256,7 +291,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                           </span>
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-start gap-2">
-                              <h5 className="feed-title feed-title-hoverable font-bold leading-tight transition-all text-sm mb-2 line-clamp-2">
+                              <h5 className="feed-title feed-title-card feed-title-hoverable font-bold leading-tight transition-all text-sm mb-2 line-clamp-2">
                                 {article.title}
                               </h5>
                               <FavoriteButton

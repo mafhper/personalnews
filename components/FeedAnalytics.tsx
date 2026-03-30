@@ -36,6 +36,12 @@ type AffectedFeedRow = {
 
 const SURFACE_CLASS =
   "rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const MANAGER_CONTROL_CLASS =
+  "rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]";
+const MANAGER_CARD_CLASS =
+  "rounded-[16px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-3";
+const MANAGER_SURFACE_CARD_CLASS =
+  "rounded-[18px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-4";
 
 const normalizeLabel = (value?: string) =>
   (value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -75,7 +81,7 @@ const statusTone = (status: string) => {
     return "border-[rgba(var(--color-success),0.22)] bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]";
   }
   if (status === "unchecked") {
-    return "border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]";
+    return "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]";
   }
   return "border-[rgba(var(--color-error),0.22)] bg-[rgba(var(--color-error),0.12)] text-[rgb(var(--color-error))]";
 };
@@ -383,11 +389,11 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 
   useEffect(() => {
     if (!focusSection) return;
-    if (focusSection === "proxy-health" || focusSection === "feed-reports") {
-      setShowDetails(true);
-    }
 
     const timer = window.setTimeout(() => {
+      if (focusSection === "proxy-health" || focusSection === "feed-reports") {
+        setShowDetails(true);
+      }
       document.getElementById(focusSection)?.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -430,7 +436,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           <button
             type="button"
             onClick={() => void refresh()}
-            className="rounded-full bg-[#0d0d0d] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[#141414]"
+            className={MANAGER_CONTROL_CLASS}
           >
             Atualizar
           </button>
@@ -473,15 +479,15 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           </div>
           <div className="mt-4 space-y-3">
             {actionItems.map((item) => (
-              <div
-                key={item}
-                className="rounded-[16px] bg-[#101010] px-4 py-3 text-sm text-[rgb(var(--theme-text-readable))]"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 rounded-[16px] bg-[#101010] px-4 py-3 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                <div
+                  key={item}
+                  className={`${MANAGER_CARD_CLASS} text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]`}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          <div className={`${MANAGER_CARD_CLASS} mt-4 text-sm text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]`}>
             {diagnosis.action}
           </div>
         </section>
@@ -496,7 +502,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             <button
               type="button"
               onClick={() => setShowAllRows((current) => !current)}
-              className="rounded-full bg-[#0d0d0d] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[#141414]"
+              className={MANAGER_CONTROL_CLASS}
             >
               {showAllRows ? "Mostrar menos" : `Mostrar ${affectedRows.length}`}
             </button>
@@ -517,7 +523,10 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             </thead>
             <tbody>
               {visibleRows.map((row) => (
-                <tr key={row.url} className="rounded-[18px] bg-[#101010]">
+                <tr
+                  key={row.url}
+                  className="rounded-[18px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))]"
+                >
                   <td className="rounded-l-[18px] px-3 py-3 align-top">
                     <div className="flex min-w-[12rem] flex-col gap-2">
                       <span className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
@@ -576,7 +585,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           <button
             type="button"
             onClick={() => setShowDetails((current) => !current)}
-            className="rounded-full bg-[#0d0d0d] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[#141414]"
+            className={MANAGER_CONTROL_CLASS}
           >
             {showDetails ? "Ocultar" : "Mostrar"}
           </button>
@@ -584,10 +593,10 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 
         {showDetails && (
           <div className="mt-4 space-y-4">
-            <section
-              id="proxy-health"
-              className="rounded-[18px] bg-[#101010] p-4"
-            >
+              <section
+                id="proxy-health"
+                className={MANAGER_SURFACE_CARD_CLASS}
+              >
               <div className="mb-4 flex items-center gap-2">
                 <Layers3 className="h-5 w-5 text-[rgb(var(--color-primary))]" />
                 <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
@@ -600,7 +609,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
               <section
                 id="feed-reports"
-                className="rounded-[18px] bg-[#101010] p-4"
+                className={MANAGER_SURFACE_CARD_CLASS}
               >
                 <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
                   Exportar relatório
@@ -614,7 +623,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 </div>
               </section>
 
-              <section className="rounded-[18px] bg-[#101010] p-4">
+              <section className={MANAGER_SURFACE_CARD_CLASS}>
                 <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
                   Atividade
                 </h5>
@@ -634,7 +643,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                     {activityStats.topicTrends.map(([topic, count]) => (
                       <span
                         key={topic}
-                        className="rounded-full bg-[#0b0b0b] px-3 py-1 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]"
+                        className="rounded-full border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
                       >
                         #{topic} ({count})
                       </span>
@@ -673,10 +682,10 @@ const StatusBadge: React.FC<{
   <span
     className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
       tone === "danger"
-        ? "bg-[#1a1011] text-[rgb(var(--color-error))]"
+        ? "bg-[rgba(var(--color-error),0.1)] text-[rgb(var(--color-error))]"
         : tone === "warning"
-          ? "bg-[#171208] text-[rgb(var(--color-warning))]"
-          : "bg-[#0d0d0d] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]"
+          ? "bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]"
+          : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
     }`}
   >
     {label}
@@ -691,10 +700,10 @@ const StatCard: React.FC<{
   <div
     className={`rounded-[18px] p-4 ${
       tone === "danger"
-        ? "bg-[#1a1011]"
+        ? "bg-[rgba(var(--color-error),0.1)]"
         : tone === "warning"
-          ? "bg-[#171208]"
-          : "bg-[#101010]"
+          ? "bg-[rgba(var(--color-warning),0.1)]"
+          : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))]"
     }`}
   >
     <p className="text-[11px] uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
@@ -710,7 +719,7 @@ const MiniStat: React.FC<{
   label: string;
   value: number;
 }> = ({ label, value }) => (
-  <div className="rounded-[16px] bg-[#0d0d0d] p-4">
+  <div className="rounded-[16px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4">
     <p className="text-[11px] uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
       {label}
     </p>

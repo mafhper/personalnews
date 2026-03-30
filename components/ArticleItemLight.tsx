@@ -93,7 +93,7 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
                         </div>
 
                         {/* Title */}
-                        <h4 className="feed-title feed-title-hoverable text-base lg:text-lg leading-tight mb-3 line-clamp-3">
+                        <h4 className="feed-title feed-title-card feed-title-hoverable text-base lg:text-lg mb-3 line-clamp-3 group-hover:underline decoration-current underline-offset-[0.18em]">
                             {article.title}
                         </h4>
 

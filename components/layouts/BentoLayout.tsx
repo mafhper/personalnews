@@ -4,6 +4,8 @@ import { ArticleReaderModal } from '../ArticleReaderModal';
 import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface BentoLayoutProps {
   articles: Article[];
@@ -142,7 +144,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   {/* Top Part: Source, Date and Favorite */}
                   <div className="flex w-full items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
-                      <span className="feed-chip max-w-fit self-start whitespace-nowrap shadow-lg shadow-[rgb(var(--color-accent))]/20">
+                      <span className="feed-chip max-w-[180px] sm:max-w-[220px] self-start whitespace-nowrap shadow-lg shadow-[rgb(var(--color-accent))]/20">
                         {article.sourceTitle}
                       </span>
                       <span className="shrink-0 text-[10px] font-bold text-white/75 drop-shadow-md md:text-xs">
@@ -181,14 +183,22 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                       </p>
                     )}
 
-                    {/* Read indicator */}
-                    <div className={`mt-3 flex items-center gap-2 text-xs font-medium text-white/70 ${isHero ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                      } transition-opacity duration-300`}>
-                      <span className="w-8 h-0.5 bg-[rgba(var(--color-accent),0.45)] rounded-full group-hover:w-12 transition-all duration-500" />
-                      <span className="uppercase tracking-widest">
-                        {t('action.read') || 'Ler'}
-                      </span>
-                    </div>
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          variant="onDarkMedia"
+                          articleLink={article.link}
+                          onRead={() => setReadingArticle(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                          forceVisible={isHero}
+                          className="!mt-4"
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               </article>

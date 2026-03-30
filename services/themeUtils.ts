@@ -413,21 +413,29 @@ export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
     theme.colors.background,
     isLightBackground ? 0.96 : 0.88,
   );
-  const managerBackground = composeRgbColors(
-    "0 0 0",
-    theme.colors.background,
-    0.88,
-  );
-  const managerSurface = shiftColor(managerBackground, 0.08, "white");
-  const managerElevated = shiftColor(managerBackground, 0.12, "white");
-  const managerControl = shiftColor(managerBackground, 0.16, "white");
-  const managerSoft = shiftColor(managerBackground, 0.2, "white");
-  const managerText = getBestContrastText(managerSurface, "255 255 255", 7);
-  const managerTextSecondary = composeRgbColors(
-    "255 255 255",
-    managerSurface,
-    0.72,
-  );
+  const managerBackground = isLightBackground
+    ? composeRgbColors(
+        shiftColor(theme.colors.background, 0.08, "black"),
+        theme.colors.background,
+        0.18,
+      )
+    : composeRgbColors("0 0 0", theme.colors.background, 0.88);
+  const managerSurface = isLightBackground
+    ? composeRgbColors(theme.colors.surface, managerBackground, 0.98)
+    : shiftColor(managerBackground, 0.08, "white");
+  const managerElevated = isLightBackground
+    ? shiftColor(managerSurface, 0.04, "black")
+    : shiftColor(managerBackground, 0.12, "white");
+  const managerControl = isLightBackground
+    ? shiftColor(managerSurface, 0.08, "black")
+    : shiftColor(managerBackground, 0.16, "white");
+  const managerSoft = isLightBackground
+    ? shiftColor(managerSurface, 0.12, "black")
+    : shiftColor(managerBackground, 0.2, "white");
+  const managerText = getBestContrastText(managerSurface, theme.colors.text, 7);
+  const managerTextSecondary = isLightBackground
+    ? composeRgbColors(theme.colors.textSecondary, managerSurface, 0.94)
+    : composeRgbColors("255 255 255", managerSurface, 0.72);
 
   return {
     surfaceBackground,

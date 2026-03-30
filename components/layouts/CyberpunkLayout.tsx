@@ -3,6 +3,8 @@ import { Article } from '../../types';
 import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { FavoriteButton } from '../FavoriteButton';
+import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface CyberpunkLayoutProps {
   articles: Article[];
@@ -38,7 +40,9 @@ export const CyberpunkLayout: React.FC<CyberpunkLayoutProps> = ({ articles }) =>
   return (
     <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-6 lg:px-10 py-6 font-mono cyber-accent">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-7">
-        {articles.map((article, i) => (
+        {articles.map((article, i) => {
+          const embedUrl = getVideoEmbed(article.link);
+          return (
           <article key={i} className="relative cyber-card p-4 hover:shadow-[0_0_18px_rgba(120,255,190,0.28)] hover:border-white/30 transition-all group flex flex-col">
             <div className="absolute top-0 left-0 w-2 h-2 cyber-surface" />
             <div className="absolute top-0 right-0 w-2 h-2 cyber-surface" />
@@ -88,16 +92,21 @@ export const CyberpunkLayout: React.FC<CyberpunkLayoutProps> = ({ articles }) =>
               {article.description?.slice(0, 150)}...
             </p>
 
-            <div className="flex justify-end mt-auto">
-              <button
-                onClick={() => setReadingArticle(article)}
-                className="bg-[rgba(120,255,190,0.85)] text-black text-xs font-bold px-4 py-1 hover:bg-white transition-colors uppercase"
-              >
-                Execute &gt;&gt;
-              </button>
+            <div className="mt-auto">
+              <FeedInteractiveActions
+                variant="terminal"
+                articleLink={article.link}
+                onRead={() => setReadingArticle(article)}
+                showRead={!embedUrl}
+                showWatch={!!embedUrl}
+                showVisit={true}
+                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
+                className="!mt-2 justify-end flex-wrap gap-2"
+              />
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
       {readingArticle && (
         <ArticleReaderModal
