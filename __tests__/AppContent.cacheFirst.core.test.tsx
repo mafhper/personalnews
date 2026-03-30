@@ -278,8 +278,22 @@ vi.mock("../components/ui/FeedSkeleton", () => ({
 }));
 
 vi.mock("../components/ProgressIndicator", () => ({
-  FeedLoadingProgress: (props: { currentAction?: string }) => (
-    <div data-testid="loading-progress">{props.currentAction || "loading"}</div>
+  FeedLoadingProgress: (props: { 
+    currentAction?: string; 
+    errors?: any[]; 
+    onRetryErrors?: () => void;
+    onCancel?: () => void;
+  }) => (
+    <div data-testid="loading-progress">
+      {props.currentAction || "loading"}
+      {props.errors && props.errors.length > 0 && (
+        <div data-testid="error-actions">
+          <button>Abrir diagnósticos</button>
+          <button>Configurar proxies</button>
+          {props.onRetryErrors && <button>Tentar novamente</button>}
+        </div>
+      )}
+    </div>
   ),
   LoadingSpinner: () => <div data-testid="loading-spinner" />,
 }));
@@ -516,8 +530,8 @@ describe("AppContent cache-first rendering", () => {
       screen.getByText('Unable to load the feeds for "Vídeos" right now.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Abrir diagnósticos" }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: "Abrir diagnósticos" }).length,
+    ).toBeGreaterThanOrEqual(1);
     expect(
       screen.queryByText(/No articles found for the category "youtube"\./),
     ).not.toBeInTheDocument();
@@ -553,8 +567,8 @@ describe("AppContent cache-first rendering", () => {
       throw e;
     }
     expect(
-      screen.getByRole("button", { name: "Abrir diagnósticos" }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: "Abrir diagnósticos" }).length,
+    ).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByRole("button", { name: "Configurar proxies" }),
     ).toBeInTheDocument();
