@@ -121,7 +121,7 @@ class DesktopBackendClient {
     pushCandidate(this.resolvedBaseUrl);
     pushCandidate(BACKEND_DEFAULT_URL);
 
-    if (isLocalBrowserRuntime()) {
+    if (isLocalBrowserRuntime() || isTauriRuntime()) {
       for (const host of ["127.0.0.1", "localhost"]) {
         for (
           let port = LOCAL_BACKEND_PORT_START;
