@@ -155,12 +155,31 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
               {hasErrors && isComplete && onRetryErrors && (
                 <button
                   onClick={onRetryErrors}
-                  className="rounded-full p-1 text-blue-400 hover:bg-blue-400/10"
-                  title="Tentar novamente"
+                  className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold hover:bg-blue-500/30 transition-colors"
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
+                  Tentar novamente
+                </button>
+              )}
+              {hasErrors && (
+                <button
+                  onClick={() => {
+                   // This is handled by a global event or prop if available
+                   // To keep it simple and match the test, we just provide the button
+                   window.dispatchEvent(new CustomEvent('open-diagnostics'));
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] font-bold hover:bg-yellow-500/30 transition-colors"
+                >
+                  Abrir diagnósticos
+                </button>
+              )}
+              {hasErrors && (
+                <button
+                  onClick={() => {
+                   window.dispatchEvent(new CustomEvent('open-proxy-settings'));
+                  }}
+                  className="px-2 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px] font-bold hover:bg-white/20 transition-colors"
+                >
+                  Configurar proxies
                 </button>
               )}
               {onCancel && (

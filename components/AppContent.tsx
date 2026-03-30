@@ -444,6 +444,19 @@ const AppContent: React.FC = () => {
     logger,
   ]);
 
+  const [errorVisible, setErrorVisible] = useState(false);
+
+  // Auto-dismiss logic for partial error warning
+  useEffect(() => {
+    if (loadingState.status === "success" && loadingState.errors.length > 0) {
+      setErrorVisible(true);
+      const timer = setTimeout(() => setErrorVisible(false), 10000);
+      return () => clearTimeout(timer);
+    } else if (loadingState.status === "loading") {
+      setErrorVisible(false);
+    }
+  }, [loadingState.status, loadingState.errors.length]);
+
   const selectedCategoryDisplayName = useMemo(() => {
     return (
       categories.find((category) => category.id === selectedCategory)?.name ||
@@ -859,21 +872,23 @@ const AppContent: React.FC = () => {
           }}
           tabIndex={-1}
         >
-          {loadingState.status === "loading" &&
-            (!loadingState.hasScopedCache ||
-              loadingState.isHoldingPreviousContent) && (
-              <FeedLoadingProgress
-                loadedFeeds={loadingState.loadedFeeds}
-                totalFeeds={loadingState.totalFeeds}
-                progress={loadingState.progress}
-                isBackgroundRefresh={loadingState.isBackgroundRefresh}
-                errors={loadingState.errors}
-                currentAction={loadingState.currentAction}
-                onCancel={cancelLoading}
-                onRetryErrors={retryFailedFeeds}
-                mode="overlay"
-              />
-            )}
+          {(loadingState.status === "loading" || (errorVisible && loadingState.errors.length > 0)) && (
+            loadingState.status === "loading" ? 
+              (!loadingState.hasScopedCache || loadingState.isHoldingPreviousContent) : 
+              true
+          ) && (
+            <FeedLoadingProgress
+              loadedFeeds={loadingState.loadedFeeds}
+              totalFeeds={loadingState.totalFeeds}
+              progress={loadingState.progress}
+              isBackgroundRefresh={loadingState.isBackgroundRefresh}
+              errors={loadingState.errors}
+              currentAction={loadingState.currentAction}
+              onCancel={() => setErrorVisible(false)}
+              onRetryErrors={retryFailedFeeds}
+              mode="overlay"
+            />
+          )}
 
           {isSearchActive && (
             <div className={contentContainerClass}>
@@ -928,6 +943,66 @@ const AppContent: React.FC = () => {
             <>
               {renderedArticles.length > 0 ? (
                 <>
+                  {/* Partial Failure Warning Banner */}
+                  {loadingState.errors.length > 0 &&
+                    !shouldShowCategoryUnavailableMessage && (
+                      <div className="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col gap-4 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 md:flex-row md:items-center md:justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-500">
+                              <svg
+                                className="h-6 w-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-yellow-500">
+                                {loadingState.errors.length === 1
+                                  ? "1 feed falhou nesta atualização"
+                                  : `${loadingState.errors.length} feeds falharam nesta atualização`}
+                              </p>
+                              <p className="text-xs text-yellow-500/60">
+                                Algumas fontes não puderam ser carregadas. Você
+                                ainda pode ver os artigos dos outros feeds.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() =>
+                                openFeedManagerFocus({
+                                  tab: "operations",
+                                  section: "feed-status",
+                                })
+                              }
+                              className="rounded-full bg-yellow-500/10 px-4 py-1.5 text-xs font-bold text-yellow-500 hover:bg-yellow-500/20"
+                            >
+                              Abrir diagnósticos
+                            </button>
+                            <button
+                              onClick={() =>
+                                openFeedManagerFocus({
+                                  tab: "operations",
+                                  openProxySettings: true,
+                                })
+                              }
+                              className="rounded-full bg-white/5 px-4 py-1.5 text-xs font-bold text-white/60 hover:bg-white/10 hover:text-white"
+                            >
+                              Configurar proxies
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   <Suspense
                     fallback={
                       <div className="feed-page-frame">

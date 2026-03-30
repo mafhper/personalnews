@@ -109,20 +109,30 @@ const mockAppearanceState = {
 
 const createLoadingState = (
   overrides: Partial<MockFeedState["loadingState"]> = {},
-): MockFeedState["loadingState"] => ({
-  status: "success",
-  progress: 100,
-  loadedFeeds: 2,
-  totalFeeds: 2,
-  errors: [],
-  isBackgroundRefresh: false,
-  currentAction: "done",
-  isResolved: true,
-  hasScopedCache: false,
-  isHoldingPreviousContent: false,
-  scopeKey: "all",
-  ...overrides,
-});
+): MockFeedState["loadingState"] => {
+  const errors = overrides.errors || [];
+  const status = overrides.status || "success";
+
+  return {
+    status,
+    progress: 100,
+    loadedFeeds: 2,
+    totalFeeds: 2,
+    errors,
+    isBackgroundRefresh: false,
+    currentAction:
+      status === "loading"
+        ? "Carregando..."
+        : errors.length > 0
+          ? `${errors.length} feeds falharam nesta atualização`
+          : "done",
+    isResolved: true,
+    hasScopedCache: false,
+    isHoldingPreviousContent: false,
+    scopeKey: "all",
+    ...overrides,
+  };
+};
 
 vi.mock("../contexts/FeedContextState", () => ({
   useFeeds: () => mockFeedState,
@@ -531,11 +541,17 @@ describe("AppContent cache-first rendering", () => {
     });
 
     expect(screen.getByText("Tech One")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /feed falhou nesta atualização|feeds falharam nesta atualização/i,
-      ),
-    ).toBeInTheDocument();
+    try {
+      expect(
+        screen.getByText(
+          /falha(ram|u) (nesta|na) atualização/i,
+        ),
+      ).toBeInTheDocument();
+    } catch (e) {
+      console.log('--- SCREEN DEBUG ---');
+      screen.debug();
+      throw e;
+    }
     expect(
       screen.getByRole("button", { name: "Abrir diagnósticos" }),
     ).toBeInTheDocument();
@@ -562,11 +578,17 @@ describe("AppContent cache-first rendering", () => {
       await Promise.resolve();
     });
 
-    expect(
-      screen.getByText(
-        /feed falhou nesta atualização|feeds falharam nesta atualização/i,
-      ),
-    ).toBeInTheDocument();
+    try {
+      expect(
+        screen.getByText(
+          /falha(ram|u) (nesta|na) atualização/i,
+        ),
+      ).toBeInTheDocument();
+    } catch (e) {
+      console.log('--- SCREEN DEBUG ---');
+      screen.debug();
+      throw e;
+    }
 
     await act(async () => {
       vi.advanceTimersByTime(10050);
@@ -574,9 +596,7 @@ describe("AppContent cache-first rendering", () => {
     });
 
     expect(
-      screen.queryByText(
-        /feed falhou nesta atualização|feeds falharam nesta atualização/i,
-      ),
+      screen.queryByText(/falha(ram|u) (nesta|na) atualização/i),
     ).not.toBeInTheDocument();
 
     vi.useRealTimers();

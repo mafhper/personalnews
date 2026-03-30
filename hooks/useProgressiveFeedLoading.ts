@@ -455,8 +455,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           isBackgroundRefresh: true,
           currentAction:
             mode === "single-feed"
-              ? "Updating selected feed..."
-              : "Updating feeds in background...",
+              ? "Atualizando feed selecionado..."
+              : "Atualizando feeds em segundo plano...",
           isResolved: true,
           hasScopedCache: true,
           isHoldingPreviousContent: false,
@@ -482,7 +482,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           totalFeeds: scopedFeeds.length,
           errors: [],
           isBackgroundRefresh: true,
-          currentAction: "Updating category in background...",
+          currentAction: "Atualizando categoria em segundo plano...",
           isResolved: true,
           hasScopedCache: false,
           isHoldingPreviousContent: true,
@@ -500,8 +500,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           isBackgroundRefresh: false,
           currentAction:
             mode === "single-feed"
-              ? "Loading selected feed..."
-              : "Initializing feed engine...",
+              ? "Carregando feed selecionado..."
+              : "Iniciando motor de feeds...",
           isResolved: false,
           hasScopedCache: false,
           isHoldingPreviousContent: false,
@@ -517,8 +517,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           isBackgroundRefresh: true,
           currentAction:
             mode === "single-feed"
-              ? "Refreshing selected feed..."
-              : "Refreshing feeds in background...",
+              ? "Atualizando feed selecionado..."
+              : "Atualizando feeds em segundo plano...",
           isResolved: true,
           hasScopedCache: false,
           isHoldingPreviousContent: false,
@@ -729,12 +729,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
                 scopeKey,
                 priorityFeedsLoaded: priorityComplete,
                 // Show what we just finished or generic progress
-                currentAction:
-                  mode === "single-feed"
-                    ? `Processed ${feed.customTitle || new URL(feed.url).hostname}`
-                    : priorityComplete && loadedCount < scopedFeeds.length
-                      ? `Carregando feeds restantes... (${scopedFeeds.length - loadedCount} faltam)`
-                      : `Processado ${feed.customTitle || new URL(feed.url).hostname}`,
+                    ? `Carregando feeds restantes... (${scopedFeeds.length - loadedCount} faltam)`
+                    : `Processado: ${feed.customTitle || new URL(feed.url).hostname}`,
               }));
 
               // Add result to map
@@ -768,7 +764,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
                 loadedFeeds: loadedCount,
                 progress,
                 scopeKey,
-                currentAction: `Error processing ${feed.customTitle || "feed"}`,
+                currentAction: `Erro ao processar ${feed.customTitle || "feed"}`,
               }));
 
               const errorMessage =
@@ -870,9 +866,9 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           errors,
           isBackgroundRefresh: false,
           currentAction:
-            mode === "single-feed"
-              ? "Selected feed loaded"
-              : "All feeds loaded",
+            errors.length > 0
+              ? (errors.length === 1 ? "1 feed falhou nesta atualização" : `${errors.length} feeds falharam nesta atualização`)
+              : (mode === "single-feed" ? "Feed selecionado carregado" : "Todos os feeds carregados"),
           priorityFeedsLoaded: true,
           isResolved: true,
           hasScopedCache,
@@ -942,7 +938,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           totalFeeds: scopedFeeds.length,
           errors,
           isBackgroundRefresh: false,
-          currentAction: "Error during loading process",
+          currentAction: "Erro durante o processo de carregamento",
           isResolved: true,
           hasScopedCache,
           isHoldingPreviousContent: false,
@@ -977,7 +973,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       ...prev,
       errors: prev.errors.filter((error) => !failedUrls.includes(error.url)),
       status: "loading",
-      currentAction: "Retrying failed feeds...",
+      currentAction: "Tentando novamente feeds que falharam...",
     }));
 
     // Load failed feeds
@@ -1016,7 +1012,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     setLoadingState((prev) => ({
       ...prev,
       status: "success",
-      currentAction: "Retry completed",
+      currentAction: "Tentativa de recuperação concluída",
     }));
   }, [
     loadingState.errors,
@@ -1043,7 +1039,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         ...prev,
         errors: prev.errors.filter((error) => !urls.includes(error.url)),
         status: "loading",
-        currentAction: "Retrying selected feeds...",
+        currentAction: "Tentando carregar feeds selecionados...",
       }));
 
       // Load selected feeds
@@ -1082,7 +1078,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       setLoadingState((prev) => ({
         ...prev,
         status: "success",
-        currentAction: "Selected retry completed",
+        currentAction: "Carga selecionada concluída",
       }));
     },
     [loadSingleFeedWithTimeout, updateArticlesFromFeedResults, logger],
@@ -1100,7 +1096,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     setLoadingState((prev) => ({
       ...prev,
       status: "idle",
-      currentAction: "Cancelled by user",
+      currentAction: "Cancelado pelo usuário",
     }));
 
     logger.info("Feed loading cancelled");
