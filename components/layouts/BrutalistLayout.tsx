@@ -26,7 +26,7 @@ export const BrutalistSkeleton: React.FC = () => {
   );
 };
 
-const BrutalistCard: React.FC<{ article: Article; index: number; onRead: (a: Article) => void }> = ({ article, index: _index, onRead }) => {
+const BrutalistCard: React.FC<{ article: Article; onRead: (a: Article) => void }> = ({ article, onRead }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const embedUrl = getVideoEmbed(article.link);
 
@@ -149,7 +149,7 @@ export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({ articles }) =>
         {/* Uniform Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-7 auto-dense">
           {articles.map((article, index) => (
-            <BrutalistCard key={`${article.link}-${index}`} article={article} index={index} onRead={setReadingArticle} />
+            <BrutalistCard key={`${article.link}-${index}`} article={article} onRead={setReadingArticle} />
           ))}
         </div>
       </div>

@@ -228,7 +228,7 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                         {article.title}
                                     </h3>
                                     {article.description && (
-                                        <p className="text-xs text-[rgb(var(--color-textSecondary))] mt-1 line-clamp-2">
+                                        <p className="feed-desc text-xs mt-1 line-clamp-2">
                                             {article.description}
                                         </p>
                                     )}

@@ -176,7 +176,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                   <div className="flex justify-between items-start gap-3">
                     <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0" onClick={(e) => { e.preventDefault(); setReadingArticle(article); }}>
                       <span className="feed-meta text-[10px] font-bold mb-1 block uppercase tracking-[0.22em] opacity-80 group-hover:opacity-100 transition-all">
-                        {idx + 1}. {article.sourceTitle}
+                        {article.sourceTitle}
                       </span>
                       <h4 className="feed-title text-sm font-bold transition-all line-clamp-2 leading-tight">
                         {article.title}

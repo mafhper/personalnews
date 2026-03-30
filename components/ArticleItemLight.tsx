@@ -5,7 +5,6 @@ import { FavoriteButton } from "./FavoriteButton";
 
 interface ArticleItemLightProps {
     article: Article;
-    index?: number;
     showImage?: boolean;
     className?: string;
     onClick?: (article: Article) => void;
@@ -28,7 +27,6 @@ const timeSince = (date: Date): string => {
 
 const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
     article,
-    index = 0,
     className = "",
     onClick,
 }) => {
@@ -56,11 +54,6 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
                             <span className="text-white/30 text-xs">No Image</span>
                         </div>
                     )}
-
-                    {/* Article number overlay */}
-                    <div className="absolute top-2 left-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold pointer-events-none z-10">
-                        {index}
-                    </div>
 
                     <FavoriteButton
                         article={article}

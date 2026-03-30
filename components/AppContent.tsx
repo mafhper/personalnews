@@ -444,7 +444,9 @@ const AppContent: React.FC = () => {
     logger,
   ]);
 
-  const [errorVisible, setErrorVisible] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(() => {
+    return loadingState.status === "success" && loadingState.errors.length > 0;
+  });
 
   // Auto-dismiss logic for partial error warning
   useEffect(() => {
@@ -943,66 +945,6 @@ const AppContent: React.FC = () => {
             <>
               {renderedArticles.length > 0 ? (
                 <>
-                  {/* Partial Failure Warning Banner */}
-                  {loadingState.errors.length > 0 &&
-                    !shouldShowCategoryUnavailableMessage && (
-                      <div className="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="flex flex-col gap-4 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 md:flex-row md:items-center md:justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-500">
-                              <svg
-                                className="h-6 w-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                />
-                              </svg>
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-yellow-500">
-                                {loadingState.errors.length === 1
-                                  ? "1 feed falhou nesta atualização"
-                                  : `${loadingState.errors.length} feeds falharam nesta atualização`}
-                              </p>
-                              <p className="text-xs text-yellow-500/60">
-                                Algumas fontes não puderam ser carregadas. Você
-                                ainda pode ver os artigos dos outros feeds.
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() =>
-                                openFeedManagerFocus({
-                                  tab: "operations",
-                                  section: "feed-status",
-                                })
-                              }
-                              className="rounded-full bg-yellow-500/10 px-4 py-1.5 text-xs font-bold text-yellow-500 hover:bg-yellow-500/20"
-                            >
-                              Abrir diagnósticos
-                            </button>
-                            <button
-                              onClick={() =>
-                                openFeedManagerFocus({
-                                  tab: "operations",
-                                  openProxySettings: true,
-                                })
-                              }
-                              className="rounded-full bg-white/5 px-4 py-1.5 text-xs font-bold text-white/60 hover:bg-white/10 hover:text-white"
-                            >
-                              Configurar proxies
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   <Suspense
                     fallback={
                       <div className="feed-page-frame">
@@ -1057,7 +999,7 @@ const AppContent: React.FC = () => {
                       </button>
                     </div>
                   ) : articles.length > 0 ? (
-                    shouldShowCategoryUnavailableMessage ? (
+                    errorVisible && shouldShowCategoryUnavailableMessage ? (
                       <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.1)] px-6 py-8 text-center">
                         <p className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
                           Unable to load the feeds for "
@@ -1090,6 +1032,14 @@ const AppContent: React.FC = () => {
                             className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
                           >
                             Configurar proxies
+                          </button>
+                          <button
+                            onClick={() => setErrorVisible(false)}
+                            aria-label="Fechar aviso de falha total"
+                            className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
+                            title="Fechar"
+                          >
+                            Fechar
                           </button>
                         </div>
                       </div>
@@ -1100,7 +1050,7 @@ const AppContent: React.FC = () => {
                       </p>
                     )
                   ) : feeds.length > 0 ? (
-                    shouldShowCategoryUnavailableMessage ? (
+                    errorVisible && shouldShowCategoryUnavailableMessage ? (
                       <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.1)] px-6 py-8 text-center">
                         <p className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
                           Unable to load the feeds for "
@@ -1133,6 +1083,14 @@ const AppContent: React.FC = () => {
                             className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
                           >
                             Configurar proxies
+                          </button>
+                          <button
+                            onClick={() => setErrorVisible(false)}
+                            aria-label="Fechar aviso de falha total"
+                            className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
+                            title="Fechar"
+                          >
+                            Fechar
                           </button>
                         </div>
                       </div>

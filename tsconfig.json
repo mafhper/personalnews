@@ -35,6 +35,7 @@
   "exclude": [
     "__tests__/**/*",
     "__tests_unused/**/*",
+    "tmp/**/*",
     "myrssfeed/**/*",
     "dist/**/*",
     "node_modules/**/*",

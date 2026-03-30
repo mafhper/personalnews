@@ -9,7 +9,7 @@
  * @version 3.0.0
  */
 
-import React, { Suspense, useState, useCallback, useEffect, lazy } from "react";
+import React, { Suspense, useState, useCallback, useEffect, lazy, useMemo } from "react";
 import type { VirtuosoProps, ItemContent } from "react-virtuoso";
 import type { Article } from "../types";
 import { withPerformanceTracking } from "../services/performanceUtils";
@@ -204,12 +204,11 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
         logger.debugTag('FEED', 'Virtuoso started rendering list items');
     }
     if (effectiveLayout === 'minimal') {
-      return <ArticleItemLight article={article} index={index} onClick={handleOpenReader} />;
+      return <ArticleItemLight article={article} onClick={handleOpenReader} />;
     }
     return (
       <ArticleItem
         article={article}
-        index={index}
         timeFormat={timeFormat}
         onClick={handleOpenReader}
         renderMode="light"
@@ -273,13 +272,16 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   );
 
   // Magazine Layout Handler
-  if (effectiveLayout === 'magazine') {
-    const listArticles = articles.slice(10);
-    // Header component for Virtuoso
-    const Header = () => (
-      <MagazineHeader articles={articles} onArticleClick={handleOpenReader} />
-    );
+  const listArticles = useMemo(() => {
+    if (effectiveLayout !== 'magazine') return [];
+    return articles.slice(10);
+  }, [effectiveLayout, articles]);
 
+  const magazineComponents = useMemo(() => ({
+    Header: () => <MagazineHeader articles={articles} onArticleClick={handleOpenReader} />
+  }), [articles, handleOpenReader]);
+
+  if (effectiveLayout === 'magazine') {
     return (
       <div className="feed-layout" data-layout={effectiveLayout}>
         <div className="feed-page-frame" style={{ minHeight: '80vh' }}>
@@ -287,7 +289,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
             <Virtuoso
               useWindowScroll
               data={listArticles}
-              components={{ Header }}
+              components={magazineComponents}
               itemContent={magazineItemContent}
               overscan={200}
             />

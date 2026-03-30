@@ -126,18 +126,12 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
 
       {/* Progress Indicator */}
       <div className="absolute top-8 right-8 z-20 flex flex-col gap-2 items-end">
-        <span className="text-4xl font-bold font-mono text-white/30">
-            {String(currentIndex + 1).padStart(2, '0')}
-        </span>
         <div className="h-32 w-1 bg-white/12 rounded-full relative overflow-hidden">
             <div
                 className="absolute top-0 left-0 w-full bg-white/60 transition-all duration-300"
                 style={{ height: `${((currentIndex + 1) / articles.length) * 100}%` }}
             />
         </div>
-        <span className="text-xs font-mono text-white/30">
-            {String(articles.length).padStart(2, '0')}
-        </span>
       </div>
 
       {/* Content */}

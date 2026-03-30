@@ -14,7 +14,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({ articles }) => {
             <ol className="space-y-5" role="list" aria-label="List of top news stories">
                 {articles.map((article, index) => (
                     <li key={article.link + index} role="listitem">
-                        <ArticleItem article={article} index={index + 1} />
+                        <ArticleItem article={article} />
                     </li>
                 ))}
             </ol>

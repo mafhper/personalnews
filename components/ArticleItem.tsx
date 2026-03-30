@@ -43,7 +43,6 @@ HeartIcon.displayName = "HeartIcon";
 
 interface ArticleItemProps {
   article: Article;
-  index?: number;
   timeFormat?: "12h" | "24h";
   layoutMode?: string;
   density?: string;
@@ -55,7 +54,6 @@ interface ArticleItemProps {
 
 const ArticleItemFull: React.FC<ArticleItemProps> = ({
   article,
-  index = 0,
   timeFormat = "24h",
   layoutMode,
   className = "",
@@ -125,11 +123,6 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
               className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </a>
-
-          {/* Article number overlay */}
-          <div className="absolute top-2 left-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold pointer-events-none z-10">
-            {index}
-          </div>
 
           {/* Favorite button overlay */}
           <FavoriteButton
@@ -238,11 +231,6 @@ const arePropsEqual = (
   prevProps: ArticleItemProps,
   nextProps: ArticleItemProps
 ): boolean => {
-  // Compare index
-  if (prevProps.index !== nextProps.index) {
-    return false;
-  }
-
   if (prevProps.renderMode !== nextProps.renderMode) {
     return false;
   }

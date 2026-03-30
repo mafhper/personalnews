@@ -279,16 +279,13 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
               {sidebarFeed.length > 0 && (
                 <div className="feed-surface-strong rounded-[var(--feed-card-radius)] p-6">
                   <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 lg:block lg:space-y-4">
-                    {sidebarFeed.map((article, index) => (
+                    {sidebarFeed.map((article) => (
                       <div
                         key={article.link}
                         className="group cursor-pointer feed-card feed-card--flat rounded-[calc(var(--feed-card-radius)*0.9)] p-4 transition-all duration-300"
                         onClick={() => handleOpenReader(article)}
                       >
                         <div className="flex gap-4 items-start">
-                          <span className="text-2xl font-black feed-accent-text opacity-40 font-serif group-hover:opacity-100 transition-opacity">
-                            {index + 1}
-                          </span>
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-start gap-2">
                               <h5 className="feed-title feed-title-card feed-title-hoverable font-bold leading-tight transition-all text-sm mb-2 line-clamp-2">
