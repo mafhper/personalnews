@@ -154,7 +154,7 @@
     "@mozilla/readability": "^0.6.0",
     "@mui/material": "^7.3.9",
     "@types/dompurify": "^3.2.0",
-    "@xmldom/xmldom": "^0.8.11",
+    "@xmldom/xmldom": "^0.8.12",
     "baseline-browser-mapping": "^2.10.8",
     "caniuse-lite": "^1.0.30001780",
     "dompurify": "^3.3.3",
