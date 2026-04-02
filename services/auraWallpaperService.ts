@@ -21,7 +21,7 @@ const hexToHsl = (hex: string) => {
   }
   r /= 255; g /= 255; b /= 255;
   const cmin = Math.min(r,g,b), cmax = Math.max(r,g,b), delta = cmax - cmin;
-  let h = 0, s = 0, l = 0;
+  let h: number;
 
   if (delta === 0) h = 0;
   else if (cmax === r) h = ((g - b) / delta) % 6;
@@ -30,8 +30,8 @@ const hexToHsl = (hex: string) => {
 
   h = Math.round(h * 60);
   if (h < 0) h += 360;
-  l = (cmax + cmin) / 2;
-  s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+  const l = (cmax + cmin) / 2;
+  const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
 
   return { h, s: Math.round(s * 100), l: Math.round(l * 100) };
 };
@@ -445,18 +445,12 @@ export const generateRandomConfig = (baseConfig: WallpaperConfig): WallpaperConf
 
   // Shape Color Harmony Strategy
   const strategy = Math.random();
-  let shapeHues: number[] = [];
-
-  if (strategy < 0.33) {
-    // Analogous (Close neighbors)
-    shapeHues = Array(numShapes).fill(0).map(() => (baseHue + Math.random() * 60 - 30) % 360);
-  } else if (strategy < 0.66) {
-    // Complementary (Opposites)
-    shapeHues = Array(numShapes).fill(0).map((_, i) => i % 2 === 0 ? baseHue : (baseHue + 180) % 360);
-  } else {
-    // Triadic (Three colors evenly spaced)
-    shapeHues = Array(numShapes).fill(0).map((_, i) => (baseHue + (i * 120)) % 360);      
-  }
+  const shapeHues: number[] =
+    strategy < 0.33
+      ? Array(numShapes).fill(0).map(() => (baseHue + Math.random() * 60 - 30) % 360)
+      : strategy < 0.66
+        ? Array(numShapes).fill(0).map((_, i) => i % 2 === 0 ? baseHue : (baseHue + 180) % 360)
+        : Array(numShapes).fill(0).map((_, i) => (baseHue + (i * 120)) % 360);
 
   // Create shapes
   for (let i = 0; i < numShapes; i++) {

@@ -252,7 +252,11 @@ async function fetchWithTimeout(
     clearTimeout(timeoutId);
 
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(`Request timeout after ${timeout}ms`);
+      const timeoutError = new Error(
+        `Request timeout after ${timeout}ms`,
+      ) as Error & { cause?: unknown };
+      timeoutError.cause = error;
+      throw timeoutError;
     }
 
     throw error;
@@ -490,7 +494,11 @@ async function parseRssWithProxy(feedUrl: string, proxyUrl: string): Promise<Art
         throw new Error("No contents in AllOrigins response");
       }
     } catch (e) {
-      throw new Error(`Failed to parse AllOrigins response: ${e instanceof Error ? e.message : String(e)}`);
+      const wrappedError = new Error(
+        `Failed to parse AllOrigins response: ${e instanceof Error ? e.message : String(e)}`,
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = e;
+      throw wrappedError;
     }
   }
 
@@ -1002,7 +1010,11 @@ async function parseRssUrlWithFallback(
 
         // Check if we should abort due to signal
         if (signal?.aborted) {
-          throw new Error("Request was cancelled");
+          const wrappedError = new Error(
+            "Request was cancelled",
+          ) as Error & { cause?: unknown };
+          wrappedError.cause = error;
+          throw wrappedError;
         }
 
         logger.warn(`${api.name} attempt ${attempt} failed`, {

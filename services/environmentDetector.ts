@@ -46,9 +46,14 @@ export function detectEnvironment(): EnvironmentConfig {
   const isProduction = !isDevelopment || isSecure || isGitHubPages;
 
   // Check if running in Tauri environment
+  type TauriWindow = Window & {
+    __TAURI__?: unknown;
+    __TAURI_INTERNALS__?: unknown;
+  };
   const isTauri =
     typeof window !== "undefined" &&
-    (!!(window as any).__TAURI__ || !!(window as any).__TAURI_INTERNALS__);
+    ((window as TauriWindow).__TAURI__ !== undefined ||
+      (window as TauriWindow).__TAURI_INTERNALS__ !== undefined);
 
   // Check if localhost proxy is available (development or Tauri)
   const isLocalhost =

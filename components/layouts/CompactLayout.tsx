@@ -69,8 +69,13 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                       {article.title}
                     </span>
                     {(() => {
-                      let host = '';
-                      try { host = new URL(article.link).hostname.replace('www.', ''); } catch { host = ''; }
+                      const host = (() => {
+                        try {
+                          return new URL(article.link).hostname.replace('www.', '');
+                        } catch {
+                          return '';
+                        }
+                      })();
                       const source = (article.sourceTitle || '').toLowerCase();
                       const showHost = host && !source.includes(host.toLowerCase());
                       return showHost ? (

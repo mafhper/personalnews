@@ -425,7 +425,11 @@ export class OPMLExportService {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Failed to download OPML file:", error);
-      throw new Error("Failed to download OPML file");
+      const wrappedError = new Error(
+        "Failed to download OPML file",
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
   }
 

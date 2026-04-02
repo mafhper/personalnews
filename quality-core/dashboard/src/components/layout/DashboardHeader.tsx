@@ -75,14 +75,12 @@ export function DashboardHeader({ projectName = 'PersonalNews' }: DashboardHeade
       problems.push(`${currentSnapshot.metrics.performance.warnings} avisos de performance`);
     }
 
-    let message = '';
-    if (health >= 80) {
-      message = 'Sistema saudável';
-    } else if (health >= 50) {
-      message = 'Atenção necessária';
-    } else {
-      message = 'Problemas críticos';
-    }
+    const message =
+      health >= 80
+        ? 'Sistema saudável'
+        : health >= 50
+          ? 'Atenção necessária'
+          : 'Problemas críticos';
 
     return { message, problems, healthScore: health };
   };

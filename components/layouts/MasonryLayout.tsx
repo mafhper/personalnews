@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Article } from '../../types';
 import { ArticleItem } from '../ArticleItem';
 import { FeaturedArticle } from '../FeaturedArticle';
@@ -31,83 +31,6 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const featured = articles[0];
   const rest = articles.slice(1);
-
-  const columnsRef = useRef<HTMLDivElement | null>(null);
-  const itemElByLinkRef = useRef<Map<string, HTMLDivElement>>(new Map());
-  const computeTimerRef = useRef<number | null>(null);
-  const [visualRankByLink, setVisualRankByLink] = useState<Record<string, number>>({});
-
-  const setItemRef = useCallback((link: string) => (el: HTMLDivElement | null) => {
-    if (!el) {
-      itemElByLinkRef.current.delete(link);
-      return;
-    }
-    itemElByLinkRef.current.set(link, el);
-  }, []);
-
-  const computeVisualRanks = useCallback(() => {
-    const container = columnsRef.current;
-    if (!container) return;
-
-    // Rank by visual placement (left-to-right, top-to-bottom) inside CSS columns.
-    // This makes the number overlay feel consistent even when the layout reflows.
-    const items = rest
-      .map((a) => {
-        const el = itemElByLinkRef.current.get(a.link);
-        return el ? { link: a.link, el } : null;
-      })
-      .filter(Boolean) as Array<{ link: string; el: HTMLDivElement }>;
-
-    if (items.length === 0) return;
-
-    items.sort((x, y) => {
-      const xl = x.el.offsetLeft;
-      const yl = y.el.offsetLeft;
-      if (xl !== yl) return xl - yl;
-      return x.el.offsetTop - y.el.offsetTop;
-    });
-
-    const next: Record<string, number> = {};
-    items.forEach((item, i) => {
-      next[item.link] = i + 2; // Featured is implicit "1"
-    });
-
-    setVisualRankByLink(next);
-  }, [rest]);
-
-  useEffect(() => {
-    // Reset per render batch; ranks are re-measured after DOM/layout is stable.
-    itemElByLinkRef.current.clear();
-    setVisualRankByLink({});
-
-    const schedule = () => {
-      if (computeTimerRef.current) {
-        window.clearTimeout(computeTimerRef.current);
-      }
-      computeTimerRef.current = window.setTimeout(() => {
-        computeVisualRanks();
-      }, 50);
-    };
-
-    // Two-pass scheduling helps after images load and column heights settle.
-    schedule();
-    const raf1 = window.requestAnimationFrame(schedule);
-    const raf2 = window.requestAnimationFrame(schedule);
-
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(() => schedule());
-      if (columnsRef.current) ro.observe(columnsRef.current);
-    }
-
-    return () => {
-      if (computeTimerRef.current) window.clearTimeout(computeTimerRef.current);
-      computeTimerRef.current = null;
-      window.cancelAnimationFrame(raf1);
-      window.cancelAnimationFrame(raf2);
-      ro?.disconnect();
-    };
-  }, [articles, computeVisualRanks]);
 
   const handleOpenReader = (article: Article) => {
     setReadingArticle(article);
@@ -155,13 +78,11 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
 
       {/* Masonry Grid */}
       <div
-        ref={columnsRef}
         className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6"
       >
         {rest.map((article, index) => (
           <div
             key={`${article.link}-${index}`}
-            ref={setItemRef(article.link)}
             className="break-inside-avoid mb-6"
           >
             <ArticleItem

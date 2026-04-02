@@ -63,16 +63,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const { t } = useLanguage();
   const now = new Date();
 
-  // Pagination State for Load More
-  // Derive visible articles based on mode
-  const paginationType = contentConfig.paginationType || 'numbered';
-
-  let visibleArticles: Article[] = [];
-  if (paginationType === 'loadMore') {
-    visibleArticles = articles;
-  } else {
-    visibleArticles = articles;
-  }
+  const visibleArticles = articles;
 
   const handleOpenReader = (article: Article) => {
     setReadingArticle(article);

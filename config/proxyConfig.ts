@@ -527,16 +527,14 @@ export function assessProxyHealth(proxyId: string): {
       break;
   }
 
-  let recommendation = "Good choice";
-  if (score >= 80) {
-    recommendation = "Highly recommended";
-  } else if (score >= 70) {
-    recommendation = "Recommended";
-  } else if (score >= 50) {
-    recommendation = "Use as fallback";
-  } else {
-    recommendation = "Use only if necessary";
-  }
+  const recommendation =
+    score >= 80
+      ? "Highly recommended"
+      : score >= 70
+        ? "Recommended"
+        : score >= 50
+          ? "Use as fallback"
+          : "Use only if necessary";
 
   return { score, recommendation };
 }

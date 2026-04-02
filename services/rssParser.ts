@@ -1250,7 +1250,11 @@ async function parseRssUrlWithRetry(
       lastError = error instanceof Error ? error : new Error(String(error));
 
       if (signal?.aborted) {
-        throw new Error("Request was cancelled");
+        const wrappedError = new Error(
+          "Request was cancelled",
+        ) as Error & { cause?: unknown };
+        wrappedError.cause = error;
+        throw wrappedError;
       }
 
       if (attempt === maxRetries) break;

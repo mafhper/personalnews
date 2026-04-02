@@ -224,6 +224,16 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     return <MagazineItem article={article} onClick={handleOpenReader} />;
   }, [handleOpenReader, logger]);
 
+  // Magazine Layout Handler
+  const listArticles = useMemo(() => {
+    if (effectiveLayout !== 'magazine') return [];
+    return articles.slice(10);
+  }, [effectiveLayout, articles]);
+
+  const magazineComponents = useMemo(() => ({
+    Header: () => <MagazineHeader articles={articles} onArticleClick={handleOpenReader} />
+  }), [articles, handleOpenReader]);
+
   // Layouts that manage their own container/virtualization for now
   const complexLayouts = [
     'masonry', 'immersive', 'brutalist', 'timeline', 'bento',
@@ -270,16 +280,6 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
       <FeedSkeleton count={6} layoutMode={effectiveLayout} />
     </div>
   );
-
-  // Magazine Layout Handler
-  const listArticles = useMemo(() => {
-    if (effectiveLayout !== 'magazine') return [];
-    return articles.slice(10);
-  }, [effectiveLayout, articles]);
-
-  const magazineComponents = useMemo(() => ({
-    Header: () => <MagazineHeader articles={articles} onArticleClick={handleOpenReader} />
-  }), [articles, handleOpenReader]);
 
   if (effectiveLayout === 'magazine') {
     return (

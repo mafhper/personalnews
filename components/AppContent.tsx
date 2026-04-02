@@ -444,20 +444,38 @@ const AppContent: React.FC = () => {
     logger,
   ]);
 
-  const [errorVisible, setErrorVisible] = useState(() => {
-    return loadingState.status === "success" && loadingState.errors.length > 0;
-  });
+  const currentErrorKey = useMemo(() => {
+    if (loadingState.status !== "success" || loadingState.errors.length === 0) {
+      return null;
+    }
+
+    return loadingState.errors
+      .map((error) => `${error.url}:${error.error}`)
+      .join("|");
+  }, [loadingState.errors, loadingState.status]);
+  const [dismissedErrorKey, setDismissedErrorKey] = useState<string | null>(
+    null,
+  );
+  const errorVisible =
+    currentErrorKey !== null && dismissedErrorKey !== currentErrorKey;
+  const dismissCurrentError = useCallback(() => {
+    if (currentErrorKey) {
+      setDismissedErrorKey(currentErrorKey);
+    }
+  }, [currentErrorKey]);
 
   // Auto-dismiss logic for partial error warning
   useEffect(() => {
-    if (loadingState.status === "success" && loadingState.errors.length > 0) {
-      setErrorVisible(true);
-      const timer = setTimeout(() => setErrorVisible(false), 10000);
-      return () => clearTimeout(timer);
-    } else if (loadingState.status === "loading") {
-      setErrorVisible(false);
+    if (!currentErrorKey || dismissedErrorKey === currentErrorKey) {
+      return;
     }
-  }, [loadingState.status, loadingState.errors.length]);
+
+    const timer = setTimeout(
+      () => setDismissedErrorKey(currentErrorKey),
+      10000,
+    );
+    return () => clearTimeout(timer);
+  }, [currentErrorKey, dismissedErrorKey]);
 
   const selectedCategoryDisplayName = useMemo(() => {
     return (
@@ -886,7 +904,7 @@ const AppContent: React.FC = () => {
               isBackgroundRefresh={loadingState.isBackgroundRefresh}
               errors={loadingState.errors}
               currentAction={loadingState.currentAction}
-              onCancel={() => setErrorVisible(false)}
+              onCancel={dismissCurrentError}
               onRetryErrors={retryFailedFeeds}
               mode="overlay"
             />
@@ -1034,7 +1052,7 @@ const AppContent: React.FC = () => {
                             Configurar proxies
                           </button>
                           <button
-                            onClick={() => setErrorVisible(false)}
+                            onClick={dismissCurrentError}
                             aria-label="Fechar aviso de falha total"
                             className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
                             title="Fechar"
@@ -1085,7 +1103,7 @@ const AppContent: React.FC = () => {
                             Configurar proxies
                           </button>
                           <button
-                            onClick={() => setErrorVisible(false)}
+                            onClick={dismissCurrentError}
                             aria-label="Fechar aviso de falha total"
                             className="rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgba(var(--color-text),0.05)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
                             title="Fechar"

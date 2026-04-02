@@ -332,7 +332,7 @@ export function sanitizeSourceTitle(sourceTitle: string | null | undefined, url?
   // 1: traços Unicode, pipes, bullets isolados por zero ou mais espaços
   // 2: traço hifen, dois-pontos, underline ou barra cercados obrigatoriamente por pelo menos um espaço
   // 3: duplos colons, sublinhados seguidos, traços seguidos (ex: --, __, ::) mesmo sem espaço
-  const separatorRegex = /\s*[\u2013\u2014\u2015\u2012\|\u2022\u25CF]\s*|\s+[-:_/]+\s+|\s*::\s*|\s*--+\s*|\s*__+\s*/;
+  const separatorRegex = /\s*[\u2013\u2014\u2015\u2012|\u2022\u25CF]\s*|\s+[-:_/]+\s+|\s*::\s*|\s*--+\s*|\s*__+\s*/;
   
   const parts = cleanTitle.split(separatorRegex);
   if (parts.length > 1 && parts[0].trim().length >= 2) {
@@ -424,4 +424,4 @@ export function sanitizeFeedContent<T extends Record<string, unknown>>(feedConte
   }
 
   return sanitized as T;
-}
+}

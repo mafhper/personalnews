@@ -36,7 +36,6 @@ const DASHBOARD_ROOT = path.join(process.cwd(), 'quality-core', 'dashboard')
 async function checkDashboardBuild({ allowRebuild = true } = {}) {
   const issues: string[] = []
   const indexPath = path.join(DIST_DIR, 'index.html')
-  let entryPath: string | null = null
 
   try {
     const html = await fs.readFile(indexPath, 'utf-8')
@@ -45,7 +44,7 @@ async function checkDashboardBuild({ allowRebuild = true } = {}) {
       issues.push('Entry script not found in index.html')
     } else {
       const entryRel = scriptMatch[1].replace(/^\/+/, '')
-      entryPath = path.join(DIST_DIR, entryRel)
+      const entryPath = path.join(DIST_DIR, entryRel)
       try {
         const entryStat = await fs.stat(entryPath)
         if (entryStat.size < 1024) {

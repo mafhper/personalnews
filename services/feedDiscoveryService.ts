@@ -237,7 +237,11 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("HTML scanning failed:", error);
-      throw new Error(`Failed to scan HTML for feeds: ${errorMessage}`);
+      const wrappedError = new Error(
+        `Failed to scan HTML for feeds: ${errorMessage}`,
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
 
     return discoveredFeeds;
@@ -365,7 +369,11 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to extract feed metadata: ${message}`);
+      const wrappedError = new Error(
+        `Failed to extract feed metadata: ${message}`,
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
   }
 
@@ -398,7 +406,11 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       return result.content;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to fetch website content: ${message}`);
+      const wrappedError = new Error(
+        `Failed to fetch website content: ${message}`,
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
   }
 
@@ -431,7 +443,11 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       return result.content;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to fetch feed content: ${message}`);
+      const wrappedError = new Error(
+        `Failed to fetch feed content: ${message}`,
+      ) as Error & { cause?: unknown };
+      wrappedError.cause = error;
+      throw wrappedError;
     }
   }
 

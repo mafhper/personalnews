@@ -178,9 +178,9 @@ export async function buildDashboardCache(): Promise<DashboardCachePayload> {
   const snapshots = await SnapshotStore.list()
   const latest = snapshots[0]
   let security: DashboardCacheSecurity | null = null
-  let securityHistory: DashboardCacheSecurityHistoryItem[] = []
+  let securityHistory: DashboardCacheSecurityHistoryItem[]
   let scripts: DashboardCacheScript[] = []
-  let scriptHistory: Record<string, number[]> = {}
+  let scriptHistory: Record<string, number[]>
   let coverageSummary: DashboardCacheSummary['coverageSummary']
   let coverageDetails: DashboardCacheSummary['coverageDetails']
 
@@ -295,6 +295,8 @@ export async function buildDashboardCache(): Promise<DashboardCachePayload> {
         },
         {}
       )
+    } else {
+      scriptHistory = {}
     }
   } catch {
     scripts = []

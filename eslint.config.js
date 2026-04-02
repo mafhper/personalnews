@@ -21,6 +21,7 @@ export default tseslint.config(
     'performance-reports',
     'public',
     'test-results',
+    'tmp',
     '__tests_unused__',
     '_template_v0',
     '_dev',

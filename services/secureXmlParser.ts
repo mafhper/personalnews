@@ -189,11 +189,13 @@ export function parseSecureXml(
     return doc;
   } catch (error) {
     console.error("Secure XML parsing error:", error);
-    throw new Error(
+    const wrappedError = new Error(
       `Failed to parse XML securely: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+      }`,
+    ) as Error & { cause?: unknown };
+    wrappedError.cause = error;
+    throw wrappedError;
   }
 }
 

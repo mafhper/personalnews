@@ -49,27 +49,24 @@ const isRuntimeSupportedProxy = (proxyId: string) => {
  * Hook for managing proxy configurations and API keys
  */
 export function useProxyConfig() {
-  const [apiKeys, setApiKeys] = useState<ProxyApiKeysState>(() =>
-    buildKeyState(),
-  );
+  const [apiKeys, setApiKeys] = useState<ProxyApiKeysState>(() => {
+    ProxyManager.loadPreferences();
+    return buildKeyState();
+  });
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [preferLocalProxy, setPreferLocalProxyState] = useState(
-    ProxyManager.getPreferLocalProxy(),
-  );
+  const isLoading = false;
+  const [preferLocalProxy, setPreferLocalProxyState] = useState(() => {
+    ProxyManager.loadPreferences();
+    return ProxyManager.getPreferLocalProxy();
+  });
 
   const syncFromManager = useCallback(() => {
     ProxyManager.loadPreferences();
     setApiKeys(buildKeyState());
     setPreferLocalProxyState(ProxyManager.getPreferLocalProxy());
-    setIsLoading(false);
   }, []);
-
-  useEffect(() => {
-    syncFromManager();
-  }, [syncFromManager]);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -302,8 +299,10 @@ export function useProxyConfig() {
  * Simple hook to get current proxy status and stats
  */
 export function useProxyStats() {
-  const [stats, setStats] = useState(proxyManager.getOverallStats());
-  const [proxyStats, setProxyStats] = useState(proxyManager.getProxyStats());
+  const [stats, setStats] = useState(() => proxyManager.getOverallStats());
+  const [proxyStats, setProxyStats] = useState(() =>
+    proxyManager.getProxyStats(),
+  );
 
   const refresh = useCallback(() => {
     setStats(proxyManager.getOverallStats());
@@ -311,7 +310,6 @@ export function useProxyStats() {
   }, []);
 
   useEffect(() => {
-    refresh();
     const interval = setInterval(refresh, 10_000);
     return () => clearInterval(interval);
   }, [refresh]);
