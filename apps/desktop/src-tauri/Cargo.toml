@@ -3,7 +3,7 @@
 # will apply when that lands. See https://github.com/tauri-apps/tauri/pull/12098
 [package]
 name = "personalnews_desktop"
-version = "1.2.1"
+version = "1.2.2"
 description = "PersonalNews desktop shell"
 authors = ["mafhper"]
 license = "MIT"
