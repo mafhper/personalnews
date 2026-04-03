@@ -28,6 +28,7 @@ import {
   resolveFeedVisibilityState,
   resolveScopeMode,
 } from "../services/feedLoadingStrategy";
+import { getFeedDisplayName } from "../utils/feedDisplay";
 // import { schedulePreload } from '../services/feedPreloader';
 
 export interface FeedLoadingState {
@@ -286,8 +287,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             return {
               url: feed.url,
               articles: cachedSnapshot,
-              title:
-                cachedSnapshot[0]?.sourceTitle || feed.customTitle || feed.url,
+              title: getFeedDisplayName(
+                feed,
+                cachedSnapshot[0]?.sourceTitle,
+              ),
               success: true,
               route: result.route,
               warning: result.warning,
@@ -305,7 +308,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           return {
             url: feed.url,
             articles: [],
-            title: feed.customTitle || result.title || feed.url,
+            title: getFeedDisplayName(feed, result.title),
             success: false,
             error: "Feed temporarily unavailable",
             route: result.route,
@@ -345,7 +348,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         return {
           url: feed.url,
           articles: [],
-          title: feed.customTitle || feed.url,
+          title: getFeedDisplayName(feed),
           success: false,
           error: isTimeout
             ? `Feed timeout after ${FEED_TIMEOUT_MS}ms`
@@ -694,7 +697,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             ...prev,
             currentAction:
               mode === "single-feed"
-                ? `Loading ${batch[0]?.customTitle || batch[0]?.url || "feed"}...`
+                ? `Loading ${batch[0] ? getFeedDisplayName(batch[0]) : "feed"}...`
                 : phase.name === "priority"
                   ? `Carregando feeds da categoria atual (${batchIndex + 1}/${phaseBatches.length})...`
                   : `Carregando lote ${batchCounter} de ${totalBatches}...`,
@@ -731,10 +734,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
                 // Show what we just finished or generic progress
                 currentAction:
                   mode === "single-feed"
-                    ? `Processado: ${feed.customTitle || new URL(feed.url).hostname}`
+                    ? `Processado: ${getFeedDisplayName(feed)}`
                     : priorityComplete && loadedCount < scopedFeeds.length
                       ? `Carregando feeds restantes... (${scopedFeeds.length - loadedCount} faltam)`
-                      : `Processado: ${feed.customTitle || new URL(feed.url).hostname}`,
+                      : `Processado: ${getFeedDisplayName(feed)}`,
               }));
 
               // Add result to map
@@ -768,7 +771,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
                 loadedFeeds: loadedCount,
                 progress,
                 scopeKey,
-                currentAction: `Erro ao processar ${feed.customTitle || "feed"}`,
+                currentAction: `Erro ao processar ${getFeedDisplayName(feed)}`,
               }));
 
               const errorMessage =
@@ -782,7 +785,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
               return {
                 url: feed.url,
                 articles: [],
-                title: feed.customTitle || feed.url,
+                title: getFeedDisplayName(feed),
                 success: false,
                 error: errorMessage,
               };

@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { feedDiscoveryService } from "../services/feedDiscoveryService";
 import { proxyManager } from "../services/proxyManager";
+import { allowConsoleError, allowConsoleWarn } from "../src/test-console";
 
 vi.mock("../services/proxyManager", () => ({
   proxyManager: {
@@ -69,6 +70,8 @@ describe("[CORE][DEGRADATION] graceful degradation", () => {
     // 1. Todos os fetches falham
     vi.mocked(global.fetch).mockRejectedValue(new Error("Network Down"));
     vi.mocked(proxyManager.tryProxiesWithFailover).mockRejectedValue(new Error("Proxy Down"));
+    allowConsoleError(undefined, 2);
+    allowConsoleWarn(undefined, 2);
 
     // Act
     const result = await feedDiscoveryService.discoverFromWebsite("https://broken.com");

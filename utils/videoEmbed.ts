@@ -1,32 +1,79 @@
-/**
- * Detects if a URL is a video link and returns embed details.
- * Supports YouTube, Vimeo, and generic MP4.
- */
-export function getVideoEmbed(url: string): string | null {
-  if (!url) return null;
+export interface VideoEmbedDetails {
+  provider: "youtube" | "vimeo" | "twitch";
+  embedUrl: string;
+  id: string;
+}
 
-  // YouTube (Standard, Short, Embed)
-  const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
-  const ytMatch = url.match(youtubeRegex);
-  if (ytMatch && ytMatch[1]) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&modestbranding=1&rel=0`;
+const getSafeUrl = (value: string): URL | null => {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+};
+
+const getYouTubeVideoId = (value: string): string | null => {
+  const parsed = getSafeUrl(value);
+  if (!parsed) return null;
+
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  if (host === "youtu.be") {
+    const id = parsed.pathname.replace(/^\/+/, "").split("/")[0];
+    return id || null;
   }
 
-  // Vimeo
-  const vimeoRegex = /(?:vimeo\.com\/)(\d+)/i;
-  const vimeoMatch = url.match(vimeoRegex);
-  if (vimeoMatch && vimeoMatch[1]) {
-    return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
-  }
+  if (!host.endsWith("youtube.com")) return null;
 
-  // Twitch
-  const twitchRegex = /(?:twitch\.tv\/)([^"&?/\s]+)/i;
-  const twitchMatch = url.match(twitchRegex);
-  if (twitchMatch && twitchMatch[1]) {
-    // Requires parent domain for embedding
-    const parent = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    return `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${parent}&muted=false`;
+  const queryId = parsed.searchParams.get("v");
+  if (queryId) return queryId;
+
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  const markerIndex = parts.findIndex(
+    (item) => item === "embed" || item === "shorts" || item === "live" || item === "v",
+  );
+
+  if (markerIndex >= 0 && parts[markerIndex + 1]) {
+    return parts[markerIndex + 1];
   }
 
   return null;
+};
+
+export function getVideoEmbedDetails(url: string): VideoEmbedDetails | null {
+  if (!url) return null;
+
+  const youtubeId = getYouTubeVideoId(url);
+  if (youtubeId) {
+    return {
+      provider: "youtube",
+      id: youtubeId,
+      embedUrl: `https://www.youtube.com/embed/${youtubeId}?autoplay=1&modestbranding=1&rel=0`,
+    };
+  }
+
+  const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      provider: "vimeo",
+      id: vimeoMatch[1],
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`,
+    };
+  }
+
+  const twitchMatch = url.match(/(?:twitch\.tv\/)([^"&?/\s]+)/i);
+  if (twitchMatch && twitchMatch[1]) {
+    const parent =
+      typeof window !== "undefined" ? window.location.hostname : "localhost";
+    return {
+      provider: "twitch",
+      id: twitchMatch[1],
+      embedUrl: `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${parent}&muted=false`,
+    };
+  }
+
+  return null;
+}
+
+export function getVideoEmbed(url: string): string | null {
+  return getVideoEmbedDetails(url)?.embedUrl ?? null;
 }

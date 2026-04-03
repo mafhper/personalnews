@@ -56,7 +56,11 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
     <div className="feed-page-frame feed-page-frame--wide space-y-8 animate-in fade-in duration-500">
       {/* Featured Article - Full Width Hero */}
       <div className="h-[60vh] min-h-[400px] rounded-2xl overflow-hidden shadow-xl relative group">
-        <FeaturedArticle article={featured} timeFormat={timeFormat} />
+        <FeaturedArticle
+          article={featured}
+          timeFormat={timeFormat}
+          onClick={handleOpenReader}
+        />
         {/* Preview Button for Featured */}
         <div className="absolute bottom-6 right-6 p-4 z-10">
           {(() => {
@@ -69,7 +73,6 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
                 showRead={!embedUrl}
                 showWatch={!!embedUrl}
                 showVisit={true}
-                onWatch={embedUrl ? () => window.open(featured.link, '_blank') : undefined}
               />
             );
           })()}

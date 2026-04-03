@@ -12,6 +12,7 @@ import {
   processErrors,
   type FeedError,
 } from "../components/ErrorRecovery";
+import { allowConsoleError } from "../src/test-console";
 
 // Estender expect com matchers do jest-dom
 expect.extend(matchers);
@@ -232,10 +233,7 @@ describe("ErrorRecovery Components", () => {
     });
 
     it("renders error UI when error occurs", () => {
-      // Suppress console.error for this test
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      allowConsoleError(undefined, 4);
 
       render(
         <NetworkErrorBoundary>
@@ -246,15 +244,11 @@ describe("ErrorRecovery Components", () => {
       expect(screen.getByText("Something went wrong")).toBeInTheDocument();
       expect(screen.getByText("Test error")).toBeInTheDocument();
       expect(screen.getByText("Try Again")).toBeInTheDocument();
-
-      consoleSpy.mockRestore();
     });
 
     it("calls onError when error occurs", () => {
       const onError = vi.fn();
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      allowConsoleError(undefined, 4);
 
       render(
         <NetworkErrorBoundary onError={onError}>
@@ -263,14 +257,10 @@ describe("ErrorRecovery Components", () => {
       );
 
       expect(onError).toHaveBeenCalledWith(expect.any(Error));
-
-      consoleSpy.mockRestore();
     });
 
     it("resets error state when retry is clicked", async () => {
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      allowConsoleError(undefined, 4);
 
       const TestComponent = () => {
         const [shouldThrow, setShouldThrow] = React.useState(true);
@@ -296,8 +286,6 @@ describe("ErrorRecovery Components", () => {
 
       // The component should attempt to re-render
       expect(screen.queryByText("Something went wrong")).toBeInTheDocument();
-
-      consoleSpy.mockRestore();
     });
   });
 

@@ -7,10 +7,12 @@
  */
 
 import { parseSecureRssXml, secureXmlUtils } from "../services/secureXmlParser";
+import { allowConsoleError } from "../src/test-console";
 
 describe("Security Fixes for RSS Parser", () => {
   describe("CVE-2022-39353: Malicious XML Input Prevention", () => {
     it("should reject XML with external entity references", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
       const maliciousXML = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE rss [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
 <rss version="2.0">
@@ -50,6 +52,7 @@ describe("Security Fixes for RSS Parser", () => {
     });
 
     it("should reject XML with javascript: URLs", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
       const maliciousXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -76,6 +79,7 @@ describe("Security Fixes for RSS Parser", () => {
     });
 
     it("should reject oversized XML content", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
       const largeContent = "x".repeat(11 * 1024 * 1024); // 11MB > 10MB limit
       const largeXML = `<?xml version="1.0"?><rss><channel><title>${largeContent}</title></channel></rss>`;
 
@@ -87,6 +91,7 @@ describe("Security Fixes for RSS Parser", () => {
 
   describe("CVE-2021-21366: Multiple Root Nodes Prevention", () => {
     it("should reject XML with multiple root nodes", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
       const invalidXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -135,6 +140,7 @@ describe("Security Fixes for RSS Parser", () => {
     });
 
     it("should reject XML with disallowed root elements", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
       const invalidXML = `<?xml version="1.0" encoding="UTF-8"?>
 <malicious>
   <content>Evil content</content>
@@ -186,6 +192,7 @@ describe("Security Fixes for RSS Parser", () => {
 
   describe("Input Validation", () => {
     it("should reject non-string input", () => {
+      allowConsoleError(/Secure XML parsing error/, 4);
       expect(() => parseSecureRssXml(null as any)).toThrow("Invalid XML input");
       expect(() => parseSecureRssXml(undefined as any)).toThrow(
         "Invalid XML input"
@@ -195,11 +202,13 @@ describe("Security Fixes for RSS Parser", () => {
     });
 
     it("should reject empty string input", () => {
+      allowConsoleError(/Secure XML parsing error/, 2);
       expect(() => parseSecureRssXml("")).toThrow("Invalid XML input");
       expect(() => parseSecureRssXml("   ")).toThrow("Invalid XML input");
     });
 
     it("should handle malformed XML gracefully", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
       const malformedXML = "<rss><channel><title>Unclosed tag</channel></rss>";
 
       // Should either parse successfully or throw a descriptive error

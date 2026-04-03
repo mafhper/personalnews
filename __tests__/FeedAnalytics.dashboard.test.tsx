@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { FeedAnalytics } from "../components/FeedAnalytics";
 import type { Article, FeedSource } from "../types";
@@ -61,7 +62,7 @@ vi.mock("../hooks/useProxyDashboard", () => ({
 }));
 
 describe("FeedAnalytics dashboard", () => {
-  it("renders the diagnosis-first dashboard and keeps a single export hub", () => {
+  it("renders the diagnosis-first dashboard and keeps a single export hub", async () => {
     const feeds: FeedSource[] = [
       {
         url: "https://example.com/tech.xml",
@@ -100,6 +101,8 @@ describe("FeedAnalytics dashboard", () => {
       ],
     ]);
 
+    const user = userEvent.setup();
+
     render(
       <FeedAnalytics
         feeds={feeds}
@@ -108,10 +111,15 @@ describe("FeedAnalytics dashboard", () => {
       />,
     );
 
-    expect(screen.getByText("Dashboard de diagnóstico")).toBeInTheDocument();
-    expect(screen.getByText("Central de exportação")).toBeInTheDocument();
+    expect(screen.getByText("Diagnóstico")).toBeInTheDocument();
+    expect(screen.queryByText("Exportar relatório")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mostrar" }));
+
+    expect(screen.getByText("Exportar relatório")).toBeInTheDocument();
+    expect(screen.getAllByText("Exportar relatório")).toHaveLength(1);
     expect(screen.queryByText("Exportar JSON")).not.toBeInTheDocument();
     expect(screen.queryByText("Exportar Markdown")).not.toBeInTheDocument();
-    expect(screen.getByText("Backend local indisponível")).toBeInTheDocument();
+    expect(screen.getAllByText("Backend local indisponível").length).toBeGreaterThan(0);
   });
 });

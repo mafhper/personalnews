@@ -332,12 +332,8 @@ const App: React.FC = () => {
 
   // Load ProxyManager preferences (API key, etc)
   React.useEffect(() => {
-    import("./services/proxyManager").then(({ ProxyManager, proxyManager }) => {
+    import("./services/proxyManager").then(({ ProxyManager }) => {
       ProxyManager.loadPreferences();
-      // Keep all configured proxies active by default at app startup.
-      proxyManager.getProxyConfigs().forEach((proxy) => {
-        proxyManager.enableProxy(proxy.name);
-      });
     });
   }, []);
 

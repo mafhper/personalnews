@@ -94,6 +94,8 @@ export const FeedInteractiveActions: React.FC<FeedInteractiveActionsProps> = ({
     e.stopPropagation();
   };
 
+  const handleWatch = onWatch ?? onRead;
+
   return (
     <div className={rootClass}>
       <div className="flex flex-wrap items-center gap-3">
@@ -102,8 +104,8 @@ export const FeedInteractiveActions: React.FC<FeedInteractiveActionsProps> = ({
             {readLabel}
           </button>
         )}
-        {showWatch && onWatch && (
-          <button type="button" onClick={(e) => { stop(e); onWatch(); }} className={watchBtnClass}>
+        {showWatch && (
+          <button type="button" onClick={(e) => { stop(e); handleWatch(); }} className={watchBtnClass}>
             {watchLabel}
           </button>
         )}

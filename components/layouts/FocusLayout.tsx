@@ -175,7 +175,6 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                   showRead={!embedUrl}
                   showWatch={!!embedUrl}
                   showVisit={true}
-                  onWatch={embedUrl ? () => window.open(currentArticle.link, '_blank') : undefined}
                   forceVisible={true}
                   className="!mt-0 !opacity-100 !pointer-events-auto !transform-none [&_.feed-btn-action]:text-sm [&_.feed-btn-action]:px-6 [&_.feed-btn-action]:py-3 [&_.feed-link-action]:text-sm"
                 />

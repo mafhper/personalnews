@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useFavorites } from '../hooks/useFavorites';
 import type { Article } from '../types';
+import { allowConsoleError } from '../src/test-console';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -242,6 +243,7 @@ describe('useFavorites', () => {
 
     it('should handle invalid import data', () => {
       const { result } = renderHook(() => useFavorites());
+      allowConsoleError(/Failed to import favorites/, 1);
 
       const invalidData = '{"invalid": "data"}';
 
@@ -256,6 +258,7 @@ describe('useFavorites', () => {
 
     it('should handle malformed JSON import', () => {
       const { result } = renderHook(() => useFavorites());
+      allowConsoleError(/Failed to import favorites/, 1);
 
       const malformedJson = '{"articles": [invalid json}';
 

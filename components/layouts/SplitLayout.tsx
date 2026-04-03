@@ -98,11 +98,6 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
                     showRead={!embedUrl}
                     showWatch={!!embedUrl}
                     showVisit={true}
-                    onWatch={
-                      embedUrl
-                        ? () => window.open(article.link, "_blank")
-                        : undefined
-                    }
                     className="!mt-7 self-start"
                   />
                 );

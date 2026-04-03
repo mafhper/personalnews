@@ -1,6 +1,7 @@
 import React from "react";
 import type { FeedSource, FeedCategory } from "../types";
 import type { FeedValidationResult } from "../services/feedValidator";
+import { getFeedDisplayName } from "../utils/feedDisplay";
 
 interface FeedItemProps {
   feed: FeedSource;
@@ -8,6 +9,7 @@ interface FeedItemProps {
   onRemove: (url: string) => void;
   onRetry: (url: string) => void;
   onEdit: (url: string) => void;
+  onEditTitle?: (url: string) => void;
   onShowError?: (url: string) => void;
   onToggleHideFromAll?: (url: string) => void;
   categories: FeedCategory[];
@@ -44,13 +46,14 @@ export const FeedItem: React.FC<FeedItemProps> = ({
   onRemove,
   onRetry,
   onEdit,
+  onEditTitle,
   onShowError,
   onToggleHideFromAll,
   categories,
   onMoveCategory,
 }) => {
   const status = getStatusMeta(validation);
-  const title = feed.customTitle || validation?.title || "Feed sem título";
+  const title = getFeedDisplayName(feed, validation?.title);
   const hasError = validation && !validation.isValid;
 
   return (
@@ -116,6 +119,20 @@ export const FeedItem: React.FC<FeedItemProps> = ({
               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2.5 2.5 0 113.536 3.536L11.828 15H9v-2.828l8.586-8.586z"
             />
           </ActionButton>
+          {onEditTitle && (
+            <ActionButton
+              onClick={() => onEditTitle(feed.url)}
+              label="Editar nome"
+              title="Editar nome"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 8h10M7 12h6m-6 4h10M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"
+              />
+            </ActionButton>
+          )}
           {onToggleHideFromAll && (
             <ActionButton
               onClick={() => onToggleHideFromAll(feed.url)}

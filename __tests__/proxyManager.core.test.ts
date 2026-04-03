@@ -1,5 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ProxyManager } from "../services/proxyManager";
+import { ProxyManager, proxyManager } from "../services/proxyManager";
+
+const importMetaWithEnv = import.meta as ImportMeta & {
+  env: Record<string, string | undefined>;
+};
+const ORIGINAL_IMPORT_META_ENV = { ...importMetaWithEnv.env };
+
+const setImportMetaEnv = (patch: Record<string, string | undefined>) => {
+  importMetaWithEnv.env = {
+    ...ORIGINAL_IMPORT_META_ENV,
+    ...patch,
+  };
+};
 
 describe("ProxyManager preference loading", () => {
   beforeEach(() => {
@@ -8,10 +20,12 @@ describe("ProxyManager preference loading", () => {
     ProxyManager.setCorsproxyCIOApiKey("");
     ProxyManager.setPreferLocalProxy(false);
     delete (window as Window & { __TAURI__?: unknown }).__TAURI__;
+    setImportMetaEnv({});
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    setImportMetaEnv({});
   });
 
   it("migrates the legacy corsproxy_api_key into corsproxy_cio_api_key", () => {
@@ -44,6 +58,10 @@ describe("ProxyManager preference loading", () => {
   it("defaults dev local runs to prefer the backend route when backend mode is on", () => {
     vi.stubEnv("VITE_BACKEND_ENABLED", "true");
     vi.stubEnv("VITE_BACKEND_DEFAULT_MODE", "on");
+    setImportMetaEnv({
+      VITE_BACKEND_ENABLED: "true",
+      VITE_BACKEND_DEFAULT_MODE: "on",
+    });
     localStorage.removeItem("prefer_local_proxy");
 
     ProxyManager.loadPreferences();
@@ -54,6 +72,10 @@ describe("ProxyManager preference loading", () => {
   it("forces the local route on dev local even when a stale saved preference was false", () => {
     vi.stubEnv("VITE_BACKEND_ENABLED", "true");
     vi.stubEnv("VITE_BACKEND_DEFAULT_MODE", "on");
+    setImportMetaEnv({
+      VITE_BACKEND_ENABLED: "true",
+      VITE_BACKEND_DEFAULT_MODE: "on",
+    });
     localStorage.setItem("prefer_local_proxy", "false");
 
     ProxyManager.loadPreferences();
@@ -71,5 +93,21 @@ describe("ProxyManager preference loading", () => {
     expect(localStorage.getItem("corsproxy_cio_api_key")).toBe("cors-key");
     expect(localStorage.getItem("prefer_local_proxy")).toBe("true");
     expect(ProxyManager.hasConfiguredApiKeys()).toBe(true);
+  });
+
+  it("persists disabled proxies across preference reloads", () => {
+    proxyManager.disableProxy("CodeTabs");
+
+    expect(localStorage.getItem("disabled_proxies")).toContain("CodeTabs");
+
+    proxyManager.enableProxy("CodeTabs");
+    proxyManager.disableProxy("CodeTabs");
+    ProxyManager.loadPreferences();
+
+    const codeTabs = proxyManager
+      .getProxyConfigs()
+      .find((config) => config.name === "CodeTabs");
+
+    expect(codeTabs?.enabled).toBe(false);
   });
 });

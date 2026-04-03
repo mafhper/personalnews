@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { logger, getLogger, useLogger } from '../services/logger';
+import { allowConsoleError, allowConsoleWarn } from '../src/test-console';
 
 describe('Logger Service', () => {
   beforeEach(() => {
@@ -38,6 +39,8 @@ describe('Logger Service', () => {
   });
 
   it('should provide multiple log levels', () => {
+    allowConsoleWarn("warn", 1);
+    allowConsoleError("error", 1);
     logger.log('log');
     logger.info('info');
     logger.warn('warn');

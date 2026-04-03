@@ -147,11 +147,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "The Intercept Brasil"
   },
   {
-    "url": "https://blog.adafruit.com/rss",
-    "categoryId": "tech",
-    "customTitle": "AdaFruit"
-  },
-  {
     "url": "http://www.cnet.com/rss/news/",
     "categoryId": "tech",
     "customTitle": "CNET"
@@ -165,6 +160,11 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://tecnoblog.net/feed/",
     "categoryId": "tech",
     "customTitle": "Tecnoblog"
+  },
+  {
+    "url": "https://the-decoder.com/feed/",
+    "categoryId": "tech",
+    "customTitle": "The Decoder"
   },
   {
     "url": "https://www.theverge.com/rss/index.xml",
@@ -337,11 +337,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "9to5Mac"
     },
     {
-      "url": "https://blog.adafruit.com/rss",
-      "categoryId": "tech",
-      "customTitle": "AdaFruit"
-    },
-    {
       "url": "https://arstechnica.com/feed/",
       "categoryId": "tech",
       "customTitle": "Ars Technica"
@@ -375,6 +370,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.omgubuntu.co.uk/feed",
       "categoryId": "tech",
       "customTitle": "OMG! Ubuntu"
+    },
+    {
+      "url": "https://the-decoder.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "The Decoder"
     },
     {
       "url": "https://thenextweb.com/feed",
@@ -420,11 +420,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
       "categoryId": "youtube",
       "customTitle": "Alex Ziskind"
-    },
-    {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw",
-      "categoryId": "youtube",
-      "customTitle": "Alberta Tech"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
@@ -559,11 +554,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "9to5Mac"
     },
     {
-      "url": "https://blog.adafruit.com/rss",
-      "categoryId": "tech",
-      "customTitle": "AdaFruit"
-    },
-    {
       "url": "https://arstechnica.com/feed/",
       "categoryId": "tech",
       "customTitle": "Ars Technica"
@@ -619,6 +609,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Tecnoblog"
     },
     {
+      "url": "https://the-decoder.com/feed/",
+      "categoryId": "tech",
+      "customTitle": "The Decoder"
+    },
+    {
       "url": "https://thenextweb.com/feed",
       "categoryId": "tech",
       "customTitle": "The Next Web"
@@ -667,11 +662,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
       "categoryId": "youtube",
       "customTitle": "Alex Ziskind"
-    },
-    {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw",
-      "categoryId": "youtube",
-      "customTitle": "Alberta Tech"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",

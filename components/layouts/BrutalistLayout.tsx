@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
 import { getVideoEmbed } from '../../utils/videoEmbed';
-import { OptimizedImage } from '../OptimizedImage';
 import { FavoriteButton } from '../FavoriteButton';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { FeedInteractiveActions } from '../FeedInteractiveActions';
@@ -27,61 +26,49 @@ export const BrutalistSkeleton: React.FC = () => {
 };
 
 const BrutalistCard: React.FC<{ article: Article; onRead: (a: Article) => void }> = ({ article, onRead }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const embedUrl = getVideoEmbed(article.link);
-
-  const handleToggleVideo = () => {
-    setIsExpanded(!isExpanded);
-  };
 
   return (
     <article
-      className={`group relative flex flex-col border-4 border-[rgb(var(--color-text))] bg-[rgb(var(--color-surface))] transition-all duration-300 ${isExpanded
-        ? 'md:col-span-2 md:row-span-2 z-20 shadow-[10px_10px_0px_0px_rgba(var(--color-accent),0.6)] scale-[1.015]'
-        : 'hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.2)] dark:hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.1)]'
-        }`}
+      className="group relative flex flex-col border-4 border-[rgb(var(--color-text))] bg-[rgb(var(--color-surface))] transition-all duration-300 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.2)] dark:hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.1)]"
     >
       {/* Media Content */}
-      <div className={`relative overflow-hidden border-b-4 border-[rgb(var(--color-text))] transition-all duration-500 ${isExpanded ? 'aspect-video' : 'aspect-[4/3]'}`}>
-        {isExpanded && embedUrl ? (
-          <iframe
-            src={embedUrl}
-            className="w-full h-full absolute inset-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <>
-            <ArticleImage
-              article={article}
-              width={isExpanded ? 1200 : 800}
-              height={isExpanded ? 800 : 600}
-              fill={true}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            {embedUrl && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none">
-                <div className="w-16 h-16 bg-[rgb(var(--color-accent))] border-4 border-black rounded-full flex items-center justify-center translate-y-2 group-hover:translate-y-0 transition-transform">
-                  <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                </div>
-              </div>
-            )}
-          </>
+      <div className="relative overflow-hidden border-b-4 border-[rgb(var(--color-text))] transition-all duration-500 aspect-[4/3]">
+        <ArticleImage
+          article={article}
+          width={800}
+          height={600}
+          fill={true}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        {embedUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none">
+            <div className="w-16 h-16 bg-[rgb(var(--color-accent))] border-4 border-black rounded-full flex items-center justify-center translate-y-2 group-hover:translate-y-0 transition-transform">
+              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Content Block */}
       <div className="p-4 flex flex-col flex-1 justify-between">
         <div>
-          <h2 className={`font-black tracking-tighter leading-[0.95] mb-4 uppercase group-hover:text-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-text))] hover:text-[rgb(var(--color-surface))] feed-title-hoverable transition-all ${isExpanded ? 'text-2xl md:text-3xl lg:text-4xl' : 'text-xl md:text-2xl line-clamp-3'
-            }`}>
-            <a href={article.link} target="_blank" rel="noopener noreferrer" className="block px-1">
+          <h2 className="font-black tracking-tighter leading-[0.95] mb-4 uppercase group-hover:text-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-text))] hover:text-[rgb(var(--color-surface))] feed-title-hoverable transition-all text-xl md:text-2xl line-clamp-3">
+            <a
+              href={article.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-1"
+              onClick={(event) => {
+                event.preventDefault();
+                onRead(article);
+              }}
+            >
               {article.title}
             </a>
           </h2>
 
-          <p className={`text-xs font-medium opacity-70 mb-4 border-l-2 border-current pl-2 ${isExpanded ? 'line-clamp-none' : 'line-clamp-3'
-            }`}>
+          <p className="text-xs font-medium opacity-70 mb-4 border-l-2 border-current pl-2 line-clamp-3">
             {article.description}
           </p>
         </div>
@@ -104,8 +91,6 @@ const BrutalistCard: React.FC<{ article: Article; onRead: (a: Article) => void }
             showRead={!embedUrl}
             showWatch={!!embedUrl}
             showVisit={true}
-            onWatch={embedUrl ? handleToggleVideo : undefined}
-            watchActive={!!embedUrl && isExpanded}
             className="z-20 !mt-2 flex-wrap gap-2"
           />
         </div>

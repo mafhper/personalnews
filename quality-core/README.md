@@ -26,8 +26,9 @@ quality-core/
 │   ├── ui-helpers.cjs        # Shared TUI components
 │   └── history.cjs           # Execution time history/ETA
 ├── config/
-│   ├── vitest.config.core.ts     # Core test configuration
-│   └── vitest.config.minimal.ts  # Minimal smoke test config
+│   ├── vitest.config.core.ts     # Gate oficial (*.core.test.*)
+│   ├── vitest.config.smoke.ts    # Smoke suite rápida (*.smoke.test.*)
+│   └── vitest.config.all.ts      # Suite ampla (*.test.*)
 ├── scripts/
 │   ├── build-dashboard.cjs   # Dashboard build helper (bun/npm)
 │   ├── generate-changelog.cjs

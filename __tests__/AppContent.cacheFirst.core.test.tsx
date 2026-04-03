@@ -382,7 +382,7 @@ describe("AppContent cache-first rendering", () => {
     expect(screen.queryByTestId("feed-content")).not.toBeInTheDocument();
   });
 
-  it("keeps scoped cached content visible while background refresh runs", async () => {
+  it("keeps scoped cached content visible while showing refresh progress", async () => {
     window.history.replaceState({}, "", "/?category=design");
     mockFeedState.articles = [designArticle];
     mockFeedState.loadingState = createLoadingState({
@@ -403,7 +403,7 @@ describe("AppContent cache-first rendering", () => {
 
     expect(await screen.findByTestId("feed-content")).toBeInTheDocument();
     expect(screen.getByText("Design One")).toBeInTheDocument();
-    expect(screen.queryByTestId("loading-progress")).not.toBeInTheDocument();
+    expect(screen.getByTestId("loading-progress")).toBeInTheDocument();
     expect(screen.queryByTestId("feed-skeleton")).not.toBeInTheDocument();
   });
 

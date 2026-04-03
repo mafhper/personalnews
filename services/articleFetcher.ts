@@ -16,20 +16,61 @@ const CACHE_PREFIX = 'article_cache_v2_';
 
 const logger = console; // Fallback if getLogger not available, or import it
 
-export async function fetchFullContent(url: string): Promise<string | null> {
+export interface FullContentFetchResult {
+    content: string | null;
+    blocked: boolean;
+    usedFallback: boolean;
+    errorMessage?: string;
+}
+
+const BLOCKED_PAGE_PATTERNS = [
+    /why have i been blocked\?/i,
+    /cloudflare ray id/i,
+    /security service to protect itself from online attacks/i,
+    /this content is blocked/i,
+    /entre em contato com o proprietário do site/i,
+];
+
+const looksBlocked = (html: string): boolean => {
+    const normalized = html.slice(0, 4000);
+    return BLOCKED_PAGE_PATTERNS.some((pattern) => pattern.test(normalized));
+};
+
+export async function fetchFullContent(url: string): Promise<FullContentFetchResult> {
     const cacheKey = CACHE_PREFIX + url;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
-        return cached;
+        return {
+            content: cached,
+            blocked: false,
+            usedFallback: false,
+        };
     }
     for (const proxy of PROXIES) {
         try {
             const res = await fetch(proxy.url(url));
             if (!res.ok) {
                 logger.warn(`Proxy ${proxy.name} returned status ${res.status} for ${url}`);
+                if (res.status === 401 || res.status === 403 || res.status === 429) {
+                    return {
+                        content: null,
+                        blocked: true,
+                        usedFallback: true,
+                        errorMessage: "O site bloqueou a leitura completa. Exibindo o conteúdo do feed.",
+                    };
+                }
                 continue;
             }
             let html = await res.text();
+
+            if (looksBlocked(html)) {
+                return {
+                    content: null,
+                    blocked: true,
+                    usedFallback: true,
+                    errorMessage: "O site bloqueou a leitura completa. Exibindo o conteúdo do feed.",
+                };
+            }
             
             // 1. Pre-process to remove problematic tags BEFORE DOM parsing
             // This prevents the browser from trying to load external stylesheets/scripts that violate CSP
@@ -53,6 +94,15 @@ export async function fetchFullContent(url: string): Promise<string | null> {
             const article = reader.parse();
 
             if (article && article.content) {
+                if (looksBlocked(article.content)) {
+                    return {
+                        content: null,
+                        blocked: true,
+                        usedFallback: true,
+                        errorMessage: "O site bloqueou a leitura completa. Exibindo o conteúdo do feed.",
+                    };
+                }
+
                 // 5. Sanitize aggressively to prevent CSP issues and broken styles
                 const sanitized = DOMPurify.sanitize(article.content, {
                     FORBID_TAGS: ['style', 'link', 'script', 'iframe', 'frame', 'object', 'embed', 'form', 'input', 'button'],
@@ -65,11 +115,20 @@ export async function fetchFullContent(url: string): Promise<string | null> {
                     // Start cleaning up old cache if full? For now just ignore
                     console.warn('Cache full, could not save article');
                 }
-                return sanitized;
+                return {
+                    content: sanitized,
+                    blocked: false,
+                    usedFallback: false,
+                };
             }
         } catch (e) {
             console.warn(`Failed to fetch via ${proxy.name}`, e);
         }
     }
-    return null;
+    return {
+        content: null,
+        blocked: false,
+        usedFallback: true,
+        errorMessage: "Não foi possível carregar o texto completo. Exibindo o conteúdo do feed.",
+    };
 }

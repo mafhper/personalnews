@@ -208,7 +208,6 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
                 showRead={!embedUrl && !!onClick}
                 showWatch={!!embedUrl}
                 showVisit={true}
-                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                 className="!mt-2 !mb-4"
               />
             );

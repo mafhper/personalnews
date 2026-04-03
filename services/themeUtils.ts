@@ -287,6 +287,18 @@ export const validateTheme = (theme: Partial<ExtendedTheme>): boolean => {
     }
   }
 
+  const accessibilityValidation = validateThemeAccessibility(
+    theme as ExtendedTheme,
+  );
+  if (!accessibilityValidation.isAccessible) {
+    console.warn(
+      `Theme validation failed: accessibility requirements not met (${accessibilityValidation.issues.join(
+        "; ",
+      )})`,
+    );
+    return false;
+  }
+
   return true;
 };
 
@@ -796,10 +808,12 @@ export const applyThemeToDOM = (theme: ExtendedTheme): void => {
 
   // Set dark mode class based on background luminance
   const luminance = calculateLuminance(safeTheme.colors.background);
-  if (luminance < 0.5) {
-    root.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
+  if (root.classList) {
+    if (luminance < 0.5) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
   }
 
   root.style.setProperty(

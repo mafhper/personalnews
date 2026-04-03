@@ -117,7 +117,6 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                             showRead={!embedUrl}
                             showWatch={!!embedUrl}
                             showVisit={true}
-                            onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                             className="!mt-0 !mb-0 flex-wrap"
                           />
                         );

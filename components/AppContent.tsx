@@ -892,11 +892,8 @@ const AppContent: React.FC = () => {
           }}
           tabIndex={-1}
         >
-          {(loadingState.status === "loading" || (errorVisible && loadingState.errors.length > 0)) && (
-            loadingState.status === "loading" ? 
-              (!loadingState.hasScopedCache || loadingState.isHoldingPreviousContent) : 
-              true
-          ) && (
+          {(loadingState.status === "loading" ||
+            (errorVisible && loadingState.errors.length > 0)) && (
             <FeedLoadingProgress
               loadedFeeds={loadingState.loadedFeeds}
               totalFeeds={loadingState.totalFeeds}

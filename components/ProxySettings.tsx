@@ -93,6 +93,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
     isLoading,
     preferLocalProxy,
     setPreferLocalProxy,
+    setProxyEnabled,
     setApiKey,
     clearApiKey,
     getApiKeyStatus,
@@ -444,6 +445,11 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                             api key
                           </span>
                         )}
+                        {!proxy.enabled && (
+                          <span className="rounded-full border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-warning))]">
+                            desativado
+                          </span>
+                        )}
                       </div>
                       <p className={`mt-1 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                         {runtimeRoute?.detail ||
@@ -499,8 +505,20 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         <button
                           type="button"
+                          onClick={() => setProxyEnabled(proxy.id, !proxy.enabled)}
+                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
+                            proxy.enabled
+                              ? "border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))] hover:bg-[rgba(var(--color-warning),0.18)]"
+                              : "border-[rgba(var(--color-success),0.24)] bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))] hover:bg-[rgba(var(--color-success),0.18)]"
+                          }`}
+                        >
+                          <Route className="h-4 w-4" />
+                          {proxy.enabled ? "Desativar rota" : "Reativar rota"}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => void handleTestProxy(proxy.id)}
-                          disabled={testingProxy === proxy.id}
+                          disabled={testingProxy === proxy.id || !proxy.enabled}
                           className="inline-flex items-center gap-2 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.18)] disabled:cursor-wait disabled:opacity-70"
                         >
                           <RefreshCw

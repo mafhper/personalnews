@@ -174,7 +174,6 @@ export const TerminalLayout: React.FC<TerminalLayoutProps> = ({ articles }) => {
                           showRead={!embedUrl}
                           showWatch={!!embedUrl}
                           showVisit={true}
-                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                           className="!mt-3"
                         />
                       );

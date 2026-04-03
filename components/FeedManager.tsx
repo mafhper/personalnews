@@ -109,6 +109,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [activeTab, setActiveTab] = useState<FeedManagerTab>("feeds");
   const [diagnosticsFocus, setDiagnosticsFocus] = useState<string | null>(null);
   const [newFeedUrl, setNewFeedUrl] = useState("");
+  const [newFeedTitle, setNewFeedTitle] = useState("");
   const [newFeedCategory, setNewFeedCategory] = useState<string>("");
   const [processingUrl, setProcessingUrl] = useState<string | null>(null);
   const [feedValidations, setFeedValidations] = useState<
@@ -139,6 +140,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   } | null>(null);
   const [editingFeedUrl, setEditingFeedUrl] = useState<string | null>(null);
   const [editUrlDraft, setEditUrlDraft] = useState("");
+  const [editingFeedTitleUrl, setEditingFeedTitleUrl] = useState<string | null>(null);
+  const [editTitleDraft, setEditTitleDraft] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -217,6 +220,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     setEditUrlDraft(oldUrl);
   };
 
+  const handleEditFeedTitle = (feedUrl: string) => {
+    const feed = currentFeeds.find((item) => item.url === feedUrl);
+    setEditingFeedTitleUrl(feedUrl);
+    setEditTitleDraft(feed?.customTitle || "");
+  };
+
   const handleSaveEdit = async (oldUrl: string, newUrlStr: string) => {
     const validation = await validateSingleFeed(newUrlStr);
     if (validation && validation.status === "valid") {
@@ -235,6 +244,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     setEditUrlDraft("");
   };
 
+  const handleCloseEditTitleDialog = () => {
+    setEditingFeedTitleUrl(null);
+    setEditTitleDraft("");
+  };
+
   const handleSubmitEditDialog = async () => {
     if (!editingFeedUrl) return;
     const nextUrl = editUrlDraft.trim();
@@ -244,6 +258,20 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
     await handleSaveEdit(editingFeedUrl, nextUrl);
     handleCloseEditDialog();
+  };
+
+  const handleSubmitEditTitleDialog = async () => {
+    if (!editingFeedTitleUrl) return;
+    const nextTitle = editTitleDraft.trim();
+    setFeeds((prev) =>
+      prev.map((feed) =>
+        feed.url === editingFeedTitleUrl
+          ? { ...feed, customTitle: nextTitle || undefined }
+          : feed,
+      ),
+    );
+    handleCloseEditTitleDialog();
+    await alertSuccess("Nome do feed atualizado.");
   };
 
   const handleRemoveFeed = async (urlToRemove: string) => {
@@ -413,11 +441,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           ...prev,
           {
             url: result.url,
-            customTitle: result.title,
+            customTitle: newFeedTitle.trim() || result.title,
             categoryId: newFeedCategory || undefined,
           },
         ]);
         setNewFeedUrl("");
+        setNewFeedTitle("");
         setNewFeedCategory("");
         await alertSuccess("Feed adicionado com sucesso!");
         return;
@@ -440,9 +469,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       ) {
         setFeeds((prev) => [
           ...prev,
-          { url, categoryId: newFeedCategory || undefined },
+          {
+            url,
+            customTitle: newFeedTitle.trim() || undefined,
+            categoryId: newFeedCategory || undefined,
+          },
         ]);
         setNewFeedUrl("");
+        setNewFeedTitle("");
         await alertSuccess("Feed adicionado (sem validação).");
       }
     } catch (error) {
@@ -633,6 +667,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             onRemove={handleRemoveFeed}
             onRetry={validateSingleFeed}
             onEdit={handleEditFeed}
+            onEditTitle={handleEditFeedTitle}
             onShowError={handleShowError}
             onMoveCategory={moveFeedToCategory}
             onToggleHideFromAll={handleToggleHideFromAll}
@@ -640,6 +675,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             onConfirmRefreshAll={handleConfirmRefreshAll}
             newFeedUrl={newFeedUrl}
             setNewFeedUrl={setNewFeedUrl}
+            newFeedTitle={newFeedTitle}
+            setNewFeedTitle={setNewFeedTitle}
             newFeedCategory={newFeedCategory}
             setNewFeedCategory={setNewFeedCategory}
             processingUrl={processingUrl}
@@ -759,12 +796,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               ...prev,
               {
                 url: feed.url,
-                customTitle: feed.title,
+                customTitle: newFeedTitle.trim() || feed.title,
                 categoryId: newFeedCategory || undefined,
               },
             ]);
             setShowDiscoveryModal(false);
             setCurrentDiscoveryResult(null);
+            setNewFeedTitle("");
+            setNewFeedCategory("");
             await alertSuccess("Feed adicionado!");
           }}
         />
@@ -831,6 +870,71 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             }}
           >
             Salvar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={!!editingFeedTitleUrl}
+        onClose={handleCloseEditTitleDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: "rgb(var(--theme-manager-surface))",
+            color: "rgb(var(--theme-manager-text))",
+            border: "1px solid rgba(var(--color-border),0.18)",
+            borderRadius: "12px",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "rgb(var(--theme-manager-text))",
+            borderBottom: "1px solid rgba(var(--color-border),0.18)",
+          }}
+        >
+          Editar nome do feed
+        </DialogTitle>
+        <DialogContent sx={{ paddingTop: 3 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            value={editTitleDraft}
+            onChange={(event) => setEditTitleDraft(event.target.value)}
+            placeholder="Nome exibido do feed"
+            variant="outlined"
+            sx={{
+              marginTop: 1,
+              "& .MuiOutlinedInput-root": {
+                color: "rgb(var(--theme-manager-text))",
+                backgroundColor: "rgb(var(--theme-manager-control))",
+                "& fieldset": { borderColor: "rgba(var(--color-border),0.18)" },
+                "&:hover fieldset": {
+                  borderColor: "rgba(var(--color-border),0.28)",
+                },
+                "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ padding: 3 }}>
+          <Button
+            onClick={handleCloseEditTitleDialog}
+            variant="outlined"
+            sx={{ color: "#9ca3af", borderColor: "#4b5563" }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => void handleSubmitEditTitleDialog()}
+            variant="contained"
+            sx={{
+              backgroundColor: "#3b82f6",
+              "&:hover": { backgroundColor: "#2563eb" },
+            }}
+          >
+            Salvar nome
           </Button>
         </DialogActions>
       </Dialog>

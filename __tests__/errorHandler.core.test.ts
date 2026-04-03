@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { ErrorHandler, ErrorType, ErrorSeverity } from '../services/errorHandler';
+import { allowConsoleError, allowConsoleWarn } from '../src/test-console';
 
 // Mock dependencies
 vi.mock('../services/logger', () => ({
@@ -39,20 +40,16 @@ Object.defineProperty(navigator, 'userAgent', {
 
 describe('ErrorHandler', () => {
   let errorHandler: ErrorHandler;
-  let consoleErrorSpy: Mock;
-  let consoleWarnSpy: Mock;
 
   beforeEach(() => {
     vi.useFakeTimers();
     errorHandler = new ErrorHandler();
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    allowConsoleError(undefined, 20);
+    allowConsoleWarn(undefined, 20);
     vi.clearAllMocks();
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
-    consoleWarnSpy.mockRestore();
     vi.clearAllTimers();
     vi.useRealTimers();
   });

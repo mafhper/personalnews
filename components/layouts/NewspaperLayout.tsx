@@ -251,7 +251,6 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                           showRead={!embedUrl}
                           showWatch={!!embedUrl}
                           showVisit={true}
-                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                           className="!mt-4"
                         />
                       );
@@ -317,7 +316,6 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                           showRead={!embedUrl}
                           showWatch={!!embedUrl}
                           showVisit={true}
-                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                           className="!mt-4"
                         />
                       );

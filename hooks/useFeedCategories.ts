@@ -2,6 +2,7 @@ import { useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { FeedCategory, FeedSource } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants/curatedFeeds';
+import { getFeedSortKey } from '../utils/feedDisplay';
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
@@ -149,9 +150,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     // Sort feeds in each category alphabetically
     Object.keys(result).forEach(categoryId => {
       result[categoryId].sort((a, b) => {
-        const titleA = (a.customTitle || a.url).toLowerCase();
-        const titleB = (b.customTitle || b.url).toLowerCase();
-        return titleA.localeCompare(titleB);
+        return getFeedSortKey(a).localeCompare(getFeedSortKey(b), 'pt-BR');
       });
     });
 

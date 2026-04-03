@@ -144,7 +144,6 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                           showRead={!embedUrl}
                           showWatch={!!embedUrl}
                           showVisit={true}
-                          onWatch={embedUrl ? () => window.open(heroArticle.link, '_blank') : undefined}
                         />
                       );
                     })()}
@@ -229,7 +228,6 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                           showRead={!embedUrl}
                           showWatch={!!embedUrl}
                           showVisit={true}
-                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                           className={`mt-6 ${isFullWidth ? 'justify-center' : ''}`}
                         />
                       );

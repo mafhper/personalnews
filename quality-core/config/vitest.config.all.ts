@@ -21,12 +21,7 @@ export default defineConfig({
     reporters: [process.env.VITEST_REPORTER || 'dot'],
     pool: 'threads',
     maxWorkers: maxThreads,
-    // Whitelist semântica (Contrato Core)
-    include: [
-      '**/*.core.test.ts',
-      '**/*.core.test.tsx'
-    ],
-    // Tudo que NÃO é core ou que não deve bloquear produção
+    include: ['**/*.test.ts', '**/*.test.tsx'],
     exclude: [
       'node_modules/**',
       'dist/**',
@@ -53,51 +48,19 @@ export default defineConfig({
       '.env.*',
       '*.log',
       'e2e/**',
-      '**/*integration*.test.ts',
-      '**/*Integration*.test.tsx',
-      '**/*performance*.test.ts',
-      '**/*Performance*.test.ts',
-      '**/*benchmark*.test.ts',
-      '**/proxy*.test.ts',
-      '**/debug-proxy*.test.ts',
-      // Excluir testes que NÃO seguem explicitamente a nova convenção core
-      '__tests__/**/!(*.core).test.ts',
-      '__tests__/**/!(*.core).test.tsx',
-      '__tests_unused/**'
+      '__tests_unused/**',
     ],
     coverage: {
-      reportsDirectory: 'performance-reports/coverage',
       exclude: [
         'node_modules/**',
         'dist/**',
-        'build/**',
-        '_dev/**',
-        'quality-core/dashboard/**',
-        'performance-reports/**',
-        'coverage/**',
-        'logs/**',
-        'docs/**',
-        'tmp/**',
-        'temp/**',
-        '.bun/**',
-        '.gemini/**',
-        '.gemini-clipboard/**',
-        '.cache/**',
-        '.parcel-cache/**',
-        '.vscode/**',
-        '.idea/**',
-        '.pnp',
-        '.pnp.js',
-        '.env',
-        '.env.*',
-        '*.log',
         '__tests_unused/**',
         '**/*.d.ts',
         '**/*.test.ts',
         '**/*.test.tsx',
         '**/test-setup.ts',
-        '**/coverage/**'
-      ]
-    }
-  }
+        '**/coverage/**',
+      ],
+    },
+  },
 });

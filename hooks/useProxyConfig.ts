@@ -138,6 +138,19 @@ export function useProxyConfig() {
     setPreferLocalProxyState(prefer);
   }, []);
 
+  const setProxyEnabled = useCallback((proxyId: string, enabled: boolean) => {
+    const config = PROXY_CONFIGS[proxyId];
+    if (!config || !isRuntimeSupportedProxy(proxyId)) return;
+
+    if (enabled) {
+      proxyManager.enableProxy(config.name);
+    } else {
+      proxyManager.disableProxy(config.name);
+    }
+
+    syncFromManager();
+  }, [syncFromManager]);
+
   /**
    * Get validation status for all proxies with API keys
    */
@@ -285,6 +298,7 @@ export function useProxyConfig() {
     isLoading,
     preferLocalProxy,
     setPreferLocalProxy,
+    setProxyEnabled,
     setApiKey,
     clearApiKey,
     getApiKeyStatus,

@@ -52,14 +52,27 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Featured (8 cols) */}
         <div className="lg:col-span-8 aspect-[16/9] lg:aspect-auto lg:h-[520px] rounded-xl overflow-hidden relative group">
-          <FeaturedArticle article={mainFeatured} timeFormat={timeFormat} />
+          <FeaturedArticle
+            article={mainFeatured}
+            timeFormat={timeFormat}
+            onClick={() => setReadingArticle(mainFeatured)}
+          />
         </div>
 
         {/* Sub Featured (4 cols) */}
         <div className="lg:col-span-4 space-y-6 flex flex-col">
           {subFeatured.map((article, idx) => (
             <div key={idx} className="flex-1 relative rounded-xl overflow-hidden group cursor-pointer">
-              <a href={article.link} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+              <a
+                href={article.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full h-full"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setReadingArticle(article);
+                }}
+              >
                 <div className="absolute inset-0">
                   <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" fallbackText={article.sourceTitle} size={400} />
                 </div>
@@ -126,6 +139,10 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group/title block"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setReadingArticle(article);
+                  }}
                 >
                   <h3 className="feed-title text-base sm:text-lg font-bold leading-tight mb-2 transition-colors line-clamp-2">
                     {article.title}
@@ -153,7 +170,6 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                           showRead={!embedUrl}
                           showWatch={!!embedUrl}
                           showVisit={true}
-                          onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                           className="!mt-4"
                         />
                       );

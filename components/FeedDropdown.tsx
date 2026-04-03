@@ -5,6 +5,7 @@ import { HeaderIcons } from "./icons";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useLanguage } from "../hooks/useLanguage";
+import { getFeedDisplayName } from "../utils/feedDisplay";
 
 interface FeedDropdownProps {
   category: FeedCategory;
@@ -49,15 +50,6 @@ const getFaviconUrl = (url: string): string => {
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
   } catch {
     return "";
-  }
-};
-
-const getSiteName = (url: string): string => {
-  try {
-    const hostname = new URL(url).hostname;
-    return hostname.replace(/^www\./, "");
-  } catch {
-    return url;
   }
 };
 
@@ -333,7 +325,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                       setIsOpen(false);
                     }}
                     className="w-full text-left px-4 py-3 text-sm text-[rgb(var(--color-textSecondary))] hover:bg-[rgb(var(--color-text))]/10 hover:text-[rgb(var(--color-text))] transition-colors flex items-center space-x-3 group min-h-[44px]"
-                    aria-label={`Select feed ${feed.customTitle || getSiteName(feed.url)}`}
+                    aria-label={`Select feed ${getFeedDisplayName(feed)}`}
                   >
                     <img
                       src={getFaviconUrl(feed.url)}
@@ -346,7 +338,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                       }}
                     />
                     <span className="truncate flex-1">
-                      {feed.customTitle || getSiteName(feed.url)}
+                      {getFeedDisplayName(feed)}
                     </span>
                   </button>
                 ))}

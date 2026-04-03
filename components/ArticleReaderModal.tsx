@@ -39,6 +39,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   const videoEmbed = getVideoEmbed(article.link);
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchNotice, setFetchNotice] = useState<string | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const { t } = useLanguage();
@@ -99,16 +100,28 @@ const contentWidthClasses = {
     if (contentRef.current) contentRef.current.scrollTop = 0;
 
     const loadContent = async () => {
+      if (videoEmbed) {
+        setFullContent(null);
+        setFetchNotice(null);
+        setLoading(false);
+        return;
+      }
+
       setFullContent(null); // Clear previous content
+      setFetchNotice(null);
       setLoading(true);
       try {
         const { fetchFullContent } = await import('../services/articleFetcher');
         const fetched = await fetchFullContent(article.link);
-        if (fetched) {
-          setFullContent(fetched);
+        if (fetched.content) {
+          setFullContent(fetched.content);
+        }
+        if (fetched.usedFallback && fetched.errorMessage) {
+          setFetchNotice(fetched.errorMessage);
         }
       } catch (error) {
         console.error('[Reader] Failed to load full content', error);
+        setFetchNotice("Não foi possível carregar o texto completo. Exibindo o conteúdo do feed.");
       } finally {
         setLoading(false);
       }
@@ -133,7 +146,7 @@ const contentWidthClasses = {
       window.removeEventListener('keydown', handleKeyDown);
       setModalOpen(false);
     };
-  }, [article.link, onClose, onNext, onPrev, hasNext, hasPrev, setModalOpen, showPreferences]);
+  }, [article.link, hasNext, hasPrev, onClose, onNext, onPrev, setModalOpen, showPreferences, videoEmbed]);
 
   // Process content to improve formatting and handle plain text
   const processContent = (html: string | null | undefined): string => {
@@ -157,6 +170,7 @@ const contentWidthClasses = {
   const contentHtml = fullContent
     ? processContent(fullContent)
     : processContent(article.content || article.description);
+  const hasContentHtml = contentHtml.trim().length > 0;
 
   return (
     <div
@@ -241,14 +255,14 @@ const contentWidthClasses = {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-surface))] transition-colors"
-              title={t('read.more')}
-              aria-label={t('read.more')}
+              title={t('action.visit')}
+              aria-label={t('action.visit')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
               <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.25em]">
-                {t('read.more')}
+                {t('action.visit')}
               </span>
             </a>
             {/* Reading Preferences Button */}
@@ -418,25 +432,32 @@ const contentWidthClasses = {
                 <h1 className={`text-2xl md:text-3xl font-bold text-[rgb(var(--color-text))] mb-6 ${fontFamilyClasses[preferences.fontFamily]}`}>
                   {article.title}
                 </h1>
-                <div
-                  className={`
-                    prose prose-invert max-w-none text-[rgb(var(--color-textSecondary))]
-                    ${fontSizeClasses[preferences.fontSize]}
-                    ${lineHeightClasses[preferences.lineHeight]}
-                    ${fontFamilyClasses[preferences.fontFamily]}
-                    prose-headings:text-[rgb(var(--color-text))]
-                    prose-p:mb-6
-                    prose-a:text-[rgb(var(--color-accent))]
-                    prose-strong:text-[rgb(var(--color-text))]
-                    prose-blockquote:border-[rgb(var(--color-accent))]
-                    prose-blockquote:bg-[rgb(var(--color-background))]/50
-                    prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-lg
-                    prose-code:text-[rgb(var(--color-accent))]
-                    prose-pre:bg-[rgb(var(--color-background))]
-                    prose-img:rounded-xl prose-img:shadow-lg
-                  `}
-                  dangerouslySetInnerHTML={{ __html: contentHtml }}
-                />
+                {fetchNotice && (
+                  <div className="mb-5 rounded-xl border border-[rgb(var(--color-warning))]/30 bg-[rgba(var(--color-warning),0.12)] px-4 py-3 text-sm text-[rgb(var(--color-text))]">
+                    {fetchNotice}
+                  </div>
+                )}
+                {hasContentHtml && (
+                  <div
+                    className={`
+                      prose prose-invert max-w-none text-[rgb(var(--color-textSecondary))]
+                      ${fontSizeClasses[preferences.fontSize]}
+                      ${lineHeightClasses[preferences.lineHeight]}
+                      ${fontFamilyClasses[preferences.fontFamily]}
+                      prose-headings:text-[rgb(var(--color-text))]
+                      prose-p:mb-6
+                      prose-a:text-[rgb(var(--color-accent))]
+                      prose-strong:text-[rgb(var(--color-text))]
+                      prose-blockquote:border-[rgb(var(--color-accent))]
+                      prose-blockquote:bg-[rgb(var(--color-background))]/50
+                      prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-lg
+                      prose-code:text-[rgb(var(--color-accent))]
+                      prose-pre:bg-[rgb(var(--color-background))]
+                      prose-img:rounded-xl prose-img:shadow-lg
+                    `}
+                    dangerouslySetInnerHTML={{ __html: contentHtml }}
+                  />
+                )}
               </div>
             </div>
           ) : (
@@ -564,6 +585,11 @@ const contentWidthClasses = {
                     prose-figcaption:text-sm
                   `}
                 >
+                  {fetchNotice && (
+                    <div className="mb-6 rounded-xl border border-[rgb(var(--color-warning))]/30 bg-[rgba(var(--color-warning),0.12)] px-4 py-3 text-sm text-[rgb(var(--color-text))]">
+                      {fetchNotice}
+                    </div>
+                  )}
                   {loading ? (
                     <div className="py-16 flex flex-col items-center justify-center text-[rgb(var(--color-textSecondary))] animate-pulse">
                       <div className="w-10 h-10 border-4 border-[rgb(var(--color-accent))] border-t-transparent rounded-full animate-spin mb-4" />
@@ -585,7 +611,7 @@ const contentWidthClasses = {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-[rgb(var(--color-accent))] hover:underline text-sm uppercase tracking-widest font-bold transition-colors"
                   >
-                    {t('read.more')}
+                    {t('action.visit')}
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>

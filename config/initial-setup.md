@@ -168,10 +168,10 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### tech
 
-- AdaFruit: <https://blog.adafruit.com/rss>
 - CNET: <http://www.cnet.com/rss/news/>
 - Diolinux: <https://diolinux.com.br/feed>
 - Tecnoblog: <https://tecnoblog.net/feed/>
+- The Decoder: <https://the-decoder.com/feed/>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - XDA: <https://www.xda-developers.com/feed/>
 
@@ -240,7 +240,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - 9to5Google: <https://9to5google.com/feed/>
 - 9to5Linux: <https://9to5linux.com/feed/>
 - 9to5Mac: <https://9to5mac.com/feed/>
-- AdaFruit: <https://blog.adafruit.com/rss>
 - Ars Technica: <https://arstechnica.com/feed/>
 - CNET: <http://www.cnet.com/rss/news/>
 - Digital Trends: <https://www.digitaltrends.com/feed/>
@@ -248,6 +247,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - Engadget: <https://www.engadget.com/rss.xml>
 - OMG! Linux: <https://www.omglinux.com/feed/>
 - OMG! Ubuntu: <https://www.omgubuntu.co.uk/feed>
+- The Decoder: <https://the-decoder.com/feed/>
 - The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - Tom's Guide: <https://www.tomsguide.com/feeds.xml>
@@ -260,7 +260,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### youtube
 
 - Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug>
-- Alberta Tech: <https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw>
 - Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
 - Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
@@ -301,7 +300,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - 9to5Google: <https://9to5google.com/feed/>
 - 9to5Linux: <https://9to5linux.com/feed/>
 - 9to5Mac: <https://9to5mac.com/feed/>
-- AdaFruit: <https://blog.adafruit.com/rss>
 - Ars Technica: <https://arstechnica.com/feed/>
 - CNET: <http://www.cnet.com/rss/news/>
 - Digital Trends: <https://www.digitaltrends.com/feed/>
@@ -313,6 +311,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - OMG! Linux: <https://www.omglinux.com/feed/>
 - OMG! Ubuntu: <https://www.omgubuntu.co.uk/feed>
 - Tecnoblog: <https://tecnoblog.net/feed/>
+- The Decoder: <https://the-decoder.com/feed/>
 - The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - Tom's Guide: <https://www.tomsguide.com/feeds.xml>
@@ -326,7 +325,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
 - Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug>
-- Alberta Tech: <https://www.youtube.com/feeds/videos.xml?channel_id=UCkdgAA0rfK7lG5dv4o__Paw>
 - Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
 - Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>

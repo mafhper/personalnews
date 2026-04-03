@@ -555,6 +555,18 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Permite abrir URLs externas",
+          "type": "string",
+          "const": "allow-open-external-url",
+          "markdownDescription": "Permite abrir URLs externas"
+        },
+        {
+          "description": "Permite alterar o estilo da janela",
+          "type": "string",
+          "const": "allow-set-window-style",
+          "markdownDescription": "Permite alterar o estilo da janela"
+        },
+        {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",
           "type": "string",
           "const": "core:default",

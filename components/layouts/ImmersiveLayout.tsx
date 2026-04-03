@@ -183,7 +183,16 @@ const HeroArticle: React.FC<{
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight"
             style={{ textShadow: '0 12px 32px rgba(0, 0, 0, 0.55)' }}
           >
-            <a href={article.link} target="_blank" rel="noopener noreferrer" className="hover:text-white/90 transition-colors">
+            <a
+              href={article.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white/90 transition-colors"
+              onClick={(event) => {
+                event.preventDefault();
+                onRead();
+              }}
+            >
               {article.title}
             </a>
           </h1>
@@ -207,7 +216,6 @@ const HeroArticle: React.FC<{
                 showRead={!embedUrl}
                 showWatch={!!embedUrl}
                 showVisit={true}
-                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                 className="!mt-0 pt-4"
               />
             );
@@ -279,6 +287,10 @@ const ArticleCard: React.FC<{
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-white/80 transition-colors"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onRead();
+                }}
               >
                 {article.title}
               </a>
@@ -304,7 +316,6 @@ const ArticleCard: React.FC<{
                 showRead={!embedUrl}
                 showWatch={!!embedUrl}
                 showVisit={true}
-                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                 className="!mt-0"
               />
             );

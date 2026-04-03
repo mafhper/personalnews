@@ -25,6 +25,7 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
   const videoEmbed = getVideoEmbed(article.link);
   const [fullContent, setFullContent] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [fetchNotice, setFetchNotice] = React.useState<string | null>(null);
   const authorLabel =
     article.author && article.author !== article.sourceTitle
       ? article.author
@@ -32,16 +33,28 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
 
   useEffect(() => {
     const loadContent = async () => {
+        if (videoEmbed) {
+            setFullContent(null);
+            setFetchNotice(null);
+            setLoading(false);
+            return;
+        }
+
         setFullContent(null);
+        setFetchNotice(null);
         setLoading(true);
         try {
             const { fetchFullContent } = await import('../services/articleFetcher');
             const fetched = await fetchFullContent(article.link);
-            if (fetched) {
-                setFullContent(fetched);
+            if (fetched.content) {
+                setFullContent(fetched.content);
+            }
+            if (fetched.usedFallback && fetched.errorMessage) {
+                setFetchNotice(fetched.errorMessage);
             }
         } catch (error) {
             console.error('[MagazineReader] Failed to load full content', error);
+            setFetchNotice("Não foi possível carregar o texto completo. Exibindo o conteúdo do feed.");
         } finally {
             setLoading(false);
         }
@@ -60,7 +73,7 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [article.link, onClose, onNext, onPrev, hasNext, hasPrev]);
+  }, [article.link, hasNext, hasPrev, onClose, onNext, onPrev, videoEmbed]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
@@ -168,6 +181,11 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
            <div className="prose prose-lg prose-invert max-w-none font-serif leading-relaxed drop-cap text-[rgb(var(--color-text))]">
               {/* If we have full content, iterate and render safe html, otherwise description */}
               <div className="max-w-[60ch] mx-auto">
+                {fetchNotice && (
+                    <div className="mb-6 rounded-lg border border-[rgb(var(--color-warning))]/30 bg-[rgba(var(--color-warning),0.12)] px-4 py-3 text-sm text-[rgb(var(--color-text))]">
+                      {fetchNotice}
+                    </div>
+                )}
                 {fullContent ? (
                     <div dangerouslySetInnerHTML={{ __html: fullContent }} className="animate-in fade-in duration-500" />
                 ) : (

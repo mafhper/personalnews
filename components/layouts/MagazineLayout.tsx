@@ -191,7 +191,6 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                     showRead={!embedUrl}
                     showWatch={!!embedUrl}
                     showVisit={true}
-                    onWatch={embedUrl ? () => window.open(heroArticle.link, '_blank') : undefined}
                     forceVisible
                     className="mt-6 self-start"
                   />

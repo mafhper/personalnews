@@ -166,7 +166,6 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
               showRead={!embedUrl}
               showWatch={!!embedUrl}
               showVisit={true}
-              onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
               className="!mt-4 !mb-0 pt-4 border-t border-[rgb(var(--color-border))]/50 w-full justify-between"
             />
           );

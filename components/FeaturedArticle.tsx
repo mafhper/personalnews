@@ -10,7 +10,8 @@ import { sanitizeArticleDescription } from "../utils/sanitization";
 export const FeaturedArticle: React.FC<{
   article: Article;
   timeFormat?: "12h" | "24h";
-}> = ({ article, timeFormat = "24h" }) => {
+  onClick?: (article: Article) => void;
+}> = ({ article, timeFormat = "24h", onClick }) => {
   const { settings: layoutSettings } = useArticleLayout();
   const authorLabel =
     article.author && article.author !== article.sourceTitle
@@ -34,6 +35,11 @@ export const FeaturedArticle: React.FC<{
           aria-label={`Read featured article: ${article.title} from ${
             authorLabel || article.sourceTitle
           }`}
+          onClick={(event) => {
+            if (!onClick) return;
+            event.preventDefault();
+            onClick(article);
+          }}
         >
           <OptimizedImage
             src={article.imageUrl}

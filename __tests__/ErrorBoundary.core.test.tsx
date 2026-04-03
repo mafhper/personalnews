@@ -8,6 +8,7 @@ import {
   withErrorBoundary,
   useErrorHandler,
 } from "../components/ErrorBoundary";
+import { allowConsoleError } from "../src/test-console";
 
 // Estender expect com matchers do jest-dom
 expect.extend(matchers);
@@ -57,17 +58,13 @@ const CustomFallback: React.FC<any> = ({ error, resetError, retry }) => (
 );
 
 describe("ErrorBoundary", () => {
-  let consoleErrorSpy: Mock;
-
   beforeEach(() => {
     vi.useFakeTimers();
-    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.clearAllMocks();
   });
 
   afterEach(() => {
     cleanup();
-    consoleErrorSpy.mockRestore();
     vi.clearAllTimers();
     vi.useRealTimers();
   });
@@ -84,6 +81,7 @@ describe("ErrorBoundary", () => {
     });
 
     it("should catch and display error fallback when child throws", () => {
+      allowConsoleError(undefined, 2);
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow={true} message="Component crashed" />
@@ -99,6 +97,7 @@ describe("ErrorBoundary", () => {
     });
 
     it("should display error details when expanded", () => {
+      allowConsoleError(undefined, 2);
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow={true} message="Detailed error message" />
@@ -114,6 +113,7 @@ describe("ErrorBoundary", () => {
 
   describe("Custom Fallback Component", () => {
     it("should use custom fallback when provided", () => {
+      allowConsoleError(undefined, 2);
       render(
         <ErrorBoundary fallback={CustomFallback}>
           <ThrowError shouldThrow={true} message="Custom error" />
@@ -129,6 +129,7 @@ describe("ErrorBoundary", () => {
 
   describe("Isolated Error Boundary", () => {
     it("should render isolated fallback when isolate prop is true", () => {
+      allowConsoleError(undefined, 2);
       render(
         <ErrorBoundary isolate={true}>
           <ThrowError shouldThrow={true} message="Isolated error" />
@@ -142,6 +143,7 @@ describe("ErrorBoundary", () => {
 
   describe("Error Recovery", () => {
     it("should reset error state when reset button is clicked", async () => {
+      allowConsoleError(undefined, 2);
       const { rerender } = render(
         <ErrorBoundary key="1">
           <ThrowError shouldThrow={true} />
@@ -171,6 +173,7 @@ describe("ErrorBoundary", () => {
     it("should attempt retry when retry button is clicked", async () => {
       const { errorHandler } = await import("../services/errorHandler");
       (errorHandler.handleError as Mock).mockResolvedValue(true);
+      allowConsoleError(undefined, 2);
 
       render(
         <ErrorBoundary>
@@ -192,6 +195,7 @@ describe("ErrorBoundary", () => {
       (errorHandler.handleError as Mock).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(false), 100))
       );
+      allowConsoleError(undefined, 2);
 
       render(
         <ErrorBoundary>
@@ -216,6 +220,7 @@ describe("ErrorBoundary", () => {
     it("should reload page when reload button is clicked", () => {
       const mockReload = vi.fn();
       vi.stubGlobal('location', { ...window.location, reload: mockReload });
+      allowConsoleError(undefined, 2);
 
       render(
         <ErrorBoundary>
@@ -235,6 +240,7 @@ describe("ErrorBoundary", () => {
     it("should call error handler with proper context", async () => {
       const { errorHandler } = await import("../services/errorHandler");
       const onError = vi.fn();
+      allowConsoleError(undefined, 2);
 
       render(
         <ErrorBoundary name="TestBoundary" level="component" onError={onError}>
@@ -261,6 +267,7 @@ describe("ErrorBoundary", () => {
 
     it("should include component stack in error context", async () => {
       const { errorHandler } = await import("../services/errorHandler");
+      allowConsoleError(undefined, 2);
 
       render(
         <ErrorBoundary name="TestBoundary">
@@ -277,6 +284,7 @@ describe("ErrorBoundary", () => {
     it("should respect maximum retry attempts", async () => {
       const { errorHandler } = await import("../services/errorHandler");
       (errorHandler.handleError as Mock).mockResolvedValue(false);
+      allowConsoleError(undefined, 2);
 
       render(
         <ErrorBoundary>
@@ -316,6 +324,7 @@ describe("withErrorBoundary HOC", () => {
 
   it("should catch errors in wrapped component", () => {
     const WrappedComponent = withErrorBoundary(ThrowError, { name: "HOCTest" });
+    allowConsoleError(undefined, 2);
 
     render(<WrappedComponent shouldThrow={true} />);
 

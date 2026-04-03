@@ -1,3 +1,5 @@
+import { desktopBackendClient } from "./desktopBackendClient";
+
 /**
  * proxyManager.ts
  *
@@ -59,6 +61,7 @@ export interface ProxyTestResult {
 }
 
 export class ProxyManager {
+  private static readonly DISABLED_PROXIES_STORAGE_KEY = "disabled_proxies";
   private static rss2jsonApiKey: string = "";
   private static rss2jsonApiKeyOrigin: string = "not-configured"; // 'env.local', 'localStorage', 'manual', 'not-configured'
   private static corsproxyCIOApiKey: string = "";
@@ -73,7 +76,12 @@ export class ProxyManager {
         env?: Record<string, string | undefined>;
       }
     ).env;
-    return env?.[key] || "";
+    const processEnv =
+      typeof process !== "undefined"
+        ? (process.env as Record<string, string | undefined>)
+        : undefined;
+
+    return env?.[key] || processEnv?.[key] || "";
   }
 
   private static isTauriRuntime(): boolean {
@@ -105,6 +113,7 @@ export class ProxyManager {
         localStorage.removeItem("rss2json_api_key_origin");
       }
     }
+    this.dispatchStorageChange("rss2json_api_key", key || null);
   }
 
   static setCorsproxyCIOApiKey(key: string, origin?: string) {
@@ -123,6 +132,7 @@ export class ProxyManager {
         localStorage.removeItem("corsproxy_cio_api_key_origin");
       }
     }
+    this.dispatchStorageChange("corsproxy_cio_api_key", key || null);
   }
 
   static setPreferLocalProxy(prefer: boolean) {
@@ -130,6 +140,7 @@ export class ProxyManager {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("prefer_local_proxy", prefer ? "true" : "false");
     }
+    this.dispatchStorageChange("prefer_local_proxy", prefer ? "true" : "false");
   }
 
   static getRss2jsonApiKey(): string {
@@ -206,6 +217,18 @@ export class ProxyManager {
     if (envCorsproxy && !this.corsproxyCIOApiKey) {
       this.setCorsproxyCIOApiKey(envCorsproxy, "env.local");
     }
+
+    proxyManager.restorePersistedProxyStates();
+  }
+
+  private static dispatchStorageChange(key: string, value: string | null) {
+    if (typeof window === "undefined") return;
+
+    window.dispatchEvent(
+      new CustomEvent("localStorage-change", {
+        detail: { key, newValue: value },
+      }),
+    );
   }
 
   private readonly PROXY_CONFIGS: ProxyConfig[] = [
@@ -673,6 +696,7 @@ export class ProxyManager {
     if (proxy) {
       proxy.enabled = false;
       this.proxyHealthCheck.set(proxyName, false);
+      this.persistDisabledProxyNames();
     }
   }
 
@@ -689,7 +713,44 @@ export class ProxyManager {
         stats.consecutiveFailures = 0;
       }
       this.proxyHealthCheck.set(proxyName, true);
+      this.persistDisabledProxyNames();
     }
+  }
+
+  private persistDisabledProxyNames(): void {
+    if (typeof localStorage === "undefined") return;
+
+    const disabled = this.PROXY_CONFIGS.filter((proxy) => !proxy.enabled).map(
+      (proxy) => proxy.name,
+    );
+
+    localStorage.setItem(
+      ProxyManager.DISABLED_PROXIES_STORAGE_KEY,
+      JSON.stringify(disabled),
+    );
+    ProxyManager.dispatchStorageChange(
+      ProxyManager.DISABLED_PROXIES_STORAGE_KEY,
+      JSON.stringify(disabled),
+    );
+  }
+
+  restorePersistedProxyStates(): void {
+    if (typeof localStorage === "undefined") return;
+
+    let disabledNames: string[] = [];
+    try {
+      const raw = localStorage.getItem(ProxyManager.DISABLED_PROXIES_STORAGE_KEY);
+      disabledNames = raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      disabledNames = [];
+    }
+
+    const disabledSet = new Set(disabledNames);
+    this.PROXY_CONFIGS.forEach((proxy) => {
+      const enabled = !disabledSet.has(proxy.name);
+      proxy.enabled = enabled;
+      this.proxyHealthCheck.set(proxy.name, enabled);
+    });
   }
 
   /**
@@ -706,7 +767,6 @@ export class ProxyManager {
     const startedAt = Date.now();
 
     if (proxyName === "LocalProxy" && ProxyManager.isTauriRuntime()) {
-      const { desktopBackendClient } = await import("./desktopBackendClient");
       const health = await desktopBackendClient.checkHealth(true);
       const responseTime = Date.now() - startedAt;
 

@@ -3,6 +3,7 @@ import { useLanguage } from "../../hooks/useLanguage";
 import { FeedItem } from "../FeedItem";
 import type { FeedSource, FeedCategory } from "../../types";
 import type { FeedValidationResult } from "../../services/feedValidator";
+import { getFeedSortKey } from "../../utils/feedDisplay";
 
 interface FeedListTabProps {
   feeds: FeedSource[];
@@ -11,6 +12,7 @@ interface FeedListTabProps {
   onRemove: (url: string) => void;
   onRetry: (url: string) => void;
   onEdit: (url: string) => void;
+  onEditTitle?: (url: string) => void;
   onShowError: (url: string, validation?: FeedValidationResult) => void;
   onMoveCategory: (feedUrl: string, categoryId: string) => void;
   onToggleHideFromAll?: (url: string) => void;
@@ -18,6 +20,8 @@ interface FeedListTabProps {
   onConfirmRefreshAll?: () => void | Promise<void>;
   newFeedUrl?: string;
   setNewFeedUrl?: (url: string) => void;
+  newFeedTitle?: string;
+  setNewFeedTitle?: (title: string) => void;
   newFeedCategory?: string;
   setNewFeedCategory?: (id: string) => void;
   processingUrl?: string | null;
@@ -38,6 +42,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   onRemove,
   onRetry,
   onEdit,
+  onEditTitle,
   onShowError,
   onMoveCategory,
   onToggleHideFromAll,
@@ -45,6 +50,8 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   onConfirmRefreshAll,
   newFeedUrl,
   setNewFeedUrl,
+  newFeedTitle,
+  setNewFeedTitle,
   newFeedCategory,
   setNewFeedCategory,
   processingUrl,
@@ -60,26 +67,34 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   );
 
   const filteredFeeds = useMemo(() => {
-    return feeds.filter((feed) => {
-      const validation = validations.get(feed.url);
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch =
-        !searchTerm ||
-        feed.url.toLowerCase().includes(searchLower) ||
-        (feed.customTitle?.toLowerCase().includes(searchLower) ?? false) ||
-        (validation?.title?.toLowerCase().includes(searchLower) ?? false) ||
-        (validation?.description?.toLowerCase().includes(searchLower) ?? false);
+    return feeds
+      .filter((feed) => {
+        const validation = validations.get(feed.url);
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch =
+          !searchTerm ||
+          feed.url.toLowerCase().includes(searchLower) ||
+          (feed.customTitle?.toLowerCase().includes(searchLower) ?? false) ||
+          (validation?.title?.toLowerCase().includes(searchLower) ?? false) ||
+          (validation?.description?.toLowerCase().includes(searchLower) ??
+            false);
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "valid" && validation?.status === "valid") ||
-        (statusFilter === "invalid" &&
-          !!validation?.status &&
-          validation.status !== "valid") ||
-        (statusFilter === "unchecked" && !validation);
+        const matchesStatus =
+          statusFilter === "all" ||
+          (statusFilter === "valid" && validation?.status === "valid") ||
+          (statusFilter === "invalid" &&
+            !!validation?.status &&
+            validation.status !== "valid") ||
+          (statusFilter === "unchecked" && !validation);
 
-      return matchesSearch && matchesStatus;
-    });
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) =>
+        getFeedSortKey(a, validations.get(a.url)?.title).localeCompare(
+          getFeedSortKey(b, validations.get(b.url)?.title),
+          "pt-BR",
+        ),
+      );
   }, [feeds, searchTerm, statusFilter, validations]);
 
   const issueFeeds = filteredFeeds.filter((feed) => {
@@ -133,6 +148,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]">
           {typeof onSubmit === "function" &&
             setNewFeedUrl &&
+            setNewFeedTitle &&
             setNewFeedCategory && (
               <section className={SURFACE_CLASS}>
                 <div className="mb-4 flex items-center justify-between gap-3">
@@ -148,7 +164,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
 
                 <form
                   onSubmit={onSubmit}
-                  className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_16rem]"
+                  className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)_16rem]"
                 >
                   <label className="block">
                     <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
@@ -159,6 +175,20 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                       placeholder="https://site.com/rss"
                       value={newFeedUrl || ""}
                       onChange={(e) => setNewFeedUrl(e.target.value)}
+                      disabled={processingUrl !== null}
+                      className={CONTROL_CLASS}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      Nome exibido
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Título do feed"
+                      value={newFeedTitle || ""}
+                      onChange={(e) => setNewFeedTitle(e.target.value)}
                       disabled={processingUrl !== null}
                       className={CONTROL_CLASS}
                     />
@@ -303,6 +333,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                     onRemove={onRemove}
                     onRetry={onRetry}
                     onEdit={onEdit}
+                    onEditTitle={onEditTitle}
                     onShowError={(url) =>
                       onShowError(url, validations.get(url))
                     }
@@ -342,6 +373,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                           onRemove={onRemove}
                           onRetry={onRetry}
                           onEdit={onEdit}
+                          onEditTitle={onEditTitle}
                           onShowError={(url) =>
                             onShowError(url, validations.get(url))
                           }
@@ -371,6 +403,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                           onRemove={onRemove}
                           onRetry={onRetry}
                           onEdit={onEdit}
+                          onEditTitle={onEditTitle}
                           onShowError={(url) =>
                             onShowError(url, validations.get(url))
                           }

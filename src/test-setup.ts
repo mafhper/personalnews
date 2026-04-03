@@ -3,6 +3,10 @@ import { expect, afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import '@testing-library/jest-dom';
+import {
+  assertNoUnexpectedConsoleCalls,
+  resetConsoleAllowanceState,
+} from './test-console';
 
 // 1. ESTABELECER GLOBAIS ANTES DE QUALQUER COISA
 // Prover DOMParser global para o FeedDiscoveryService
@@ -93,10 +97,16 @@ beforeEach(() => {
   vi.useRealTimers();
   // Limpar localStorage entre testes para isolamento
   localStorageMock.clear();
+  resetConsoleAllowanceState();
 });
 
 afterEach(async () => {
-  cleanup();
-  vi.clearAllMocks();
-  vi.clearAllTimers();
+  try {
+    cleanup();
+    vi.clearAllMocks();
+    vi.clearAllTimers();
+    assertNoUnexpectedConsoleCalls();
+  } finally {
+    resetConsoleAllowanceState();
+  }
 });

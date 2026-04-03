@@ -213,11 +213,6 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                           showRead={!embedUrl}
                           showWatch={!!embedUrl}
                           showVisit={true}
-                          onWatch={
-                            embedUrl
-                              ? () => window.open(article.link, "_blank")
-                              : undefined
-                          }
                           forceVisible={isHero}
                           className="!mt-4"
                         />

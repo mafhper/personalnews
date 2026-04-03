@@ -13,6 +13,7 @@ import {
   validateThemeAccessibility,
 } from '../services/themeUtils';
 import type { ExtendedTheme } from '../types';
+import { allowConsoleError, allowConsoleWarn } from '../src/test-console';
 
 // Mock DOM methods
 const mockSetProperty = vi.fn();
@@ -169,6 +170,7 @@ describe('themeUtils', () => {
     });
 
     it('should reject theme missing required fields', () => {
+      allowConsoleWarn(/Theme validation failed/, 1);
       const invalidTheme = {
         id: 'test',
         name: 'Test Theme',
@@ -178,6 +180,7 @@ describe('themeUtils', () => {
     });
 
     it('should reject theme with invalid RGB colors', () => {
+      allowConsoleWarn(/Theme validation failed/, 1);
       const invalidTheme = {
         id: 'test',
         name: 'Test Theme',
@@ -208,6 +211,7 @@ describe('themeUtils', () => {
     });
 
     it('should reject themes that still fail contrast expectations', () => {
+      allowConsoleWarn(/Theme validation failed/, 1);
       const invalidContrastTheme: ExtendedTheme = {
         id: 'low-contrast',
         name: 'Low Contrast',
@@ -275,6 +279,7 @@ describe('themeUtils', () => {
     });
 
     it('should return null for invalid theme', () => {
+      allowConsoleWarn(/Theme validation failed/, 1);
       const invalidTheme = { invalid: 'data' };
       const result = migrateTheme(invalidTheme);
       expect(result).toBeNull();
@@ -346,11 +351,13 @@ describe('themeUtils', () => {
     });
 
     it('should return null for invalid JSON', () => {
+      allowConsoleError(/Failed to import theme/, 1);
       const result = importTheme('invalid json');
       expect(result).toBeNull();
     });
 
     it('should return null for invalid theme structure', () => {
+      allowConsoleWarn(/Theme validation failed/, 1);
       const invalidThemeJson = JSON.stringify({ invalid: 'theme' });
       const result = importTheme(invalidThemeJson);
       expect(result).toBeNull();

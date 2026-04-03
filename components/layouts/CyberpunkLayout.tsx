@@ -100,7 +100,6 @@ export const CyberpunkLayout: React.FC<CyberpunkLayoutProps> = ({ articles }) =>
                 showRead={!embedUrl}
                 showWatch={!!embedUrl}
                 showVisit={true}
-                onWatch={embedUrl ? () => window.open(article.link, '_blank') : undefined}
                 className="!mt-2 justify-end flex-wrap gap-2"
               />
             </div>
