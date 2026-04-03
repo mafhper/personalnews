@@ -90,7 +90,7 @@ Use este flujo cuando quiera levantar la app junto con su stack local de apoyo.
 ## Modelo de release
 
 - Los pushes a `main` actualizan el deploy de GitHub Pages.
-- Las GitHub Releases y los instaladores desktop solo se crean cuando se envía una tag de versión como `v1.3.1`.
+- Las GitHub Releases y los instaladores desktop solo se crean cuando se envía una tag de versión como `v1.3.2`.
 - Si haces bump de versión de la aplicación, envía también la tag `v*` correspondiente como parte del flujo de release.
 
 ## Contribución

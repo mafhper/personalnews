@@ -4,14 +4,34 @@ import tailwindcss from '@tailwindcss/vite';
 // Local dev-only RSS proxy middleware (attached below in plugins)
 import rssProxyMiddleware from './quality-core/scripts/rss-proxy-server.mjs';
 
-const productionCsp = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "img-src * data: blob:",
-  "connect-src 'self' http://localhost:* https://api.github.com https://api.rss2json.com https://api.allorigins.win https://corsproxy.io https://api.codetabs.com https://api.open-meteo.com https://nominatim.openstreetmap.org https://esm.sh https://fonts.googleapis.com https://fonts.gstatic.com https://whatever-origin.herokuapp.com https://textproxy.io https://cors-anywhere.herokuapp.com"
-].join('; ');
+const productionFrameSources = [
+  'https://www.youtube.com',
+  'https://www.youtube-nocookie.com',
+  'https://player.vimeo.com',
+  'https://player.twitch.tv',
+];
+
+export const shouldInjectProductionCsp = ({
+  command,
+  isTauri,
+}: {
+  command: string;
+  isTauri: boolean;
+}) => command === 'build' && !isTauri;
+
+export const buildProductionCsp = ({ isTauri }: { isTauri: boolean }): string | null => {
+  if (isTauri) return null;
+
+  return [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src * data: blob:",
+    `frame-src 'self' ${productionFrameSources.join(' ')}`,
+    "connect-src 'self' http://localhost:* https://api.github.com https://api.rss2json.com https://api.allorigins.win https://corsproxy.io https://api.codetabs.com https://api.open-meteo.com https://nominatim.openstreetmap.org https://esm.sh https://fonts.googleapis.com https://fonts.gstatic.com https://whatever-origin.herokuapp.com https://textproxy.io https://cors-anywhere.herokuapp.com",
+  ].join('; ');
+};
 
 const resolvePort = (value: string | undefined, fallback: number) => {
   const port = Number.parseInt(value ?? '', 10);
@@ -32,8 +52,10 @@ export default defineConfig(({ command, mode }) => {
     {
       name: 'inject-production-csp',
       transformIndexHtml(html) {
-        if (command !== 'build') return html;
+        if (!shouldInjectProductionCsp({ command, isTauri })) return html;
 
+        const productionCsp = buildProductionCsp({ isTauri });
+        if (!productionCsp) return html;
         const cspMeta = `  <meta http-equiv="Content-Security-Policy" content="${productionCsp}" />`;
         return html.replace('<meta name="viewport" content="width=device-width, initial-scale=1.0" />', `${cspMeta}\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />`);
       }

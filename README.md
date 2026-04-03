@@ -90,7 +90,7 @@ Use this when you want the app and its local support stack to start together.
 ## Release model
 
 - Pushes to `main` update the GitHub Pages deployment.
-- GitHub Releases and desktop installers are created only when a version tag like `v1.3.1` is pushed.
+- GitHub Releases and desktop installers are created only when a version tag like `v1.3.2` is pushed.
 - If you bump the app version, make sure the matching `v*` tag is pushed as part of the release flow.
 
 ## Contributing

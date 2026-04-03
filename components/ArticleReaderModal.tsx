@@ -171,6 +171,7 @@ const contentWidthClasses = {
     ? processContent(fullContent)
     : processContent(article.content || article.description);
   const hasContentHtml = contentHtml.trim().length > 0;
+  const isVideoCompactDesktop = Boolean(videoEmbed && !isFocusMode && !hasContentHtml && !fetchNotice);
 
   return (
     <div
@@ -228,7 +229,9 @@ const contentWidthClasses = {
       <div
         className={`relative flex flex-col overflow-hidden transition-all duration-500 ${isFocusMode
             ? 'w-full h-full bg-[rgb(var(--color-background))]'
-            : 'w-full h-full md:h-[88vh] md:max-w-4xl bg-[rgb(var(--color-surface))] border-none md:border border-[rgb(var(--color-border))]/20 rounded-none md:rounded-2xl shadow-2xl'
+            : isVideoCompactDesktop
+              ? 'w-full h-full md:h-auto md:max-w-4xl bg-[rgb(var(--color-surface))] border-none md:border border-[rgb(var(--color-border))]/20 rounded-none md:rounded-2xl shadow-2xl'
+              : 'w-full h-full md:h-[88vh] md:max-w-4xl bg-[rgb(var(--color-surface))] border-none md:border border-[rgb(var(--color-border))]/20 rounded-none md:rounded-2xl shadow-2xl'
           }`}
       >
 
@@ -414,12 +417,12 @@ const contentWidthClasses = {
         {/* Main Content Area */}
         <div
           ref={contentRef}
-          className={`flex-1 overflow-y-auto custom-scrollbar scroll-smooth ${isFocusMode ? 'bg-[rgb(var(--color-background))]' : 'bg-[rgb(var(--color-surface))]'
+          className={`${isVideoCompactDesktop ? 'md:flex-none' : 'flex-1'} overflow-y-auto custom-scrollbar scroll-smooth ${isFocusMode ? 'bg-[rgb(var(--color-background))]' : 'bg-[rgb(var(--color-surface))]'
             }`}
         >
           {videoEmbed ? (
             /* Cinema Mode (Video) */
-            <div className="w-full min-h-full flex flex-col">
+            <div className="w-full flex flex-col">
               <div className="aspect-video w-full bg-black shrink-0 md:max-h-[70vh] mx-auto">
                 <iframe
                   src={videoEmbed}
@@ -428,7 +431,7 @@ const contentWidthClasses = {
                   allowFullScreen
                 />
               </div>
-              <div className={`p-6 md:p-10 ${contentWidthClasses[preferences.contentWidth]} mx-auto w-full`}>
+              <div className={`${isVideoCompactDesktop ? 'px-6 py-5 md:px-8 md:py-6' : 'p-6 md:p-10'} ${contentWidthClasses[preferences.contentWidth]} mx-auto w-full`}>
                 <h1 className={`text-2xl md:text-3xl font-bold text-[rgb(var(--color-text))] mb-6 ${fontFamilyClasses[preferences.fontFamily]}`}>
                   {article.title}
                 </h1>
