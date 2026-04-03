@@ -140,7 +140,7 @@
     "globals": "^17.4.0",
     "jsdom": "^29.0.0",
     "lighthouse": "^13.0.3",
-    "playwright": "^1.57.0",
+    "playwright": "^1.59.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.8.3",
