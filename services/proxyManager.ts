@@ -737,13 +737,16 @@ export class ProxyManager {
   restorePersistedProxyStates(): void {
     if (typeof localStorage === "undefined") return;
 
-    let disabledNames: string[] = [];
-    try {
-      const raw = localStorage.getItem(ProxyManager.DISABLED_PROXIES_STORAGE_KEY);
-      disabledNames = raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      disabledNames = [];
-    }
+    const disabledNames = (() => {
+      try {
+        const raw = localStorage.getItem(
+          ProxyManager.DISABLED_PROXIES_STORAGE_KEY,
+        );
+        return raw ? (JSON.parse(raw) as string[]) : [];
+      } catch {
+        return [];
+      }
+    })();
 
     const disabledSet = new Set(disabledNames);
     this.PROXY_CONFIGS.forEach((proxy) => {
