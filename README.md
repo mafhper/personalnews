@@ -31,7 +31,7 @@ The app normalizes external feed data, extracts useful article metadata, and san
 ## Tech stack
 
 - React 19
-- TypeScript 5
+- TypeScript 6
 - Vite 8
 - Bun for package management and most local scripts
 - Vitest and Playwright for testing
@@ -57,8 +57,10 @@ bun run dev
 ### Useful validation commands
 
 ```bash
+bun run lint
 bun run type-check
-bun run test:core
+bun run test
+bun run test:all
 bun run build
 ```
 
@@ -84,6 +86,12 @@ Use this when you want the app and its local support stack to start together.
 - [Technical overview](docs/technical-overview.md)
 - [Package scripts guide](docs/package-scripts-guia.md)
 - [Contributing](CONTRIBUTING.md)
+
+## Release model
+
+- Pushes to `main` update the GitHub Pages deployment.
+- GitHub Releases and desktop installers are created only when a version tag like `v1.3.1` is pushed.
+- If you bump the app version, make sure the matching `v*` tag is pushed as part of the release flow.
 
 ## Contributing
 

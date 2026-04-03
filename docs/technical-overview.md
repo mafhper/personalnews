@@ -60,6 +60,8 @@ The article pipeline is designed to be resilient to real-world feed quality:
 
 The application also supports full-article extraction flows so a cleaner reader view can be built on top of publisher pages.
 
+When full extraction fails because of publisher-side blocking, proxy failure, or CORS limits, the reader now falls back to the content already present in the feed instead of breaking the reading flow.
+
 ## Layout system
 
 Layout is not treated as a purely cosmetic toggle. Categories may carry their own preferred presentation mode, which is why the app preserves category-specific layout identity during navigation.
@@ -72,6 +74,12 @@ Current layout vocabulary includes:
 - `brutalist`
 
 This is especially important for the `Videos` category, which should not leak its layout back into `All` or other sections after navigation.
+
+Video posts also follow a separate interaction contract:
+
+- the primary click opens the in-app reader or player
+- `Watch` stays inside the app for supported video sources
+- `Visit` is the explicit action that opens the original publisher page
 
 ## Media handling
 
@@ -91,7 +99,7 @@ The app consumes third-party content, so the defensive surface matters:
 The repository ships with a dedicated quality layer that goes beyond unit tests. Depending on the change, contributors can validate:
 
 - strict TypeScript checks
-- focused or broad Vitest suites
+- focused, smoke, or broad Vitest suites
 - Playwright end-to-end coverage
 - feed health checks
 - Lighthouse-based performance audits

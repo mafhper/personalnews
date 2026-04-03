@@ -31,7 +31,7 @@ A aplicação normaliza dados vindos de fontes externas, extrai metadados úteis
 ## Stack técnica
 
 - React 19
-- TypeScript 5
+- TypeScript 6
 - Vite 8
 - Bun como gerenciador de pacotes e executor principal de scripts
 - Vitest e Playwright para testes
@@ -57,8 +57,10 @@ bun run dev
 ### Comandos úteis de validação
 
 ```bash
+bun run lint
 bun run type-check
-bun run test:core
+bun run test
+bun run test:all
 bun run build
 ```
 
@@ -84,6 +86,12 @@ Use esse fluxo quando quiser subir a aplicação junto com o stack local de apoi
 - [Visão técnica da aplicação](docs/technical-overview.md)
 - [Guia de scripts do package.json](docs/package-scripts-guia.md)
 - [Como contribuir](CONTRIBUTING.md)
+
+## Modelo de release
+
+- Pushes em `main` atualizam o deploy no GitHub Pages.
+- GitHub Releases e instaladores desktop só são criados quando uma tag de versão como `v1.3.1` é enviada.
+- Se você fizer bump de versão da aplicação, envie também a tag `v*` correspondente no fluxo de release.
 
 ## Contribuição
 

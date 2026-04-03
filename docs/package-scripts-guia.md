@@ -15,8 +15,12 @@ This document summarizes the scripts that matter most when developing and valida
 
 | Script | What it does | When to use it |
 | --- | --- | --- |
+| `bun run lint` | Runs the repo-wide ESLint pass. | Broad validation before a PR or release. |
 | `bun run type-check` | Runs TypeScript without emitting files. | Minimum check before a PR. |
-| `bun run test:core` | Runs the main Vitest suite. | Minimum behavior validation before a PR. |
+| `bun run test` | Runs the official core Vitest gate. | Minimum behavior validation before a PR. |
+| `bun run test:fast` | Runs the smoke Vitest subset. | Quick local feedback before the broader suites. |
+| `bun run test:all` | Runs the broad discovered Vitest suite. | Release validation and wider regression checks. |
+| `bun run test:core` | Alias for `bun run test`. | Compatibility with older local habits and docs. |
 | `bun run test:core:serial` | Runs the core suite serially. | Debugging flaky or timing-sensitive tests. |
 | `bun run lint:components` | Lints the component tree. | UI work, layout changes, article rendering changes. |
 | `bun run lint:services` | Lints services, hooks, utilities, and config. | Parser, cache, import/export, or logic changes. |
@@ -30,6 +34,10 @@ This document summarizes the scripts that matter most when developing and valida
 | `bun run build` | Builds the app and the quality dashboard assets. | Full repository build check. |
 | `bun run desktop:build` | Builds the desktop package through Tauri. | Desktop packaging validation. |
 | `bun run build:app:desktop` | Runs the desktop app build helper. | Desktop packaging workflow support. |
+
+## Release note
+
+`bun run build` and `bun run desktop:build` do not create a GitHub Release by themselves. The repository creates desktop release artifacts on GitHub only when a version tag such as `v1.3.1` is pushed.
 
 ## End-to-end and broader validation
 
@@ -63,8 +71,9 @@ bun run quality:gate:local-silent
 ### Small product change
 
 ```bash
+bun run lint
 bun run type-check
-bun run test:core
+bun run test
 ```
 
 ### UI or layout change
@@ -72,7 +81,7 @@ bun run test:core
 ```bash
 bun run lint:components
 bun run type-check
-bun run test:core
+bun run test
 ```
 
 ### Feed pipeline or caching change
@@ -80,13 +89,14 @@ bun run test:core
 ```bash
 bun run lint:services
 bun run type-check
-bun run test:core
+bun run test
 bun run test:feeds
 ```
 
 ### Broader validation
 
 ```bash
+bun run test:all
 bun run build
 bun run quality:gate:local-silent
 bun run test:e2e
