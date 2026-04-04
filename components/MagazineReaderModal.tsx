@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import type { Article } from '../types';
-import { sanitizeHtmlContent } from '../utils/sanitization';
-import { getVideoEmbed } from '../utils/videoEmbed';
-
+import React, { useEffect, useState } from "react";
+import type { Article } from "../types";
+import { sanitizeHtmlContent } from "../utils/sanitization";
+import { getVideoEmbedDetails } from "../utils/videoEmbed";
+import { openExternalLink } from "../utils/openExternalLink";
+import { detectEnvironment } from "../services/environmentDetector";
 
 interface MagazineReaderModalProps {
   article: Article;
@@ -22,196 +23,335 @@ export const MagazineReaderModal: React.FC<MagazineReaderModalProps> = ({
   hasPrev,
 }) => {
   const [showFullImage, setShowFullImage] = useState(false);
-  const videoEmbed = getVideoEmbed(article.link);
+  const { isTauri } = detectEnvironment();
+  const videoDetails = getVideoEmbedDetails(article.link, {
+    origin: typeof window !== "undefined" ? window.location.origin : null,
+    runtime: isTauri ? "desktop" : "web",
+  });
+  const videoEmbed = videoDetails?.embedUrl ?? null;
   const [fullContent, setFullContent] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [fetchNotice, setFetchNotice] = React.useState<string | null>(null);
+  const [playerLoaded, setPlayerLoaded] = React.useState(false);
+  const [showVideoFallbackHint, setShowVideoFallbackHint] =
+    React.useState(false);
   const authorLabel =
     article.author && article.author !== article.sourceTitle
       ? article.author
       : null;
+  const shouldMonitorDesktopVideo =
+    !!videoDetails?.mayRequireExternalFallback &&
+    videoDetails.provider === "youtube" &&
+    isTauri;
 
   useEffect(() => {
     const loadContent = async () => {
-        if (videoEmbed) {
-            setFullContent(null);
-            setFetchNotice(null);
-            setLoading(false);
-            return;
-        }
-
+      if (videoEmbed) {
         setFullContent(null);
         setFetchNotice(null);
-        setLoading(true);
-        try {
-            const { fetchFullContent } = await import('../services/articleFetcher');
-            const fetched = await fetchFullContent(article.link);
-            if (fetched.content) {
-                setFullContent(fetched.content);
-            }
-            if (fetched.usedFallback && fetched.errorMessage) {
-                setFetchNotice(fetched.errorMessage);
-            }
-        } catch (error) {
-            console.error('[MagazineReader] Failed to load full content', error);
-            setFetchNotice("Não foi possível carregar o texto completo. Exibindo o conteúdo do feed.");
-        } finally {
-            setLoading(false);
+        setLoading(false);
+        return;
+      }
+
+      setFullContent(null);
+      setFetchNotice(null);
+      setLoading(true);
+      try {
+        const { fetchFullContent } = await import("../services/articleFetcher");
+        const fetched = await fetchFullContent(article.link);
+        if (fetched.content) {
+          setFullContent(fetched.content);
         }
+        if (fetched.usedFallback && fetched.errorMessage) {
+          setFetchNotice(fetched.errorMessage);
+        }
+      } catch (error) {
+        console.error("[MagazineReader] Failed to load full content", error);
+        setFetchNotice(
+          "Não foi possível carregar o texto completo. Exibindo o conteúdo do feed.",
+        );
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadContent();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowRight' && hasNext) onNext();
-      if (e.key === 'ArrowLeft' && hasPrev) onPrev();
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight" && hasNext) onNext();
+      if (e.key === "ArrowLeft" && hasPrev) onPrev();
     };
-    window.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
+    window.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
     };
   }, [article.link, hasNext, hasPrev, onClose, onNext, onPrev, videoEmbed]);
+
+  useEffect(() => {
+    setPlayerLoaded(false);
+    setShowVideoFallbackHint(false);
+
+    if (!shouldMonitorDesktopVideo) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setShowVideoFallbackHint((current) => current || !playerLoaded);
+    }, 4500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [article.link, playerLoaded, shouldMonitorDesktopVideo]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/95 backdrop-blur-md"
         onClick={onClose}
       />
 
       {/* Navigation Buttons (Outside Modal) */}
       {hasPrev && (
-        <button 
+        <button
           onClick={onPrev}
           className="absolute left-4 top-1/2 -translate-y-1/2 p-4 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-white/10 rounded-full transition-all z-[110]"
           aria-label="Previous Article"
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          <svg
+            className="w-8 h-8"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
         </button>
       )}
 
       {hasNext && (
-        <button 
+        <button
           onClick={onNext}
           className="absolute right-4 top-1/2 -translate-y-1/2 p-4 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-white/10 rounded-full transition-all z-[110]"
           aria-label="Next Article"
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          <svg
+            className="w-8 h-8"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
         </button>
       )}
 
       {/* Close Button */}
-      <button 
+      <button
         onClick={onClose}
         className="absolute top-6 right-6 p-2 text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-accent))] bg-black/20 hover:bg-white/20 backdrop-blur rounded-full z-[110] transition-colors"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
       </button>
 
       {/* Magazine Modal Content - Two Page Spread */}
       <div className="relative w-full max-w-5xl max-h-[88vh] aspect-[16/10] bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] rounded-sm shadow-2xl overflow-hidden flex flex-col md:flex-row border-l-[12px] border-r-[12px] border-[rgb(var(--color-border))] book-shadow">
-        
         {/* Left Page: Visuals & Meta */}
         <div className="w-full md:w-1/2 h-full p-8 md:p-12 md:border-r border-[rgb(var(--color-border))] flex flex-col justify-between relative bg-[rgb(var(--color-surface))] page-texture overflow-y-auto custom-scrollbar-light">
-           <div>
-             <div className="flex items-center gap-3 mb-6">
-                <span className="feed-chip text-[rgb(var(--color-text))] bg-[rgba(var(--color-accent),0.18)]">{article.sourceTitle}</span>
-                <time className="text-[rgb(var(--color-textSecondary))] text-xs font-serif italic">{new Date(article.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</time>
-             </div>
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <span className="feed-chip text-[rgb(var(--color-text))] bg-[rgba(var(--color-accent),0.18)]">
+                {article.sourceTitle}
+              </span>
+              <time className="text-[rgb(var(--color-textSecondary))] text-xs font-serif italic">
+                {new Date(article.pubDate).toLocaleDateString(undefined, {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+            </div>
 
-             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-black leading-none tracking-tight mb-8 text-[rgb(var(--color-text))]">
-               {sanitizeHtmlContent(article.title)}
-             </h1>
+            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-black leading-none tracking-tight mb-8 text-[rgb(var(--color-text))]">
+              {sanitizeHtmlContent(article.title)}
+            </h1>
 
-             {authorLabel && (
-                <div className="flex items-center gap-2 mb-8 text-sm font-medium text-[rgb(var(--color-textSecondary))] border-l-2 border-[rgba(var(--color-accent),0.4)] pl-3">
-                  By {authorLabel}
-                </div>
-             )}
-             
-             {/* Main Image on Left Page */}
-             {article.imageUrl && !showFullImage && (
-               <div 
-                 className="relative w-full aspect-video mb-6 cursor-zoom-in group overflow-hidden shadow-lg transform rotate-1 bg-black/20"
-                 onClick={() => setShowFullImage(true)}
-               >
-                 <img src={article.imageUrl} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-               </div>
-             )}
-             
-             {/* If video, show player here */}
-             {videoEmbed && (
-               <div className="aspect-video w-full mb-6 bg-black shadow-lg">
-                 <iframe 
-                   src={videoEmbed} 
-                   className="w-full h-full" 
-                   frameBorder="0" 
-                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                   allowFullScreen
-                 />
-               </div>
-             )}
-           </div>
+            {authorLabel && (
+              <div className="flex items-center gap-2 mb-8 text-sm font-medium text-[rgb(var(--color-textSecondary))] border-l-2 border-[rgba(var(--color-accent),0.4)] pl-3">
+                By {authorLabel}
+              </div>
+            )}
 
-           <div className="text-xs text-[rgb(var(--color-textSecondary))] font-mono mt-4 pt-4 border-t border-[rgb(var(--color-border))]">
-             PAGE 1 • {article.categories?.join(', ') || 'Uncategorized'}
-           </div>
+            {/* Main Image on Left Page */}
+            {article.imageUrl && !showFullImage && (
+              <div
+                className="relative w-full aspect-video mb-6 cursor-zoom-in group overflow-hidden shadow-lg transform rotate-1 bg-black/20"
+                onClick={() => setShowFullImage(true)}
+              >
+                <img
+                  src={article.imageUrl}
+                  alt=""
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+              </div>
+            )}
+
+            {/* If video, show player here */}
+            {videoEmbed && (
+              <div className="aspect-video w-full mb-6 bg-black shadow-lg">
+                <iframe
+                  src={videoEmbed}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  onLoad={() => setPlayerLoaded(true)}
+                />
+              </div>
+            )}
+            {shouldMonitorDesktopVideo && (
+              <div className="mb-6 rounded-lg border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--color-background))]/60 px-4 py-3 text-sm text-[rgb(var(--color-textSecondary))]">
+                <p className="text-[rgb(var(--color-text))]">
+                  {showVideoFallbackHint
+                    ? "O player não respondeu dentro do esperado neste ambiente."
+                    : "Se o player pedir login ou não iniciar, abra o vídeo externamente."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void openExternalLink(article.link)}
+                  className="mt-3 inline-flex items-center gap-2 text-[rgb(var(--color-accent))] hover:underline font-semibold"
+                >
+                  Abrir no YouTube
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="text-xs text-[rgb(var(--color-textSecondary))] font-mono mt-4 pt-4 border-t border-[rgb(var(--color-border))]">
+            PAGE 1 • {article.categories?.join(", ") || "Uncategorized"}
+          </div>
         </div>
 
         {/* Right Page: Content */}
         <div className="w-full md:w-1/2 h-full p-8 md:p-12 bg-[rgb(var(--color-background))] page-texture overflow-y-auto custom-scrollbar-light relative">
-           <div className="flex justify-end mb-4">
-             <a
-               href={article.link}
-               target="_blank"
-               rel="noopener noreferrer"
-               className="inline-flex items-center gap-2 text-[rgb(var(--color-accent))] hover:underline text-xs uppercase tracking-widest font-bold"
-             >
-               Abrir original
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-               </svg>
-             </a>
-           </div>
-           <div className="prose prose-lg prose-invert max-w-none font-serif leading-relaxed drop-cap text-[rgb(var(--color-text))]">
-              {/* If we have full content, iterate and render safe html, otherwise description */}
-              <div className="max-w-[60ch] mx-auto">
-                {fetchNotice && (
-                    <div className="mb-6 rounded-lg border border-[rgb(var(--color-warning))]/30 bg-[rgba(var(--color-warning),0.12)] px-4 py-3 text-sm text-[rgb(var(--color-text))]">
-                      {fetchNotice}
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 text-[rgb(var(--color-accent))] hover:underline text-xs uppercase tracking-widest font-bold"
+              onClick={() => void openExternalLink(article.link)}
+            >
+              Abrir original
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </button>
+          </div>
+          <div className="prose prose-lg prose-invert max-w-none font-serif leading-relaxed drop-cap text-[rgb(var(--color-text))]">
+            {/* If we have full content, iterate and render safe html, otherwise description */}
+            <div className="max-w-[60ch] mx-auto">
+              {fetchNotice && (
+                <div className="mb-6 rounded-lg border border-[rgb(var(--color-warning))]/30 bg-[rgba(var(--color-warning),0.12)] px-4 py-3 text-sm text-[rgb(var(--color-text))]">
+                  {fetchNotice}
+                </div>
+              )}
+              {fullContent ? (
+                <div
+                  dangerouslySetInnerHTML={{ __html: fullContent }}
+                  className="animate-in fade-in duration-500"
+                />
+              ) : (
+                <>
+                  {article.content ? (
+                    <div
+                      dangerouslySetInnerHTML={{ __html: article.content }}
+                    />
+                  ) : (
+                    <div
+                      className="text-lg leading-8"
+                      dangerouslySetInnerHTML={{
+                        __html: article.description || "",
+                      }}
+                    />
+                  )}
+                  {loading && (
+                    <div className="py-8 flex items-center justify-center text-[rgb(var(--color-textSecondary))] animate-pulse font-sans text-sm">
+                      <svg
+                        className="w-4 h-4 mr-3 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Fetching full story from source...
                     </div>
-                )}
-                {fullContent ? (
-                    <div dangerouslySetInnerHTML={{ __html: fullContent }} className="animate-in fade-in duration-500" />
-                ) : (
-                    <>
-                        {article.content ? (
-                          <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                        ) : (
-                          <div 
-                            className="text-lg leading-8" 
-                            dangerouslySetInnerHTML={{ __html: article.description || '' }} 
-                          />
-                        )}
-                        {loading && (
-                             <div className="py-8 flex items-center justify-center text-[rgb(var(--color-textSecondary))] animate-pulse font-sans text-sm">
-                                 <svg className="w-4 h-4 mr-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                 Fetching full story from source...
-                             </div>
-                         )}
-                    </>
-                )}
-              </div>
-           </div>
-           
-           <div className="text-xs text-[rgb(var(--color-textSecondary))] font-mono mt-12 pt-4 border-t border-[rgb(var(--color-border))] text-right">
-             PAGE 2 • PERSONAL NEWS
-           </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="text-xs text-[rgb(var(--color-textSecondary))] font-mono mt-12 pt-4 border-t border-[rgb(var(--color-border))] text-right">
+            PAGE 2 • PERSONAL NEWS
+          </div>
         </div>
       </div>
     </div>

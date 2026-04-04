@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
-import { Article } from '../../types';
-import { ArticleItem } from '../ArticleItem';
-import { ArticleReaderModal } from '../ArticleReaderModal';
-import { FavoriteButton } from '../FavoriteButton';
-import { FeedInteractiveActions } from '../FeedInteractiveActions';
-import { getVideoEmbed } from '../../utils/videoEmbed';
+import React, { useState } from "react";
+import { Article } from "../../types";
+import { ArticleItem } from "../ArticleItem";
+import { ArticleReaderModal } from "../ArticleReaderModal";
+import { FavoriteButton } from "../FavoriteButton";
+import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { getVideoEmbed } from "../../utils/videoEmbed";
 interface ModernPortalLayoutProps {
   articles: Article[];
-  timeFormat: '12h' | '24h';
+  timeFormat: "12h" | "24h";
 }
 
-const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`feed-skeleton-block rounded-xl ${className}`} />;
+const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`feed-skeleton-block rounded-xl ${className}`} />
+);
 
 export const ModernPortalSkeleton: React.FC = () => {
   return (
@@ -26,7 +28,7 @@ export const ModernPortalSkeleton: React.FC = () => {
 
       {/* STRIP SKELETON */}
       <section className="py-10 border-y border-white/5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-        {[1, 2, 3, 4].map(i => (
+        {[1, 2, 3, 4].map((i) => (
           <div key={i} className="space-y-4">
             <Bone className="aspect-video" />
             <Bone className="h-4 w-3/4" />
@@ -41,13 +43,13 @@ export const ModernPortalSkeleton: React.FC = () => {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)]">
           <div className="h-[320px] md:h-[360px] feed-skeleton-block rounded-2xl" />
           <div className="space-y-4">
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-24 feed-skeleton-block rounded-xl" />
             ))}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map(i => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="space-y-4">
               <Bone className="h-48" />
               <Bone className="h-4 w-full" />
@@ -59,7 +61,9 @@ export const ModernPortalSkeleton: React.FC = () => {
   );
 };
 
-export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles }) => {
+export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
+  articles,
+}) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 
   if (articles.length === 0) return null;
@@ -79,7 +83,9 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
 
   const handleNextArticle = () => {
     if (!readingArticle) return;
-    const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
+    const currentIndex = articles.findIndex(
+      (a) => a.link === readingArticle.link,
+    );
     if (currentIndex < articles.length - 1) {
       setReadingArticle(articles[currentIndex + 1]);
     }
@@ -87,7 +93,9 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
 
   const handlePrevArticle = () => {
     if (!readingArticle) return;
-    const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
+    const currentIndex = articles.findIndex(
+      (a) => a.link === readingArticle.link,
+    );
     if (currentIndex > 0) {
       setReadingArticle(articles[currentIndex - 1]);
     }
@@ -95,7 +103,6 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
 
   return (
     <div className="feed-page-frame flex flex-col gap-[var(--feed-section-gap)] pb-12">
-
       {/* SECTION 1: HERO GRID */}
       <section
         className={`grid grid-cols-1 gap-[var(--feed-page-gap)] items-stretch ${
@@ -104,7 +111,6 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
             : ""
         }`}
       >
-
         {/* Main Hero */}
         <div
           className="feed-hero-frame group relative min-h-[280px] sm:min-h-[340px] md:min-h-[390px] lg:min-h-[450px] xl:min-h-[500px] shadow-xl cursor-pointer"
@@ -112,7 +118,9 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
         >
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-            style={{ backgroundImage: `url(${heroArticle.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070'})` }}
+            style={{
+              backgroundImage: `url(${heroArticle.imageUrl || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070"})`,
+            }}
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.18)_0%,rgba(3,5,9,0.28)_20%,rgba(3,5,9,0.74)_64%,rgba(3,5,9,0.97)_100%)]" />
 
@@ -126,15 +134,13 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
           <div className="absolute bottom-0 left-0 p-6 lg:p-8 xl:p-10 max-w-[42rem]">
             <div className="px-1 py-1 sm:px-2 sm:py-2 md:px-3">
               <h1 className="feed-title feed-title-hero text-2xl sm:text-3xl lg:text-4xl xl:text-5xl text-white mb-4 drop-shadow-xl">
-                <a
-                  href={heroArticle.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="feed-link-affordance"
-                  onClick={(e) => { e.preventDefault(); handleOpenReader(heroArticle); }}
+                <button
+                  type="button"
+                  className="feed-link-affordance bg-transparent p-0 text-left"
+                  onClick={() => handleOpenReader(heroArticle)}
                 >
                   {heroArticle.title}
-                </a>
+                </button>
               </h1>
               <div className="mb-4 hidden max-w-2xl md:block">
                 <p className="text-lg text-white/92 line-clamp-2 drop-shadow-sm">
@@ -144,11 +150,20 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                 </p>
               </div>
               <div className="flex items-center text-sm font-bold min-w-0 text-white mb-4">
-                <span className="feed-chip truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/10">{heroArticle.sourceTitle}</span>
+                <span className="feed-chip truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/10">
+                  {heroArticle.sourceTitle}
+                </span>
                 <span className="mx-2 flex-shrink-0 text-white">•</span>
-                <span className="truncate text-white/88 font-black">{new Date(heroArticle.pubDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                <span className="truncate text-white/88 font-black">
+                  {new Date(heroArticle.pubDate).toLocaleDateString(undefined, {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
               </div>
-              
+
               {(() => {
                 const embedUrl = getVideoEmbed(heroArticle.link);
                 return (
@@ -189,22 +204,27 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
               <div className="absolute bottom-0 left-0 w-full p-5 pt-12">
                 <div className="feed-image-story-shell">
                   <h2 className="feed-title feed-title-feature feed-image-story-title text-base lg:text-lg mb-2 line-clamp-2">
-                    <a
-                      href={article.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="feed-link-affordance transition-colors hover:text-white/92"
-                      onClick={(e) => { e.preventDefault(); handleOpenReader(article); }}
+                    <button
+                      type="button"
+                      className="feed-link-affordance bg-transparent p-0 text-left transition-colors hover:text-white/92"
+                      onClick={() => handleOpenReader(article)}
                     >
                       {article.title}
-                    </a>
+                    </button>
                   </h2>
                   <div className="feed-image-story-meta flex items-center text-[10px] sm:text-xs font-bold min-w-0 mb-3">
-                    <span className="feed-chip truncate max-w-[120px] shadow-sm shadow-black/10">{article.sourceTitle}</span>
+                    <span className="feed-chip truncate max-w-[120px] shadow-sm shadow-black/10">
+                      {article.sourceTitle}
+                    </span>
                     <span className="mx-2 flex-shrink-0 text-white">•</span>
-                    <span className="text-white/82">{new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-white/82">
+                      {new Date(article.pubDate).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
-                  
+
                   {(() => {
                     const embedUrl = getVideoEmbed(article.link);
                     return (
@@ -229,9 +249,9 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
       {/* SECTION 2: VISUAL STRIP (4 cols) */}
       <section className="feed-surface rounded-[calc(var(--feed-card-radius)*1.1)] px-4 py-8 md:px-8 md:py-10">
         <div className="feed-section-heading">
-            <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] feed-accent-text">
-              Leituras em destaque
-            </h3>
+          <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] feed-accent-text">
+            Leituras em destaque
+          </h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {featuredStrip.map((article) => (
@@ -309,9 +329,6 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
                       </div>
                     ))}
                   </div>
-                  <button className="w-full mt-6 py-3 text-sm font-medium text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] border-t border-[rgb(var(--color-border))]/45 transition-colors">
-                    Ver arquivo completo
-                  </button>
                 </div>
               )}
             </div>
@@ -340,8 +357,13 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({ articles
           onClose={() => setReadingArticle(null)}
           onNext={handleNextArticle}
           onPrev={handlePrevArticle}
-          hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
-          hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
+          hasNext={
+            articles.findIndex((a) => a.link === readingArticle.link) <
+            articles.length - 1
+          }
+          hasPrev={
+            articles.findIndex((a) => a.link === readingArticle.link) > 0
+          }
         />
       )}
     </div>

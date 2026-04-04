@@ -1,6 +1,6 @@
 {
   "name": "personal-news",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "description": "A fast, modern personal news aggregator that serves as your browser homepage. Built with React, TypeScript, and optimized with Bun.",

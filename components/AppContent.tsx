@@ -82,7 +82,7 @@ const AppContent: React.FC = () => {
     loadFeeds,
     refreshFeeds,
     retryFailedFeeds,
-    cancelLoading,
+    cancelLoading: _cancelLoading,
   } = useFeeds();
 
   const buildLoadRequest = useCallback(
@@ -158,11 +158,6 @@ const AppContent: React.FC = () => {
   const [activeTransitionLayout, setActiveTransitionLayout] = useState<
     string | null
   >(null);
-
-  // Transition state for category navigation
-  const [heldArticles, setHeldArticles] = useState<Article[]>([]);
-  const [heldCategory, setHeldCategory] = useState<string>("all");
-  const [heldLayoutMode, setHeldLayoutMode] = useState<string | null>(null);
 
   const [selectedCategory, setSelectedCategory] = useState<string>(
     () => new URLSearchParams(window.location.search).get("category") || "all",
@@ -276,12 +271,9 @@ const AppContent: React.FC = () => {
 
   // T36: Release the lock once content is confirmed to be on screen
   const handleContentMounted = useCallback(() => {
-    if (loadingState.isHoldingPreviousContent) {
-      return;
-    }
     logger.debugTag("APPEARANCE", "Handshake Received: Releasing layout lock");
     setActiveTransitionLayout(null);
-  }, [loadingState.isHoldingPreviousContent, logger]);
+  }, [logger]);
 
   // Search handlers
   const handleSearch = useCallback((query: string, filters: SearchFilters) => {
@@ -533,15 +525,24 @@ const AppContent: React.FC = () => {
     return loadingState.errors.filter((error) => scopedSet.has(error.url));
   }, [loadingState.errors, scopedFeedUrls]);
 
-  const shouldHoldPreviousContent =
-    !!loadingState.isHoldingPreviousContent && heldArticles.length > 0;
-
   const showSkeleton =
     feeds.length > 0 &&
     !loadingState.hasScopedCache &&
-    !shouldHoldPreviousContent &&
     (!loadingState.isResolved ||
       (loadingState.status === "loading" && !loadingState.isBackgroundRefresh));
+
+  useEffect(() => {
+    if (!showSkeleton || !activeTransitionLayout) return;
+    logger.debugTag(
+      "APPEARANCE",
+      "Skeleton rendered for target scope: releasing layout lock",
+    );
+    const frameId = window.requestAnimationFrame(() => {
+      setActiveTransitionLayout(null);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeTransitionLayout, logger, showSkeleton]);
 
   // Enhanced pagination system with URL persistence and reset triggers
   const pagination = usePagination(
@@ -576,15 +577,9 @@ const AppContent: React.FC = () => {
     contentConfig.paginationType,
   ]);
 
-  const renderedArticles = shouldHoldPreviousContent
-    ? heldArticles
-    : paginatedArticles;
-  const renderedCategory = shouldHoldPreviousContent
-    ? heldCategory
-    : selectedCategory;
-  const renderedLayoutMode = shouldHoldPreviousContent
-    ? heldLayoutMode || (currentLayoutMode as string)
-    : (currentLayoutMode as string);
+  const renderedArticles = paginatedArticles;
+  const renderedCategory = selectedCategory;
+  const renderedLayoutMode = currentLayoutMode as string;
 
   const shouldShowCategoryUnavailableMessage =
     !isSearchActive &&
@@ -597,6 +592,19 @@ const AppContent: React.FC = () => {
 
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
+      const nextFeedUrl = feedUrl || null;
+      const isSameFeedSelection =
+        (selectedFeedUrl === null && nextFeedUrl === null) ||
+        (!!selectedFeedUrl &&
+          !!nextFeedUrl &&
+          areUrlsEqual(selectedFeedUrl, nextFeedUrl));
+
+      if (selectedCategory === category && isSameFeedSelection) {
+        pagination.resetPagination();
+        window.scrollTo({ top: 0, behavior: "auto" });
+        return;
+      }
+
       logger.debugTag("APPEARANCE", "handleNavigation called", {
         toCategory: category,
       });
@@ -609,14 +617,11 @@ const AppContent: React.FC = () => {
         targetMode = categoryObj.layoutMode;
       }
 
-      setHeldArticles(paginatedArticles);
-      setHeldCategory(selectedCategory);
-      setHeldLayoutMode(currentLayoutMode);
       // T37: Apply lock BEFORE changing category or loading
       setActiveTransitionLayout(targetMode);
 
       setSelectedCategory(category);
-      setSelectedFeedUrl(feedUrl || null);
+      setSelectedFeedUrl(nextFeedUrl);
 
       // TRIGGER CONTENT LOAD
       loadFeeds(buildLoadRequest(category, feedUrl));
@@ -646,9 +651,8 @@ const AppContent: React.FC = () => {
       resolveBaseLayoutMode,
       loadFeeds,
       logger,
-      currentLayoutMode,
-      paginatedArticles,
       selectedCategory,
+      selectedFeedUrl,
     ],
   );
 
@@ -665,10 +669,6 @@ const AppContent: React.FC = () => {
     if (categoryObj?.layoutMode) {
       targetMode = categoryObj.layoutMode;
     }
-
-    setHeldArticles(paginatedArticles);
-    setHeldCategory(selectedCategory);
-    setHeldLayoutMode(currentLayoutMode);
 
     setActiveTransitionLayout(targetMode);
     setSelectedCategory(category);
@@ -698,8 +698,6 @@ const AppContent: React.FC = () => {
     resolveBaseLayoutMode,
     selectedCategory,
     selectedFeedUrl,
-    currentLayoutMode,
-    paginatedArticles,
   ]);
 
   const handleLogoToLanding = useCallback(() => {

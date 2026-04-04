@@ -1,12 +1,17 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Article } from '../types';
-import { useSearch, useSearchHistory, useSearchSuggestions } from '../hooks/useSearch';
-import { highlightSearchTerms } from '../services/searchUtils';
-import { sanitizeHtmlContent } from '../utils/sanitization';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Article } from "../types";
+import {
+  useSearch,
+  useSearchHistory,
+  useSearchSuggestions,
+} from "../hooks/useSearch";
+import { highlightSearchTerms } from "../services/searchUtils";
+import { sanitizeHtmlContent } from "../utils/sanitization";
+import { openExternalLink } from "../utils/openExternalLink";
 
 export interface SearchFilters {
   category?: string;
-  dateRange?: 'today' | 'week' | 'month' | 'all';
+  dateRange?: "today" | "week" | "month" | "all";
   source?: string;
 }
 
@@ -21,20 +26,53 @@ export interface SearchBarProps {
 }
 
 const SearchIcon: React.FC = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
   </svg>
 );
 
 const FilterIcon: React.FC = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+    />
   </svg>
 );
 
 const CloseIcon: React.FC = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-4 w-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M6 18L18 6M6 6l12 12"
+    />
   </svg>
 );
 
@@ -45,34 +83,28 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = "Search articles... (Ctrl+K)",
   debounceMs = 300,
   showFilters = true,
-  className = ""
+  className = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     category: undefined,
-    dateRange: 'all',
-    source: undefined
+    dateRange: "all",
+    source: undefined,
   });
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const {
-    query,
-    setQuery,
-    results,
-    isSearching,
-    hasResults,
-    searchIndex
-  } = useSearch(articles, {
-    debounceMs,
-    includeTitle: true,
-    includeContent: true,
-    includeCategories: true,
-    includeSource: true
-  });
+  const { query, setQuery, results, isSearching, hasResults, searchIndex } =
+    useSearch(articles, {
+      debounceMs,
+      includeTitle: true,
+      includeContent: true,
+      includeCategories: true,
+      includeSource: true,
+    });
 
   const { searchHistory, addToHistory } = useSearchHistory();
   const suggestions = useSearchSuggestions(searchIndex, query, 5);
@@ -80,15 +112,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   // Get unique categories and sources for filters
   const availableCategories = React.useMemo(() => {
     const categories = new Set<string>();
-    articles.forEach(article => {
-      article.categories?.forEach(cat => categories.add(cat));
+    articles.forEach((article) => {
+      article.categories?.forEach((cat) => categories.add(cat));
     });
     return Array.from(categories).sort();
   }, [articles]);
 
   const availableSources = React.useMemo(() => {
     const sources = new Set<string>();
-    articles.forEach(article => {
+    articles.forEach((article) => {
       sources.add(article.sourceTitle);
     });
     return Array.from(sources).sort();
@@ -96,38 +128,38 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   // Filter results based on current filters
   const filteredResults = React.useMemo(() => {
-    let filtered = results.map(result => result.article);
+    let filtered = results.map((result) => result.article);
 
-    if (filters.category && filters.category !== 'all') {
-      filtered = filtered.filter(article =>
-        article.categories?.includes(filters.category!)
+    if (filters.category && filters.category !== "all") {
+      filtered = filtered.filter((article) =>
+        article.categories?.includes(filters.category!),
       );
     }
 
-    if (filters.source && filters.source !== 'all') {
-      filtered = filtered.filter(article =>
-        article.sourceTitle === filters.source
+    if (filters.source && filters.source !== "all") {
+      filtered = filtered.filter(
+        (article) => article.sourceTitle === filters.source,
       );
     }
 
-    if (filters.dateRange && filters.dateRange !== 'all') {
+    if (filters.dateRange && filters.dateRange !== "all") {
       const now = new Date();
       const cutoffDate = new Date();
 
       switch (filters.dateRange) {
-        case 'today':
+        case "today":
           cutoffDate.setHours(0, 0, 0, 0);
           break;
-        case 'week':
+        case "week":
           cutoffDate.setDate(now.getDate() - 7);
           break;
-        case 'month':
+        case "month":
           cutoffDate.setMonth(now.getMonth() - 1);
           break;
       }
 
-      filtered = filtered.filter(article =>
-        new Date(article.pubDate) >= cutoffDate
+      filtered = filtered.filter(
+        (article) => new Date(article.pubDate) >= cutoffDate,
       );
     }
 
@@ -138,22 +170,22 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ctrl+K to open search
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+      if ((event.ctrlKey || event.metaKey) && event.key === "k") {
         event.preventDefault();
         setIsOpen(true);
         setTimeout(() => inputRef.current?.focus(), 100);
       }
 
       // Escape to close search
-      if (event.key === 'Escape' && isOpen) {
+      if (event.key === "Escape" && isOpen) {
         setIsOpen(false);
-        setQuery('');
+        setQuery("");
         setSelectedSuggestionIndex(-1);
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, setQuery]);
 
   // Handle input keyboard navigation
@@ -161,19 +193,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     const totalSuggestions = suggestions.length + searchHistory.length;
 
     switch (event.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         event.preventDefault();
-        setSelectedSuggestionIndex(prev =>
-          prev < totalSuggestions - 1 ? prev + 1 : -1
+        setSelectedSuggestionIndex((prev) =>
+          prev < totalSuggestions - 1 ? prev + 1 : -1,
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         event.preventDefault();
-        setSelectedSuggestionIndex(prev =>
-          prev > -1 ? prev - 1 : totalSuggestions - 1
+        setSelectedSuggestionIndex((prev) =>
+          prev > -1 ? prev - 1 : totalSuggestions - 1,
         );
         break;
-      case 'Enter':
+      case "Enter":
         event.preventDefault();
         if (selectedSuggestionIndex >= 0) {
           const allSuggestions = [...suggestions, ...searchHistory];
@@ -184,7 +216,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           handleSearch();
         }
         break;
-      case 'Tab':
+      case "Tab":
         if (selectedSuggestionIndex >= 0) {
           event.preventDefault();
           const allSuggestions = [...suggestions, ...searchHistory];
@@ -212,30 +244,34 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   // Close search when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
 
   const handleFilterChange = (key: keyof SearchFilters, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: value === 'all' ? undefined : value
+      [key]: value === "all" ? undefined : value,
     }));
   };
 
   const clearSearch = () => {
-    setQuery('');
+    setQuery("");
     setFilters({
       category: undefined,
-      dateRange: 'all',
-      source: undefined
+      dateRange: "all",
+      source: undefined,
     });
     setSelectedSuggestionIndex(-1);
     onResultsChange?.([]);
@@ -247,7 +283,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     return (
       <span
         dangerouslySetInnerHTML={{
-          __html: highlightSearchTerms(sanitizedText, query)
+          __html: highlightSearchTerms(sanitizedText, query),
         }}
       />
     );
@@ -288,7 +324,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             <button
               onClick={() => setShowFiltersPanel(!showFiltersPanel)}
               className={`p-1 transition-colors ${
-                showFiltersPanel ? 'text-[rgb(var(--color-accent))]' : 'text-gray-400 hover:text-white'
+                showFiltersPanel
+                  ? "text-[rgb(var(--color-accent))]"
+                  : "text-gray-400 hover:text-white"
               }`}
               aria-label="Toggle filters"
             >
@@ -310,13 +348,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     Category
                   </label>
                   <select
-                    value={filters.category || 'all'}
-                    onChange={(e) => handleFilterChange('category', e.target.value)}
+                    value={filters.category || "all"}
+                    onChange={(e) =>
+                      handleFilterChange("category", e.target.value)
+                    }
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                   >
                     <option value="all">All Categories</option>
-                    {availableCategories.map(category => (
-                      <option key={category} value={category}>{category}</option>
+                    {availableCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -325,8 +367,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     Date Range
                   </label>
                   <select
-                    value={filters.dateRange || 'all'}
-                    onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                    value={filters.dateRange || "all"}
+                    onChange={(e) =>
+                      handleFilterChange("dateRange", e.target.value)
+                    }
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                   >
                     <option value="all">All Time</option>
@@ -340,13 +384,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     Source
                   </label>
                   <select
-                    value={filters.source || 'all'}
-                    onChange={(e) => handleFilterChange('source', e.target.value)}
+                    value={filters.source || "all"}
+                    onChange={(e) =>
+                      handleFilterChange("source", e.target.value)
+                    }
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-[rgb(var(--color-accent))]"
                   >
                     <option value="all">All Sources</option>
-                    {availableSources.map(source => (
-                      <option key={source} value={source}>{source}</option>
+                    {availableSources.map((source) => (
+                      <option key={source} value={source}>
+                        {source}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -366,13 +414,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               {!isSearching && hasResults && (
                 <div>
                   <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
-                    {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''}
+                    {filteredResults.length} result
+                    {filteredResults.length !== 1 ? "s" : ""}
                   </div>
                   {filteredResults.slice(0, 10).map((article, index) => (
                     <div
                       key={`${article.link}-${index}`}
                       className="p-4 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0"
-                      onClick={() => window.open(article.link, '_blank')}
+                      onClick={() => void openExternalLink(article.link)}
                     >
                       <h3 className="font-medium text-white mb-1">
                         {renderHighlightedText(article.title)}
@@ -383,8 +432,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                         </p>
                       )}
                       <div className="flex items-center justify-between mt-2 text-xs text-gray-500 min-w-0">
-                        <span className="truncate max-w-[150px]">{article.sourceTitle}</span>
-                        <span className="flex-shrink-0">{new Date(article.pubDate).toLocaleDateString()}</span>
+                        <span className="truncate max-w-[150px]">
+                          {article.sourceTitle}
+                        </span>
+                        <span className="flex-shrink-0">
+                          {new Date(article.pubDate).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -400,54 +453,59 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           )}
 
           {/* Suggestions and History */}
-          {!query.trim() && (suggestions.length > 0 || searchHistory.length > 0) && (
-            <div>
-              {suggestions.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
-                    Suggestions
+          {!query.trim() &&
+            (suggestions.length > 0 || searchHistory.length > 0) && (
+              <div>
+                {suggestions.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
+                      Suggestions
+                    </div>
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => setQuery(suggestion)}
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-700 text-white ${
+                          selectedSuggestionIndex === index ? "bg-gray-700" : ""
+                        }`}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
                   </div>
-                  {suggestions.map((suggestion, index) => (
-                    <button
-                      key={suggestion}
-                      onClick={() => setQuery(suggestion)}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-700 text-white ${
-                        selectedSuggestionIndex === index ? 'bg-gray-700' : ''
-                      }`}
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              )}
+                )}
 
-              {searchHistory.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
-                    Recent Searches
+                {searchHistory.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
+                      Recent Searches
+                    </div>
+                    {searchHistory.slice(0, 5).map((historyItem, index) => (
+                      <button
+                        key={historyItem}
+                        onClick={() => setQuery(historyItem)}
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-700 text-white ${
+                          selectedSuggestionIndex === suggestions.length + index
+                            ? "bg-gray-700"
+                            : ""
+                        }`}
+                      >
+                        {historyItem}
+                      </button>
+                    ))}
                   </div>
-                  {searchHistory.slice(0, 5).map((historyItem, index) => (
-                    <button
-                      key={historyItem}
-                      onClick={() => setQuery(historyItem)}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-700 text-white ${
-                        selectedSuggestionIndex === suggestions.length + index ? 'bg-gray-700' : ''
-                      }`}
-                    >
-                      {historyItem}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
           {/* Empty State */}
-          {!query.trim() && suggestions.length === 0 && searchHistory.length === 0 && (
-            <div className="p-4 text-center text-gray-400">
-              Start typing to search articles...
-            </div>
-          )}
+          {!query.trim() &&
+            suggestions.length === 0 &&
+            searchHistory.length === 0 && (
+              <div className="p-4 text-center text-gray-400">
+                Start typing to search articles...
+              </div>
+            )}
         </div>
       )}
     </div>

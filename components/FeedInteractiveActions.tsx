@@ -1,7 +1,10 @@
-import React from 'react';
-import { useLanguage } from '../hooks/useLanguage';
+import React from "react";
+import { useLanguage } from "../hooks/useLanguage";
+import { openExternalLink } from "../utils/openExternalLink";
 
-const ExternalLinkIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+const ExternalLinkIcon: React.FC<{ className?: string }> = ({
+  className = "",
+}) => (
   <svg
     className={`feed-interactive-actions__icon shrink-0 ${className}`}
     fill="none"
@@ -19,10 +22,10 @@ const ExternalLinkIcon: React.FC<{ className?: string }> = ({ className = '' }) 
 );
 
 export type FeedInteractiveActionsVariant =
-  | 'default'
-  | 'onDarkMedia'
-  | 'brutalist'
-  | 'terminal';
+  | "default"
+  | "onDarkMedia"
+  | "brutalist"
+  | "terminal";
 
 export interface FeedInteractiveActionsProps {
   articleLink: string;
@@ -53,45 +56,52 @@ export const FeedInteractiveActions: React.FC<FeedInteractiveActionsProps> = ({
   showWatch = false,
   showRead = true,
   showVisit = false,
-  className = '',
+  className = "",
   forceVisible = false,
-  variant = 'default',
+  variant = "default",
   watchActive = false,
 }) => {
   const { t } = useLanguage();
-  const readLabel = t('action.read') || 'LER';
-  const visitLabel = t('action.visit') || 'VISITAR';
-  const watchLabel = t('action.watch') || 'ASSISTIR';
+  const readLabel = t("action.read") || "LER";
+  const visitLabel = t("action.visit") || "VISITAR";
+  const watchLabel = t("action.watch") || "ASSISTIR";
 
   const rootClass = [
-    'feed-card-actions',
-    forceVisible ? 'feed-card-actions--force-visible' : '',
-    variant === 'onDarkMedia' ? 'feed-card-actions--on-dark-media' : '',
-    variant === 'brutalist' ? 'feed-card-actions--brutalist' : '',
-    variant === 'terminal' ? 'feed-card-actions--terminal' : '',
+    "feed-card-actions",
+    forceVisible ? "feed-card-actions--force-visible" : "",
+    variant === "onDarkMedia" ? "feed-card-actions--on-dark-media" : "",
+    variant === "brutalist" ? "feed-card-actions--brutalist" : "",
+    variant === "terminal" ? "feed-card-actions--terminal" : "",
     className,
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(" ");
 
   const readBtnClass =
-    variant === 'brutalist' ? 'brutalist-btn brutalist-btn-alt' : 'feed-btn-action';
+    variant === "brutalist"
+      ? "brutalist-btn brutalist-btn-alt"
+      : "feed-btn-action";
 
   const visitExtra = (() => {
-    if (variant === 'brutalist') return 'brutalist-btn flex items-center gap-2';
-    if (variant === 'terminal') return 'feed-btn-action feed-btn-action--terminal-visit'; // We'll add this to index.css if needed, or just let it inherit
-    return 'feed-btn-action feed-btn-action--visit';
+    if (variant === "brutalist") return "brutalist-btn flex items-center gap-2";
+    if (variant === "terminal")
+      return "feed-btn-action feed-btn-action--terminal-visit"; // We'll add this to index.css if needed, or just let it inherit
+    return "feed-btn-action feed-btn-action--visit";
   })();
 
   const watchBtnClass = (() => {
-    if (variant === 'brutalist') {
-      return `brutalist-btn${watchActive ? ' brutalist-btn-alt' : ''}`;
+    if (variant === "brutalist") {
+      return `brutalist-btn${watchActive ? " brutalist-btn-alt" : ""}`;
     }
-    return 'feed-btn-action feed-btn-action--watch';
+    return "feed-btn-action feed-btn-action--watch";
   })();
 
   const stop = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    if ("stopImmediatePropagation" in e.nativeEvent) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
   };
 
   const handleWatch = onWatch ?? onRead;
@@ -100,29 +110,46 @@ export const FeedInteractiveActions: React.FC<FeedInteractiveActionsProps> = ({
     <div className={rootClass}>
       <div className="flex flex-wrap items-center gap-3">
         {showRead && (
-          <button type="button" onClick={(e) => { stop(e); onRead(); }} className={readBtnClass}>
+          <button
+            type="button"
+            onClick={(e) => {
+              stop(e);
+              onRead();
+            }}
+            className={readBtnClass}
+          >
             {readLabel}
           </button>
         )}
         {showWatch && (
-          <button type="button" onClick={(e) => { stop(e); handleWatch(); }} className={watchBtnClass}>
+          <button
+            type="button"
+            onClick={(e) => {
+              stop(e);
+              handleWatch();
+            }}
+            className={watchBtnClass}
+          >
             {watchLabel}
           </button>
         )}
         {(showVisit || (!showWatch && !showRead)) && (
-          <a
-            href={articleLink}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
             className={visitExtra}
-            onClick={stop}
+            onClick={(e) => {
+              stop(e);
+              void openExternalLink(articleLink);
+            }}
           >
-            {variant !== 'brutalist' && variant !== 'terminal' && <ExternalLinkIcon />}
+            {variant !== "brutalist" && variant !== "terminal" && (
+              <ExternalLinkIcon />
+            )}
             {visitLabel}
-            {(variant === 'brutalist' || variant === 'terminal') && (
+            {(variant === "brutalist" || variant === "terminal") && (
               <ExternalLinkIcon className="w-4 h-4 ml-0.5" />
             )}
-          </a>
+          </button>
         )}
       </div>
     </div>

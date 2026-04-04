@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { Article } from '../../types';
-import { FeaturedArticle } from '../FeaturedArticle';
-import { SmallOptimizedImage } from '../SmallOptimizedImage';
-import { ArticleReaderModal } from '../ArticleReaderModal';
-import { FavoriteButton } from '../FavoriteButton';
-import { FeedInteractiveActions } from '../FeedInteractiveActions';
-import { getVideoEmbed } from '../../utils/videoEmbed';
+import React, { useState } from "react";
+import { Article } from "../../types";
+import { FeaturedArticle } from "../FeaturedArticle";
+import { SmallOptimizedImage } from "../SmallOptimizedImage";
+import { ArticleReaderModal } from "../ArticleReaderModal";
+import { FavoriteButton } from "../FavoriteButton";
+import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { getVideoEmbed } from "../../utils/videoEmbed";
 interface PortalLayoutProps {
   articles: Article[];
-  timeFormat: '12h' | '24h';
+  timeFormat: "12h" | "24h";
 }
 
 export const PortalSkeleton: React.FC = () => {
@@ -26,8 +26,11 @@ export const PortalSkeleton: React.FC = () => {
       {/* FEED SECTION SKELETON */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-white/5 pt-8">
         <div className="lg:col-span-8 space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex gap-4 p-5 feed-skeleton-block rounded-2xl h-40" />
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex gap-4 p-5 feed-skeleton-block rounded-2xl h-40"
+            />
           ))}
         </div>
         <div className="lg:col-span-4 space-y-4">
@@ -38,7 +41,10 @@ export const PortalSkeleton: React.FC = () => {
   );
 };
 
-export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat }) => {
+export const PortalLayout: React.FC<PortalLayoutProps> = ({
+  articles,
+  timeFormat,
+}) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 
   const mainFeatured = articles[0];
@@ -62,19 +68,23 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
         {/* Sub Featured (4 cols) */}
         <div className="lg:col-span-4 space-y-6 flex flex-col">
           {subFeatured.map((article, idx) => (
-            <div key={idx} className="flex-1 relative rounded-xl overflow-hidden group cursor-pointer">
-              <a
-                href={article.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full h-full"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setReadingArticle(article);
-                }}
+            <div
+              key={idx}
+              className="flex-1 relative rounded-xl overflow-hidden group cursor-pointer"
+            >
+              <button
+                type="button"
+                className="block h-full w-full bg-transparent p-0 text-left"
+                onClick={() => setReadingArticle(article)}
               >
                 <div className="absolute inset-0">
-                  <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" fallbackText={article.sourceTitle} size={400} />
+                  <SmallOptimizedImage
+                    src={article.imageUrl}
+                    alt={article.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    fallbackText={article.sourceTitle}
+                    size={400}
+                  />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
@@ -90,12 +100,17 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                     <span className="truncate">{article.sourceTitle}</span>
                     <span className="h-px w-4 flex-shrink-0 bg-white/20" />
                     <span className="flex-shrink-0">
-                      {article.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      {article.pubDate.toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                      })}
                     </span>
                   </div>
-                  <h3 className="text-white font-bold text-lg leading-tight group-hover:underline line-clamp-2">{article.title}</h3>
+                  <h3 className="text-white font-bold text-lg leading-tight group-hover:underline line-clamp-2">
+                    {article.title}
+                  </h3>
                 </div>
-              </a>
+              </button>
             </div>
           ))}
         </div>
@@ -105,12 +120,23 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-white/10 pt-8">
         {/* Main Feed (8 cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">Últimas Notícias</h3>
+          <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">
+            Últimas Notícias
+          </h3>
           {feed.map((article, idx) => (
-            <article key={idx} className="feed-card flex gap-4 p-5 rounded-2xl hover:border-[rgba(var(--color-accent),0.25)] transition-all relative group shadow-sm">
+            <article
+              key={idx}
+              className="feed-card flex gap-4 p-5 rounded-2xl hover:border-[rgba(var(--color-accent),0.25)] transition-all relative group shadow-sm"
+            >
               <div className="flex flex-col gap-3 w-32 sm:w-48 flex-shrink-0">
                 <div className="relative aspect-square sm:aspect-[4/5] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
-                  <SmallOptimizedImage src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" fallbackText={article.sourceTitle} size={200} />
+                  <SmallOptimizedImage
+                    src={article.imageUrl}
+                    alt={article.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    fallbackText={article.sourceTitle}
+                    size={200}
+                  />
 
                   {/* Favorite Button (Over image, hover-only) */}
                   <FavoriteButton
@@ -120,7 +146,6 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                     className="top-2 right-2 z-20 bg-black/40 hover:bg-black/60 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
                   />
                 </div>
-
               </div>
 
               <div className="flex-1 flex flex-col p-1 relative">
@@ -130,24 +155,22 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                   </span>
                   <span className="h-px w-4 flex-shrink-0 bg-[rgb(var(--color-border))]/35" />
                   <span className="feed-meta flex-shrink-0">
-                    {article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {article.pubDate.toLocaleTimeString("pt-BR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
 
-                <a
-                  href={article.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group/title block"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    setReadingArticle(article);
-                  }}
+                <button
+                  type="button"
+                  className="group/title block bg-transparent p-0 text-left"
+                  onClick={() => setReadingArticle(article)}
                 >
                   <h3 className="feed-title text-base sm:text-lg font-bold leading-tight mb-2 transition-colors line-clamp-2">
                     {article.title}
                   </h3>
-                </a>
+                </button>
 
                 {article.description && (
                   <p className="feed-desc text-sm line-clamp-3 mb-4">
@@ -160,20 +183,20 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
                     <p className="feed-meta text-xs italic">{`Por ${article.author}`}</p>
                   )}
                 </div>
-        
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          articleLink={article.link}
-                          onRead={() => setReadingArticle(article)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          className="!mt-4"
-                        />
-                      );
-                    })()}
+
+                {(() => {
+                  const embedUrl = getVideoEmbed(article.link);
+                  return (
+                    <FeedInteractiveActions
+                      articleLink={article.link}
+                      onRead={() => setReadingArticle(article)}
+                      showRead={!embedUrl}
+                      showWatch={!!embedUrl}
+                      showVisit={true}
+                      className="!mt-4"
+                    />
+                  );
+                })()}
               </div>
             </article>
           ))}
@@ -183,21 +206,27 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
         <div className="lg:col-span-4">
           <div className="sticky top-24">
             <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">
-              
               Em Alta
             </h3>
             <div className="feed-surface rounded-2xl p-6 space-y-4 shadow-md">
               {sidebar.map((article, idx) => (
-                <div key={idx} className="group cursor-pointer border-b border-[rgb(var(--color-border))]/20 last:border-0 pb-4 last:pb-0">
+                <div
+                  key={idx}
+                  className="group cursor-pointer border-b border-[rgb(var(--color-border))]/20 last:border-0 pb-4 last:pb-0"
+                >
                   <div className="flex justify-between items-start gap-3">
-                    <a href={article.link} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0" onClick={(e) => { e.preventDefault(); setReadingArticle(article); }}>
+                    <button
+                      type="button"
+                      className="flex-1 min-w-0 bg-transparent p-0 text-left"
+                      onClick={() => setReadingArticle(article)}
+                    >
                       <span className="feed-meta text-[10px] font-bold mb-1 block uppercase tracking-[0.22em] opacity-80 group-hover:opacity-100 transition-all">
                         {article.sourceTitle}
                       </span>
                       <h4 className="feed-title text-sm font-bold transition-all line-clamp-2 leading-tight">
                         {article.title}
                       </h4>
-                    </a>
+                    </button>
                     <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <FavoriteButton
                         article={article}
@@ -219,15 +248,24 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ articles, timeFormat
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
           onNext={() => {
-            const idx = articles.findIndex(a => a.link === readingArticle.link);
+            const idx = articles.findIndex(
+              (a) => a.link === readingArticle.link,
+            );
             if (idx < articles.length - 1) setReadingArticle(articles[idx + 1]);
           }}
           onPrev={() => {
-            const idx = articles.findIndex(a => a.link === readingArticle.link);
+            const idx = articles.findIndex(
+              (a) => a.link === readingArticle.link,
+            );
             if (idx > 0) setReadingArticle(articles[idx - 1]);
           }}
-          hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
-          hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
+          hasNext={
+            articles.findIndex((a) => a.link === readingArticle.link) <
+            articles.length - 1
+          }
+          hasPrev={
+            articles.findIndex((a) => a.link === readingArticle.link) > 0
+          }
         />
       )}
     </div>

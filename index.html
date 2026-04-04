@@ -1,42 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>Personal News</title>
+    <meta
+      name="description"
+      content="Your personal news dashboard aggregating RSS, Weather, and System Status."
+    />
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="google" content="notranslate" />
-  <title>Personal News</title>
-  <meta name="description" content="Your personal news dashboard aggregating RSS, Weather, and System Status." />
+    <!-- Favicons (Light/Dark support) -->
+    <link
+      rel="icon"
+      href="/icons/light/favicon.ico"
+      sizes="any"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      href="/icons/light/favicon.svg"
+      type="image/svg+xml"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      href="/icons/dark/favicon.ico"
+      sizes="any"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      rel="icon"
+      href="/icons/dark/favicon.svg"
+      type="image/svg+xml"
+      media="(prefers-color-scheme: dark)"
+    />
 
-  <!-- Favicons (Light/Dark support) -->
-  <link rel="icon" href="/icons/light/favicon.ico" sizes="any" media="(prefers-color-scheme: light)">
-  <link rel="icon" href="/icons/light/favicon.svg" type="image/svg+xml" media="(prefers-color-scheme: light)">
-  <link rel="icon" href="/icons/dark/favicon.ico" sizes="any" media="(prefers-color-scheme: dark)">
-  <link rel="icon" href="/icons/dark/favicon.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+    <!-- Default Fallback -->
+    <link rel="icon" href="/icons/light/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/icons/light/apple-touch-icon.png" />
 
-  <!-- Default Fallback -->
-  <link rel="icon" href="/icons/light/favicon.ico" sizes="any">
-  <link rel="apple-touch-icon" href="/icons/light/apple-touch-icon.png">
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="./manifest.json" />
 
-  <!-- Web App Manifest -->
-  <link rel="manifest" href="./manifest.json">
+    <!-- Social Media -->
+    <meta property="og:image" content="/og-image.png" />
+    <meta name="twitter:image" content="/twitter-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Social Media -->
-  <meta property="og:image" content="/og-image.png">
-  <meta name="twitter:image" content="/twitter-image.png">
-  <meta name="twitter:card" content="summary_large_image">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet">
+    <!-- Custom styles moved to index.css for better CSP compliance -->
+  </head>
 
-  <!-- Custom styles moved to index.css for better CSP compliance -->
-</head>
-
-<body>
-  <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
-
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

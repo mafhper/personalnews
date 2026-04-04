@@ -10,9 +10,7 @@ export const resolveScopeMode = (
   return "all";
 };
 
-export const buildFeedLoadScopeKey = (
-  request?: FeedLoadRequest,
-): string => {
+export const buildFeedLoadScopeKey = (request?: FeedLoadRequest): string => {
   const mode = resolveScopeMode(request);
 
   if (mode === "single-feed") {
@@ -69,17 +67,13 @@ export const resolveFeedVisibilityState = ({
 }: FeedVisibilityResolutionInput): FeedVisibilityResolution => {
   const hasScopedCache = cachedArticlesCount > 0;
   const isDifferentScope = previousScopeKey !== scopeKey;
+  const isSameScope = !isDifferentScope;
+  const hasVisibleArticles = previousArticlesCount > 0;
   const isHoldingPreviousContent =
-    !forceRefresh &&
-    !hasScopedCache &&
-    isDifferentScope &&
-    previousArticlesCount > 0;
-  const shouldKeepVisibleContent =
-    hasScopedCache || isHoldingPreviousContent || previousArticlesCount > 0;
-  const preserveVisibleArticlesOnFailure =
-    !isHoldingPreviousContent && previousArticlesCount > 0;
-  const shouldBypassCache =
-    forceRefresh || hasScopedCache || isHoldingPreviousContent;
+    !hasScopedCache && isSameScope && hasVisibleArticles;
+  const shouldKeepVisibleContent = hasScopedCache || isHoldingPreviousContent;
+  const preserveVisibleArticlesOnFailure = isSameScope && hasVisibleArticles;
+  const shouldBypassCache = forceRefresh || hasScopedCache;
 
   return {
     hasScopedCache,

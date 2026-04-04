@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Article } from '../../types';
-import { MagazineReaderModal } from '../MagazineReaderModal';
-import { useAppearance } from '../../hooks/useAppearance';
-import { useLanguage } from '../../hooks/useLanguage';
-import { ArticleImage } from '../ArticleImage';
-import { FavoriteButton } from '../FavoriteButton';
-import { FeedInteractiveActions } from '../FeedInteractiveActions';
-import { getVideoEmbed } from '../../utils/videoEmbed';
+import React, { useState } from "react";
+import { Article } from "../../types";
+import { MagazineReaderModal } from "../MagazineReaderModal";
+import { useAppearance } from "../../hooks/useAppearance";
+import { useLanguage } from "../../hooks/useLanguage";
+import { ArticleImage } from "../ArticleImage";
+import { FavoriteButton } from "../FavoriteButton";
+import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { getVideoEmbed } from "../../utils/videoEmbed";
 
 interface MagazineLayoutProps {
   articles: Article[];
-  timeFormat: '12h' | '24h';
+  timeFormat: "12h" | "24h";
 }
 
 const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
@@ -32,7 +32,7 @@ export const MagazineSkeleton: React.FC = () => {
 
       {/* FEATURED SKELETON */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3].map(i => (
+        {[1, 2, 3].map((i) => (
           <div key={i} className="space-y-4">
             <Bone className="aspect-video" />
             <Bone className="h-4 w-1/2" />
@@ -43,7 +43,7 @@ export const MagazineSkeleton: React.FC = () => {
 
       {/* GRID SKELETON */}
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map(i => (
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="flex gap-4 items-center">
             <Bone className="w-24 h-24 flex-shrink-0" />
             <div className="flex-1 space-y-2">
@@ -59,7 +59,7 @@ export const MagazineSkeleton: React.FC = () => {
 
 export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { contentConfig } = useAppearance();
+  useAppearance();
   const { t } = useLanguage();
   const now = new Date();
 
@@ -71,7 +71,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
   const handleNextArticle = () => {
     if (!readingArticle) return;
-    const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
+    const currentIndex = articles.findIndex(
+      (a) => a.link === readingArticle.link,
+    );
     if (currentIndex < articles.length - 1) {
       setReadingArticle(articles[currentIndex + 1]);
     }
@@ -79,7 +81,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
   const handlePrevArticle = () => {
     if (!readingArticle) return;
-    const currentIndex = articles.findIndex(a => a.link === readingArticle.link);
+    const currentIndex = articles.findIndex(
+      (a) => a.link === readingArticle.link,
+    );
     if (currentIndex > 0) {
       setReadingArticle(articles[currentIndex - 1]);
     }
@@ -87,18 +91,26 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
   // Helper
   const formatTimeAgo = (dateInput: Date | string) => {
-    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    const date =
+      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
     const diffMs = now.getTime() - date.getTime();
-    if (diffMs < 0 || isNaN(diffMs)) return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    if (diffMs < 0 || isNaN(diffMs))
+      return date.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      });
 
     const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return t('time.now') || 'agora';
+    if (diffMins < 1) return t("time.now") || "agora";
     if (diffMins < 60) return `${diffMins}min`;
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h`;
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 7) return `${diffDays}d`;
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+    });
   };
 
   // Layout Slices - Magazine style with clear sections
@@ -111,22 +123,32 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const gridArticles = visibleArticles.slice(4, 10); // 6 in grid
   const listArticles = visibleArticles.slice(10); // Rest in list
 
-  if (!heroArticle) return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <p className="text-[rgb(var(--color-textSecondary))] text-lg">{t('feeds.empty') || 'Nenhuma notícia para exibir.'}</p>
-    </div>
-  );
+  if (!heroArticle)
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="text-[rgb(var(--color-textSecondary))] text-lg">
+          {t("feeds.empty") || "Nenhuma notícia para exibir."}
+        </p>
+      </div>
+    );
 
   return (
     <div className="feed-page-frame py-12 animate-in fade-in duration-300 min-h-screen pb-16">
       <div className="flex items-center justify-between border-b border-[rgb(var(--color-border))]/40 pb-4 mb-8">
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.35em] text-[rgb(var(--color-textSecondary))] font-black">
-          <span className="feed-accent-text">{t('layout.magazine') || 'Magazine'}</span>
+          <span className="feed-accent-text">
+            {t("layout.magazine") || "Magazine"}
+          </span>
           <span className="h-px w-8 bg-[rgba(var(--color-accent),0.4)]" />
-          <span>{now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+          <span>
+            {now.toLocaleDateString("pt-BR", {
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
         </div>
         <div className="text-[10px] uppercase tracking-[0.3em] text-[rgb(var(--color-textSecondary))] font-black">
-          {t('layout.edition') || 'Edição'} {now.getFullYear()}
+          {t("layout.edition") || "Edição"} {now.getFullYear()}
         </div>
       </div>
 
@@ -178,7 +200,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
               {heroAuthor && (
                 <p className="text-sm text-[rgb(var(--color-textSecondary))] italic">
-                  {t('article.by') || 'Por'} {heroAuthor}
+                  {t("article.by") || "Por"} {heroAuthor}
                 </p>
               )}
 
@@ -207,7 +229,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
           <div className="flex items-center gap-4 mb-6">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
             <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-              {t('layout.featured') || 'Destaques'}
+              {t("layout.featured") || "Destaques"}
             </h2>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
           </div>
@@ -261,7 +283,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
         <section className="mb-12">
           <div className="flex items-center gap-4 mb-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-              {t('layout.more_news') || 'Mais Notícias'}
+              {t("layout.more_news") || "Mais Notícias"}
             </h2>
             <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
           </div>
@@ -316,7 +338,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
         <section className="mb-8">
           <div className="flex items-center gap-4 mb-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-              {t('layout.latest') || 'Últimas'}
+              {t("layout.latest") || "Últimas"}
             </h2>
             <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
           </div>
@@ -326,9 +348,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
               {listArticles.map((article, i) => (
                 <article
                   key={i}
-                className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl feed-surface transition-all duration-300 shadow-md"
-                onClick={() => handleOpenReader(article)}
-              >
+                  className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl feed-surface transition-all duration-300 shadow-md"
+                  onClick={() => handleOpenReader(article)}
+                >
                   <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl bg-[rgb(var(--color-background))] shadow-inner border border-white/10">
                     <ArticleImage
                       article={article}
@@ -373,8 +395,13 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
           onClose={() => setReadingArticle(null)}
           onNext={handleNextArticle}
           onPrev={handlePrevArticle}
-          hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
-          hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
+          hasNext={
+            articles.findIndex((a) => a.link === readingArticle.link) <
+            articles.length - 1
+          }
+          hasPrev={
+            articles.findIndex((a) => a.link === readingArticle.link) > 0
+          }
         />
       )}
     </div>

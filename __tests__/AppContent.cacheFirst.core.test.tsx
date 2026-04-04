@@ -278,9 +278,9 @@ vi.mock("../components/ui/FeedSkeleton", () => ({
 }));
 
 vi.mock("../components/ProgressIndicator", () => ({
-  FeedLoadingProgress: (props: { 
-    currentAction?: string; 
-    errors?: any[]; 
+  FeedLoadingProgress: (props: {
+    currentAction?: string;
+    errors?: any[];
     onRetryErrors?: () => void;
     onCancel?: () => void;
   }) => (
@@ -382,43 +382,18 @@ describe("AppContent cache-first rendering", () => {
     expect(screen.queryByTestId("feed-content")).not.toBeInTheDocument();
   });
 
-  it("keeps scoped cached content visible while showing refresh progress", async () => {
-    window.history.replaceState({}, "", "/?category=design");
-    mockFeedState.articles = [designArticle];
-    mockFeedState.loadingState = createLoadingState({
-      status: "loading",
-      progress: 25,
-      loadedFeeds: 1,
-      isBackgroundRefresh: true,
-      isResolved: true,
-      hasScopedCache: true,
-      scopeKey: "category:design",
-      currentAction: "Updating feeds in background...",
-    });
-
-    await act(async () => {
-      render(<AppContent />);
-      await Promise.resolve();
-    });
-
-    expect(await screen.findByTestId("feed-content")).toBeInTheDocument();
-    expect(screen.getByText("Design One")).toBeInTheDocument();
-    expect(screen.getByTestId("loading-progress")).toBeInTheDocument();
-    expect(screen.queryByTestId("feed-skeleton")).not.toBeInTheDocument();
-  });
-
-  it("holds the previous content during a no-cache navigation and swaps when the new scope resolves", async () => {
+  it("renders scoped cached content immediately during navigation while refreshing in the background", async () => {
     mockLoadFeeds.mockImplementation(async () => {
+      mockFeedState.articles = [designArticle];
       mockFeedState.loadingState = createLoadingState({
         status: "loading",
-        progress: 0,
-        loadedFeeds: 0,
+        progress: 25,
+        loadedFeeds: 1,
         isBackgroundRefresh: true,
         isResolved: true,
-        hasScopedCache: false,
-        isHoldingPreviousContent: true,
+        hasScopedCache: true,
         scopeKey: "category:design",
-        currentAction: "Updating category in background...",
+        currentAction: "Updating feeds in background...",
       });
     });
 
@@ -436,17 +411,59 @@ describe("AppContent cache-first rendering", () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText("Tech One")).toBeInTheDocument();
+    expect(screen.getByText("Design One")).toBeInTheDocument();
+    expect(screen.queryByText("Tech One")).not.toBeInTheDocument();
     expect(screen.getByTestId("loading-progress")).toBeInTheDocument();
     expect(screen.queryByTestId("feed-skeleton")).not.toBeInTheDocument();
+    expect(screen.getByText("design")).toBeInTheDocument();
+  });
 
-    mockFeedState.articles = [designArticle];
+  it("shows a clean target-layout skeleton during a no-cache navigation and swaps when the new scope resolves", async () => {
+    mockLoadFeeds.mockImplementation(
+      async (_request?: { categoryId?: string }) => {
+        mockFeedState.articles = [];
+        mockFeedState.loadingState = createLoadingState({
+          status: "loading",
+          progress: 0,
+          loadedFeeds: 0,
+          totalFeeds: 1,
+          isBackgroundRefresh: false,
+          isResolved: false,
+          hasScopedCache: false,
+          isHoldingPreviousContent: false,
+          scopeKey: "category:youtube",
+          currentAction: "Loading selected category...",
+        });
+      },
+    );
+
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Tech One")).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Go videos"));
+      view.rerender(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(mockApplyLayoutPreset).toHaveBeenCalledWith("brutalist", false);
+    expect(screen.queryByText("Tech One")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("feed-content")).not.toBeInTheDocument();
+    expect(screen.getByTestId("feed-skeleton")).toHaveTextContent("brutalist");
+    expect(screen.getByTestId("loading-progress")).toBeInTheDocument();
+
+    mockFeedState.articles = [videoArticle];
     mockFeedState.loadingState = createLoadingState({
       status: "success",
       progress: 100,
       loadedFeeds: 1,
       totalFeeds: 1,
-      scopeKey: "category:design",
+      scopeKey: "category:youtube",
     });
 
     await act(async () => {
@@ -454,7 +471,7 @@ describe("AppContent cache-first rendering", () => {
       await Promise.resolve();
     });
 
-    expect(await screen.findByText("Design One")).toBeInTheDocument();
+    expect(await screen.findByText("Video One")).toBeInTheDocument();
     expect(screen.queryByText("Tech One")).not.toBeInTheDocument();
   });
 
@@ -557,12 +574,10 @@ describe("AppContent cache-first rendering", () => {
     expect(screen.getByText("Tech One")).toBeInTheDocument();
     try {
       expect(
-        screen.getByText(
-          /falha(ram|u) (nesta|na) atualização/i,
-        ),
+        screen.getByText(/falha(ram|u) (nesta|na) atualização/i),
       ).toBeInTheDocument();
     } catch (e) {
-      console.log('--- SCREEN DEBUG ---');
+      console.log("--- SCREEN DEBUG ---");
       screen.debug();
       throw e;
     }
@@ -594,12 +609,10 @@ describe("AppContent cache-first rendering", () => {
 
     try {
       expect(
-        screen.getByText(
-          /falha(ram|u) (nesta|na) atualização/i,
-        ),
+        screen.getByText(/falha(ram|u) (nesta|na) atualização/i),
       ).toBeInTheDocument();
     } catch (e) {
-      console.log('--- SCREEN DEBUG ---');
+      console.log("--- SCREEN DEBUG ---");
       screen.debug();
       throw e;
     }

@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Article } from '../types';
-import { getVideoEmbed } from '../utils/videoEmbed';
-import { useLanguage } from '../hooks/useLanguage';
-import { useModal } from '../hooks/useModal';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Article } from "../types";
+import { getVideoEmbedDetails } from "../utils/videoEmbed";
+import { useLanguage } from "../hooks/useLanguage";
+import { useModal } from "../hooks/useModal";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { openExternalLink } from "../utils/openExternalLink";
+import { detectEnvironment } from "../services/environmentDetector";
 
 interface ArticleReaderModalProps {
   article: Article;
@@ -15,17 +17,17 @@ interface ArticleReaderModalProps {
 }
 
 interface ReaderPreferences {
-  fontSize: 'small' | 'medium' | 'large' | 'xlarge';
-  lineHeight: 'compact' | 'normal' | 'relaxed';
-  contentWidth: 'narrow' | 'medium' | 'wide';
-  fontFamily: 'serif' | 'sans' | 'mono';
+  fontSize: "small" | "medium" | "large" | "xlarge";
+  lineHeight: "compact" | "normal" | "relaxed";
+  contentWidth: "narrow" | "medium" | "wide";
+  fontFamily: "serif" | "sans" | "mono";
 }
 
 const defaultPreferences: ReaderPreferences = {
-  fontSize: 'medium',
-  lineHeight: 'relaxed',
-  contentWidth: 'medium',
-  fontFamily: 'serif',
+  fontSize: "medium",
+  lineHeight: "relaxed",
+  contentWidth: "medium",
+  fontFamily: "serif",
 };
 
 export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
@@ -36,58 +38,72 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   hasNext,
   hasPrev,
 }) => {
-  const videoEmbed = getVideoEmbed(article.link);
+  const { isTauri } = detectEnvironment();
+  const videoDetails = getVideoEmbedDetails(article.link, {
+    origin: typeof window !== "undefined" ? window.location.origin : null,
+    runtime: isTauri ? "desktop" : "web",
+  });
+  const videoEmbed = videoDetails?.embedUrl ?? null;
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchNotice, setFetchNotice] = useState<string | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
+  const [playerLoaded, setPlayerLoaded] = useState(false);
+  const [showVideoFallbackHint, setShowVideoFallbackHint] = useState(false);
   const { t } = useLanguage();
   const { setModalOpen } = useModal();
   const contentRef = useRef<HTMLDivElement>(null);
   const modalContainerRef = useRef<HTMLDivElement>(null);
+  const shouldMonitorDesktopVideo =
+    !!videoDetails?.mayRequireExternalFallback &&
+    videoDetails.provider === "youtube" &&
+    isTauri;
 
   // Persistent reader preferences
   const [preferences, setPreferences] = useLocalStorage<ReaderPreferences>(
-    'reader-preferences',
-    defaultPreferences
+    "reader-preferences",
+    defaultPreferences,
   );
 
   // Font size classes
   const fontSizeClasses = {
-    small: 'text-base leading-relaxed',
-    medium: 'text-lg leading-relaxed',
-    large: 'text-xl leading-relaxed',
-    xlarge: 'text-2xl leading-relaxed',
+    small: "text-base leading-relaxed",
+    medium: "text-lg leading-relaxed",
+    large: "text-xl leading-relaxed",
+    xlarge: "text-2xl leading-relaxed",
   };
 
   // Line height classes
   const lineHeightClasses = {
-    compact: 'leading-normal',
-    normal: 'leading-relaxed',
-    relaxed: 'leading-loose',
+    compact: "leading-normal",
+    normal: "leading-relaxed",
+    relaxed: "leading-loose",
   };
 
   // Content width classes
-const contentWidthClasses = {
-  narrow: 'max-w-[52ch]',
-  medium: 'max-w-[62ch]',
-  wide: 'max-w-[70ch]',
-};
+  const contentWidthClasses = {
+    narrow: "max-w-[52ch]",
+    medium: "max-w-[62ch]",
+    wide: "max-w-[70ch]",
+  };
 
   // Font family classes
   const fontFamilyClasses = {
-    serif: 'font-serif',
-    sans: 'font-sans',
-    mono: 'font-mono',
+    serif: "font-serif",
+    sans: "font-sans",
+    mono: "font-mono",
   };
 
-  const updatePreference = useCallback(<K extends keyof ReaderPreferences>(
-    key: K,
-    value: ReaderPreferences[K]
-  ) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
-  }, [setPreferences]);
+  const updatePreference = useCallback(
+    <K extends keyof ReaderPreferences>(
+      key: K,
+      value: ReaderPreferences[K],
+    ) => {
+      setPreferences((prev) => ({ ...prev, [key]: value }));
+    },
+    [setPreferences],
+  );
 
   useEffect(() => {
     setModalOpen(true);
@@ -111,7 +127,7 @@ const contentWidthClasses = {
       setFetchNotice(null);
       setLoading(true);
       try {
-        const { fetchFullContent } = await import('../services/articleFetcher');
+        const { fetchFullContent } = await import("../services/articleFetcher");
         const fetched = await fetchFullContent(article.link);
         if (fetched.content) {
           setFullContent(fetched.content);
@@ -120,8 +136,10 @@ const contentWidthClasses = {
           setFetchNotice(fetched.errorMessage);
         }
       } catch (error) {
-        console.error('[Reader] Failed to load full content', error);
-        setFetchNotice("Não foi possível carregar o texto completo. Exibindo o conteúdo do feed.");
+        console.error("[Reader] Failed to load full content", error);
+        setFetchNotice(
+          "Não foi possível carregar o texto completo. Exibindo o conteúdo do feed.",
+        );
       } finally {
         setLoading(false);
       }
@@ -130,27 +148,52 @@ const contentWidthClasses = {
     loadContent();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (showPreferences) {
           setShowPreferences(false);
         } else {
           onClose();
         }
       }
-      if (e.key === 'ArrowRight' && hasNext) onNext();
-      if (e.key === 'ArrowLeft' && hasPrev) onPrev();
-      if (e.key === 'f') setIsFocusMode(prev => !prev);
+      if (e.key === "ArrowRight" && hasNext) onNext();
+      if (e.key === "ArrowLeft" && hasPrev) onPrev();
+      if (e.key === "f") setIsFocusMode((prev) => !prev);
     };
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
       setModalOpen(false);
     };
-  }, [article.link, hasNext, hasPrev, onClose, onNext, onPrev, setModalOpen, showPreferences, videoEmbed]);
+  }, [
+    article.link,
+    hasNext,
+    hasPrev,
+    onClose,
+    onNext,
+    onPrev,
+    setModalOpen,
+    showPreferences,
+    videoEmbed,
+  ]);
+
+  useEffect(() => {
+    setPlayerLoaded(false);
+    setShowVideoFallbackHint(false);
+
+    if (!shouldMonitorDesktopVideo) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShowVideoFallbackHint((current) => current || !playerLoaded);
+    }, 4500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [article.link, playerLoaded, shouldMonitorDesktopVideo]);
 
   // Process content to improve formatting and handle plain text
   const processContent = (html: string | null | undefined): string => {
-    if (!html) return '';
+    if (!html) return "";
 
     // Check if it's HTML
     const hasHtmlTags = /<[a-z][\s\S]*>/i.test(html);
@@ -159,9 +202,9 @@ const contentWidthClasses = {
       // Convert plain text to HTML paragraphs
       return html
         .split(/\n\n+/)
-        .map(p => `<p class="mb-4">${p.trim()}</p>`)
-        .join('')
-        .replace(/\n/g, '<br />');
+        .map((p) => `<p class="mb-4">${p.trim()}</p>`)
+        .join("")
+        .replace(/\n/g, "<br />");
     }
 
     return html;
@@ -171,16 +214,19 @@ const contentWidthClasses = {
     ? processContent(fullContent)
     : processContent(article.content || article.description);
   const hasContentHtml = contentHtml.trim().length > 0;
-  const isVideoCompactDesktop = Boolean(videoEmbed && !isFocusMode && !hasContentHtml && !fetchNotice);
+  const isVideoCompactDesktop = Boolean(
+    videoEmbed && !isFocusMode && !hasContentHtml && !fetchNotice,
+  );
 
   return (
     <div
       ref={modalContainerRef}
       tabIndex={-1}
-      className={`fixed inset-0 z-[200] flex items-center justify-center animate-in fade-in duration-300 outline-none ${isFocusMode
-          ? 'bg-[rgb(var(--color-background))]'
-          : 'p-0 md:p-8 bg-black md:bg-black/80'
-        }`}
+      className={`fixed inset-0 z-[200] flex items-center justify-center animate-in fade-in duration-300 outline-none ${
+        isFocusMode
+          ? "bg-[rgb(var(--color-background))]"
+          : "p-0 md:p-8 bg-black md:bg-black/80"
+      }`}
     >
       <style>{`
         .article-content {
@@ -227,72 +273,118 @@ const contentWidthClasses = {
 
       {/* Modal Content */}
       <div
-        className={`relative flex flex-col overflow-hidden transition-all duration-500 ${isFocusMode
-            ? 'w-full h-full bg-[rgb(var(--color-background))]'
+        className={`relative flex flex-col overflow-hidden transition-all duration-500 ${
+          isFocusMode
+            ? "w-full h-full bg-[rgb(var(--color-background))]"
             : isVideoCompactDesktop
-              ? 'w-full h-full md:h-auto md:max-w-4xl bg-[rgb(var(--color-surface))] border-none md:border border-[rgb(var(--color-border))]/20 rounded-none md:rounded-2xl shadow-2xl'
-              : 'w-full h-full md:h-[88vh] md:max-w-4xl bg-[rgb(var(--color-surface))] border-none md:border border-[rgb(var(--color-border))]/20 rounded-none md:rounded-2xl shadow-2xl'
-          }`}
+              ? "w-full h-full md:h-auto md:max-w-4xl bg-[rgb(var(--color-surface))] border-none md:border border-[rgb(var(--color-border))]/20 rounded-none md:rounded-2xl shadow-2xl"
+              : "w-full h-full md:h-[88vh] md:max-w-4xl bg-[rgb(var(--color-surface))] border-none md:border border-[rgb(var(--color-border))]/20 rounded-none md:rounded-2xl shadow-2xl"
+        }`}
       >
-
         {/* Top Bar */}
-        <div className={`sticky top-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isFocusMode
-            ? 'bg-transparent'
-            : 'bg-[rgb(var(--color-surface))]/95 backdrop-blur-xl border-b border-[rgb(var(--color-border))]/20'
-          }`}>
+        <div
+          className={`sticky top-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${
+            isFocusMode
+              ? "bg-transparent"
+              : "bg-[rgb(var(--color-surface))]/95 backdrop-blur-xl border-b border-[rgb(var(--color-border))]/20"
+          }`}
+        >
           {/* Back Button */}
           <button
             onClick={onClose}
             className="flex items-center gap-2 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
             </svg>
-            <span className="font-medium text-sm hidden sm:inline">{t('action.back')}</span>
+            <span className="font-medium text-sm hidden sm:inline">
+              {t("action.back")}
+            </span>
           </button>
 
           {/* Right Controls */}
           <div className="flex items-center gap-2">
-            <a
-              href={article.link}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-surface))] transition-colors"
-              title={t('action.visit')}
-              aria-label={t('action.visit')}
+              title={t("action.visit")}
+              aria-label={t("action.visit")}
+              onClick={() => void openExternalLink(article.link)}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
               </svg>
               <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-[0.25em]">
-                {t('action.visit')}
+                {t("action.visit")}
               </span>
-            </a>
+            </button>
             {/* Reading Preferences Button */}
             <button
               onClick={() => setShowPreferences(!showPreferences)}
-              className={`p-2 rounded-lg transition-colors ${showPreferences
-                  ? 'bg-[rgb(var(--color-accent))] text-white'
-                  : 'text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-surface))]'
-                }`}
+              className={`p-2 rounded-lg transition-colors ${
+                showPreferences
+                  ? "bg-[rgb(var(--color-accent))] text-white"
+                  : "text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-surface))]"
+              }`}
               title="Preferências de leitura"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
               </svg>
             </button>
 
             {/* Focus Mode Button */}
             <button
               onClick={() => setIsFocusMode(!isFocusMode)}
-              className={`p-2 rounded-lg transition-colors ${isFocusMode
-                  ? 'bg-[rgb(var(--color-accent))] text-white'
-                  : 'text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-surface))]'
-                }`}
-              title={`${t('action.focus_mode')} (F)`}
+              className={`p-2 rounded-lg transition-colors ${
+                isFocusMode
+                  ? "bg-[rgb(var(--color-accent))] text-white"
+                  : "text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-[rgb(var(--color-surface))]"
+              }`}
+              title={`${t("action.focus_mode")} (F)`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                />
               </svg>
             </button>
           </div>
@@ -302,45 +394,73 @@ const contentWidthClasses = {
         {showPreferences && (
           <div className="absolute top-14 right-4 z-50 w-72 bg-[rgb(var(--color-surface))] border border-[rgb(var(--color-border))]/30 rounded-xl shadow-2xl p-4 animate-in slide-in-from-top-2 duration-200">
             <h3 className="text-sm font-bold text-[rgb(var(--color-text))] mb-4 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
               </svg>
               Preferências de Leitura
             </h3>
 
             {/* Font Size */}
             <div className="mb-4">
-              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">Tamanho da fonte</label>
+              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">
+                Tamanho da fonte
+              </label>
               <div className="flex gap-1">
-                {(['small', 'medium', 'large', 'xlarge'] as const).map(size => (
-                  <button
-                    key={size}
-                    onClick={() => updatePreference('fontSize', size)}
-                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${preferences.fontSize === size
-                        ? 'bg-[rgb(var(--color-accent))] text-white'
-                        : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]'
+                {(["small", "medium", "large", "xlarge"] as const).map(
+                  (size) => (
+                    <button
+                      key={size}
+                      onClick={() => updatePreference("fontSize", size)}
+                      className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        preferences.fontSize === size
+                          ? "bg-[rgb(var(--color-accent))] text-white"
+                          : "bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]"
                       }`}
-                  >
-                    {size === 'small' ? 'P' : size === 'medium' ? 'M' : size === 'large' ? 'G' : 'XG'}
-                  </button>
-                ))}
+                    >
+                      {size === "small"
+                        ? "P"
+                        : size === "medium"
+                          ? "M"
+                          : size === "large"
+                            ? "G"
+                            : "XG"}
+                    </button>
+                  ),
+                )}
               </div>
             </div>
 
             {/* Line Height */}
             <div className="mb-4">
-              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">Espaçamento</label>
+              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">
+                Espaçamento
+              </label>
               <div className="flex gap-1">
-                {(['compact', 'normal', 'relaxed'] as const).map(height => (
+                {(["compact", "normal", "relaxed"] as const).map((height) => (
                   <button
                     key={height}
-                    onClick={() => updatePreference('lineHeight', height)}
-                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${preferences.lineHeight === height
-                        ? 'bg-[rgb(var(--color-accent))] text-white'
-                        : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]'
-                      }`}
+                    onClick={() => updatePreference("lineHeight", height)}
+                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                      preferences.lineHeight === height
+                        ? "bg-[rgb(var(--color-accent))] text-white"
+                        : "bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]"
+                    }`}
                   >
-                    {height === 'compact' ? 'Compacto' : height === 'normal' ? 'Normal' : 'Amplo'}
+                    {height === "compact"
+                      ? "Compacto"
+                      : height === "normal"
+                        ? "Normal"
+                        : "Amplo"}
                   </button>
                 ))}
               </div>
@@ -348,18 +468,25 @@ const contentWidthClasses = {
 
             {/* Content Width */}
             <div className="mb-4">
-              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">Largura do texto</label>
+              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">
+                Largura do texto
+              </label>
               <div className="flex gap-1">
-                {(['narrow', 'medium', 'wide'] as const).map(width => (
+                {(["narrow", "medium", "wide"] as const).map((width) => (
                   <button
                     key={width}
-                    onClick={() => updatePreference('contentWidth', width)}
-                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${preferences.contentWidth === width
-                        ? 'bg-[rgb(var(--color-accent))] text-white'
-                        : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]'
-                      }`}
+                    onClick={() => updatePreference("contentWidth", width)}
+                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                      preferences.contentWidth === width
+                        ? "bg-[rgb(var(--color-accent))] text-white"
+                        : "bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]"
+                    }`}
                   >
-                    {width === 'narrow' ? 'Estreito' : width === 'medium' ? 'Médio' : 'Largo'}
+                    {width === "narrow"
+                      ? "Estreito"
+                      : width === "medium"
+                        ? "Médio"
+                        : "Largo"}
                   </button>
                 ))}
               </div>
@@ -367,19 +494,31 @@ const contentWidthClasses = {
 
             {/* Font Family */}
             <div>
-              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">Fonte</label>
+              <label className="text-xs text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-2 block">
+                Fonte
+              </label>
               <div className="flex gap-1">
-                {(['serif', 'sans', 'mono'] as const).map(font => (
+                {(["serif", "sans", "mono"] as const).map((font) => (
                   <button
                     key={font}
-                    onClick={() => updatePreference('fontFamily', font)}
-                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${font === 'serif' ? 'font-serif' : font === 'sans' ? 'font-sans' : 'font-mono'
-                      } ${preferences.fontFamily === font
-                        ? 'bg-[rgb(var(--color-accent))] text-white'
-                        : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]'
-                      }`}
+                    onClick={() => updatePreference("fontFamily", font)}
+                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                      font === "serif"
+                        ? "font-serif"
+                        : font === "sans"
+                          ? "font-sans"
+                          : "font-mono"
+                    } ${
+                      preferences.fontFamily === font
+                        ? "bg-[rgb(var(--color-accent))] text-white"
+                        : "bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]"
+                    }`}
                   >
-                    {font === 'serif' ? 'Serifa' : font === 'sans' ? 'Sem Serifa' : 'Mono'}
+                    {font === "serif"
+                      ? "Serifa"
+                      : font === "sans"
+                        ? "Sem Serifa"
+                        : "Mono"}
                   </button>
                 ))}
               </div>
@@ -394,10 +533,20 @@ const contentWidthClasses = {
               onClick={onPrev}
               disabled={!hasPrev}
               className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-[rgb(var(--color-surface))]/80 hover:bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text))] disabled:opacity-0 transition-all border border-[rgb(var(--color-border))]/20 backdrop-blur-sm shadow-lg"
-              title={t('action.prev')}
+              title={t("action.prev")}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
 
@@ -405,10 +554,20 @@ const contentWidthClasses = {
               onClick={onNext}
               disabled={!hasNext}
               className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-[rgb(var(--color-surface))]/80 hover:bg-[rgb(var(--color-surface))] text-[rgb(var(--color-text))] disabled:opacity-0 transition-all border border-[rgb(var(--color-border))]/20 backdrop-blur-sm shadow-lg"
-              title={t('action.next')}
+              title={t("action.next")}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </>
@@ -417,8 +576,11 @@ const contentWidthClasses = {
         {/* Main Content Area */}
         <div
           ref={contentRef}
-          className={`${isVideoCompactDesktop ? 'md:flex-none' : 'flex-1'} overflow-y-auto custom-scrollbar scroll-smooth ${isFocusMode ? 'bg-[rgb(var(--color-background))]' : 'bg-[rgb(var(--color-surface))]'
-            }`}
+          className={`${isVideoCompactDesktop ? "md:flex-none" : "flex-1"} overflow-y-auto custom-scrollbar scroll-smooth ${
+            isFocusMode
+              ? "bg-[rgb(var(--color-background))]"
+              : "bg-[rgb(var(--color-surface))]"
+          }`}
         >
           {videoEmbed ? (
             /* Cinema Mode (Video) */
@@ -429,10 +591,44 @@ const contentWidthClasses = {
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  onLoad={() => setPlayerLoaded(true)}
                 />
               </div>
-              <div className={`${isVideoCompactDesktop ? 'px-6 py-5 md:px-8 md:py-6' : 'p-6 md:p-10'} ${contentWidthClasses[preferences.contentWidth]} mx-auto w-full`}>
-                <h1 className={`text-2xl md:text-3xl font-bold text-[rgb(var(--color-text))] mb-6 ${fontFamilyClasses[preferences.fontFamily]}`}>
+              {shouldMonitorDesktopVideo && (
+                <div className="mx-auto mt-4 w-full max-w-[62ch] rounded-xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--color-background))]/70 px-4 py-3 text-sm text-[rgb(var(--color-textSecondary))]">
+                  <p className="text-[rgb(var(--color-text))]">
+                    {showVideoFallbackHint
+                      ? "O player não respondeu dentro do esperado neste ambiente."
+                      : "Se o player pedir login ou não iniciar, use a abertura externa."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void openExternalLink(article.link)}
+                    className="mt-3 inline-flex items-center gap-2 text-[rgb(var(--color-accent))] hover:underline font-semibold"
+                  >
+                    Abrir no YouTube
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <div
+                className={`${isVideoCompactDesktop ? "px-6 py-5 md:px-8 md:py-6" : "p-6 md:p-10"} ${contentWidthClasses[preferences.contentWidth]} mx-auto w-full`}
+              >
+                <h1
+                  className={`text-2xl md:text-3xl font-bold text-[rgb(var(--color-text))] mb-6 ${fontFamilyClasses[preferences.fontFamily]}`}
+                >
                   {article.title}
                 </h1>
                 {fetchNotice && (
@@ -479,12 +675,14 @@ const contentWidthClasses = {
               )}
 
               {/* Article Body */}
-              <div className={`
+              <div
+                className={`
                 relative px-6 py-8 md:px-12 md:py-12
                 ${contentWidthClasses[preferences.contentWidth]}
                 mx-auto w-full transition-all
-                ${isFocusMode ? 'pt-8' : article.imageUrl ? '-mt-24 md:-mt-32' : ''}
-              `}>
+                ${isFocusMode ? "pt-8" : article.imageUrl ? "-mt-24 md:-mt-32" : ""}
+              `}
+              >
                 {/* Meta - Hidden in Focus Mode */}
                 {!isFocusMode && (
                   <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm tracking-wider uppercase text-[rgb(var(--color-accent))] mb-4 md:mb-6 animate-in slide-in-from-bottom-4 duration-500 min-w-0">
@@ -493,21 +691,23 @@ const contentWidthClasses = {
                     </span>
                     <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-textSecondary))]" />
                     <span className="text-[rgb(var(--color-textSecondary))]">
-                      {new Date(article.pubDate).toLocaleDateString('pt-BR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
+                      {new Date(article.pubDate).toLocaleDateString("pt-BR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
                       })}
                     </span>
                   </div>
                 )}
 
                 {/* Title */}
-                <h1 className={`
+                <h1
+                  className={`
                   text-2xl md:text-4xl lg:text-5xl font-bold text-[rgb(var(--color-text))] mb-8
                   leading-tight animate-in slide-in-from-bottom-4 duration-500 delay-100
                   ${fontFamilyClasses[preferences.fontFamily]}
-                `}>
+                `}
+                >
                   {article.title}
                 </h1>
 
@@ -596,7 +796,9 @@ const contentWidthClasses = {
                   {loading ? (
                     <div className="py-16 flex flex-col items-center justify-center text-[rgb(var(--color-textSecondary))] animate-pulse">
                       <div className="w-10 h-10 border-4 border-[rgb(var(--color-accent))] border-t-transparent rounded-full animate-spin mb-4" />
-                      <span className="uppercase tracking-widest text-xs">{t('loading')}</span>
+                      <span className="uppercase tracking-widest text-xs">
+                        {t("loading")}
+                      </span>
                     </div>
                   ) : (
                     <div
@@ -608,17 +810,26 @@ const contentWidthClasses = {
 
                 {/* Footer */}
                 <div className="mt-12 pt-8 border-t border-[rgb(var(--color-border))]/20 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                  <a
-                    href={article.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
                     className="inline-flex items-center gap-2 text-[rgb(var(--color-accent))] hover:underline text-sm uppercase tracking-widest font-bold transition-colors"
+                    onClick={() => void openExternalLink(article.link)}
                   >
-                    {t('action.visit')}
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    {t("action.visit")}
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
                     </svg>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -629,32 +840,54 @@ const contentWidthClasses = {
         </div>
 
         {/* Mobile Navigation Bar - Hidden in Focus Mode */}
-        <div className={`
+        <div
+          className={`
           md:hidden fixed bottom-0 left-0 right-0
           bg-[rgb(var(--color-surface))]/95 backdrop-blur-xl
           border-t border-[rgb(var(--color-border))]/20
           p-4 flex justify-between items-center z-40
           transition-transform duration-300
-          ${isFocusMode ? 'translate-y-full' : ''}
-        `}>
+          ${isFocusMode ? "translate-y-full" : ""}
+        `}
+        >
           <button
             onClick={onPrev}
             disabled={!hasPrev}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] disabled:opacity-30 text-xs font-bold uppercase tracking-widest hover:bg-[rgb(var(--color-background))]/80 active:scale-95 transition-all border border-[rgb(var(--color-border))]/20"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
-            {t('action.prev')}
+            {t("action.prev")}
           </button>
           <button
             onClick={onNext}
             disabled={!hasNext}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[rgb(var(--color-accent))] text-white disabled:opacity-30 disabled:bg-[rgb(var(--color-background))] text-xs font-bold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg"
           >
-            {t('action.next')}
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            {t("action.next")}
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         </div>

@@ -31,6 +31,11 @@ declare global {
   }
 }
 
+type TauriRuntimeWindow = Window & {
+  __TAURI__?: unknown;
+  __TAURI_INTERNALS__?: unknown;
+};
+
 const HOME_STAY_PREFETCH_DELAY_MS = 30000;
 const VALID_FIRST_PAINT_LAYOUTS = new Set([
   "default",
@@ -99,12 +104,12 @@ const getViewFromHash = () => {
   if (typeof window === "undefined") return "landing";
 
   // Force feed view in Tauri environment
+  const tauriWindow = window as TauriRuntimeWindow;
   const isTauri =
-    typeof window !== "undefined" &&
-    ((window as any).__TAURI_INTERNALS__ ||
-      (window as any).__TAURI__ ||
-      window.location.protocol === "tauri:" ||
-      window.location.protocol === "app:");
+    tauriWindow.__TAURI_INTERNALS__ ||
+    tauriWindow.__TAURI__ ||
+    tauriWindow.location.protocol === "tauri:" ||
+    tauriWindow.location.protocol === "app:";
 
   if (isTauri) return "feed";
   return window.location.hash.toLowerCase() === "#feed" ? "feed" : "landing";

@@ -28,7 +28,10 @@ import {
   resolveFeedVisibilityState,
   resolveScopeMode,
 } from "../services/feedLoadingStrategy";
-import { getFeedDisplayName } from "../utils/feedDisplay";
+import {
+  getFeedDisplayName,
+  resolveFeedSourceTitle,
+} from "../utils/feedDisplay";
 // import { schedulePreload } from '../services/feedPreloader';
 
 export interface FeedLoadingState {
@@ -148,16 +151,29 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     new Map(),
   );
 
+  const normalizeArticleForFeed = useCallback(
+    (feed: FeedSource, article: Article): Article => ({
+      ...article,
+      feedUrl: article.feedUrl || feed.url,
+      sourceTitle: resolveFeedSourceTitle(
+        feed,
+        article.sourceTitle,
+        article.feedUrl || article.link || feed.url,
+      ),
+    }),
+    [],
+  );
+
   const collectArticlesFromFeedResults = useCallback(
     (results: Map<string, FeedResult>): Article[] => {
       const allArticles: Article[] = [];
 
       results.forEach((result) => {
         if (result.success && result.articles.length > 0) {
-          const articlesWithFeedUrl = result.articles.map((article) => ({
-            ...article,
-            feedUrl: article.feedUrl || result.url,
-          }));
+          const feed = feedsRef.current.find((item) => item.url === result.url);
+          const articlesWithFeedUrl = result.articles.map((article) =>
+            feed ? normalizeArticleForFeed(feed, article) : article,
+          );
           allArticles.push(...articlesWithFeedUrl);
         }
       });
@@ -166,7 +182,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime(),
       );
     },
-    [],
+    [normalizeArticleForFeed],
   );
 
   /**
@@ -180,11 +196,9 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         targetFeeds.forEach((feed) => {
           const cachedArticles = getCachedArticles(feed.url);
           if (cachedArticles && cachedArticles.length > 0) {
-            // Ensure feedUrl is present for filtering later
-            const articlesWithUrl = cachedArticles.map((a) => ({
-              ...a,
-              feedUrl: a.feedUrl || feed.url,
-            }));
+            const articlesWithUrl = cachedArticles.map((article) =>
+              normalizeArticleForFeed(feed, article),
+            );
             allCachedArticles.push(...articlesWithUrl);
           }
         });
@@ -202,7 +216,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         return [];
       }
     },
-    [logger],
+    [logger, normalizeArticleForFeed],
   );
 
   const getCachedFeedResultsFromSmartCache = useCallback(
@@ -214,10 +228,9 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           const cachedArticles = getCachedArticles(feed.url);
           if (!cachedArticles || cachedArticles.length === 0) return;
 
-          const normalizedArticles = cachedArticles.map((article) => ({
-            ...article,
-            feedUrl: article.feedUrl || feed.url,
-          }));
+          const normalizedArticles = cachedArticles.map((article) =>
+            normalizeArticleForFeed(feed, article),
+          );
 
           cachedResults.set(feed.url, {
             url: feed.url,
@@ -238,7 +251,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
       return cachedResults;
     },
-    [logger],
+    [logger, normalizeArticleForFeed],
   );
 
   /**
@@ -271,9 +284,15 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         });
 
         clearTimeout(timeoutId);
+        const normalizedFetchedArticles = result.articles.map((article) =>
+          normalizeArticleForFeed(feed, article),
+        );
 
         if (isUnavailablePayload(result.articles)) {
           if (cachedSnapshot && cachedSnapshot.length > 0) {
+            const normalizedCachedSnapshot = cachedSnapshot.map((article) =>
+              normalizeArticleForFeed(feed, article),
+            );
             logger.warn(
               `Revalidation failed; preserving cached articles for ${feed.url}`,
               {
@@ -286,10 +305,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
             return {
               url: feed.url,
-              articles: cachedSnapshot,
+              articles: normalizedCachedSnapshot,
               title: getFeedDisplayName(
                 feed,
-                cachedSnapshot[0]?.sourceTitle,
+                normalizedCachedSnapshot[0]?.sourceTitle,
               ),
               success: true,
               route: result.route,
@@ -322,8 +341,11 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
         return {
           url: feed.url,
-          articles: result.articles,
-          title: result.title,
+          articles: normalizedFetchedArticles,
+          title: getFeedDisplayName(
+            feed,
+            normalizedFetchedArticles[0]?.sourceTitle || result.title,
+          ),
           success: true,
           route: result.route,
           warning: result.warning,
@@ -356,7 +378,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         };
       }
     },
-    [logger],
+    [logger, normalizeArticleForFeed],
   );
 
   /**
@@ -477,23 +499,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             },
           },
         );
-      } else if (isHoldingPreviousContent) {
-        setLoadingState({
-          status: "loading",
-          progress: 0,
-          loadedFeeds: 0,
-          totalFeeds: scopedFeeds.length,
-          errors: [],
-          isBackgroundRefresh: true,
-          currentAction: "Atualizando categoria em segundo plano...",
-          isResolved: true,
-          hasScopedCache: false,
-          isHoldingPreviousContent: true,
-          scopeKey,
-        });
       } else if (!shouldKeepVisibleContent) {
         setArticles([]);
         articlesRef.current = [];
+        visibleScopeKeyRef.current = scopeKey;
         setLoadingState({
           status: "loading",
           progress: 0,
@@ -511,6 +520,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           scopeKey,
         });
       } else {
+        visibleScopeKeyRef.current = scopeKey;
         setLoadingState({
           status: "loading",
           progress: 0,
@@ -524,7 +534,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
               : "Atualizando feeds em segundo plano...",
           isResolved: true,
           hasScopedCache: false,
-          isHoldingPreviousContent: false,
+          isHoldingPreviousContent,
           scopeKey,
         });
       }
@@ -874,8 +884,12 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           isBackgroundRefresh: false,
           currentAction:
             errors.length > 0
-              ? (errors.length === 1 ? "1 feed falhou nesta atualização" : `${errors.length} feeds falharam nesta atualização`)
-              : (mode === "single-feed" ? "Feed selecionado carregado" : "Todos os feeds carregados"),
+              ? errors.length === 1
+                ? "1 feed falhou nesta atualização"
+                : `${errors.length} feeds falharam nesta atualização`
+              : mode === "single-feed"
+                ? "Feed selecionado carregado"
+                : "Todos os feeds carregados",
           priorityFeedsLoaded: true,
           isResolved: true,
           hasScopedCache,

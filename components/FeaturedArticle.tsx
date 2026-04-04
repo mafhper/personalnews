@@ -27,19 +27,13 @@ export const FeaturedArticle: React.FC<{
       aria-labelledby="featured-article-title"
     >
       <div className="relative group h-full overflow-hidden rounded-2xl">
-        <a
-          href={article.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block relative h-full overflow-hidden"
+        <button
+          type="button"
+          className="block relative h-full w-full overflow-hidden bg-transparent p-0 text-left"
           aria-label={`Read featured article: ${article.title} from ${
             authorLabel || article.sourceTitle
           }`}
-          onClick={(event) => {
-            if (!onClick) return;
-            event.preventDefault();
-            onClick(article);
-          }}
+          onClick={() => onClick?.(article)}
         >
           <OptimizedImage
             src={article.imageUrl}
@@ -108,7 +102,10 @@ export const FeaturedArticle: React.FC<{
                   </span>
                 )}
                 {authorLabel && (
-                  <span className="font-normal text-white/50" aria-hidden="true">
+                  <span
+                    className="font-normal text-white/50"
+                    aria-hidden="true"
+                  >
                     •
                   </span>
                 )}
@@ -132,7 +129,7 @@ export const FeaturedArticle: React.FC<{
               </footer>
             </div>
           </div>
-        </a>
+        </button>
       </div>
     </article>
   );

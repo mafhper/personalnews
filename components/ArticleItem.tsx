@@ -90,30 +90,24 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
     return Math.floor(seconds) + " seconds ago";
   };
 
-  const isHorizontal = layoutMode === 'list' || layoutMode === 'minimal';
+  const isHorizontal = layoutMode === "list" || layoutMode === "minimal";
 
   return (
-    <article className={`h-full flex flex-col transition-all duration-300 ${className}`}>
+    <article
+      className={`h-full flex flex-col transition-all duration-300 ${className}`}
+    >
       <div
-        className={`feed-card flex h-full group ${isHorizontal ? 'flex-row gap-5 p-4 sm:p-5' : 'flex-col p-4 sm:p-5'}`}
+        className={`feed-card flex h-full group ${isHorizontal ? "flex-row gap-5 p-4 sm:p-5" : "flex-col p-4 sm:p-5"}`}
       >
         {/* Article image - Always render container */}
         <div
-          className={`feed-media relative ${isHorizontal ? 'w-28 sm:w-40 aspect-[4/3] shrink-0 mb-0' : 'w-full aspect-[4/3] sm:aspect-[3/2] lg:aspect-[3/2] mb-4'}`}
+          className={`feed-media relative ${isHorizontal ? "w-28 sm:w-40 aspect-[4/3] shrink-0 mb-0" : "w-full aspect-[4/3] sm:aspect-[3/2] lg:aspect-[3/2] mb-4"}`}
         >
-          <a
-            href={article.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => {
-              if (onClick) {
-                e.preventDefault();
-                onClick(article);
-              }
-            }}
-            className="block w-full h-full cursor-pointer"
-            aria-hidden="true"
-            tabIndex={-1}
+          <button
+            type="button"
+            onClick={() => onClick?.(article)}
+            className="block w-full h-full cursor-pointer bg-transparent p-0 text-left"
+            aria-label={`Abrir ${article.title} no leitor`}
           >
             <ArticleImage
               article={article}
@@ -122,7 +116,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
               fill={true}
               className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
-          </a>
+          </button>
 
           {/* Favorite button overlay */}
           <FavoriteButton
@@ -135,17 +129,10 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
 
         {/* Article content */}
         <div className="flex-1 flex flex-col">
-          <a
-            href={article.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex flex-col group min-h-0"
-            onClick={(e) => {
-              if (onClick) {
-                e.preventDefault();
-                onClick(article);
-              }
-            }}
+          <button
+            type="button"
+            className="flex-1 flex flex-col group min-h-0 bg-transparent p-0 text-left"
+            onClick={() => onClick?.(article)}
             aria-label={`Article: ${article.title} from ${
               authorLabel || article.sourceTitle
             }`}
@@ -172,7 +159,9 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
             )}
 
             {/* Article metadata */}
-            <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${isHorizontal ? '' : 'mt-auto'}`}>
+            <div
+              className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${isHorizontal ? "" : "mt-auto"}`}
+            >
               {contentConfig.showAuthor && authorLabel && (
                 <span
                   className="feed-meta text-[11px] truncate max-w-[220px]"
@@ -189,15 +178,14 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
                   aria-label={`Published ${timeSince(article.pubDate)}`}
                 >
                   {layoutSettings.showPublicationTime || contentConfig.showTime
-                    ? (timeFormat === "12h"
-                      ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: true })}`
-                      : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}`)
-                    : timeSince(article.pubDate)
-                  }
+                    ? timeFormat === "12h"
+                      ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: true })}`
+                      : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}`
+                    : timeSince(article.pubDate)}
                 </time>
               )}
             </div>
-          </a>
+          </button>
 
           {(() => {
             const embedUrl = getVideoEmbed(article.link);
@@ -228,7 +216,7 @@ const ArticleItemWrapper: React.FC<ArticleItemProps> = (props) => {
 // Custom comparison function for React.memo
 const arePropsEqual = (
   prevProps: ArticleItemProps,
-  nextProps: ArticleItemProps
+  nextProps: ArticleItemProps,
 ): boolean => {
   if (prevProps.renderMode !== nextProps.renderMode) {
     return false;

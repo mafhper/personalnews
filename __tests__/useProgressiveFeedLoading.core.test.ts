@@ -83,7 +83,7 @@ describe("feedLoadingStrategy", () => {
       });
     });
 
-    it("holds the previous content when switching scopes without target cache", () => {
+    it("clears visible content when switching scopes without target cache", () => {
       expect(
         resolveFeedVisibilityState({
           forceRefresh: false,
@@ -95,9 +95,28 @@ describe("feedLoadingStrategy", () => {
       ).toMatchObject({
         hasScopedCache: false,
         isDifferentScope: true,
+        isHoldingPreviousContent: false,
+        shouldKeepVisibleContent: false,
+        preserveVisibleArticlesOnFailure: false,
+        shouldBypassCache: false,
+      });
+    });
+
+    it("keeps same-scope content visible while refreshing without scoped cache", () => {
+      expect(
+        resolveFeedVisibilityState({
+          forceRefresh: true,
+          cachedArticlesCount: 0,
+          previousArticlesCount: 8,
+          previousScopeKey: "category:tech",
+          scopeKey: "category:tech",
+        }),
+      ).toMatchObject({
+        hasScopedCache: false,
+        isDifferentScope: false,
         isHoldingPreviousContent: true,
         shouldKeepVisibleContent: true,
-        preserveVisibleArticlesOnFailure: false,
+        preserveVisibleArticlesOnFailure: true,
         shouldBypassCache: true,
       });
     });

@@ -19,6 +19,12 @@ interface FeedAnalyticsProps {
   onFocusConsumed?: () => void;
 }
 
+type AnalyticsAccordionSection =
+  | "diagnosis"
+  | "actions"
+  | "affected"
+  | "details";
+
 type AffectedFeedRow = {
   url: string;
   title: string;
@@ -127,7 +133,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 }) => {
   const { snapshot, refresh } = useProxyDashboard();
   const [showAllRows, setShowAllRows] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   const activityStats = useMemo(() => {
     const countByFeed = new Map<string, number>();
@@ -293,6 +298,11 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   const uncheckedRows = affectedRows.filter(
     (row) => row.status === "unchecked",
   );
+  const hasAttentionItems =
+    invalidRows.length > 0 ||
+    uncheckedRows.length > 0 ||
+    snapshot.summary.fallbackActive ||
+    snapshot.summary.missingApiKeys.length > 0;
 
   const diagnosis = useMemo(() => {
     if (snapshot.summary.fallbackActive && snapshot.runtime.warningDetails) {
@@ -387,13 +397,47 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     [affectedRows],
   );
 
+  const [openSections, setOpenSections] = useState<
+    Record<AnalyticsAccordionSection, boolean>
+  >(() => ({
+    diagnosis: hasAttentionItems,
+    actions: hasAttentionItems,
+    affected: hasAttentionItems,
+    details: focusSection === "proxy-health" || focusSection === "feed-reports",
+  }));
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setOpenSections((current) => ({
+        diagnosis: hasAttentionItems ? current.diagnosis || true : false,
+        actions: hasAttentionItems ? current.actions || true : false,
+        affected: hasAttentionItems ? current.affected || true : false,
+        details: current.details,
+      }));
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [hasAttentionItems]);
+
+  const toggleSection = (section: AnalyticsAccordionSection) => {
+    setOpenSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  };
+
   useEffect(() => {
     if (!focusSection) return;
 
     const timer = window.setTimeout(() => {
-      if (focusSection === "proxy-health" || focusSection === "feed-reports") {
-        setShowDetails(true);
-      }
+      setOpenSections((current) => ({
+        ...current,
+        affected: focusSection === "feed-status" ? true : current.affected,
+        details:
+          focusSection === "proxy-health" || focusSection === "feed-reports"
+            ? true
+            : current.details,
+      }));
       document.getElementById(focusSection)?.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -455,61 +499,72 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <section className={SURFACE_CLASS}>
-          <div className="flex items-center gap-2">
+        <AccordionSection
+          sectionId="diagnosis"
+          title="Problema principal"
+          isOpen={openSections.diagnosis}
+          onToggle={() => toggleSection("diagnosis")}
+          icon={
             <AlertCircle className="h-5 w-5 text-[rgb(var(--color-warning))]" />
-            <h4 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
-              Problema principal
-            </h4>
-          </div>
-          <p className="mt-4 text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
+          }
+        >
+          <p className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
             {diagnosis.label}
           </p>
           <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
             {diagnosis.detail}
           </p>
-        </section>
+        </AccordionSection>
 
-        <section className={SURFACE_CLASS}>
-          <div className="flex items-center gap-2">
+        <AccordionSection
+          sectionId="actions"
+          title="Ações"
+          isOpen={openSections.actions}
+          onToggle={() => toggleSection("actions")}
+          icon={
             <CheckCircle2 className="h-5 w-5 text-[rgb(var(--color-primary))]" />
-            <h4 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
-              Ações
-            </h4>
-          </div>
-          <div className="mt-4 space-y-3">
+          }
+        >
+          <div className="space-y-3">
             {actionItems.map((item) => (
-                <div
-                  key={item}
-                  className={`${MANAGER_CARD_CLASS} text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]`}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          <div className={`${MANAGER_CARD_CLASS} mt-4 text-sm text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]`}>
+              <div
+                key={item}
+                className={`${MANAGER_CARD_CLASS} text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]`}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+          <div
+            className={`${MANAGER_CARD_CLASS} mt-4 text-sm text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]`}
+          >
             {diagnosis.action}
           </div>
-        </section>
+        </AccordionSection>
       </div>
 
-      <section id="feed-status" className={SURFACE_CLASS}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <h4 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
-            Feeds afetados
-          </h4>
-          {affectedRows.length > 8 && (
+      <AccordionSection
+        sectionId="feed-status"
+        sectionClassName={SURFACE_CLASS}
+        title="Feeds afetados"
+        isOpen={openSections.affected}
+        onToggle={() => toggleSection("affected")}
+        actions={
+          affectedRows.length > 8 && openSections.affected ? (
             <button
               type="button"
-              onClick={() => setShowAllRows((current) => !current)}
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowAllRows((current) => !current);
+              }}
               className={MANAGER_CONTROL_CLASS}
             >
               {showAllRows ? "Mostrar menos" : `Mostrar ${affectedRows.length}`}
             </button>
-          )}
-        </div>
-
-        <div className="mt-4 overflow-x-auto">
+          ) : null
+        }
+      >
+        <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-y-2">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
@@ -575,105 +630,135 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             </tbody>
           </table>
         </div>
-      </section>
+      </AccordionSection>
 
-      <section className={SURFACE_CLASS}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <h4 className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
-            Detalhes
-          </h4>
-          <button
-            type="button"
-            onClick={() => setShowDetails((current) => !current)}
-            className={MANAGER_CONTROL_CLASS}
-          >
-            {showDetails ? "Ocultar" : "Mostrar"}
-          </button>
-        </div>
+      <AccordionSection
+        title="Detalhes"
+        isOpen={openSections.details}
+        onToggle={() => toggleSection("details")}
+      >
+        <div className="space-y-4">
+          <section id="proxy-health" className={MANAGER_SURFACE_CARD_CLASS}>
+            <div className="mb-4 flex items-center gap-2">
+              <Layers3 className="h-5 w-5 text-[rgb(var(--color-primary))]" />
+              <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                Proxies
+              </h5>
+            </div>
+            <ProxyHealthSummary snapshot={snapshot} />
+          </section>
 
-        {showDetails && (
-          <div className="mt-4 space-y-4">
-              <section
-                id="proxy-health"
-                className={MANAGER_SURFACE_CARD_CLASS}
-              >
-              <div className="mb-4 flex items-center gap-2">
-                <Layers3 className="h-5 w-5 text-[rgb(var(--color-primary))]" />
-                <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                  Proxies
-                </h5>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+            <section id="feed-reports" className={MANAGER_SURFACE_CARD_CLASS}>
+              <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                Exportar relatório
+              </h5>
+              <div className="mt-4">
+                <HealthReportExporter
+                  feeds={exportFeeds}
+                  feedValidations={feedValidations}
+                  snapshot={snapshot}
+                />
               </div>
-              <ProxyHealthSummary snapshot={snapshot} />
             </section>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-              <section
-                id="feed-reports"
-                className={MANAGER_SURFACE_CARD_CLASS}
-              >
-                <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                  Exportar relatório
-                </h5>
-                <div className="mt-4">
-                  <HealthReportExporter
-                    feeds={exportFeeds}
-                    feedValidations={feedValidations}
-                    snapshot={snapshot}
-                  />
-                </div>
-              </section>
+            <section className={MANAGER_SURFACE_CARD_CLASS}>
+              <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                Atividade
+              </h5>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <MiniStat
+                  label="Associados"
+                  value={activityStats.matchedArticles}
+                />
+                <MiniStat
+                  label="Sem vínculo"
+                  value={activityStats.unmatchedArticles}
+                />
+              </div>
 
-              <section className={MANAGER_SURFACE_CARD_CLASS}>
-                <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                  Atividade
-                </h5>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <MiniStat
-                    label="Associados"
-                    value={activityStats.matchedArticles}
-                  />
-                  <MiniStat
-                    label="Sem vínculo"
-                    value={activityStats.unmatchedArticles}
-                  />
-                </div>
-
-                {activityStats.topicTrends.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {activityStats.topicTrends.map(([topic, count]) => (
-                      <span
-                        key={topic}
-                        className="rounded-full border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
-                      >
-                        #{topic} ({count})
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-4 space-y-2">
-                  {activityStats.quietFeeds.slice(0, 4).map((feed) => (
-                    <div
-                      key={feed.feedKey}
-                      className="flex items-center justify-between gap-3 text-sm"
+              {activityStats.topicTrends.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {activityStats.topicTrends.map(([topic, count]) => (
+                    <span
+                      key={topic}
+                      className="rounded-full border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
                     >
-                      <span className="truncate text-[rgb(var(--theme-text-readable))]">
-                        {feed.label}
-                      </span>
-                      <span className="text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                        0 artigos
-                      </span>
-                    </div>
+                      #{topic} ({count})
+                    </span>
                   ))}
                 </div>
-              </section>
-            </div>
+              )}
+
+              <div className="mt-4 space-y-2">
+                {activityStats.quietFeeds.slice(0, 4).map((feed) => (
+                  <div
+                    key={feed.feedKey}
+                    className="flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="truncate text-[rgb(var(--theme-text-readable))]">
+                      {feed.label}
+                    </span>
+                    <span className="text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      0 artigos
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
-        )}
-      </section>
+        </div>
+      </AccordionSection>
     </div>
   );
 };
+
+const AccordionSection: React.FC<{
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  actions?: React.ReactNode;
+  sectionId?: string;
+  sectionClassName?: string;
+}> = ({
+  title,
+  isOpen,
+  onToggle,
+  children,
+  icon,
+  actions,
+  sectionId,
+  sectionClassName = SURFACE_CLASS,
+}) => (
+  <section id={sectionId} className={sectionClassName}>
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        className="flex items-center justify-between gap-3 text-left"
+      >
+        <span className="flex items-center gap-2">
+          {icon}
+          <span className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            {title}
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className={`text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-transform ${isOpen ? "rotate-180" : ""}`}
+        >
+          ▾
+        </span>
+      </button>
+      {actions}
+    </div>
+
+    {isOpen && <div className="mt-4">{children}</div>}
+  </section>
+);
 
 const StatusBadge: React.FC<{
   label: string;

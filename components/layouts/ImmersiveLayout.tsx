@@ -4,17 +4,17 @@
  * Responsivo, deduplicado e com fallback visual para posts sem imagem
  */
 
-import React, { useMemo, useState } from 'react';
-import type { Article } from '../../types';
-import { ArticleReaderModal } from '../ArticleReaderModal';
-import { ArticleImage } from '../ArticleImage';
-import { FavoriteButton } from '../FavoriteButton';
-import { FeedInteractiveActions } from '../FeedInteractiveActions';
-import { getVideoEmbed } from '../../utils/videoEmbed';
+import React, { useMemo, useState } from "react";
+import type { Article } from "../../types";
+import { ArticleReaderModal } from "../ArticleReaderModal";
+import { ArticleImage } from "../ArticleImage";
+import { FavoriteButton } from "../FavoriteButton";
+import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { getVideoEmbed } from "../../utils/videoEmbed";
 
 interface ImmersiveLayoutProps {
   articles: Article[];
-  timeFormat: '12h' | '24h';
+  timeFormat: "12h" | "24h";
 }
 
 export const ImmersiveSkeleton: React.FC = () => {
@@ -29,8 +29,11 @@ export const ImmersiveSkeleton: React.FC = () => {
 
       {/* GRID SKELETON */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="relative w-full rounded-3xl overflow-hidden min-h-[45vh] feed-skeleton-block flex flex-col justify-end p-8 space-y-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="relative w-full rounded-3xl overflow-hidden min-h-[45vh] feed-skeleton-block flex flex-col justify-end p-8 space-y-4"
+          >
             <div className="w-32 h-4 feed-skeleton-block rounded-full" />
             <div className="w-full h-10 feed-skeleton-block rounded-xl" />
           </div>
@@ -51,12 +54,12 @@ function getGradientFromString(value: string) {
   }
 
   const gradients = [
-    'from-slate-900 via-gray-800 to-zinc-900',
-    'from-indigo-900 via-blue-800 to-cyan-900',
-    'from-emerald-900 via-teal-800 to-cyan-900',
-    'from-rose-900 via-pink-800 to-fuchsia-900',
-    'from-amber-900 via-orange-800 to-red-900',
-    'from-violet-900 via-purple-800 to-indigo-900',
+    "from-slate-900 via-gray-800 to-zinc-900",
+    "from-indigo-900 via-blue-800 to-cyan-900",
+    "from-emerald-900 via-teal-800 to-cyan-900",
+    "from-rose-900 via-pink-800 to-fuchsia-900",
+    "from-amber-900 via-orange-800 to-red-900",
+    "from-violet-900 via-purple-800 to-indigo-900",
   ];
 
   return gradients[Math.abs(hash) % gradients.length];
@@ -66,12 +69,14 @@ function getGradientFromString(value: string) {
    Layout
 ========================= */
 
-export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) => {
+export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({
+  articles,
+}) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
 
   const uniqueArticles = useMemo(() => {
     const seen = new Set<string>();
-    return articles.filter(a => {
+    return articles.filter((a) => {
       if (!a.link || seen.has(a.link)) return false;
       seen.add(a.link);
       return true;
@@ -85,14 +90,10 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
 
   return (
     <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-12 pb-20 px-4 sm:px-6 lg:px-8">
-
-      <HeroArticle
-        article={hero}
-        onRead={() => setReadingArticle(hero)}
-      />
+      <HeroArticle article={hero} onRead={() => setReadingArticle(hero)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
-        {rest.map(article => (
+        {rest.map((article) => (
           <ArticleCard
             key={article.link}
             article={article}
@@ -106,23 +107,27 @@ export const ImmersiveLayout: React.FC<ImmersiveLayoutProps> = ({ articles }) =>
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
           onNext={() => {
-            const i = uniqueArticles.findIndex(a => a.link === readingArticle.link);
+            const i = uniqueArticles.findIndex(
+              (a) => a.link === readingArticle.link,
+            );
             if (i < uniqueArticles.length - 1) {
               setReadingArticle(uniqueArticles[i + 1]);
             }
           }}
           onPrev={() => {
-            const i = uniqueArticles.findIndex(a => a.link === readingArticle.link);
+            const i = uniqueArticles.findIndex(
+              (a) => a.link === readingArticle.link,
+            );
             if (i > 0) {
               setReadingArticle(uniqueArticles[i - 1]);
             }
           }}
           hasNext={
-            uniqueArticles.findIndex(a => a.link === readingArticle.link) <
+            uniqueArticles.findIndex((a) => a.link === readingArticle.link) <
             uniqueArticles.length - 1
           }
           hasPrev={
-            uniqueArticles.findIndex(a => a.link === readingArticle.link) > 0
+            uniqueArticles.findIndex((a) => a.link === readingArticle.link) > 0
           }
         />
       )}
@@ -175,32 +180,34 @@ const HeroArticle: React.FC<{
       {/* Content at the bottom */}
       <div className="relative z-10 mt-auto p-8 sm:p-12 md:p-16 w-full max-w-5xl">
         <div className="space-y-6">
-          <time dateTime={article.pubDate.toISOString()} className="text-xs uppercase tracking-[0.3em] text-white/60 font-black">
-            {article.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+          <time
+            dateTime={article.pubDate.toISOString()}
+            className="text-xs uppercase tracking-[0.3em] text-white/60 font-black"
+          >
+            {article.pubDate.toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
           </time>
 
           <h1
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight"
-            style={{ textShadow: '0 12px 32px rgba(0, 0, 0, 0.55)' }}
+            style={{ textShadow: "0 12px 32px rgba(0, 0, 0, 0.55)" }}
           >
-            <a
-              href={article.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white/90 transition-colors"
-              onClick={(event) => {
-                event.preventDefault();
-                onRead();
-              }}
+            <button
+              type="button"
+              className="bg-transparent p-0 text-left hover:text-white/90 transition-colors"
+              onClick={onRead}
             >
               {article.title}
-            </a>
+            </button>
           </h1>
 
           {article.description && (
             <p
               className="text-base sm:text-lg md:text-xl text-white/90 line-clamp-3 leading-relaxed max-w-3xl"
-              style={{ textShadow: '0 8px 24px rgba(0, 0, 0, 0.45)' }}
+              style={{ textShadow: "0 8px 24px rgba(0, 0, 0, 0.45)" }}
             >
               {article.description}
             </p>
@@ -261,7 +268,6 @@ const ArticleCard: React.FC<{
 
       {/* Content Container */}
       <div className="relative z-10 h-full flex flex-col justify-between p-6 min-h-[inherit]">
-
         {/* Top Part */}
         <div className="flex justify-start items-start w-full">
           <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 min-w-0 max-w-[170px] sm:max-w-[220px]">
@@ -273,33 +279,31 @@ const ArticleCard: React.FC<{
 
         {/* Bottom Part */}
         <div className="space-y-3">
-          <time dateTime={article.pubDate.toISOString()} className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold">
-            {article.pubDate.toLocaleDateString('pt-BR')}
+          <time
+            dateTime={article.pubDate.toISOString()}
+            className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold"
+          >
+            {article.pubDate.toLocaleDateString("pt-BR")}
           </time>
 
           <div className="space-y-2">
             <h2
               className="text-lg sm:text-xl font-bold text-white leading-tight"
-              style={{ textShadow: '0 10px 28px rgba(0, 0, 0, 0.48)' }}
+              style={{ textShadow: "0 10px 28px rgba(0, 0, 0, 0.48)" }}
             >
-              <a
-                href={article.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white/80 transition-colors"
-                onClick={(event) => {
-                  event.preventDefault();
-                  onRead();
-                }}
+              <button
+                type="button"
+                className="bg-transparent p-0 text-left hover:text-white/80 transition-colors"
+                onClick={onRead}
               >
                 {article.title}
-              </a>
+              </button>
             </h2>
 
             {article.description && (
               <p
                 className="text-xs sm:text-sm text-white/90 line-clamp-2 leading-relaxed"
-                style={{ textShadow: '0 8px 20px rgba(0, 0, 0, 0.42)' }}
+                style={{ textShadow: "0 8px 20px rgba(0, 0, 0, 0.42)" }}
               >
                 {article.description}
               </p>

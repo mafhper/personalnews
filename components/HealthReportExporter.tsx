@@ -47,10 +47,11 @@ export const HealthReportExporter: React.FC<HealthReportExporterProps> = ({
   const [copiedType, setCopiedType] = useState<"markdown" | "json" | null>(
     null,
   );
-  const contextFeeds = feedContext?.feeds ?? [];
 
   const feeds = useMemo<ExportFeedItem[]>(() => {
     if (externalFeeds) return externalFeeds;
+
+    const contextFeeds = feedContext?.feeds ?? [];
 
     return contextFeeds.map((feed) => {
       const validation = feedValidations?.get(feed.url);
@@ -67,7 +68,7 @@ export const HealthReportExporter: React.FC<HealthReportExporterProps> = ({
         impact: validation?.isValid ? "baixo" : "médio",
       };
     });
-  }, [contextFeeds, externalFeeds, feedValidations]);
+  }, [externalFeeds, feedContext, feedValidations]);
 
   const summary = useMemo(() => {
     const invalid = feeds.filter((feed) => feed.status !== "valid").length;

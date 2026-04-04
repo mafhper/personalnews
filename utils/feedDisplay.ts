@@ -1,4 +1,5 @@
 import type { FeedSource } from "../types";
+import { sanitizeSourceTitle } from "./sanitization";
 
 const getHostnameLabel = (url: string): string => {
   try {
@@ -19,6 +20,23 @@ export const getFeedDisplayName = (
   if (resolvedFallback) return resolvedFallback;
 
   return getHostnameLabel(feed.url);
+};
+
+export const resolveFeedSourceTitle = (
+  feed: Pick<FeedSource, "url" | "customTitle">,
+  fallbackTitle?: string | null,
+  articleUrl?: string | null,
+): string => {
+  const customTitle = feed.customTitle?.trim();
+  if (customTitle) return customTitle;
+
+  const sanitizedTitle = sanitizeSourceTitle(
+    fallbackTitle,
+    articleUrl || feed.url,
+  ).trim();
+  if (sanitizedTitle) return sanitizedTitle;
+
+  return getHostnameLabel(articleUrl || feed.url);
 };
 
 export const getFeedSortKey = (
