@@ -312,16 +312,12 @@ function parseXml(body: string): Document {
   }
 
   const doc = new DOMParser({
-    errorHandler: {
-      warning() {
+    onError(level: "warning" | "error" | "fatalError", message: string) {
+      if (level === "warning") {
         // noop
-      },
-      error(message: string) {
-        throw new BackendHttpError(422, `XML parse error: ${message}`);
-      },
-      fatalError(message: string) {
-        throw new BackendHttpError(422, `XML fatal error: ${message}`);
-      },
+        return;
+      }
+      throw new BackendHttpError(422, `XML ${level}: ${message}`);
     },
   }).parseFromString(body, "text/xml");
 
