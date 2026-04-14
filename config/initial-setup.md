@@ -52,7 +52,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Header Global - Define o comportamento do cabeçalho de navegação
 
-- Header Global: floating;
+- Header Global: sticky;
   Opções:
 - `static`: Move junto com o scroll (topo da página)
 - `sticky`: Fixado no topo enquanto você navega
@@ -84,6 +84,18 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ---
 
+- Nome: Tecnologia;
+- ID: tech;
+- Cor: #3B82F6;
+- Layout: list;
+- Pinned: false;
+- Auto-Discovery: true;
+- Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
+
+---
+
+---
+
 - Nome: Design;
 - ID: design;
 - Cor: #F0EEE9;
@@ -103,18 +115,6 @@ O formato é rigoroso para permitir a sincronização automática.
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Lançamentos, reviews e cultura gamer.;
-
----
-
----
-
-- Nome: Tecnologia;
-- ID: tech;
-- Cor: #3B82F6;
-- Layout: list;
-- Pinned: false;
-- Auto-Discovery: true;
-- Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
 
 ---
 
@@ -201,8 +201,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### politics
 
-- G1 Política: <https://g1.globo.com/rss/g1/politica/>
-- Mídia Ninja: <https://midianinja.org/feed/>
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
 

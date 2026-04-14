@@ -9,7 +9,7 @@ export const INITIAL_APP_CONFIG = {
   "theme": "dark-blue",
   "layout": "bento",
   "timeFormat": "24h",
-  "header": "floating",
+  "header": "sticky",
   "weatherCity": "São Paulo"
 };
 
@@ -26,6 +26,17 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
   {
     "order": 1,
     "isDefault": true,
+    "name": "Tecnologia",
+    "id": "tech",
+    "color": "#3B82F6",
+    "layoutMode": "list",
+    "isPinned": false,
+    "autoDiscovery": true,
+    "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
+  },
+  {
+    "order": 2,
+    "isDefault": true,
     "name": "Design",
     "id": "design",
     "color": "#F0EEE9",
@@ -35,7 +46,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "description": "Inspiração visual, UX/UI e tendências de design."
   },
   {
-    "order": 2,
+    "order": 3,
     "isDefault": true,
     "name": "Games",
     "id": "games",
@@ -44,17 +55,6 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Lançamentos, reviews e cultura gamer."
-  },
-  {
-    "order": 3,
-    "isDefault": true,
-    "name": "Tecnologia",
-    "id": "tech",
-    "color": "#3B82F6",
-    "layoutMode": "list",
-    "isPinned": false,
-    "autoDiscovery": true,
-    "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
   },
   {
     "order": 4,
@@ -223,16 +223,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://jogabilida.de/feed/",
       "categoryId": "games",
       "customTitle": "Jogabilidade"
-    },
-    {
-      "url": "https://g1.globo.com/rss/g1/politica/",
-      "categoryId": "politics",
-      "customTitle": "G1 Política"
-    },
-    {
-      "url": "https://midianinja.org/feed/",
-      "categoryId": "politics",
-      "customTitle": "Mídia Ninja"
     },
     {
       "url": "https://piaui.folha.uol.com.br/feed/",
