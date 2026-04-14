@@ -2,9 +2,9 @@
 # Linux stack. Fix requires Tauri/wry to depend on glib >= 0.20; we use tauri "2" so updates
 # will apply when that lands. See https://github.com/tauri-apps/tauri/pull/12098
 [package]
-name = "personalnews_desktop"
+name = "personalnews"
 version = "1.5.0"
-description = "PersonalNews desktop shell"
+description = "PersonalNews"
 authors = ["mafhper"]
 license = "MIT"
 edition = "2021"
