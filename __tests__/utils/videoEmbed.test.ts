@@ -1,7 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getVideoEmbed, getVideoEmbedDetails } from "../../utils/videoEmbed";
 
 describe("videoEmbed", () => {
+  beforeEach(() => {
+    // Mock window.location to have a null origin to avoid origin param in default tests
+    vi.stubGlobal("window", {
+      location: {
+        origin: null,
+        protocol: "http:",
+        hostname: "localhost"
+      }
+    });
+  });
   it("creates youtube embed url", () => {
     const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
     const embed = getVideoEmbedDetails(url);

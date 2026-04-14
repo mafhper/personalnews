@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { FeedInteractiveActions } from "../components/FeedInteractiveActions";
 import { openExternalLink } from "../utils/openExternalLink";
+import { LanguageProvider } from "../contexts/LanguageContext";
 
 vi.mock("../hooks/useLanguage", () => ({
   useLanguage: () => ({
@@ -23,13 +24,15 @@ describe("FeedInteractiveActions", () => {
     const onRead = vi.fn();
 
     render(
-      <FeedInteractiveActions
-        articleLink="https://example.com/video"
-        onRead={onRead}
-        showRead={false}
-        showWatch={true}
-        showVisit={true}
-      />,
+      <LanguageProvider>
+        <FeedInteractiveActions
+          articleLink="https://example.com/video"
+          onRead={onRead}
+          showRead={false}
+          showWatch={true}
+          showVisit={true}
+        />
+      </LanguageProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "ASSISTIR" }));
@@ -40,12 +43,14 @@ describe("FeedInteractiveActions", () => {
 
   it("routes VISITAR through the shared external-link helper", () => {
     render(
-      <FeedInteractiveActions
-        articleLink="https://example.com/video"
-        onRead={vi.fn()}
-        showRead={false}
-        showVisit={true}
-      />,
+      <LanguageProvider>
+        <FeedInteractiveActions
+          articleLink="https://example.com/video"
+          onRead={vi.fn()}
+          showRead={false}
+          showVisit={true}
+        />
+      </LanguageProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "VISITAR" }));

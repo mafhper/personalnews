@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ArticleItem } from "../components/ArticleItem";
+import { LanguageProvider } from "../contexts/LanguageContext";
 import type { Article } from "../types";
 
 vi.mock("../hooks/usePerformance", () => ({
@@ -40,7 +41,11 @@ describe("ArticleItem reader navigation", () => {
       description: "Summary",
     };
 
-    render(<ArticleItem article={article} onClick={onClick} />);
+    render(
+      <LanguageProvider>
+        <ArticleItem article={article} onClick={onClick} />
+      </LanguageProvider>,
+    );
 
     expect(
       screen.queryByRole("link", { name: /headline/i }),

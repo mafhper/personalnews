@@ -78,15 +78,22 @@ if (typeof window !== 'undefined') {
 
 // Mock observers
 if (typeof global.ResizeObserver === 'undefined') {
-  vi.stubGlobal('ResizeObserver', vi.fn().mockImplementation(() => ({
-    observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn(),
-  })));
+  class MockResizeObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+  vi.stubGlobal('ResizeObserver', MockResizeObserver);
 }
 
 if (typeof global.IntersectionObserver === 'undefined') {
-  vi.stubGlobal('IntersectionObserver', vi.fn().mockImplementation(() => ({
-    observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn(),
-  })));
+  class MockIntersectionObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+    constructor(public callback: any, public options?: any) {}
+  }
+  vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
 }
 
 // 2. CONFIGURAÇÕES DO VITEST

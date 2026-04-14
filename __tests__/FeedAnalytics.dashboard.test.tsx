@@ -192,11 +192,11 @@ describe("FeedAnalytics dashboard", () => {
       />,
     );
 
-    expect(screen.queryByText("Exportar relatório")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Backend local indisponível"),
     ).not.toBeInTheDocument();
 
     expect(await screen.findByText("Proxies")).toBeInTheDocument();
+    expect(screen.getByText("Exportar relatório")).toBeInTheDocument();
   });
 });
