@@ -33,7 +33,10 @@
     "active": true,
     "targets": "all",
     "externalBin": [
-      "binaries/personalnews-backend"
+      "binaries/personalnews-backend-x86_64-apple-darwin",
+      "binaries/personalnews-backend-aarch64-apple-darwin",
+      "binaries/personalnews-backend-x86_64-unknown-linux-gnu",
+      "binaries/personalnews-backend-x86_64-pc-windows-msvc"
     ],
     "macos": {
       "frameworks": [],
@@ -76,7 +79,8 @@
       }
     },
     "icon": [
-      "icons/icon.ico"
+      "icons/icon.ico",
+      "icons/icon.png"
     ],
     "createUpdaterArtifacts": false
   }
