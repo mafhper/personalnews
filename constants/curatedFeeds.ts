@@ -92,11 +92,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "CSS-Tricks"
   },
   {
-    "url": "https://www.dezeen.com/feed/",
-    "categoryId": "design",
-    "customTitle": "Dezeen"
-  },
-  {
     "url": "https://uxdesign.cc/feed",
     "categoryId": "design",
     "customTitle": "UX Collective"
@@ -287,11 +282,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "CSS-Tricks"
     },
     {
-      "url": "https://www.dezeen.com/feed/",
-      "categoryId": "design",
-      "customTitle": "Dezeen"
-    },
-    {
       "url": "https://uxdesign.cc/feed",
       "categoryId": "design",
       "customTitle": "UX Collective"
@@ -462,11 +452,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://css-tricks.com/feed/",
       "categoryId": "design",
       "customTitle": "CSS-Tricks"
-    },
-    {
-      "url": "https://www.dezeen.com/feed/",
-      "categoryId": "design",
-      "customTitle": "Dezeen"
     },
     {
       "url": "https://uxdesign.cc/feed",

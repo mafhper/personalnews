@@ -488,7 +488,7 @@ function parseRss2JsonResponse(
 /**
  * Parser para resposta XML pura
  */
-function parseXmlResponse(
+export function parseXmlResponse(
   xmlContent: string,
   _feedUrl: string,
 ): { title: string; articles: Article[] } {
@@ -554,9 +554,15 @@ function parseXmlResponse(
       let pubDate = new Date();
       const pubDateElements = item.getElementsByTagName("pubDate");
       const publishedElements = item.getElementsByTagName("published");
-      const dcDateElements = item.getElementsByTagName("date");
+      const updatedElements = item.getElementsByTagName("updated");
+      const dcDateElements = item.getElementsByTagName("dc:date") || item.getElementsByTagName("date");
+      
       const dateElement =
-        pubDateElements[0] || publishedElements[0] || dcDateElements[0];
+        pubDateElements[0] || 
+        publishedElements[0] || 
+        updatedElements[0] || 
+        dcDateElements[0];
+
       if (dateElement?.textContent) {
         const parsedDate = new Date(dateElement.textContent.trim());
         if (!isNaN(parsedDate.getTime())) {

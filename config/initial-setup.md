@@ -148,7 +148,6 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - B9: <https://www.b9.com.br/feed/>
 - CSS-Tricks: <https://css-tricks.com/feed/>
-- Dezeen: <https://www.dezeen.com/feed/>
 - UX Collective: <https://uxdesign.cc/feed>
 
 ### games
@@ -224,7 +223,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### design
 
 - CSS-Tricks: <https://css-tricks.com/feed/>
-- Dezeen: <https://www.dezeen.com/feed/>
 - UX Collective: <https://uxdesign.cc/feed>
 
 ### games
@@ -273,7 +271,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - B9: <https://www.b9.com.br/feed/>
 - CSS-Tricks: <https://css-tricks.com/feed/>
-- Dezeen: <https://www.dezeen.com/feed/>
 - UX Collective: <https://uxdesign.cc/feed>
 
 ### games

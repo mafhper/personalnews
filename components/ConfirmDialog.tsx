@@ -71,12 +71,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          backgroundColor: "#1e1e1e",
-          color: "white",
-          border: "1px solid #374151",
-          borderRadius: "8px",
+      slotProps={{
+        paper: {
+          sx: {
+            backgroundColor: "#1e1e1e",
+            color: "white",
+            border: "1px solid #374151",
+            borderRadius: "8px",
+          },
         },
       }}
     >

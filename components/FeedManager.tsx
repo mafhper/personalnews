@@ -814,12 +814,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         onClose={handleCloseEditDialog}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: "rgb(var(--theme-manager-surface))",
-            color: "rgb(var(--theme-manager-text))",
-            border: "1px solid rgba(var(--color-border),0.18)",
-            borderRadius: "12px",
+        slotProps={{
+          paper: {
+            sx: {
+              backgroundColor: "rgb(var(--theme-manager-surface))",
+              color: "rgb(var(--theme-manager-text))",
+              border: "1px solid rgba(var(--color-border),0.18)",
+              borderRadius: "12px",
+            },
           },
         }}
       >
@@ -879,12 +881,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         onClose={handleCloseEditTitleDialog}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: "rgb(var(--theme-manager-surface))",
-            color: "rgb(var(--theme-manager-text))",
-            border: "1px solid rgba(var(--color-border),0.18)",
-            borderRadius: "12px",
+        slotProps={{
+          paper: {
+            sx: {
+              backgroundColor: "rgb(var(--theme-manager-surface))",
+              color: "rgb(var(--theme-manager-text))",
+              border: "1px solid rgba(var(--color-border),0.18)",
+              borderRadius: "12px",
+            },
           },
         }}
       >

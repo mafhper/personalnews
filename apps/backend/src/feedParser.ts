@@ -283,7 +283,7 @@ function parseAtom(doc: Document, feedUrl: string): { title: string; articles: A
         title: textOf(firstChildByTag(entry, "title")) || "Untitled",
         link: articleLink,
         pubDate: normalizeDate(
-          textOf(firstChildByTag(entry, "updated")) || textOf(firstChildByTag(entry, "published"))
+          textOf(firstChildByTag(entry, "published")) || textOf(firstChildByTag(entry, "updated"))
         ),
         sourceTitle: title,
         feedUrl,
