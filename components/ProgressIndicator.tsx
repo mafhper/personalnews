@@ -83,6 +83,8 @@ interface FeedLoadingProgressProps {
   currentAction?: string;
   onCancel?: () => void;
   onRetryErrors?: () => void;
+  onOpenDiagnostics?: () => void;
+  onOpenProxySettings?: () => void;
   className?: string;
   priorityFeedsLoaded?: boolean; // Deprecated in favor of mode, but kept for compatibility
   mode?: "overlay" | "inline";
@@ -101,6 +103,8 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
   currentAction,
   onCancel,
   onRetryErrors,
+  onOpenDiagnostics,
+  onOpenProxySettings,
   className = "",
   priorityFeedsLoaded = false,
   mode = priorityFeedsLoaded ? "overlay" : "inline",
@@ -163,9 +167,11 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
               {hasErrors && (
                 <button
                   onClick={() => {
-                   // This is handled by a global event or prop if available
-                   // To keep it simple and match the test, we just provide the button
-                   window.dispatchEvent(new CustomEvent('open-diagnostics'));
+                   if (onOpenDiagnostics) {
+                     onOpenDiagnostics();
+                   } else {
+                     window.dispatchEvent(new CustomEvent('open-diagnostics'));
+                   }
                   }}
                   className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] font-bold hover:bg-yellow-500/30 transition-colors"
                 >
@@ -175,7 +181,11 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
               {hasErrors && (
                 <button
                   onClick={() => {
-                   window.dispatchEvent(new CustomEvent('open-proxy-settings'));
+                   if (onOpenProxySettings) {
+                     onOpenProxySettings();
+                   } else {
+                     window.dispatchEvent(new CustomEvent('open-proxy-settings'));
+                   }
                   }}
                   className="px-2 py-0.5 rounded-full bg-white/10 text-white/60 text-[10px] font-bold hover:bg-white/20 transition-colors"
                 >

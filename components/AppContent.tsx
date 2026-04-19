@@ -505,6 +505,34 @@ const AppContent: React.FC = () => {
     openFeedManager();
   }, [loadingState.errors.length, openFeedManager, openFeedManagerFocus]);
 
+  // Global event listeners for ProgressIndicator
+  useEffect(() => {
+    const handleOpenDiagnostics = () => {
+      openFeedManagerFocus({
+        tab: "operations",
+        section: "feed-status",
+      });
+    };
+
+    const handleOpenProxySettings = () => {
+      openFeedManagerFocus({
+        tab: "operations",
+        openProxySettings: true,
+      });
+    };
+
+    window.addEventListener("open-diagnostics", handleOpenDiagnostics);
+    window.addEventListener("open-proxy-settings", handleOpenProxySettings);
+
+    return () => {
+      window.removeEventListener("open-diagnostics", handleOpenDiagnostics);
+      window.removeEventListener(
+        "open-proxy-settings",
+        handleOpenProxySettings,
+      );
+    };
+  }, [openFeedManagerFocus]);
+
   const scopedFeedUrls = useMemo(() => {
     if (selectedFeedUrl) return [selectedFeedUrl];
     if (
@@ -901,6 +929,18 @@ const AppContent: React.FC = () => {
               currentAction={loadingState.currentAction}
               onCancel={dismissCurrentError}
               onRetryErrors={retryFailedFeeds}
+              onOpenDiagnostics={() =>
+                openFeedManagerFocus({
+                  tab: "operations",
+                  section: "feed-status",
+                })
+              }
+              onOpenProxySettings={() =>
+                openFeedManagerFocus({
+                  tab: "operations",
+                  openProxySettings: true,
+                })
+              }
               mode="overlay"
             />
           )}

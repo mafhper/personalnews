@@ -989,17 +989,32 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
     logger.info(`Retrying ${failedFeeds.length} failed feeds`);
 
-    // Reset errors for the feeds we're retrying
-    setLoadingState((prev) => ({
-      ...prev,
-      errors: prev.errors.filter((error) => !failedUrls.includes(error.url)),
-      status: "loading",
-      currentAction: "Tentando novamente feeds que falharam...",
-    }));
+    // Calculate initial state for retry
+    let localLoadedCount = 0;
+    setLoadingState((prev) => {
+      localLoadedCount = Math.max(0, prev.totalFeeds - failedFeeds.length);
+      const initialProgress =
+        prev.totalFeeds > 0 ? (localLoadedCount / prev.totalFeeds) * 100 : 0;
+
+      return {
+        ...prev,
+        errors: prev.errors.filter((error) => !failedUrls.includes(error.url)),
+        status: "loading",
+        loadedFeeds: localLoadedCount,
+        progress: initialProgress,
+        currentAction: "Tentando novamente feeds que falharam...",
+      };
+    });
 
     // Load failed feeds
     const retryPromises = failedFeeds.map(async (feed) => {
       const result = await loadSingleFeedWithTimeout(feed, undefined, true);
+
+      localLoadedCount++;
+      const currentProgress =
+        loadingState.totalFeeds > 0
+          ? (localLoadedCount / loadingState.totalFeeds) * 100
+          : 100;
 
       if (result.success) {
         setFeedResults((prev) => {
@@ -1008,10 +1023,18 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           updateArticlesFromFeedResults(updated);
           return updated;
         });
+
+        setLoadingState((prev) => ({
+          ...prev,
+          loadedFeeds: localLoadedCount,
+          progress: currentProgress,
+        }));
       } else {
         const errorMessage = result.error || "Retry failed";
         setLoadingState((prev) => ({
           ...prev,
+          loadedFeeds: localLoadedCount,
+          progress: currentProgress,
           errors: [
             ...prev.errors,
             {
@@ -1033,10 +1056,13 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     setLoadingState((prev) => ({
       ...prev,
       status: "success",
+      loadedFeeds: prev.totalFeeds,
+      progress: 100,
       currentAction: "Tentativa de recuperação concluída",
     }));
   }, [
     loadingState.errors,
+    loadingState.totalFeeds,
     loadSingleFeedWithTimeout,
     updateArticlesFromFeedResults,
     logger,
@@ -1055,17 +1081,32 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
       logger.info(`Retrying ${selectedFeeds.length} selected feeds`);
 
-      // Reset errors for the feeds we're retrying
-      setLoadingState((prev) => ({
-        ...prev,
-        errors: prev.errors.filter((error) => !urls.includes(error.url)),
-        status: "loading",
-        currentAction: "Tentando carregar feeds selecionados...",
-      }));
+      // Calculate initial state for retry
+      let localLoadedCount = 0;
+      setLoadingState((prev) => {
+        localLoadedCount = Math.max(0, prev.totalFeeds - selectedFeeds.length);
+        const initialProgress =
+          prev.totalFeeds > 0 ? (localLoadedCount / prev.totalFeeds) * 100 : 0;
+
+        return {
+          ...prev,
+          errors: prev.errors.filter((error) => !urls.includes(error.url)),
+          status: "loading",
+          loadedFeeds: localLoadedCount,
+          progress: initialProgress,
+          currentAction: "Tentando carregar feeds selecionados...",
+        };
+      });
 
       // Load selected feeds
       const retryPromises = selectedFeeds.map(async (feed) => {
         const result = await loadSingleFeedWithTimeout(feed, undefined, true);
+
+        localLoadedCount++;
+        const currentProgress =
+          loadingState.totalFeeds > 0
+            ? (localLoadedCount / loadingState.totalFeeds) * 100
+            : 100;
 
         if (result.success) {
           setFeedResults((prev) => {
@@ -1074,10 +1115,18 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             updateArticlesFromFeedResults(updated);
             return updated;
           });
+
+          setLoadingState((prev) => ({
+            ...prev,
+            loadedFeeds: localLoadedCount,
+            progress: currentProgress,
+          }));
         } else {
           const errorMessage = result.error || "Retry failed";
           setLoadingState((prev) => ({
             ...prev,
+            loadedFeeds: localLoadedCount,
+            progress: currentProgress,
             errors: [
               ...prev.errors,
               {
@@ -1099,10 +1148,17 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       setLoadingState((prev) => ({
         ...prev,
         status: "success",
+        loadedFeeds: prev.totalFeeds,
+        progress: 100,
         currentAction: "Carga selecionada concluída",
       }));
     },
-    [loadSingleFeedWithTimeout, updateArticlesFromFeedResults, logger],
+    [
+      loadingState.totalFeeds,
+      loadSingleFeedWithTimeout,
+      updateArticlesFromFeedResults,
+      logger,
+    ],
   );
 
   /**
