@@ -32,9 +32,8 @@
   "bundle": {
     "active": true,
     "targets": [
-      "deb",
-      "rpm",
-      "appimage"
+      "nsis",
+      "msi"
     ],
     "externalBin": [
       "binaries/personalnews-backend"
