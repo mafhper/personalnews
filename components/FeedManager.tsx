@@ -635,22 +635,48 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     setActiveTab(tab.id);
                     if (tab.id !== "diagnostics") setDiagnosticsFocus(null);
                   }}
-                  className={`rounded-[20px] px-4 py-3 text-left shadow-[0_16px_36px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.025)] transition-all ${
+                  className={`relative overflow-hidden rounded-[20px] px-4 py-3 text-left shadow-[0_16px_36px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.025)] transition-all duration-300 ${
                     isActive
-                      ? "bg-[rgb(var(--theme-manager-surface))] ring-1 ring-[rgba(var(--color-accent),0.28)]"
-                      : "bg-[rgb(var(--theme-manager-bg))] hover:bg-[rgb(var(--theme-manager-control))]"
+                      ? "bg-[rgb(var(--theme-manager-surface))] ring-1 ring-[rgba(var(--color-accent),0.4)]"
+                      : "bg-[rgb(var(--theme-manager-bg))] opacity-80 hover:bg-[rgb(var(--theme-manager-control))] hover:opacity-100"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                  {/* Active Indicator Bar */}
+                  <div
+                    className={`absolute left-0 top-0 h-full w-1 transition-all duration-500 ${
+                      isActive
+                        ? "bg-[rgb(var(--color-accent))] opacity-100 shadow-[0_0_12px_rgb(var(--color-accent))]"
+                        : "bg-transparent opacity-0"
+                    }`}
+                  />
+
+                  <div className="flex items-start justify-between gap-3 pl-1">
+                    <div
+                      className={`text-sm font-semibold transition-colors duration-300 ${
+                        isActive
+                          ? "text-[rgb(var(--color-accent))]"
+                          : "text-[rgb(var(--theme-text-readable))]"
+                      }`}
+                    >
                       {tab.label}
                     </div>
                     {typeof tab.badge !== "undefined" && (
-                      <span className="rounded-full bg-[rgb(var(--theme-manager-control))] px-2.5 py-1 text-[10px] font-semibold text-[rgb(var(--theme-manager-text-secondary))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all duration-300 ${
+                          isActive
+                            ? "bg-[rgba(var(--color-accent),0.12)] text-[rgb(var(--color-accent))]"
+                            : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))]"
+                        }`}
+                      >
                         {tab.badge}
                       </span>
                     )}
                   </div>
+
+                  {/* Subtle active glow */}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-[rgba(var(--color-accent),0.03)] to-transparent pointer-events-none" />
+                  )}
                 </button>
               );
             })}

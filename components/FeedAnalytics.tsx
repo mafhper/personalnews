@@ -355,6 +355,11 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   const actionItems = useMemo(() => {
     const items = new Set<string>();
 
+    // Add the main diagnosis action if it exists
+    if (diagnosis.action) {
+      items.add(diagnosis.action);
+    }
+
     if (snapshot.summary.fallbackActive) {
       items.add(
         snapshot.runtime.warningDetails?.action || "Verificar backend local.",
@@ -378,7 +383,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     }
 
     return Array.from(items).slice(0, 3);
-  }, [invalidRows, snapshot, uncheckedRows.length]);
+  }, [diagnosis.action, invalidRows, snapshot, uncheckedRows.length]);
 
   const exportFeeds = useMemo(
     () =>
@@ -534,11 +539,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 {item}
               </div>
             ))}
-          </div>
-          <div
-            className={`${MANAGER_CARD_CLASS} mt-4 text-sm text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]`}
-          >
-            {diagnosis.action}
           </div>
         </AccordionSection>
       </div>
