@@ -737,11 +737,11 @@ export class ProxyManager {
   restorePersistedProxyStates(): void {
     if (typeof localStorage === "undefined") return;
 
+    const raw = localStorage.getItem(ProxyManager.DISABLED_PROXIES_STORAGE_KEY);
+    const isFirstRun = raw === null;
+
     const disabledNames = (() => {
       try {
-        const raw = localStorage.getItem(
-          ProxyManager.DISABLED_PROXIES_STORAGE_KEY,
-        );
         return raw ? (JSON.parse(raw) as string[]) : [];
       } catch {
         return [];
@@ -749,11 +749,25 @@ export class ProxyManager {
     })();
 
     const disabledSet = new Set(disabledNames);
+    const isTauri = ProxyManager.isTauriRuntime();
+
     this.PROXY_CONFIGS.forEach((proxy) => {
-      const enabled = !disabledSet.has(proxy.name);
-      proxy.enabled = enabled;
-      this.proxyHealthCheck.set(proxy.name, enabled);
+      if (isFirstRun && isTauri) {
+        // Default behavior for new desktop installations: only LocalProxy is enabled
+        const enabled = proxy.name === "LocalProxy";
+        proxy.enabled = enabled;
+        this.proxyHealthCheck.set(proxy.name, enabled);
+      } else {
+        const enabled = !disabledSet.has(proxy.name);
+        proxy.enabled = enabled;
+        this.proxyHealthCheck.set(proxy.name, enabled);
+      }
     });
+
+    // If we applied defaults for the first time, persist them
+    if (isFirstRun && isTauri) {
+      this.persistDisabledProxyNames();
+    }
   }
 
   /**
