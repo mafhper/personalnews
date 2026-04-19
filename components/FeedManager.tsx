@@ -588,20 +588,27 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     >
       <header className="px-4 py-4 sm:px-6 sm:py-5">
         <div className="mx-auto flex max-w-[1480px] flex-col gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))] sm:text-2xl">
+              <h2 className="text-xl font-bold tracking-tight text-[rgb(var(--theme-text-readable))] sm:text-2xl">
                 {t("feeds.title")}
               </h2>
+              <p className="text-xs font-medium text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
+                Gerencie sua biblioteca de conteúdo e infraestrutura
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="rounded-full bg-[rgb(var(--theme-manager-control))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--theme-manager-text))] shadow-[0_10px_24px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
-                {currentFeeds.length} feeds
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40">Total de Feeds</span>
+                <span className="text-sm font-bold text-[rgb(var(--theme-text-readable))]">
+                  {currentFeeds.length}
+                </span>
+              </div>
+              <div className="h-8 w-px bg-[rgba(var(--color-border),0.1)]" />
               <button
                 onClick={closeModal}
-                className="rounded-full bg-[rgb(var(--theme-manager-control))] p-2 text-[rgb(var(--theme-manager-text-secondary))] shadow-[0_10px_24px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))]"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] shadow-md transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-90"
                 aria-label="Close"
               >
                 <svg
@@ -613,7 +620,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
@@ -621,7 +628,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             </div>
           </div>
 
-          <div className="grid gap-2 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             {tabs.map((tab) => {
               const isActive =
                 tab.id === "operations"
@@ -635,24 +642,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     setActiveTab(tab.id);
                     if (tab.id !== "diagnostics") setDiagnosticsFocus(null);
                   }}
-                  className={`relative overflow-hidden rounded-[20px] px-4 py-3 text-left shadow-[0_16px_36px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.025)] transition-all duration-300 ${
+                  className={`group relative overflow-hidden rounded-[24px] px-5 py-4 text-left transition-all duration-300 ${
                     isActive
-                      ? "bg-[rgb(var(--theme-manager-surface))] ring-1 ring-[rgba(var(--color-accent),0.4)]"
-                      : "bg-[rgb(var(--theme-manager-bg))] opacity-80 hover:bg-[rgb(var(--theme-manager-control))] hover:opacity-100"
+                      ? "bg-[rgb(var(--theme-manager-surface))] shadow-[0_20px_48px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.03)] ring-1 ring-[rgba(var(--color-accent),0.3)]"
+                      : "bg-[rgb(var(--theme-manager-bg))] opacity-70 hover:bg-[rgb(var(--theme-manager-control))] hover:opacity-100 hover:shadow-lg"
                   }`}
                 >
-                  {/* Active Indicator Bar */}
-                  <div
-                    className={`absolute left-0 top-0 h-full w-1 transition-all duration-500 ${
-                      isActive
-                        ? "bg-[rgb(var(--color-accent))] opacity-100 shadow-[0_0_12px_rgb(var(--color-accent))]"
-                        : "bg-transparent opacity-0"
-                    }`}
-                  />
-
-                  <div className="flex items-start justify-between gap-3 pl-1">
+                  <div className="flex items-center justify-between gap-3">
                     <div
-                      className={`text-sm font-semibold transition-colors duration-300 ${
+                      className={`text-sm font-bold tracking-wide transition-colors duration-300 ${
                         isActive
                           ? "text-[rgb(var(--color-accent))]"
                           : "text-[rgb(var(--theme-text-readable))]"
@@ -662,10 +660,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     </div>
                     {typeof tab.badge !== "undefined" && (
                       <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all duration-300 ${
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-black shadow-sm transition-all duration-300 ${
                           isActive
-                            ? "bg-[rgba(var(--color-accent),0.12)] text-[rgb(var(--color-accent))]"
-                            : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))]"
+                            ? "bg-[rgba(var(--color-accent),0.15)] text-[rgb(var(--color-accent))]"
+                            : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-secondary-readable))] opacity-60"
                         }`}
                       >
                         {tab.badge}
@@ -673,9 +671,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     )}
                   </div>
 
+                  {/* Bottom Indicator Line */}
+                  <div
+                    className={`absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-[rgb(var(--color-accent))] transition-all duration-500 ${
+                      isActive ? "w-12 opacity-100 shadow-[0_0_8px_rgb(var(--color-accent))]" : "w-0 opacity-0"
+                    }`}
+                  />
+
                   {/* Subtle active glow */}
                   {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-[rgba(var(--color-accent),0.03)] to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[rgba(var(--color-accent),0.03)] to-transparent pointer-events-none" />
                   )}
                 </button>
               );
@@ -707,7 +712,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             setNewFeedCategory={setNewFeedCategory}
             processingUrl={processingUrl}
             onSubmit={handleAddFeed}
-            discoveryProgress={discoveryProgress}
           />
         )}
 
@@ -736,46 +740,43 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             feedCount={currentFeeds.length}
             validCount={validCount}
             invalidCount={invalidCount}
-            pendingCount={pendingCount}
           />
         )}
 
         {activeTab === "diagnostics" && (
           <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
-            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] bg-[rgb(var(--theme-manager-surface))] px-5 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("operations")}
-                  className="inline-flex items-center gap-2 rounded-full bg-[rgb(var(--theme-manager-control))] px-3 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6">
+              
+              {/* Segmented Control Sub-navigation */}
+              <div className="flex justify-center">
+                <div className="inline-flex items-center rounded-[20px] bg-[rgb(var(--theme-manager-control))] p-1.5 shadow-lg ring-1 ring-[rgba(var(--color-border),0.08)]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("operations")}
+                    className="flex items-center gap-2 rounded-[14px] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[rgb(var(--theme-text-secondary-readable))] transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-text-readable))]"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  Operações
-                </button>
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Painel
+                  </button>
+                  
+                  <div className="mx-1 h-4 w-px bg-[rgba(var(--color-border),0.15)]" />
+                  
+                  <div className="flex items-center gap-2 rounded-[14px] bg-[rgb(var(--theme-manager-surface))] px-5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[rgb(var(--color-accent))] shadow-sm ring-1 ring-[rgba(var(--color-accent),0.2)]">
+                    Diagnóstico
+                  </div>
 
-                <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                  Diagnóstico
+                  <div className="mx-1 h-4 w-px bg-[rgba(var(--color-border),0.15)]" />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowProxySettings(true)}
+                    className="rounded-[14px] px-5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[rgb(var(--theme-text-secondary-readable))] transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-text-readable))]"
+                  >
+                    Proxies
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowProxySettings(true)}
-                  className="rounded-full bg-[rgb(var(--theme-manager-control))] px-3 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
-                >
-                  Proxies
-                </button>
               </div>
 
               <FeedAnalytics
@@ -999,7 +1000,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               <div className="flex gap-2">
                 <button
                   onClick={() => void handleImportCurated("merge")}
-                  className="flex-1 rounded border border-[rgba(var(--color-accent),0.3)] bg-[rgba(var(--color-accent),0.2)] py-2 text-[rgb(var(--theme-text-readable))]"
+                  className="flex-1 rounded border border-[rgba(var(--color-accent),0.32)] bg-[rgb(var(--color-accentSurface))] py-2 text-[rgb(var(--color-onAccent))]"
                 >
                   Mesclar
                 </button>
@@ -1079,7 +1080,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   <button
                     type="button"
                     onClick={() => navigateToDiagnostics("feed-status")}
-                    className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-accent))]"
+                    className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-onAccent))]"
                   >
                     Abrir diagnóstico completo
                   </button>

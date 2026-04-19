@@ -10,6 +10,9 @@ import {
   Trash2,
   Upload,
   Wrench,
+  ChevronRight,
+  ShieldCheck,
+  Cpu
 } from "lucide-react";
 import { useProxyDashboard } from "../../hooks/useProxyDashboard";
 
@@ -25,14 +28,13 @@ interface FeedToolsTabProps {
   feedCount: number;
   validCount: number;
   invalidCount: number;
-  pendingCount: number;
 }
 
 const SURFACE_CLASS =
-  "rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
+  "rounded-[28px] bg-[rgb(var(--theme-manager-surface))] p-6 shadow-[0_24px_52px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.025)]";
 
-const CARD_CLASS =
-  "rounded-[20px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] px-4 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.03)]";
+const INFO_SURFACE_CLASS =
+  "rounded-[28px] border border-[rgb(var(--color-border))]/10 bg-[rgb(var(--theme-manager-bg))] p-6 shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.025)]";
 
 export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   onExportOPML,
@@ -46,254 +48,128 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   feedCount,
   validCount,
   invalidCount,
-  pendingCount,
 }) => {
   const { snapshot } = useProxyDashboard();
   const localRoute = snapshot.routes.find(
     (route) => route.routeKind === "local-backend",
   );
   const proxyStateLabel = snapshot.summary.fallbackActive
-    ? "Fallback ativo"
+    ? "Fallback Ativo"
     : snapshot.backend.enabled && snapshot.backend.available
-      ? "Backend local ativo"
-      : snapshot.backend.enabled
-        ? "Backend local indisponível"
-        : "Modo web";
-  const missingKeys = snapshot.summary.missingApiKeys.length;
-  const unhealthyRoutes = Math.max(
-    0,
-    snapshot.summary.totalRoutes - snapshot.summary.healthyRoutes,
-  );
+      ? "Backend Local Ativo"
+      : "Modo Cloud/Web";
 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
-      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricTile label="Total" value={feedCount} tone="neutral" />
-          <MetricTile label="Válidos" value={validCount} tone="success" />
-          <MetricTile label="Com erro" value={invalidCount} tone="danger" />
-          <MetricTile label="Pendentes" value={pendingCount} tone="warning" />
+      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6">
+        
+        {/* Status & Diagnostics Overview */}
+        <section className={INFO_SURFACE_CLASS}>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-sm">
+                  <Activity className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[rgb(var(--theme-text-readable))]">Centro de Operações</h2>
+                  <p className="text-sm text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+                    Gerencie a saúde da sua coleção e as configurações de infraestrutura.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <MetricTile label="Feeds" value={feedCount} tone="neutral" />
+              <MetricTile label="Válidos" value={validCount} tone="success" />
+              <MetricTile label="Erros" value={invalidCount} tone="danger" />
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
+            <DiagnosticCard 
+              title="Saúde da Coleção"
+              status={invalidCount > 0 ? "Atenção Necessária" : "Tudo Certo"}
+              description={invalidCount > 0 ? `${invalidCount} feeds apresentam problemas de carregamento.` : "Sua coleção está operando normalmente."}
+              icon={invalidCount > 0 ? <AlertCircle className="text-red-400" /> : <ShieldCheck className="text-emerald-400" />}
+              onAction={onOpenDiagnostics}
+              actionLabel="Ver Diagnóstico"
+            />
+            <DiagnosticCard 
+              title="Infraestrutura Proxy"
+              status={proxyStateLabel}
+              description={snapshot.summary.healthyRoutes > 0 ? `${snapshot.summary.healthyRoutes} rotas saudáveis detectadas.` : "Nenhuma rota configurada ou ativa."}
+              icon={<Cpu className="text-blue-400" />}
+              onAction={onShowProxySettings}
+              actionLabel="Configurar Rotas"
+            />
+          </div>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <section className={`${SURFACE_CLASS} space-y-4`}>
-            <SectionHeader icon={Download} title="Importar e exportar" />
-
-            <div className="grid gap-3 md:grid-cols-3">
+        {/* Tools Grid */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          
+          <ToolSection 
+            title="Importar e Exportar" 
+            description="Mova sua coleção entre dispositivos ou serviços usando arquivos OPML."
+            icon={<Download className="h-5 w-5" />}
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
               <ActionCard
-                icon={Download}
-                title="Exportar OPML"
-                meta="Coleção atual"
+                title="Exportar"
+                meta="Salvar OPML"
+                icon={<Download className="h-4 w-4" />}
                 onClick={onExportOPML}
               />
               <ActionCard
-                icon={Upload}
-                title="Importar OPML"
-                meta="Arquivo .opml ou .xml"
+                title="Importar"
+                meta="Arquivo Local"
+                icon={<Upload className="h-4 w-4" />}
                 onClick={onImportOPML}
               />
               <ActionCard
-                icon={List}
-                title="Listas"
-                meta="Feeds curados"
+                title="Curados"
+                meta="Sugestões"
+                icon={<List className="h-4 w-4" />}
                 onClick={onShowImportModal}
               />
             </div>
-          </section>
+          </ToolSection>
 
-          <section className={`${SURFACE_CLASS} space-y-4`}>
-            <SectionHeader icon={Wrench} title="Manutenção" />
-
-            <div className="grid gap-3 md:grid-cols-3">
+          <ToolSection 
+            title="Manutenção e Limpeza" 
+            description="Ações globais para limpar erros ou redefinir sua coleção."
+            icon={<Wrench className="h-5 w-5" />}
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
               <ActionCard
-                icon={RefreshCcw}
-                title="Limpar"
-                meta={`${invalidCount} com erro`}
+                title="Limpar Erros"
+                meta="Apenas Falhas"
+                icon={<RefreshCcw className="h-4 w-4" />}
                 onClick={onCleanupErrors}
               />
               <ActionCard
-                icon={RotateCcw}
-                title="Restaurar padrões"
-                meta={`${feedCount} feeds atuais`}
+                title="Restaurar"
+                meta="Padrões Iniciais"
+                icon={<RotateCcw className="h-4 w-4" />}
                 onClick={onResetDefaults}
               />
               <ActionCard
-                icon={Trash2}
-                title="Excluir tudo"
-                meta="Ação irreversível"
+                title="Excluir Tudo"
+                meta="Limpar Coleção"
+                icon={<Trash2 className="h-4 w-4" />}
                 onClick={onDeleteAll}
                 destructive
               />
             </div>
-          </section>
-        </section>
+          </ToolSection>
 
-        <section className="grid gap-4 xl:grid-cols-2">
-          <section className={`${SURFACE_CLASS} space-y-4`}>
-            <div className="flex items-center justify-between gap-3">
-              <SectionHeader icon={Activity} title="Diagnóstico" accent />
-              <div className="flex flex-wrap gap-2">
-                <InlineBadge
-                  label="Com erro"
-                  value={invalidCount}
-                  tone="danger"
-                />
-                <InlineBadge
-                  label="Pendentes"
-                  value={pendingCount}
-                  tone="warning"
-                />
-              </div>
-            </div>
-
-            <div className={`${CARD_CLASS} space-y-4`}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                    {proxyStateLabel}
-                  </div>
-                  <div className="mt-1 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                    {unhealthyRoutes > 0
-                      ? `${unhealthyRoutes} rotas exigem atenção`
-                      : "Sem alerta dominante"}
-                  </div>
-                </div>
-                {snapshot.summary.fallbackActive ? (
-                  <AlertCircle className="h-5 w-5 text-[rgb(var(--color-warning))]" />
-                ) : (
-                  <Activity className="h-5 w-5 text-[rgb(var(--color-accent))]" />
-                )}
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <MiniDashboardStat
-                  label="Feeds com erro"
-                  value={invalidCount}
-                  tone="danger"
-                />
-                <MiniDashboardStat
-                  label="Pendentes"
-                  value={pendingCount}
-                  tone="warning"
-                />
-                <MiniDashboardStat
-                  label="Rotas saudáveis"
-                  value={`${snapshot.summary.healthyRoutes}/${Math.max(1, snapshot.summary.totalRoutes)}`}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={onOpenDiagnostics}
-                className="group flex w-full items-center justify-between gap-4 rounded-[18px] bg-[rgba(var(--color-accent),0.14)] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-all hover:bg-[rgba(var(--color-accent),0.2)]"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                    Abrir diagnóstico
-                  </div>
-                  <div className="mt-1 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                    Feeds afetados, impacto e relatório
-                  </div>
-                </div>
-                <Activity className="h-5 w-5 text-[rgb(var(--color-accent))] transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </div>
-          </section>
-
-          <section className={`${SURFACE_CLASS} space-y-4`}>
-            <div className="flex items-center justify-between gap-3">
-              <SectionHeader icon={Route} title="Proxies" />
-              <InlineBadge
-                label="Chaves"
-                value={missingKeys}
-                tone={missingKeys > 0 ? "warning" : "neutral"}
-              />
-            </div>
-
-            <div className={`${CARD_CLASS} space-y-4`}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                    {localRoute?.status === "healthy"
-                      ? "Rota local saudável"
-                      : snapshot.summary.fallbackActive
-                        ? "Fallback em nuvem ativo"
-                        : "Rotas ativas"}
-                  </div>
-                  <div className="mt-1 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                    {localRoute
-                      ? `${localRoute.healthScore}% de saúde no backend local`
-                      : "Sem rota local registrada"}
-                  </div>
-                </div>
-                <Route className="h-5 w-5 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]" />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <MiniDashboardStat
-                  label="Sucesso"
-                  value={`${snapshot.summary.successRate}%`}
-                />
-                <MiniDashboardStat
-                  label="Rotas saudáveis"
-                  value={`${snapshot.summary.healthyRoutes}/${Math.max(1, snapshot.summary.totalRoutes)}`}
-                />
-                <MiniDashboardStat
-                  label="Último uso local"
-                  value={
-                    localRoute?.lastUsedAt
-                      ? new Intl.DateTimeFormat("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }).format(new Date(localRoute.lastUsedAt))
-                      : "—"
-                  }
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={onShowProxySettings}
-                className="group flex w-full items-center justify-between gap-4 rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                    Configurar proxies
-                  </div>
-                  <div className="mt-1 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                    Rotas, chaves e testes reais
-                  </div>
-                </div>
-                <Route className="h-5 w-5 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </div>
-          </section>
-        </section>
+        </div>
       </div>
     </div>
   );
 };
-
-const SectionHeader: React.FC<{
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  accent?: boolean;
-}> = ({ icon: Icon, title, accent = false }) => (
-  <div className="flex items-center gap-3">
-    <div className="rounded-[16px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-      <Icon
-        className={`h-5 w-5 ${
-          accent
-            ? "text-[rgb(var(--color-accent))]"
-            : "text-[rgb(var(--theme-text-readable))]"
-        }`}
-      />
-    </div>
-    <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
-      {title}
-    </h3>
-  </div>
-);
 
 const MetricTile: React.FC<{
   label: string;
@@ -302,105 +178,87 @@ const MetricTile: React.FC<{
 }> = ({ label, value, tone }) => {
   const toneClass =
     tone === "success"
-      ? "text-[rgb(var(--color-success))] bg-[rgba(var(--color-success),0.12)]"
+      ? "text-emerald-400"
       : tone === "warning"
-        ? "text-[rgb(var(--color-warning))] bg-[rgba(var(--color-warning),0.12)]"
+        ? "text-orange-400"
         : tone === "danger"
-          ? "text-[rgb(var(--color-error))] bg-[rgba(var(--color-error),0.12)]"
-          : "text-[rgb(var(--theme-manager-text,var(--theme-text-readable)))] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))]";
+          ? "text-red-400"
+          : "text-[rgb(var(--theme-text-readable))]";
 
   return (
-    <div
-      className={`rounded-[18px] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] ${toneClass}`}
-    >
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-80">
-        {label}
-      </div>
-      <div className="mt-1 text-lg font-semibold">{value}</div>
+    <div className="flex min-w-[80px] flex-col items-center justify-center rounded-2xl bg-[rgb(var(--theme-manager-control))] px-4 py-2.5 shadow-sm">
+      <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">{label}</span>
+      <span className={`text-lg font-bold ${toneClass}`}>{value}</span>
     </div>
   );
 };
 
+const ToolSection: React.FC<{
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ title, description, icon, children }) => (
+  <section className={SURFACE_CLASS}>
+    <div className="mb-6 flex items-start gap-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))]">
+        {icon}
+      </div>
+      <div>
+        <h3 className="text-base font-bold text-[rgb(var(--theme-text-readable))]">{title}</h3>
+        <p className="text-xs text-[rgb(var(--theme-text-secondary-readable))] opacity-60">{description}</p>
+      </div>
+    </div>
+    {children}
+  </section>
+);
+
+const DiagnosticCard: React.FC<{
+  title: string;
+  status: string;
+  description: string;
+  icon: React.ReactNode;
+  onAction: () => void;
+  actionLabel: string;
+}> = ({ title, status, description, icon, onAction, actionLabel }) => (
+  <div className="flex flex-col justify-between rounded-2xl bg-[rgb(var(--theme-manager-control))] p-5 transition-transform hover:scale-[1.01]">
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-60">{title}</span>
+        {icon}
+      </div>
+      <div className="mt-2 text-base font-bold text-[rgb(var(--theme-text-readable))]">{status}</div>
+      <p className="mt-1 text-xs text-[rgb(var(--theme-text-secondary-readable))] opacity-60">{description}</p>
+    </div>
+    <button
+      onClick={onAction}
+      className="mt-4 flex items-center justify-between rounded-xl bg-[rgb(var(--color-accentSurface))] px-4 py-2.5 text-xs font-bold text-[rgb(var(--color-onAccent))] shadow-sm transition-all hover:brightness-110"
+    >
+      {actionLabel}
+      <ChevronRight className="h-4 w-4" />
+    </button>
+  </div>
+);
+
 const ActionCard: React.FC<{
-  icon: React.ComponentType<{ className?: string }>;
   title: string;
   meta: string;
+  icon: React.ReactNode;
   onClick: () => void;
   destructive?: boolean;
-}> = ({ icon: Icon, title, meta, onClick, destructive = false }) => (
+}> = ({ title, meta, icon, onClick, destructive }) => (
   <button
-    type="button"
     onClick={onClick}
-    className={`group flex min-h-[112px] flex-col items-start justify-between rounded-[20px] px-4 py-4 text-left shadow-[0_14px_34px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.03)] transition-all hover:-translate-y-0.5 ${
-      destructive
-        ? "bg-[rgba(var(--color-error),0.1)] hover:bg-[rgba(var(--color-error),0.16)]"
-        : "bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] hover:bg-[rgb(var(--theme-manager-soft,var(--theme-surface-elevated,var(--color-surface))))]"
+    className={`group flex flex-col items-center justify-center rounded-2xl p-4 text-center transition-all hover:scale-105 active:scale-95 ${
+      destructive 
+        ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" 
+        : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))] hover:bg-[rgb(var(--theme-manager-soft))]"
     }`}
   >
-    <div className="rounded-[14px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-      <Icon
-        className={`h-4 w-4 ${
-          destructive
-            ? "text-[rgb(var(--color-error))]"
-            : "text-[rgb(var(--theme-text-readable))]"
-        }`}
-      />
+    <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full ${destructive ? "bg-red-500/10" : "bg-[rgba(255,255,255,0.05)] opacity-60"}`}>
+      {icon}
     </div>
-
-    <div>
-      <div
-        className={`text-sm font-semibold ${
-          destructive
-            ? "text-[rgb(var(--color-error))]"
-            : "text-[rgb(var(--theme-text-readable))]"
-        }`}
-      >
-        {title}
-      </div>
-      <div className="mt-1 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-        {meta}
-      </div>
-    </div>
+    <div className="text-xs font-bold">{title}</div>
+    <div className="mt-0.5 text-[10px] opacity-50">{meta}</div>
   </button>
-);
-
-const InlineBadge: React.FC<{
-  label: string;
-  value: number;
-  tone: "neutral" | "warning" | "danger";
-}> = ({ label, value, tone }) => (
-  <span
-    className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${
-      tone === "danger"
-        ? "bg-[rgba(var(--color-error),0.12)] text-[rgb(var(--color-error))]"
-        : tone === "warning"
-          ? "bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]"
-          : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-readable,var(--color-textSecondary))))]"
-    }`}
-  >
-    {label}: {value}
-  </span>
-);
-
-const MiniDashboardStat: React.FC<{
-  label: string;
-  value: number | string;
-  tone?: "default" | "warning" | "danger";
-}> = ({ label, value, tone = "default" }) => (
-  <div
-    className={`rounded-[18px] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] ${
-      tone === "danger"
-        ? "bg-[rgba(var(--color-error),0.12)]"
-        : tone === "warning"
-          ? "bg-[rgba(var(--color-warning),0.12)]"
-          : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))]"
-    }`}
-  >
-    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-      {label}
-    </div>
-    <div className="mt-2 text-base font-semibold text-[rgb(var(--theme-text-readable))]">
-      {value}
-    </div>
-  </div>
 );

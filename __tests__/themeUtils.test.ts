@@ -17,18 +17,43 @@ import { allowConsoleError, allowConsoleWarn } from '../src/test-console';
 
 // Mock DOM methods
 const mockSetProperty = vi.fn();
+const mockClassListAdd = vi.fn();
+const mockClassListRemove = vi.fn();
+
+if (typeof document === 'undefined') {
+  Object.defineProperty(globalThis, 'document', {
+    value: {},
+    writable: true,
+    configurable: true,
+  });
+}
+
 Object.defineProperty(document, 'documentElement', {
   value: {
     style: {
       setProperty: mockSetProperty,
     },
+    classList: {
+      add: mockClassListAdd,
+      remove: mockClassListRemove,
+    },
   },
+  configurable: true,
   writable: true,
 });
 
 // Mock window.matchMedia
+if (typeof window === 'undefined') {
+  Object.defineProperty(globalThis, 'window', {
+    value: globalThis,
+    writable: true,
+    configurable: true,
+  });
+}
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
+  configurable: true,
   value: vi.fn().mockImplementation(query => ({
     matches: query.includes('dark'),
     media: query,
@@ -44,6 +69,8 @@ Object.defineProperty(window, 'matchMedia', {
 describe('themeUtils', () => {
   beforeEach(() => {
     mockSetProperty.mockClear();
+    mockClassListAdd.mockClear();
+    mockClassListRemove.mockClear();
     
     // Ensure matchMedia mock returns dark by default for the preference test
     vi.stubGlobal('matchMedia', vi.fn().mockImplementation(query => ({
@@ -186,10 +213,15 @@ describe('themeUtils', () => {
         name: 'Test Theme',
         colors: {
           primary: 'invalid-color',
+          primarySurface: '13 148 136',
+          onPrimary: '255 255 255',
           secondary: '45 55 72',
           accent: '20 184 166',
+          accentSurface: '13 148 136',
+          onAccent: '255 255 255',
           background: '26 32 44',
           surface: '45 55 72',
+          surfaceElevated: '61 73 92',
           text: '247 250 252',
           textSecondary: '160 174 192',
           border: '75 85 99',
@@ -217,10 +249,15 @@ describe('themeUtils', () => {
         name: 'Low Contrast',
         colors: {
           primary: '180 180 180',
+          primarySurface: '210 210 210',
+          onPrimary: '245 245 245',
           secondary: '235 235 235',
           accent: '210 210 210',
+          accentSurface: '220 220 220',
+          onAccent: '245 245 245',
           background: '245 245 245',
           surface: '247 247 247',
+          surfaceElevated: '248 248 248',
           text: '242 242 242',
           textSecondary: '238 238 238',
           border: '220 220 220',
@@ -243,15 +280,17 @@ describe('themeUtils', () => {
     it('should create a dark theme from dark accent color', () => {
       const theme = createThemeFromAccentColor('20 20 20', 'Dark Test');
       expect(theme.name).toBe('Dark Test');
-      expect(theme.colors.accent).toBe('20 20 20');
       expect(theme.colors.background).toBe('26 32 44'); // Dark background
+      expect(theme.colors.accentSurface).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
+      expect(theme.colors.onAccent).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
+      expect(validateTheme(theme)).toBe(true);
     });
 
     it('should create a light theme from light accent color', () => {
       const theme = createThemeFromAccentColor('200 200 200', 'Light Test');
       expect(theme.name).toBe('Light Test');
-      expect(theme.colors.accent).toBe('200 200 200');
       expect(theme.colors.background).toBe('255 255 255'); // Light background
+      expect(validateTheme(theme)).toBe(true);
     });
 
     it('should generate unique IDs', async () => {
@@ -268,8 +307,10 @@ describe('themeUtils', () => {
       const oldTheme = '20 184 166';
       const migratedTheme = migrateTheme(oldTheme);
       expect(migratedTheme).toBeTruthy();
-      expect(migratedTheme?.colors.accent).toBe('20 184 166');
       expect(migratedTheme?.name).toBe('Migrated Theme');
+      expect(migratedTheme?.colors.accentSurface).toBeTruthy();
+      expect(migratedTheme?.colors.onAccent).toBeTruthy();
+      expect(validateTheme(migratedTheme!)).toBe(true);
     });
 
     it('should return valid theme unchanged', () => {
@@ -284,6 +325,39 @@ describe('themeUtils', () => {
       const result = migrateTheme(invalidTheme);
       expect(result).toBeNull();
     });
+
+    it('should migrate legacy theme objects without semantic tokens', () => {
+      const legacyTheme = {
+        id: 'legacy',
+        name: 'Legacy Theme',
+        colors: {
+          primary: '59 130 246',
+          secondary: '30 41 59',
+          accent: '99 102 241',
+          background: '10 15 30',
+          surface: '30 41 59',
+          text: '255 255 255',
+          textSecondary: '203 213 225',
+          border: '51 65 85',
+          success: '34 197 94',
+          warning: '234 179 8',
+          error: '239 68 68',
+        },
+        layout: 'comfortable',
+        density: 'medium',
+        borderRadius: 'medium',
+        shadows: true,
+        animations: true,
+      };
+
+      const migratedTheme = migrateTheme(legacyTheme);
+
+      expect(migratedTheme).toBeTruthy();
+      expect(migratedTheme?.colors.primarySurface).toBeTruthy();
+      expect(migratedTheme?.colors.onPrimary).toBeTruthy();
+      expect(migratedTheme?.colors.surfaceElevated).toBeTruthy();
+      expect(validateTheme(migratedTheme!)).toBe(true);
+    });
   });
 
   describe('applyThemeToDOM', () => {
@@ -293,7 +367,11 @@ describe('themeUtils', () => {
 
       // Check that CSS custom properties were set
       expect(mockSetProperty).toHaveBeenCalledWith('--color-primary', theme.colors.primary);
+      expect(mockSetProperty).toHaveBeenCalledWith('--color-primarySurface', theme.colors.primarySurface);
+      expect(mockSetProperty).toHaveBeenCalledWith('--color-onPrimary', theme.colors.onPrimary);
       expect(mockSetProperty).toHaveBeenCalledWith('--color-accent', theme.colors.accent);
+      expect(mockSetProperty).toHaveBeenCalledWith('--color-accentSurface', theme.colors.accentSurface);
+      expect(mockSetProperty).toHaveBeenCalledWith('--color-onAccent', theme.colors.onAccent);
       expect(mockSetProperty).toHaveBeenCalledWith('--color-background', theme.colors.background);
       expect(mockSetProperty).toHaveBeenCalledWith(
         '--theme-chip-bg',
@@ -391,6 +469,8 @@ describe('themeUtils', () => {
         expect(tokens.headerBackground).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
         expect(tokens.badgeText).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
         expect(validation.isAccessible).toBe(true);
+        expect(validation.contrastRatios.onPrimary).toBeGreaterThanOrEqual(4.5);
+        expect(validation.contrastRatios.onAccent).toBeGreaterThanOrEqual(4.5);
       });
     });
   });

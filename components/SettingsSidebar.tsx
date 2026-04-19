@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import pkg from '../package.json';
 const version = pkg.version;
 
-import { ThemeSelector } from './ThemeSelector';
 import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
 import { useAppearance, LAYOUT_PRESETS } from '../hooks/useAppearance';
 import { useFeedCategories } from '../hooks/useFeedCategories';
 import { Switch } from './ui/Switch';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
+import { adjustColorBrightness, autoFixThemeAccessibility } from '../services/themeUtils';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
 import { useLanguage } from '../hooks/useLanguage';
 import { HeaderConfig, ContentConfig, Language } from '../types';
@@ -118,14 +118,36 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const setThemeColor = (color: string) => {
-    const newTheme = {
+  const setThemeColor = (colors: { accent: string; surface?: string }, presetName?: string) => {
+    const isDark = currentTheme.id.includes('dark') || (themeSettings.autoDetectSystemTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    const backgroundColor = colors.surface || currentTheme.colors.background;
+    const surfaceColor = colors.surface
+      ? adjustColorBrightness(colors.surface, isDark ? 1.14 : 0.97)
+      : currentTheme.colors.surface;
+    const surfaceElevated = adjustColorBrightness(
+      surfaceColor,
+      isDark ? 1.08 : 0.92,
+    );
+
+    const seededTheme = {
       ...currentTheme,
       id: `quick-color-${Date.now()}`,
-      name: `${currentTheme.name} (Custom)`,
-      colors: { ...currentTheme.colors, accent: color }
+      name: presetName ? `${currentTheme.name} (${presetName})` : `${currentTheme.name} (Custom)`,
+      colors: {
+        ...currentTheme.colors,
+        accent: colors.accent,
+        ...(colors.surface
+          ? {
+              background: backgroundColor,
+              surface: surfaceColor,
+              surfaceElevated,
+            }
+          : {}),
+      },
     };
-    updateThemeSettings({ currentTheme: newTheme });
+
+    setCurrentTheme(autoFixThemeAccessibility(seededTheme));
   };
 
   const fieldLabelClass =
@@ -204,7 +226,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all border ${
                           (mode.id === 'auto' && themeSettings.autoDetectSystemTheme) ||
                           (mode.id !== 'auto' && !themeSettings.autoDetectSystemTheme && themeSettings.systemThemeOverride === mode.id)
-                          ? 'bg-[rgba(var(--color-accent),0.12)] text-[rgb(var(--color-text))] border-[rgba(var(--color-accent),0.28)]'
+                          ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] border-[rgb(var(--color-accentSurface))] shadow-sm'
                           : mutedButtonClass
                         }`}
                     >
@@ -213,9 +235,6 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                   ))}
                 </div>
               </div>
-
-              {/* Theme Colors */}
-              <ThemeSelector setThemeColor={setThemeColor} />
 
               {/* Background */}
               <div>
@@ -292,20 +311,6 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 </select>
               </div>
 
-              {/* Header Background Color */}
-              <div>
-                <label className={fieldLabelClass}>Cor do Fundo</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={headerConfig.bgColor || '#1a1a1a'}
-                    onChange={(e) => updateHeaderConfig({ bgColor: e.target.value })}
-                    className="w-8 h-8 rounded cursor-pointer bg-transparent border-0"
-                  />
-                  <span className="text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">{headerConfig.bgColor || '#1a1a1a'}</span>
-                </div>
-              </div>
-
               {/* Header Opacity */}
               <div>
                 <label className={fieldLabelClass}>Opacidade: {Math.round((headerConfig.bgOpacity ?? 0.9) * 100)}%</label>
@@ -342,7 +347,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                         <button
                           key={size}
                           onClick={() => updateHeaderConfig({ logoSize: size as 'sm' | 'md' | 'lg' })}
-                          className={`flex-1 rounded py-1 text-[10px] ${headerConfig.logoSize === size ? 'bg-[rgba(var(--color-accent),0.14)] text-[rgb(var(--color-text))]' : 'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]'}`}
+                          className={`flex-1 rounded py-1 text-[10px] ${headerConfig.logoSize === size ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-sm' : 'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]'}`}
                         >
                           {size.toUpperCase()}
                         </button>

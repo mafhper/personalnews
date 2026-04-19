@@ -161,10 +161,15 @@ export interface ExtendedTheme {
   name: string;
   colors: {
     primary: string;
+    primarySurface: string;
+    onPrimary: string;
     secondary: string;
     accent: string;
+    accentSurface: string;
+    onAccent: string;
     background: string;
     surface: string;
+    surfaceElevated: string;
     text: string;
     textSecondary: string;
     border: string;

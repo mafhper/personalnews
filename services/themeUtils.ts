@@ -49,114 +49,34 @@ export const hexToRgb = (hex: string): string => {
 
 // Default theme presets with WCAG AA compliant colors
 export const defaultThemePresets: ThemePreset[] = [
-  // Temas Escuros (3)
   {
-    id: "dark-blue",
-    name: "Azul Escuro",
-    description: "Tema escuro com tons de azul e contraste otimizado",
+    id: "dark",
+    name: "Modo Escuro",
+    description: "Tema escuro padrão com alto contraste",
     category: "dark",
     theme: {
-      id: "dark-blue",
-      name: "Azul Escuro",
+      id: "dark",
+      name: "Modo Escuro",
       colors: {
-        primary: "18 102 204", // Darkened from #1E88E5 for better contrast
-        secondary: hexToRgb("#1E1E1E"), // Derived from surface
-        accent: "138 101 8", // Lightened slightly for better contrast with background
-        background: hexToRgb("#121212"), // #121212
-        surface: hexToRgb("#1E1E1E"), // #1E1E1E
-        text: hexToRgb("#FFFFFF"), // #FFFFFF
-        textSecondary: hexToRgb("#B0B0B0"), // #B0B0B0
-        border: "75 85 99", // Standard border
-        success: "16 185 129", // Standard success
-        warning: "245 158 11", // Standard warning
-        error: "239 68 68", // Standard error
+        primary: "147 197 253", // Blue 300 - branding/foreground
+        primarySurface: "30 64 175", // Blue 800 - filled CTA
+        onPrimary: "255 255 255",
+        secondary: "30 41 59", // Slate 800
+        accent: "191 219 254", // Blue 200 - branding/foreground
+        accentSurface: "29 78 216", // Blue 700 - filled CTA
+        onAccent: "255 255 255",
+        background: "10 15 30", // Slate 900
+        surface: "30 41 59", // Slate 800
+        surfaceElevated: "51 65 85", // Slate 700
+        text: "255 255 255", // White
+        textSecondary: "203 213 225", // Slate 300
+        border: "51 65 85", // Slate 700
+        success: "34 197 94", // Green 500
+        warning: "234 179 8", // Yellow 500
+        error: "239 68 68", // Red 500
       },
-      layout: "comfortable",
-      density: "medium",
-      borderRadius: "medium",
-      shadows: true,
-      animations: true,
-    },
-  },
-  {
-    id: "dark-green",
-    name: "Verde Escuro",
-    description: "Tema escuro com tons de verde natural",
-    category: "dark",
-    theme: {
-      id: "dark-green",
-      name: "Verde Escuro",
-      colors: {
-        primary: "52 125 54", // Further lightened for better contrast with surface
-        secondary: hexToRgb("#1B1F1D"), // Derived from surface
-        accent: "122 105 17", // Further darkened from #FDD835 for white text contrast
-        background: hexToRgb("#0D0D0D"), // #0D0D0D
-        surface: hexToRgb("#1B1F1D"), // #1B1F1D
-        text: hexToRgb("#F1F1F1"), // #F1F1F1
-        textSecondary: hexToRgb("#A8A8A8"), // #A8A8A8
-        border: "75 85 99", // Standard border
-        success: "16 185 129", // Standard success
-        warning: "245 158 11", // Standard warning
-        error: "239 68 68", // Standard error
-      },
-      layout: "comfortable",
-      density: "medium",
-      borderRadius: "medium",
-      shadows: true,
-      animations: true,
-    },
-  },
-  {
-    id: "dark-purple",
-    name: "Roxo Escuro",
-    description: "Tema escuro com tons de roxo e rosa",
-    category: "dark",
-    theme: {
-      id: "dark-purple",
-      name: "Roxo Escuro",
-      colors: {
-        primary: "173 46 207", // Final adjustment for better contrast with surface
-        secondary: hexToRgb("#1A1A23"), // Derived from surface
-        accent: "204 51 102", // Darkened from #FF4081 for better contrast
-        background: hexToRgb("#101014"), // #101014
-        surface: hexToRgb("#1A1A23"), // #1A1A23
-        text: hexToRgb("#E0E0E0"), // #E0E0E0
-        textSecondary: hexToRgb("#9C9C9C"), // #9C9C9C
-        border: "75 85 99", // Standard border
-        success: "16 185 129", // Standard success
-        warning: "245 158 11", // Standard warning
-        error: "239 68 68", // Standard error
-      },
-      layout: "comfortable",
-      density: "medium",
-      borderRadius: "medium",
-      shadows: true,
-      animations: true,
-    },
-  },
 
-  // Temas Claros (3)
-  {
-    id: "light-blue",
-    name: "Azul Claro",
-    description: "Tema claro com tons de azul e alto contraste",
-    category: "light",
-    theme: {
-      id: "light-blue",
-      name: "Azul Claro",
-      colors: {
-        primary: hexToRgb("#1976D2"), // #1976D2
-        secondary: hexToRgb("#F5F5F5"), // Derived from surface
-        accent: "184 61 23", // Darkened from #F4511E for white text contrast
-        background: hexToRgb("#FFFFFF"), // #FFFFFF
-        surface: hexToRgb("#F5F5F5"), // #F5F5F5
-        text: hexToRgb("#212121"), // #212121
-        textSecondary: hexToRgb("#616161"), // #616161
-        border: "156 163 175", // Darker border for better contrast
-        success: "16 185 129", // Standard success
-        warning: "245 158 11", // Standard warning
-        error: "239 68 68", // Standard error
-      },
+
       layout: "comfortable",
       density: "medium",
       borderRadius: "medium",
@@ -165,53 +85,30 @@ export const defaultThemePresets: ThemePreset[] = [
     },
   },
   {
-    id: "light-pink",
-    name: "Rosa Claro",
-    description: "Tema claro com tons de rosa e lilás",
+    id: "light",
+    name: "Modo Claro",
+    description: "Tema claro padrão com leitura otimizada",
     category: "light",
     theme: {
-      id: "light-pink",
-      name: "Rosa Claro",
+      id: "light",
+      name: "Modo Claro",
       colors: {
-        primary: "178 48 92", // Darkened from #EC407A for white text contrast
-        secondary: hexToRgb("#FFFFFF"), // Derived from surface
-        accent: hexToRgb("#7E57C2"), // #7E57C2
-        background: hexToRgb("#FFF8F0"), // #FFF8F0
-        surface: hexToRgb("#FFFFFF"), // #FFFFFF
-        text: hexToRgb("#212121"), // #212121
-        textSecondary: "97 97 97", // Darkened from #757575 for better contrast
-        border: "156 163 175", // Darker border for better contrast
-        success: "16 185 129", // Standard success
-        warning: "245 158 11", // Standard warning
-        error: "239 68 68", // Standard error
-      },
-      layout: "comfortable",
-      density: "medium",
-      borderRadius: "medium",
-      shadows: true,
-      animations: true,
-    },
-  },
-  {
-    id: "light-cyan",
-    name: "Ciano Claro",
-    description: "Tema claro minimalista com tons frios",
-    category: "light",
-    theme: {
-      id: "light-cyan",
-      name: "Ciano Claro",
-      colors: {
-        primary: "0 129 145", // Darkened from #00ACC1 for better contrast
-        secondary: hexToRgb("#FFFFFF"), // Derived from surface
-        accent: "184 81 49", // Darkened from #FF7043 for better contrast
-        background: hexToRgb("#F0F4F8"), // #F0F4F8
-        surface: hexToRgb("#FFFFFF"), // #FFFFFF
-        text: hexToRgb("#1C1C1C"), // #1C1C1C
-        textSecondary: hexToRgb("#5E5E5E"), // #5E5E5E
-        border: "156 163 175", // Darker border for better contrast
-        success: "16 185 129", // Standard success
-        warning: "245 158 11", // Standard warning
-        error: "239 68 68", // Standard error
+        primary: "29 78 216", // Blue 700 - Deep enough for white text
+        primarySurface: "29 78 216",
+        onPrimary: "255 255 255",
+        secondary: "241 245 249", // Slate 100
+        accent: "30 64 175", // Blue 800
+        accentSurface: "30 64 175",
+        onAccent: "255 255 255",
+        background: "255 255 255", // White
+        surface: "241 245 249", // Slate 100
+        surfaceElevated: "226 232 240", // Slate 200
+        text: "15 23 42", // Slate 900
+        textSecondary: "71 85 105", // Slate 600
+        border: "226 232 240", // Slate 200
+        success: "22 163 74", // Green 600
+        warning: "202 138 4", // Yellow 600
+        error: "220 38 38", // Red 600
       },
       layout: "comfortable",
       density: "medium",
@@ -234,31 +131,50 @@ export const defaultThemeSettings: ThemeSettings = {
 };
 
 // Theme validation utilities
-export const validateTheme = (theme: Partial<ExtendedTheme>): boolean => {
-  const requiredFields = [
-    "id",
-    "name",
-    "colors",
-    "layout",
-    "density",
-    "borderRadius",
-  ];
-  const requiredColors = [
-    "primary",
-    "secondary",
-    "accent",
-    "background",
-    "surface",
-    "text",
-    "textSecondary",
-    "border",
-    "success",
-    "warning",
-    "error",
-  ];
+const REQUIRED_THEME_FIELDS: Array<keyof ExtendedTheme> = [
+  "id",
+  "name",
+  "colors",
+  "layout",
+  "density",
+  "borderRadius",
+];
 
+const REQUIRED_THEME_COLORS: Array<keyof ExtendedTheme["colors"]> = [
+  "primary",
+  "primarySurface",
+  "onPrimary",
+  "secondary",
+  "accent",
+  "accentSurface",
+  "onAccent",
+  "background",
+  "surface",
+  "surfaceElevated",
+  "text",
+  "textSecondary",
+  "border",
+  "success",
+  "warning",
+  "error",
+];
+
+const hasCompleteThemeShape = (
+  theme: Partial<ExtendedTheme>,
+): theme is ExtendedTheme => {
+  if (!theme.colors) {
+    return false;
+  }
+
+  return (
+    REQUIRED_THEME_FIELDS.every((field) => field in theme) &&
+    REQUIRED_THEME_COLORS.every((color) => color in theme.colors!)
+  );
+};
+
+export const validateTheme = (theme: Partial<ExtendedTheme>): boolean => {
   // Check required fields
-  for (const field of requiredFields) {
+  for (const field of REQUIRED_THEME_FIELDS) {
     if (!(field in theme)) {
       console.warn(`Theme validation failed: missing field "${field}"`);
       return false;
@@ -267,7 +183,7 @@ export const validateTheme = (theme: Partial<ExtendedTheme>): boolean => {
 
   // Check required colors
   if (theme.colors) {
-    for (const color of requiredColors) {
+    for (const color of REQUIRED_THEME_COLORS) {
       if (!(color in theme.colors)) {
         console.warn(`Theme validation failed: missing color "${color}"`);
         return false;
@@ -391,6 +307,125 @@ const getBestContrastText = (
     : black;
 };
 
+const getContrastTargetDirection = (background: string): "white" | "black" =>
+  calculateLuminance(background) > 0.5 ? "black" : "white";
+
+const getInteractiveSurfaceCandidate = (
+  color: string,
+  background: string,
+): { surface: string; onSurface: string } => {
+  const isDarkBackground = calculateLuminance(background) < 0.5;
+  const directions: Array<"white" | "black"> = isDarkBackground
+    ? ["black", "white"]
+    : ["black", "white"];
+  const factors = [0, 0.08, 0.16, 0.24, 0.32, 0.4, 0.48, 0.56, 0.64, 0.72];
+
+  for (const direction of directions) {
+    for (const factor of factors) {
+      const candidate = factor === 0 ? color : shiftColor(color, factor, direction);
+      const bgRatio = calculateContrastRatio(candidate, background);
+      const onSurface = getBestContrastText(candidate, undefined, 4.5);
+      const onSurfaceRatio = calculateContrastRatio(onSurface, candidate);
+
+      if (bgRatio >= 3 && onSurfaceRatio >= 4.5) {
+        return {
+          surface: candidate,
+          onSurface,
+        };
+      }
+    }
+  }
+
+  const fallbackSurface = shiftColor(color, 0.56, directions[0]);
+
+  return {
+    surface: fallbackSurface,
+    onSurface: getBestContrastText(fallbackSurface, undefined, 4.5),
+  };
+};
+
+const ensureForegroundContrast = (
+  color: string,
+  background: string,
+  targetRatio: number,
+): string => {
+  if (calculateContrastRatio(color, background) >= targetRatio) {
+    return color;
+  }
+
+  const direction = getContrastTargetDirection(background);
+  let candidate = color;
+
+  for (let step = 0; step < 8; step += 1) {
+    candidate = shiftColor(candidate, 0.12, direction);
+    if (calculateContrastRatio(candidate, background) >= targetRatio) {
+      return candidate;
+    }
+  }
+
+  return candidate;
+};
+
+const deriveSurfaceElevated = (surface: string, background: string): string => {
+  const isLightBackground = calculateLuminance(background) > 0.5;
+  return isLightBackground
+    ? shiftColor(surface, 0.08, "black")
+    : shiftColor(surface, 0.12, "white");
+};
+
+export const ensureThemeSemanticColors = (
+  colors: Partial<ExtendedTheme["colors"]>,
+): ExtendedTheme["colors"] => {
+  const primary = colors.primary ?? "59 130 246";
+  const accent = colors.accent ?? primary;
+  const background = colors.background ?? "10 15 30";
+  const surface = colors.surface ?? colors.secondary ?? "30 41 59";
+  const text = colors.text ?? getBestContrastText(background);
+  const textSecondary = colors.textSecondary ?? composeRgbColors(text, background, 0.72);
+  const surfaceElevated = colors.surfaceElevated ?? deriveSurfaceElevated(surface, background);
+
+  const primarySurfacePair = colors.primarySurface && colors.onPrimary
+    ? {
+        surface: colors.primarySurface,
+        onSurface: colors.onPrimary,
+      }
+    : getInteractiveSurfaceCandidate(primary, background);
+
+  const accentSurfacePair = colors.accentSurface && colors.onAccent
+    ? {
+        surface: colors.accentSurface,
+        onSurface: colors.onAccent,
+      }
+    : getInteractiveSurfaceCandidate(accent, background);
+
+  return {
+    primary,
+    primarySurface: primarySurfacePair.surface,
+    onPrimary: getBestContrastText(
+      primarySurfacePair.surface,
+      primarySurfacePair.onSurface,
+      4.5,
+    ),
+    secondary: colors.secondary ?? surface,
+    accent,
+    accentSurface: accentSurfacePair.surface,
+    onAccent: getBestContrastText(
+      accentSurfacePair.surface,
+      accentSurfacePair.onSurface,
+      4.5,
+    ),
+    background,
+    surface,
+    surfaceElevated,
+    text,
+    textSecondary,
+    border: colors.border ?? composeRgbColors(text, background, 0.24),
+    success: colors.success ?? "16 185 129",
+    warning: colors.warning ?? "245 158 11",
+    error: colors.error ?? "239 68 68",
+  };
+};
+
 export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
   const isLightBackground = calculateLuminance(theme.colors.background) > 0.5;
   const surfaceBackground = composeRgbColors(
@@ -398,20 +433,14 @@ export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
     theme.colors.background,
     isLightBackground ? 0.96 : 0.88,
   );
-  const elevatedSurface = composeRgbColors(
-    isLightBackground
-      ? shiftColor(theme.colors.surface, 0.14, "white")
-      : shiftColor(theme.colors.surface, 0.16, "black"),
-    theme.colors.background,
-    isLightBackground ? 0.98 : 0.92,
-  );
+  const elevatedSurface = theme.colors.surfaceElevated;
   const headerBackground = composeRgbColors(
     theme.colors.surface,
     theme.colors.background,
     isLightBackground ? 0.94 : 0.9,
   );
   const badgeBackground = composeRgbColors(
-    theme.colors.accent,
+    theme.colors.accentSurface,
     surfaceBackground,
     isLightBackground ? 0.22 : 0.28,
   );
@@ -421,7 +450,7 @@ export const resolveThemeContrastTokens = (theme: ExtendedTheme) => {
     isLightBackground ? 0.92 : 0.82,
   );
   const paginationBackground = composeRgbColors(
-    elevatedSurface,
+    theme.colors.surfaceElevated,
     theme.colors.background,
     isLightBackground ? 0.96 : 0.88,
   );
@@ -537,142 +566,111 @@ export const validateThemeAccessibility = (
   const suggestions: string[] = [];
   const contrastRatios: Record<string, number> = {};
 
-  // WCAG AA requirements: 4.5:1 for normal text, 3:1 for large text and interactive elements
   const WCAG_AA_NORMAL = 4.5;
   const WCAG_AA_LARGE = 3.0;
+  const semanticColors = ensureThemeSemanticColors(theme.colors);
+  const textPairs: Array<[string, string, string, number, string]> = [
+    [
+      "textOnBackground",
+      semanticColors.text,
+      semanticColors.background,
+      WCAG_AA_NORMAL,
+      "Texto principal no fundo",
+    ],
+    [
+      "secondaryTextOnBackground",
+      semanticColors.textSecondary,
+      semanticColors.background,
+      WCAG_AA_NORMAL,
+      "Texto secundário no fundo",
+    ],
+    [
+      "textOnSurface",
+      semanticColors.text,
+      semanticColors.surface,
+      WCAG_AA_NORMAL,
+      "Texto em superfícies",
+    ],
+    [
+      "secondaryTextOnSurface",
+      semanticColors.textSecondary,
+      semanticColors.surface,
+      WCAG_AA_NORMAL,
+      "Texto secundário em superfícies",
+    ],
+    [
+      "textOnSurfaceElevated",
+      semanticColors.text,
+      semanticColors.surfaceElevated,
+      WCAG_AA_NORMAL,
+      "Texto em superfícies elevadas",
+    ],
+    [
+      "onPrimary",
+      semanticColors.onPrimary,
+      semanticColors.primarySurface,
+      WCAG_AA_NORMAL,
+      "Texto em CTA primário",
+    ],
+    [
+      "onAccent",
+      semanticColors.onAccent,
+      semanticColors.accentSurface,
+      WCAG_AA_NORMAL,
+      "Texto em CTA de destaque",
+    ],
+  ];
 
-  // Check text on background contrast (normal text requirement)
-  const textBgRatio = calculateContrastRatio(
-    theme.colors.text,
-    theme.colors.background,
-  );
-  contrastRatios.textOnBackground = textBgRatio;
-  if (textBgRatio < WCAG_AA_NORMAL) {
-    issues.push(
-      `Texto principal no fundo não atende WCAG AA (${textBgRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_NORMAL}:1)`,
-    );
-    suggestions.push(
-      "Escureça o texto ou clareie o fundo para melhor contraste",
-    );
-  }
+  textPairs.forEach(([key, foreground, background, target, label]) => {
+    const ratio = calculateContrastRatio(foreground, background);
+    contrastRatios[key] = ratio;
 
-  // Check secondary text on background contrast
-  const secondaryTextBgRatio = calculateContrastRatio(
-    theme.colors.textSecondary,
-    theme.colors.background,
-  );
-  contrastRatios.secondaryTextOnBackground = secondaryTextBgRatio;
-  if (secondaryTextBgRatio < WCAG_AA_NORMAL) {
-    issues.push(
-      `Texto secundário no fundo não atende WCAG AA (${secondaryTextBgRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_NORMAL}:1)`,
-    );
-    suggestions.push("Escureça o texto secundário para melhor legibilidade");
-  }
+    if (ratio < target) {
+      issues.push(
+        `${label} não atende WCAG AA (${ratio.toFixed(2)}:1, mínimo: ${target}:1)`,
+      );
+      suggestions.push(`Ajuste ${label.toLowerCase()} para atingir contraste suficiente`);
+    }
+  });
 
-  // Check text on surface contrast
-  const textSurfaceRatio = calculateContrastRatio(
-    theme.colors.text,
-    theme.colors.surface,
-  );
-  contrastRatios.textOnSurface = textSurfaceRatio;
-  if (textSurfaceRatio < WCAG_AA_NORMAL) {
-    issues.push(
-      `Texto em superfícies não atende WCAG AA (${textSurfaceRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_NORMAL}:1)`,
-    );
-    suggestions.push("Ajuste o contraste entre texto e superfícies");
-  }
+  const interactivePairs: Array<[string, string, string, string]> = [
+    [
+      "primaryOnBackground",
+      semanticColors.primary,
+      semanticColors.background,
+      "Cor primária com o fundo",
+    ],
+    [
+      "accentOnBackground",
+      semanticColors.accent,
+      semanticColors.background,
+      "Cor de destaque com o fundo",
+    ],
+    [
+      "primaryOnSurface",
+      semanticColors.primary,
+      semanticColors.surface,
+      "Cor primária em superfícies",
+    ],
+    [
+      "accentOnSurface",
+      semanticColors.accent,
+      semanticColors.surface,
+      "Cor de destaque em superfícies",
+    ],
+  ];
 
-  // Check secondary text on surface contrast
-  const secondaryTextSurfaceRatio = calculateContrastRatio(
-    theme.colors.textSecondary,
-    theme.colors.surface,
-  );
-  contrastRatios.secondaryTextOnSurface = secondaryTextSurfaceRatio;
-  if (secondaryTextSurfaceRatio < WCAG_AA_NORMAL) {
-    issues.push(
-      `Texto secundário em superfícies não atende WCAG AA (${secondaryTextSurfaceRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_NORMAL}:1)`,
-    );
-    suggestions.push("Ajuste o contraste entre texto secundário e superfícies");
-  }
+  interactivePairs.forEach(([key, foreground, background, label]) => {
+    const ratio = calculateContrastRatio(foreground, background);
+    contrastRatios[key] = ratio;
 
-  // Check primary color accessibility (interactive elements)
-  const primaryBgRatio = calculateContrastRatio(
-    theme.colors.primary,
-    theme.colors.background,
-  );
-  contrastRatios.primaryOnBackground = primaryBgRatio;
-  if (primaryBgRatio < WCAG_AA_LARGE) {
-    issues.push(
-      `Cor primária tem baixo contraste com o fundo (${primaryBgRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_LARGE}:1)`,
-    );
-    suggestions.push("Ajuste a cor primária para melhor visibilidade");
-  }
-
-  // Check accent color accessibility (interactive elements)
-  const accentBgRatio = calculateContrastRatio(
-    theme.colors.accent,
-    theme.colors.background,
-  );
-  contrastRatios.accentOnBackground = accentBgRatio;
-  if (accentBgRatio < WCAG_AA_LARGE) {
-    issues.push(
-      `Cor de destaque tem baixo contraste com o fundo (${accentBgRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_LARGE}:1)`,
-    );
-    suggestions.push("Ajuste a cor de destaque para melhor visibilidade");
-  }
-
-  // Check primary color on surface (for buttons on cards)
-  const primarySurfaceRatio = calculateContrastRatio(
-    theme.colors.primary,
-    theme.colors.surface,
-  );
-  contrastRatios.primaryOnSurface = primarySurfaceRatio;
-  if (primarySurfaceRatio < WCAG_AA_LARGE) {
-    issues.push(
-      `Cor primária em superfícies tem baixo contraste (${primarySurfaceRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_LARGE}:1)`,
-    );
-    suggestions.push("Ajuste o contraste entre cor primária e superfícies");
-  }
-
-  // Check accent color on surface
-  const accentSurfaceRatio = calculateContrastRatio(
-    theme.colors.accent,
-    theme.colors.surface,
-  );
-  contrastRatios.accentOnSurface = accentSurfaceRatio;
-  if (accentSurfaceRatio < WCAG_AA_LARGE) {
-    issues.push(
-      `Cor de destaque em superfícies tem baixo contraste (${accentSurfaceRatio.toFixed(2)}:1, mínimo: ${WCAG_AA_LARGE}:1)`,
-    );
-    suggestions.push("Ajuste o contraste entre cor de destaque e superfícies");
-  }
-
-  // Check if white text would work on primary/accent (for button text)
-  const whiteOnPrimary = calculateContrastRatio(
-    "255 255 255",
-    theme.colors.primary,
-  );
-  contrastRatios.whiteOnPrimary = whiteOnPrimary;
-  if (whiteOnPrimary < WCAG_AA_NORMAL) {
-    issues.push(
-      `Texto branco em botões primários não atende WCAG AA (${whiteOnPrimary.toFixed(2)}:1, mínimo: ${WCAG_AA_NORMAL}:1)`,
-    );
-    suggestions.push("Escureça a cor primária ou use texto escuro em botões");
-  }
-
-  const whiteOnAccent = calculateContrastRatio(
-    "255 255 255",
-    theme.colors.accent,
-  );
-  contrastRatios.whiteOnAccent = whiteOnAccent;
-  if (whiteOnAccent < WCAG_AA_NORMAL) {
-    issues.push(
-      `Texto branco em botões de destaque não atende WCAG AA (${whiteOnAccent.toFixed(2)}:1, mínimo: ${WCAG_AA_NORMAL}:1)`,
-    );
-    suggestions.push(
-      "Escureça a cor de destaque ou use texto escuro em botões",
-    );
-  }
+    if (ratio < WCAG_AA_LARGE) {
+      issues.push(
+        `${label} não atende o contraste mínimo (${ratio.toFixed(2)}:1, mínimo: ${WCAG_AA_LARGE}:1)`,
+      );
+      suggestions.push(`Ajuste ${label.toLowerCase()} para melhorar a visibilidade`);
+    }
+  });
 
   return {
     isAccessible: issues.length === 0,
@@ -724,9 +722,7 @@ export const validateAllThemesAccessibility = (): {
 // Theme migration utilities
 export const migrateTheme = (oldTheme: unknown): ExtendedTheme | null => {
   try {
-    // Handle migration from old theme format
     if (typeof oldTheme === "string") {
-      // Old format was just RGB string
       return createThemeFromAccentColor(oldTheme, "Migrated Theme");
     }
 
@@ -736,19 +732,46 @@ export const migrateTheme = (oldTheme: unknown): ExtendedTheme | null => {
 
     const themeObj = oldTheme as Record<string, unknown>;
 
-    // If it's already in new format, validate and return
-    if (validateTheme(themeObj as Partial<ExtendedTheme>)) {
+    if (
+      hasCompleteThemeShape(themeObj as Partial<ExtendedTheme>) &&
+      validateTheme(themeObj as Partial<ExtendedTheme>)
+    ) {
       return themeObj as unknown as ExtendedTheme;
     }
 
-    // Try to extract accent color and create new theme
-    const colors = themeObj.colors as Record<string, unknown> | undefined;
-    if (colors?.accent || themeObj.accent) {
-      const accentColor = (colors?.accent || themeObj.accent) as string;
-      return createThemeFromAccentColor(
-        accentColor,
-        (themeObj.name as string) || "Migrated Theme",
-      );
+    const partialTheme = themeObj as Partial<ExtendedTheme> & {
+      colors?: Partial<ExtendedTheme["colors"]>;
+      accent?: string;
+    };
+    const baseColors: Partial<ExtendedTheme["colors"]> = partialTheme.colors ?? {};
+    const fallbackAccent = partialTheme.accent ?? baseColors.accent ?? baseColors.primary;
+
+    if (fallbackAccent) {
+      const migratedTheme: ExtendedTheme = {
+        id: partialTheme.id ?? `migrated-${Date.now()}`,
+        name: partialTheme.name ?? "Migrated Theme",
+        colors: ensureThemeSemanticColors({
+          ...baseColors,
+          primary: baseColors.primary ?? fallbackAccent,
+          accent: baseColors.accent ?? fallbackAccent,
+          background: baseColors.background,
+          surface: baseColors.surface ?? baseColors.secondary,
+          text: baseColors.text,
+          textSecondary: baseColors.textSecondary,
+          border: baseColors.border,
+          success: baseColors.success,
+          warning: baseColors.warning,
+          error: baseColors.error,
+        }),
+        layout: partialTheme.layout ?? "comfortable",
+        density: partialTheme.density ?? "medium",
+        borderRadius: partialTheme.borderRadius ?? "medium",
+        shadows: partialTheme.shadows ?? true,
+        animations: partialTheme.animations ?? true,
+        adaptiveLayout: partialTheme.adaptiveLayout,
+      };
+
+      return validateTheme(migratedTheme) ? migratedTheme : autoFixThemeAccessibility(migratedTheme);
     }
 
     return null as unknown as ExtendedTheme;
@@ -763,29 +786,38 @@ export const createThemeFromAccentColor = (
   accentColor: string,
   name: string,
 ): ExtendedTheme => {
-  // Parse RGB values
   const rgbValues = accentColor.split(/\s+/).map(Number);
   const [r, g, b] = rgbValues;
-
-  // Generate complementary colors based on accent
   const isDark = r * 0.299 + g * 0.587 + b * 0.114 < 128;
+  const background = isDark ? "26 32 44" : "255 255 255";
+  const surface = isDark ? "45 55 72" : "249 250 251";
+  const primary = ensureForegroundContrast(
+    ensureForegroundContrast(accentColor, background, 3),
+    surface,
+    3,
+  );
+  const accent = ensureForegroundContrast(
+    ensureForegroundContrast(accentColor, surface, 3),
+    background,
+    3,
+  );
 
   return {
     id: `custom-${Date.now()}`,
     name,
-    colors: {
-      primary: accentColor,
+    colors: ensureThemeSemanticColors({
+      primary,
       secondary: isDark ? "45 55 72" : "229 231 235",
-      accent: accentColor,
-      background: isDark ? "26 32 44" : "255 255 255",
-      surface: isDark ? "45 55 72" : "249 250 251",
+      accent,
+      background,
+      surface,
       text: isDark ? "247 250 252" : "17 24 39",
       textSecondary: isDark ? "160 174 192" : "107 114 128",
       border: isDark ? "75 85 99" : "209 213 219",
       success: "16 185 129",
       warning: "245 158 11",
       error: "239 68 68",
-    },
+    }),
     layout: "comfortable",
     density: "medium",
     borderRadius: "medium",
@@ -798,7 +830,12 @@ export const createThemeFromAccentColor = (
 
 export const applyThemeToDOM = (theme: ExtendedTheme): void => {
   const root = document.documentElement;
-  const safeTheme = autoFixThemeAccessibility(theme);
+  const safeTheme = validateTheme(theme)
+    ? {
+        ...theme,
+        colors: ensureThemeSemanticColors(theme.colors),
+      }
+    : autoFixThemeAccessibility(theme);
   const resolved = resolveThemeContrastTokens(safeTheme);
 
   // Apply color variables
@@ -935,260 +972,86 @@ export const getSystemMatchingTheme = (
     : defaultThemePresets[0].theme;
 };
 
+// Helper function to adjust color brightness
+export const adjustColorBrightness = (rgb: string, factor: number): string => {
+  const [r, g, b] = rgb.split(" ").map(Number);
+  if (factor > 1) {
+    // Lighten
+    return `${Math.min(255, Math.round(r + (255 - r) * (factor - 1)))} ${Math.min(255, Math.round(g + (255 - g) * (factor - 1)))} ${Math.min(255, Math.round(b + (255 - b) * (factor - 1)))}`;
+  } else {
+    // Darken
+    return `${Math.round(r * factor)} ${Math.round(g * factor)} ${Math.round(b * factor)}`;
+  }
+};
+
 // Enhanced auto-fix accessibility issues for comprehensive WCAG AA compliance
 export const autoFixThemeAccessibility = (
   theme: ExtendedTheme,
 ): ExtendedTheme => {
-  const fixedTheme = { ...theme, colors: { ...theme.colors } };
-  const WCAG_AA_NORMAL = 4.5;
-  const WCAG_AA_LARGE = 3.0;
-
-  // Helper function to adjust color brightness
-  const adjustColorBrightness = (rgb: string, factor: number): string => {
-    const [r, g, b] = rgb.split(" ").map(Number);
-    if (factor > 1) {
-      // Lighten
-      return `${Math.min(255, Math.round(r + (255 - r) * (factor - 1)))} ${Math.min(255, Math.round(g + (255 - g) * (factor - 1)))} ${Math.min(255, Math.round(b + (255 - b) * (factor - 1)))}`;
-    } else {
-      // Darken
-      return `${Math.round(r * factor)} ${Math.round(g * factor)} ${Math.round(b * factor)}`;
-    }
+  const fixedTheme: ExtendedTheme = {
+    ...theme,
+    colors: ensureThemeSemanticColors(theme.colors),
   };
 
-  // Helper function to find optimal contrast color
-  const findOptimalTextColor = (
-    background: string,
-    targetRatio: number = WCAG_AA_NORMAL,
-  ): string => {
-    const bgLuminance = calculateLuminance(background);
+  fixedTheme.colors.text = getBestContrastText(
+    fixedTheme.colors.background,
+    fixedTheme.colors.text,
+    4.5,
+  );
+  fixedTheme.colors.surface = ensureForegroundContrast(
+    fixedTheme.colors.surface,
+    fixedTheme.colors.background,
+    1.2,
+  );
+  fixedTheme.colors.surfaceElevated = deriveSurfaceElevated(
+    fixedTheme.colors.surface,
+    fixedTheme.colors.background,
+  );
+  fixedTheme.colors.textSecondary = getBestContrastText(
+    fixedTheme.colors.background,
+    fixedTheme.colors.textSecondary,
+    4.5,
+  );
 
-    // Try white first
-    if (calculateContrastRatio("255 255 255", background) >= targetRatio) {
-      return "255 255 255";
-    }
+  fixedTheme.colors.primary = ensureForegroundContrast(
+    fixedTheme.colors.primary,
+    fixedTheme.colors.background,
+    3,
+  );
+  fixedTheme.colors.accent = ensureForegroundContrast(
+    fixedTheme.colors.accent,
+    fixedTheme.colors.background,
+    3,
+  );
+  fixedTheme.colors.primary = ensureForegroundContrast(
+    fixedTheme.colors.primary,
+    fixedTheme.colors.surface,
+    3,
+  );
+  fixedTheme.colors.accent = ensureForegroundContrast(
+    fixedTheme.colors.accent,
+    fixedTheme.colors.surface,
+    3,
+  );
 
-    // Try black
-    if (calculateContrastRatio("0 0 0", background) >= targetRatio) {
-      return "0 0 0";
-    }
+  const primarySurfacePair = getInteractiveSurfaceCandidate(
+    fixedTheme.colors.primarySurface || fixedTheme.colors.primary,
+    fixedTheme.colors.background,
+  );
+  fixedTheme.colors.primarySurface = primarySurfacePair.surface;
+  fixedTheme.colors.onPrimary = primarySurfacePair.onSurface;
 
-    // If neither works, adjust based on background luminance
-    if (bgLuminance > 0.5) {
-      // Light background - use very dark text
-      return "15 23 42";
-    } else {
-      // Dark background - use very light text
-      return "248 250 252";
-    }
+  const accentSurfacePair = getInteractiveSurfaceCandidate(
+    fixedTheme.colors.accentSurface || fixedTheme.colors.accent,
+    fixedTheme.colors.background,
+  );
+  fixedTheme.colors.accentSurface = accentSurfacePair.surface;
+  fixedTheme.colors.onAccent = accentSurfacePair.onSurface;
+
+  return {
+    ...fixedTheme,
+    colors: ensureThemeSemanticColors(fixedTheme.colors),
   };
-
-  // Fix text on background contrast
-  const textBgRatio = calculateContrastRatio(
-    fixedTheme.colors.text,
-    fixedTheme.colors.background,
-  );
-  if (textBgRatio < WCAG_AA_NORMAL) {
-    fixedTheme.colors.text = findOptimalTextColor(
-      fixedTheme.colors.background,
-      WCAG_AA_NORMAL,
-    );
-  }
-
-  // Fix secondary text on background contrast
-  const secondaryTextBgRatio = calculateContrastRatio(
-    fixedTheme.colors.textSecondary,
-    fixedTheme.colors.background,
-  );
-  if (secondaryTextBgRatio < WCAG_AA_NORMAL) {
-    const bgLuminance = calculateLuminance(fixedTheme.colors.background);
-    if (bgLuminance > 0.5) {
-      // Light background - use dark secondary text
-      fixedTheme.colors.textSecondary = "51 65 85";
-    } else {
-      // Dark background - use light secondary text
-      fixedTheme.colors.textSecondary = "156 163 175";
-    }
-  }
-
-  // Fix text on surface contrast
-  const textSurfaceRatio = calculateContrastRatio(
-    fixedTheme.colors.text,
-    fixedTheme.colors.surface,
-  );
-  if (textSurfaceRatio < WCAG_AA_NORMAL) {
-    // Adjust surface color to maintain text contrast
-    const textLuminance = calculateLuminance(fixedTheme.colors.text);
-    const surfaceLuminance = calculateLuminance(fixedTheme.colors.surface);
-
-    if (textLuminance > surfaceLuminance) {
-      // Text is lighter - darken surface
-      fixedTheme.colors.surface = adjustColorBrightness(
-        fixedTheme.colors.surface,
-        0.7,
-      );
-    } else {
-      // Text is darker - lighten surface
-      fixedTheme.colors.surface = adjustColorBrightness(
-        fixedTheme.colors.surface,
-        1.3,
-      );
-    }
-  }
-
-  // Fix secondary text on surface contrast
-  const secondaryTextSurfaceRatio = calculateContrastRatio(
-    fixedTheme.colors.textSecondary,
-    fixedTheme.colors.surface,
-  );
-  if (secondaryTextSurfaceRatio < WCAG_AA_NORMAL) {
-    const surfaceLuminance = calculateLuminance(fixedTheme.colors.surface);
-    if (surfaceLuminance > 0.5) {
-      // Light surface - darken secondary text
-      fixedTheme.colors.textSecondary = "51 65 85";
-    } else {
-      // Dark surface - lighten secondary text
-      fixedTheme.colors.textSecondary = "156 163 175";
-    }
-  }
-
-  // Fix primary color contrast with background
-  const primaryBgRatio = calculateContrastRatio(
-    fixedTheme.colors.primary,
-    fixedTheme.colors.background,
-  );
-  if (primaryBgRatio < WCAG_AA_LARGE) {
-    const bgLuminance = calculateLuminance(fixedTheme.colors.background);
-    const primaryLuminance = calculateLuminance(fixedTheme.colors.primary);
-
-    if (bgLuminance > 0.5) {
-      // Light background - darken primary if needed
-      if (primaryLuminance > 0.4) {
-        fixedTheme.colors.primary = adjustColorBrightness(
-          fixedTheme.colors.primary,
-          0.6,
-        );
-      }
-    } else {
-      // Dark background - lighten primary if needed
-      if (primaryLuminance < 0.3) {
-        fixedTheme.colors.primary = adjustColorBrightness(
-          fixedTheme.colors.primary,
-          1.6,
-        );
-      }
-    }
-  }
-
-  // Fix accent color contrast with background
-  const accentBgRatio = calculateContrastRatio(
-    fixedTheme.colors.accent,
-    fixedTheme.colors.background,
-  );
-  if (accentBgRatio < WCAG_AA_LARGE) {
-    const bgLuminance = calculateLuminance(fixedTheme.colors.background);
-    const accentLuminance = calculateLuminance(fixedTheme.colors.accent);
-
-    if (bgLuminance > 0.5) {
-      // Light background - darken accent if needed
-      if (accentLuminance > 0.4) {
-        fixedTheme.colors.accent = adjustColorBrightness(
-          fixedTheme.colors.accent,
-          0.6,
-        );
-      }
-    } else {
-      // Dark background - lighten accent if needed
-      if (accentLuminance < 0.3) {
-        fixedTheme.colors.accent = adjustColorBrightness(
-          fixedTheme.colors.accent,
-          1.6,
-        );
-      }
-    }
-  }
-
-  // Fix primary color contrast with surface
-  const primarySurfaceRatio = calculateContrastRatio(
-    fixedTheme.colors.primary,
-    fixedTheme.colors.surface,
-  );
-  if (primarySurfaceRatio < WCAG_AA_LARGE) {
-    const surfaceLuminance = calculateLuminance(fixedTheme.colors.surface);
-    const primaryLuminance = calculateLuminance(fixedTheme.colors.primary);
-
-    if (surfaceLuminance > 0.5) {
-      // Light surface - darken primary if needed
-      if (primaryLuminance > 0.4) {
-        fixedTheme.colors.primary = adjustColorBrightness(
-          fixedTheme.colors.primary,
-          0.7,
-        );
-      }
-    } else {
-      // Dark surface - lighten primary if needed
-      if (primaryLuminance < 0.3) {
-        fixedTheme.colors.primary = adjustColorBrightness(
-          fixedTheme.colors.primary,
-          1.5,
-        );
-      }
-    }
-  }
-
-  // Fix accent color contrast with surface
-  const accentSurfaceRatio = calculateContrastRatio(
-    fixedTheme.colors.accent,
-    fixedTheme.colors.surface,
-  );
-  if (accentSurfaceRatio < WCAG_AA_LARGE) {
-    const surfaceLuminance = calculateLuminance(fixedTheme.colors.surface);
-    const accentLuminance = calculateLuminance(fixedTheme.colors.accent);
-
-    if (surfaceLuminance > 0.5) {
-      // Light surface - darken accent if needed
-      if (accentLuminance > 0.4) {
-        fixedTheme.colors.accent = adjustColorBrightness(
-          fixedTheme.colors.accent,
-          0.7,
-        );
-      }
-    } else {
-      // Dark surface - lighten accent if needed
-      if (accentLuminance < 0.3) {
-        fixedTheme.colors.accent = adjustColorBrightness(
-          fixedTheme.colors.accent,
-          1.5,
-        );
-      }
-    }
-  }
-
-  // Ensure white text works on primary/accent colors (for buttons)
-  const whiteOnPrimary = calculateContrastRatio(
-    "255 255 255",
-    fixedTheme.colors.primary,
-  );
-  if (whiteOnPrimary < WCAG_AA_NORMAL) {
-    // Darken primary to ensure white text is readable
-    fixedTheme.colors.primary = adjustColorBrightness(
-      fixedTheme.colors.primary,
-      0.5,
-    );
-  }
-
-  const whiteOnAccent = calculateContrastRatio(
-    "255 255 255",
-    fixedTheme.colors.accent,
-  );
-  if (whiteOnAccent < WCAG_AA_NORMAL) {
-    // Darken accent to ensure white text is readable
-    fixedTheme.colors.accent = adjustColorBrightness(
-      fixedTheme.colors.accent,
-      0.5,
-    );
-  }
-
-  return fixedTheme;
 };
 
 // Generate theme variations
@@ -1202,7 +1065,7 @@ export const generateThemeVariations = (
     ...baseTheme,
     id: `${baseTheme.id}-high-contrast`,
     name: `${baseTheme.name} (High Contrast)`,
-    colors: {
+    colors: ensureThemeSemanticColors({
       ...baseTheme.colors,
       text:
         calculateLuminance(baseTheme.colors.background) > 0.5
@@ -1216,7 +1079,7 @@ export const generateThemeVariations = (
         calculateLuminance(baseTheme.colors.background) > 0.5
           ? "107 114 128"
           : "156 163 175",
-    },
+    }),
   };
   variations.push(highContrast);
 
@@ -1225,13 +1088,13 @@ export const generateThemeVariations = (
     ...baseTheme,
     id: `${baseTheme.id}-soft`,
     name: `${baseTheme.name} (Soft)`,
-    colors: {
+    colors: ensureThemeSemanticColors({
       ...baseTheme.colors,
       textSecondary:
         calculateLuminance(baseTheme.colors.background) > 0.5
           ? "100 116 139"
           : "148 163 184",
-    },
+    }),
   };
   variations.push(soft);
 
@@ -1277,10 +1140,15 @@ export const simulateColorBlindness = (
     name: `${theme.name} (${type})`,
     colors: {
       primary: simulateColor(theme.colors.primary),
+      primarySurface: simulateColor(theme.colors.primarySurface),
+      onPrimary: simulateColor(theme.colors.onPrimary),
       secondary: simulateColor(theme.colors.secondary),
       accent: simulateColor(theme.colors.accent),
+      accentSurface: simulateColor(theme.colors.accentSurface),
+      onAccent: simulateColor(theme.colors.onAccent),
       background: simulateColor(theme.colors.background),
       surface: simulateColor(theme.colors.surface),
+      surfaceElevated: simulateColor(theme.colors.surfaceElevated),
       text: simulateColor(theme.colors.text),
       textSecondary: simulateColor(theme.colors.textSecondary),
       border: simulateColor(theme.colors.border),
@@ -1299,10 +1167,13 @@ export const exportTheme = (theme: ExtendedTheme): string => {
 export const importTheme = (themeJson: string): ExtendedTheme | null => {
   try {
     const theme = JSON.parse(themeJson);
-    if (validateTheme(theme)) {
+    if (
+      hasCompleteThemeShape(theme as Partial<ExtendedTheme>) &&
+      validateTheme(theme as Partial<ExtendedTheme>)
+    ) {
       return theme as ExtendedTheme;
     }
-    return null;
+    return migrateTheme(theme);
   } catch (error) {
     console.error("Failed to import theme:", error);
     return null;

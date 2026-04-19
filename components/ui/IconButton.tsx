@@ -19,7 +19,7 @@ const variantClasses = {
   default:
     "bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-surface))]/80 text-[rgb(var(--color-text))] border-[rgb(var(--color-border))]",
   primary:
-    "bg-[rgb(var(--color-primary))] hover:bg-[rgb(var(--color-primary))]/90 text-white border-transparent",
+    "bg-[rgb(var(--color-primarySurface))] hover:bg-[rgb(var(--color-primarySurface))]/90 text-[rgb(var(--color-onPrimary))] border-transparent",
   secondary:
     "bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-surface))]/80 text-[rgb(var(--color-text))] border-[rgb(var(--color-border))]",
   danger:

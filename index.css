@@ -18,10 +18,15 @@
 
   /* Extended Theme System CSS Custom Properties */
   --color-primary: 20 184 166;
+  --color-primarySurface: 13 148 136;
+  --color-onPrimary: 255 255 255;
   --color-secondary: 45 55 72;
   --color-accent: 20 184 166;
+  --color-accentSurface: 13 148 136;
+  --color-onAccent: 255 255 255;
   --color-background: 26 32 44;
   --color-surface: 45 55 72;
+  --color-surfaceElevated: 61 73 92;
   --color-text: 247 250 252;
   --color-textSecondary: 160 174 192;
   --color-border: 75 85 99;
@@ -334,11 +339,13 @@ a:focus {
 }
 
 .theme-primary {
-  background-color: rgb(var(--color-primary));
+  background-color: rgb(var(--color-primarySurface));
+  color: rgb(var(--color-onPrimary));
 }
 
 .theme-accent {
-  background-color: rgb(var(--color-accent));
+  background-color: rgb(var(--color-accentSurface));
+  color: rgb(var(--color-onAccent));
 }
 
 /* Layout density classes */
@@ -768,8 +775,8 @@ Layout Framework (Restored Base Classes)
 }
 
 .feed-pagination-button--active {
-  background: rgb(var(--color-accent));
-  color: rgb(var(--color-background));
+  background: rgb(var(--color-accentSurface));
+  color: rgb(var(--color-onAccent));
   font-weight: 700;
 }
 
@@ -785,6 +792,38 @@ Layout Framework (Restored Base Classes)
 .feed-pagination-status {
   color: rgb(var(--color-text));
   font-weight: 500;
+}
+
+/* Header Drawer Framework (Mobile Menu) */
+.feed-header-drawer {
+  background-color: rgb(var(--color-surface));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.feed-header-drawer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(var(--color-background), 0.4);
+  border: 1px solid rgba(var(--color-border), 0.2);
+  border-radius: 1rem;
+  color: rgb(var(--color-text));
+  transition: all 0.2s ease;
+}
+
+.feed-header-drawer-card:active {
+  transform: scale(0.95);
+  background: rgba(var(--color-accent), 0.1);
+  border-color: rgba(var(--color-accent), 0.3);
+}
+
+.feed-header-drawer-card--primary {
+  background: rgba(var(--color-accent), 0.1);
+  border-color: rgba(var(--color-accent), 0.3);
+  color: rgb(var(--color-accent));
 }
 
 /* Adaptive Layout System */
@@ -4348,8 +4387,8 @@ html {
 
 /* Standard Action Button styles */
 .feed-btn-action {
-  background: rgb(var(--color-accent));
-  color: #fff;
+  background: rgb(var(--color-accentSurface));
+  color: rgb(var(--color-onAccent));
   padding: 0.5rem 1rem;
   border-radius: 9999px;
   font-size: 0.65rem;
@@ -4369,7 +4408,7 @@ html {
 .feed-btn-action:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(var(--color-accent), 0.4);
+  box-shadow: 0 6px 15px rgba(var(--color-accentSurface), 0.4);
 }
 
 .feed-btn-action:focus-visible {

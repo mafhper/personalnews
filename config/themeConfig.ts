@@ -24,6 +24,7 @@
  */
 
 import type { ExtendedTheme } from '../types';
+import { ensureThemeSemanticColors } from '../services/themeUtils';
 
 // =============================================================================
 // INTERFACE DE TEMA
@@ -57,7 +58,7 @@ export const DARK_BLUE_THEME: ThemePreset = {
     theme: {
         id: 'dark-blue',
         name: 'Azul Escuro',
-        colors: {
+        colors: ensureThemeSemanticColors({
             primary: '18 102 204',      // Azul principal (botões, links)
             secondary: '30 30 30',      // Cinza escuro (cards)
             accent: '138 101 8',        // Dourado (destaques)
@@ -69,7 +70,7 @@ export const DARK_BLUE_THEME: ThemePreset = {
             success: '16 185 129',      // Verde (sucesso)
             warning: '245 158 11',      // Amarelo (alerta)
             error: '239 68 68',         // Vermelho (erro)
-        },
+        }),
         layout: 'comfortable',        // 'compact' | 'comfortable' | 'spacious'
         density: 'medium',            // 'low' | 'medium' | 'high'
         borderRadius: 'medium',       // 'none' | 'small' | 'medium' | 'large'
@@ -86,7 +87,7 @@ export const DARK_GREEN_THEME: ThemePreset = {
     theme: {
         id: 'dark-green',
         name: 'Verde Escuro',
-        colors: {
+        colors: ensureThemeSemanticColors({
             primary: '52 125 54',       // Verde principal
             secondary: '27 31 29',      // Verde escuro
             accent: '122 105 17',       // Dourado
@@ -98,7 +99,7 @@ export const DARK_GREEN_THEME: ThemePreset = {
             success: '16 185 129',
             warning: '245 158 11',
             error: '239 68 68',
-        },
+        }),
         layout: 'comfortable',
         density: 'medium',
         borderRadius: 'medium',
@@ -115,7 +116,7 @@ export const DARK_PURPLE_THEME: ThemePreset = {
     theme: {
         id: 'dark-purple',
         name: 'Roxo Escuro',
-        colors: {
+        colors: ensureThemeSemanticColors({
             primary: '173 46 207',      // Roxo vibrante
             secondary: '26 26 35',      // Roxo escuro
             accent: '204 51 102',       // Rosa
@@ -127,7 +128,7 @@ export const DARK_PURPLE_THEME: ThemePreset = {
             success: '16 185 129',
             warning: '245 158 11',
             error: '239 68 68',
-        },
+        }),
         layout: 'comfortable',
         density: 'medium',
         borderRadius: 'medium',
@@ -148,7 +149,7 @@ export const LIGHT_BLUE_THEME: ThemePreset = {
     theme: {
         id: 'light-blue',
         name: 'Azul Claro',
-        colors: {
+        colors: ensureThemeSemanticColors({
             primary: '25 118 210',      // Azul principal
             secondary: '245 245 245',   // Cinza claro
             accent: '184 61 23',        // Laranja
@@ -160,7 +161,7 @@ export const LIGHT_BLUE_THEME: ThemePreset = {
             success: '16 185 129',
             warning: '245 158 11',
             error: '239 68 68',
-        },
+        }),
         layout: 'comfortable',
         density: 'medium',
         borderRadius: 'medium',
@@ -177,7 +178,7 @@ export const LIGHT_PINK_THEME: ThemePreset = {
     theme: {
         id: 'light-pink',
         name: 'Rosa Claro',
-        colors: {
+        colors: ensureThemeSemanticColors({
             primary: '178 48 92',       // Rosa
             secondary: '255 255 255',   // Branco
             accent: '126 87 194',       // Roxo
@@ -189,7 +190,7 @@ export const LIGHT_PINK_THEME: ThemePreset = {
             success: '16 185 129',
             warning: '245 158 11',
             error: '239 68 68',
-        },
+        }),
         layout: 'comfortable',
         density: 'medium',
         borderRadius: 'medium',
@@ -206,7 +207,7 @@ export const LIGHT_CYAN_THEME: ThemePreset = {
     theme: {
         id: 'light-cyan',
         name: 'Ciano Claro',
-        colors: {
+        colors: ensureThemeSemanticColors({
             primary: '0 129 145',       // Ciano
             secondary: '255 255 255',   // Branco
             accent: '184 81 49',        // Laranja
@@ -218,7 +219,7 @@ export const LIGHT_CYAN_THEME: ThemePreset = {
             success: '16 185 129',
             warning: '245 158 11',
             error: '239 68 68',
-        },
+        }),
         layout: 'comfortable',
         density: 'medium',
         borderRadius: 'medium',

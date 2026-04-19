@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
-import { ThemeSelector } from './ThemeSelector';
 import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
 import { useArticleLayout } from '../hooks/useArticleLayout';
@@ -87,17 +86,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     // Log subscription removed since 'logs' tab is no longer in the type
 
-    const setThemeColor = (color: string) => {
-        const newTheme = {
-            ...currentTheme,
-            id: `quick-color-${Date.now()}`,
-            name: `${currentTheme.name} (Custom)`,
-            colors: { ...currentTheme.colors, accent: color }
-        };
-        updateThemeSettings({ currentTheme: newTheme });
-        document.documentElement.style.setProperty('--color-accent', `rgb(${color})`);
-    };
-
     const tabs = [
         { id: 'appearance', label: 'Aparência' },
         { id: 'layouts', label: 'Layouts' },
@@ -142,13 +130,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as 'appearance' | 'layouts' | 'display' | 'system')}
                                 className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === tab.id
-                                        ? 'bg-[rgba(var(--color-accent),0.14)] text-[rgb(var(--color-text))] border border-white/10'
+                                        ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] border border-[rgb(var(--color-accentSurface))] shadow-sm'
                                         : 'text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-white/5'
                                     }`}
                             >
                                 <span>{tab.label}</span>
                                 {activeTab === tab.id && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(var(--color-accent),0.6)]" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-onAccent))]" />
                                 )}
                             </button>
                         ))}
@@ -184,16 +172,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             }}
                                             className={`relative group p-4 rounded-xl border transition-all duration-300 flex flex-col items-center text-center gap-2
                                                 ${mode.active
-                                                    ? 'bg-[rgba(var(--color-accent),0.12)] border-[rgba(var(--color-accent),0.25)] shadow-sm'
+                                                    ? 'bg-[rgb(var(--color-accentSurface))] border-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-sm'
                                                     : 'bg-[rgb(var(--color-surface))]/35 border-white/5 hover:bg-[rgb(var(--color-surface))]/60 hover:border-white/20'
                                                 }
                                       `}
                                         >
-                                            <span className={`font-bold text-sm ${mode.active ? 'text-[rgb(var(--color-accent))]' : 'text-[rgb(var(--color-text))]'}`}>{mode.label}</span>
-                                            <span className="text-[10px] text-[rgb(var(--color-textSecondary))] leading-tight mt-1">{mode.desc}</span>
+                                            <span className={`font-bold text-sm ${mode.active ? 'text-[rgb(var(--color-onAccent))]' : 'text-[rgb(var(--color-text))]'}`}>{mode.label}</span>
+                                            <span className={`text-[10px] leading-tight mt-1 ${mode.active ? 'text-[rgb(var(--color-onAccent))]/80' : 'text-[rgb(var(--color-textSecondary))]'}`}>{mode.desc}</span>
 
                                             {mode.active && (
-                                                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[rgba(var(--color-accent),0.6)]" />
+                                                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[rgb(var(--color-onAccent))]" />
                                             )}
                                         </button>
                                     ))}
@@ -243,11 +231,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </div>
                                     </div>
                                 </div>
-                            </section>
-
-                            <section>
-                                <h3 className="text-sm font-medium text-[rgb(var(--color-textSecondary))] uppercase tracking-wider mb-3">Cores do Sistema</h3>
-                                <ThemeSelector setThemeColor={setThemeColor} />
                             </section>
 
                         </div>
@@ -435,16 +418,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                         resetCategoryLayouts(); // Reset category-specific layouts
                                                     }}
                                                     className={`relative p-3 rounded-lg text-left transition-all duration-200 border ${contentConfig.layoutMode === mode.id
-                                                        ? 'bg-[rgb(var(--color-accent))]/20 border-[rgb(var(--color-accent))] ring-1 ring-[rgb(var(--color-accent))]'
+                                                        ? 'bg-[rgb(var(--color-accentSurface))] border-[rgb(var(--color-accentSurface))] ring-1 ring-[rgb(var(--color-accentSurface))] shadow-sm'
                                                         : 'bg-[rgb(var(--color-surface))]/45 border-white/5 hover:bg-[rgb(var(--color-surface))]/65 hover:border-white/10'
                                                         }`}
                                                 >
-                                                    <span className={`text-sm font-medium block ${contentConfig.layoutMode === mode.id ? 'text-[rgb(var(--color-text))]' : 'text-[rgb(var(--color-textSecondary))] group-hover:text-[rgb(var(--color-text))]'
+                                                    <span className={`text-sm font-medium block ${contentConfig.layoutMode === mode.id ? 'text-[rgb(var(--color-onAccent))]' : 'text-[rgb(var(--color-textSecondary))] group-hover:text-[rgb(var(--color-text))]'
                                                         }`}>
                                                         {mode.label}
                                                     </span>
                                                     {contentConfig.layoutMode === mode.id && (
-                                                        <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-accent))]" />
+                                                        <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[rgb(var(--color-onAccent))]" />
                                                     )}
                                                 </button>
                                             ))}
@@ -467,7 +450,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 key={count}
                                                 onClick={() => updateLayoutSettings({ topStoriesCount: count })}
                                                 className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${layoutSettings.topStoriesCount === count
-                                                    ? 'bg-[rgb(var(--color-accent))] text-[rgb(var(--color-text))] shadow-lg shadow-[rgb(var(--color-accent))]/20'
+                                                    ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-lg shadow-[rgb(var(--color-accent))]/20'
                                                     : 'bg-[rgb(var(--color-surface))]/65 hover:bg-[rgb(var(--color-surface))]/75 text-[rgb(var(--color-textSecondary))]'
                                                     }`}
                                             >
@@ -491,7 +474,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 key={option.value}
                                                 onClick={() => updateLayoutSettings({ autoRefreshInterval: option.value })}
                                                 className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${layoutSettings.autoRefreshInterval === option.value
-                                                    ? 'bg-[rgb(var(--color-accent))] text-[rgb(var(--color-text))] shadow-lg shadow-[rgb(var(--color-accent))]/20'
+                                                    ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-lg shadow-[rgb(var(--color-accent))]/20'
                                                     : 'bg-[rgb(var(--color-surface))]/65 hover:bg-[rgb(var(--color-surface))]/75 text-[rgb(var(--color-textSecondary))]'
                                                     }`}
                                             >
@@ -511,7 +494,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     key={format}
                                                     onClick={() => setTimeFormat(format as '12h' | '24h')}
                                                     className={`flex-1 py-1.5 rounded text-xs font-medium transition-all ${timeFormat === format
-                                                        ? 'bg-[rgb(var(--color-accent))] text-[rgb(var(--color-text))] shadow-sm'
+                                                        ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-sm'
                                                         : 'text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] hover:bg-white/5'
                                                         }`}
                                                 >
@@ -566,11 +549,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </button>
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="flex-1 px-4 py-3 bg-[rgb(var(--color-accent))]/10 hover:bg-[rgb(var(--color-accent))]/20 text-[rgb(var(--color-accent))] rounded-xl transition-all text-xs flex items-center justify-center gap-2 border border-[rgb(var(--color-accent))]/30 group"
+                                        className="flex-1 px-4 py-3 bg-[rgb(var(--color-accentSurface))] hover:brightness-110 text-[rgb(var(--color-onAccent))] rounded-xl transition-all text-xs flex items-center justify-center gap-2 border border-[rgb(var(--color-accentSurface))] group shadow-sm"
                                     >
                                         <div className="text-left">
                                             <span className="block font-bold">Importar</span>
-                                            <span className="text-[10px] opacity-70">Restaurar backup</span>
+                                            <span className="text-[10px] opacity-80">Restaurar backup</span>
                                         </div>
                                     </button>
                                     <input

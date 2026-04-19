@@ -43,6 +43,35 @@ export const useExtendedTheme = () => {
     }
   }, [themeSettings.customThemes.length, setThemeSettings]);
 
+  useEffect(() => {
+    const migratedCurrentTheme = validateTheme(themeSettings.currentTheme)
+      ? themeSettings.currentTheme
+      : migrateTheme(themeSettings.currentTheme);
+    const migratedCustomThemes = themeSettings.customThemes
+      .map((theme) => (validateTheme(theme) ? theme : migrateTheme(theme)))
+      .filter((theme): theme is ExtendedTheme => Boolean(theme));
+
+    const currentThemeChanged = migratedCurrentTheme
+      ? JSON.stringify(migratedCurrentTheme) !== JSON.stringify(themeSettings.currentTheme)
+      : false;
+    const customThemesChanged =
+      migratedCustomThemes.length !== themeSettings.customThemes.length ||
+      migratedCustomThemes.some(
+        (theme, index) =>
+          JSON.stringify(theme) !== JSON.stringify(themeSettings.customThemes[index]),
+      );
+
+    if (!currentThemeChanged && !customThemesChanged) {
+      return;
+    }
+
+    setThemeSettings((prev) => ({
+      ...prev,
+      currentTheme: migratedCurrentTheme ?? defaultThemePresets[0].theme,
+      customThemes: migratedCustomThemes,
+    }));
+  }, [themeSettings.currentTheme, themeSettings.customThemes, setThemeSettings]);
+
   // Listen for system theme changes
   useEffect(() => {
     if (typeof window === 'undefined') return;

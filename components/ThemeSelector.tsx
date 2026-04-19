@@ -1,16 +1,47 @@
 import React, { useState } from 'react';
 
 interface ThemeSelectorProps {
-    setThemeColor: (color: string) => void;
+    setThemeColor: (colors: { accent: string; surface?: string }, presetName?: string) => void;
+    currentAccent?: string;
 }
 
-// 5 carefully curated color presets
+// 5 carefully curated color presets with matching surface tones for both light and dark modes
 const COLOR_PRESETS = [
-    { name: 'Ocean', value: '59 130 246', hex: '#3b82f6' },      // Blue
-    { name: 'Emerald', value: '16 185 129', hex: '#10b981' },    // Green
-    { name: 'Sunset', value: '249 115 22', hex: '#f97316' },     // Orange
-    { name: 'Rose', value: '244 63 94', hex: '#f43f5e' },        // Pink/Red
-    { name: 'Violet', value: '139 92 246', hex: '#8b5cf6' },     // Purple
+    { 
+        name: 'Ocean', 
+        value: '59 130 246', 
+        darkSurface: '15 23 42', 
+        lightSurface: '240 245 255',
+        hex: '#3b82f6' 
+    },
+    { 
+        name: 'Emerald', 
+        value: '16 185 129', 
+        darkSurface: '6 31 23', 
+        lightSurface: '235 250 242',
+        hex: '#10b981' 
+    },
+    { 
+        name: 'Sunset', 
+        value: '249 115 22', 
+        darkSurface: '28 15 10', 
+        lightSurface: '255 245 235',
+        hex: '#f97316' 
+    },
+    { 
+        name: 'Rose', 
+        value: '244 63 94', 
+        darkSurface: '31 7 12', 
+        lightSurface: '255 240 245',
+        hex: '#f43f5e' 
+    },
+    { 
+        name: 'Violet', 
+        value: '139 92 246', 
+        darkSurface: '15 10 31', 
+        lightSurface: '245 240 255',
+        hex: '#8b5cf6' 
+    },
 ];
 
 const hexToRgb = (hex: string): string => {
@@ -24,22 +55,38 @@ const hexToRgb = (hex: string): string => {
     return `${r} ${g} ${b}`;
 };
 
-export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ setThemeColor }) => {
+const getSwatchIconClass = (rgb: string): string => {
+    const [r, g, b] = rgb.split(' ').map(Number);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return yiq >= 160 ? 'text-slate-950' : 'text-white';
+};
+
+export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ setThemeColor, currentAccent }) => {
     const [customColor, setCustomColor] = useState('#3b82f6');
-    const [activePreset, setActivePreset] = useState<string | null>(null);
+    
+    // Check if we are currently in dark mode to select the appropriate surface
+    const isDarkMode = document.documentElement.classList.contains('dark') || 
+                       window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    // Determine active preset based on currentAccent
+    const activePreset = React.useMemo(() => {
+        if (!currentAccent) return null;
+        const matching = COLOR_PRESETS.find(p => p.value === currentAccent);
+        return matching ? matching.name : null;
+    }, [currentAccent]);
+
     const labelClass =
         'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]';
 
     const handlePresetClick = (preset: typeof COLOR_PRESETS[0]) => {
-        setActivePreset(preset.name);
-        setThemeColor(preset.value);
+        const surface = isDarkMode ? preset.darkSurface : preset.lightSurface;
+        setThemeColor({ accent: preset.value, surface }, preset.name);
     };
 
     const handleCustomColorChange = (hex: string) => {
         setCustomColor(hex);
-        setActivePreset(null);
         const rgbValue = hexToRgb(hex);
-        setThemeColor(rgbValue);
+        setThemeColor({ accent: rgbValue });
     };
 
     return (
@@ -59,7 +106,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ setThemeColor }) =
                         title={preset.name}
                     >
                         {activePreset === preset.name && (
-                            <svg className="absolute inset-0 m-auto w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className={`absolute inset-0 m-auto w-4 h-4 ${getSwatchIconClass(preset.value)}`} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                         )}

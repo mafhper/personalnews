@@ -53,7 +53,7 @@ export const SkipLinks: React.FC<SkipLinksProps> = ({ links = defaultLinks }) =>
             key={index}
             href={link.href}
             onClick={(e) => handleSkipClick(e, link.href)}
-            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[rgb(var(--color-accent))] focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:font-medium focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-accent))]"
+            className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[rgb(var(--color-accentSurface))] focus:text-[rgb(var(--color-onAccent))] focus:px-4 focus:py-2 focus:rounded-md focus:font-medium focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[rgb(var(--color-accentSurface))]"
           >
             {link.label}
           </a>

@@ -18,10 +18,15 @@
   --text-primary: rgb(var(--color-text));
   --text-secondary: rgba(var(--color-textSecondary), 0.85);
   --border-color: rgba(var(--color-border), 0.22);
-  --primary-color: rgb(var(--color-accent));
-  --primary-dark: color-mix(in srgb, rgb(var(--color-accent)) 85%, black);
+  --primary-color: rgb(var(--color-accentSurface, var(--color-accent)));
+  --primary-dark: color-mix(
+    in srgb,
+    rgb(var(--color-accentSurface, var(--color-accent))) 85%,
+    black
+  );
   --primary-light: rgba(var(--color-accent), 0.12);
   --primary-lighter: rgba(var(--color-accent), 0.06);
+  --primary-foreground: rgb(var(--color-onAccent, var(--color-text)));
   --success-bg: rgba(34, 197, 94, 0.14);
   --success-border: rgba(34, 197, 94, 0.42);
   --success-text: color-mix(in srgb, rgb(34, 197, 94) 75%, rgb(var(--color-text)) 25%);
@@ -430,7 +435,7 @@
   width: 100%;
   padding: 0.8rem;
   background: var(--primary-color, #1976d2);
-  color: rgb(var(--color-background));
+  color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
   cursor: pointer;

@@ -31,8 +31,8 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
 
         {/* Header */}
         <div className="text-center animate-in slide-in-from-top-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Adicionar Novo Feed</h2>
-          <p className="text-sm sm:text-base text-gray-400">
+          <h2 className="mb-2 text-xl sm:text-2xl font-bold text-[rgb(var(--theme-text-readable,var(--color-text)))]">Adicionar Novo Feed</h2>
+          <p className="text-sm sm:text-base text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
             Insira a URL de um site ou canal para começar a monitorar.
           </p>
         </div>
@@ -54,7 +54,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
                   onChange={(e) => setNewFeedUrl(e.target.value)}
                   placeholder="https://exemplo.com"
                   disabled={!!processingUrl}
-                  className="w-full bg-black/40 text-white pl-10 pr-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))] focus:ring-1 focus:ring-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="w-full rounded-lg border border-[rgb(var(--color-border))]/20 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] pl-10 pr-4 py-3 text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] focus:outline-none focus:border-[rgb(var(--color-accent))] focus:ring-1 focus:ring-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 />
               </div>
             </div>
@@ -71,7 +71,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
                   value={newFeedCategory}
                   onChange={(e) => setNewFeedCategory(e.target.value)}
                   disabled={!!processingUrl}
-                  className="w-full bg-black/40 text-white pl-10 pr-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-[rgb(var(--color-accent))] focus:ring-1 focus:ring-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed appearance-none transition-all"
+                  className="w-full appearance-none rounded-lg border border-[rgb(var(--color-border))]/20 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] pl-10 pr-4 py-3 text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] focus:outline-none focus:border-[rgb(var(--color-accent))] focus:ring-1 focus:ring-[rgb(var(--color-accent))] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <option value="">{t('feeds.category.none')}</option>
                   {categories.map((category) => (
@@ -91,7 +91,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
             <button
               type="submit"
               disabled={!!processingUrl}
-              className="mt-2 w-full px-6 py-3 bg-[rgba(var(--color-accent),0.75)] hover:bg-[rgba(var(--color-accent),0.6)] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium shadow-sm"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[rgb(var(--color-accentSurface))] px-6 py-3 font-medium text-[rgb(var(--color-onAccent))] transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {processingUrl ? (
                 <>
