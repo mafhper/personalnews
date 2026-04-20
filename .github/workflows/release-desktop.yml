@@ -23,7 +23,7 @@ jobs:
           - os: windows-latest
             bundles: nsis,msi
           - os: ubuntu-22.04
-            bundles: deb,appimage
+            bundles: deb
           - os: macos-latest
             bundles: dmg
     runs-on: ${{ matrix.os }}
@@ -56,7 +56,6 @@ jobs:
       - uses: tauri-apps/tauri-action@v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPIMAGE_EXTRACT_AND_RUN: 1
           TAURI_VERBOSE: 1
         with:
           projectPath: apps/desktop

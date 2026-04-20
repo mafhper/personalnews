@@ -35,7 +35,6 @@
       "nsis",
       "msi",
       "deb",
-      "appimage",
       "dmg"
     ],
     "externalBin": [

@@ -25,7 +25,7 @@ describe("desktop release workflow", () => {
     expect(workflow).toContain("ubuntu-22.04");
     expect(workflow).toContain("macos-latest");
     expect(workflow).toContain("nsis,msi");
-    expect(workflow).toContain("deb,appimage");
+    expect(workflow).toContain("deb");
     expect(workflow).toContain("dmg");
     expect(workflow).toContain("tauri-apps/tauri-action");
 
@@ -34,7 +34,7 @@ describe("desktop release workflow", () => {
     };
 
     expect(parsedConfig.bundle.targets).toEqual(
-      expect.arrayContaining(["nsis", "msi", "deb", "appimage", "dmg"]),
+      expect.arrayContaining(["nsis", "msi", "deb", "dmg"]),
     );
   });
 });
