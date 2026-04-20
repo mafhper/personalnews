@@ -5,6 +5,8 @@ import {
   createThemeFromAccentColor,
   createThemeFromSeedColor,
   createThemeSeedPair,
+  findSeedThemeForMode,
+  getSeedThemeSelection,
   applyThemeToDOM,
   getSystemThemePreference,
   exportTheme,
@@ -355,6 +357,23 @@ describe('themeUtils', () => {
         expect(preset.theme.colors.accentSurface).toBeTruthy();
         expect(preset.theme.colors.onAccent).toBeTruthy();
       });
+    });
+
+    it('should identify seed themes and find their paired mode', () => {
+      const pair = createThemeSeedPair('5 150 105', 'Esmeralda', 'seed-emerald');
+
+      expect(getSeedThemeSelection(pair.dark)).toEqual({
+        idBase: 'seed-emerald',
+        label: 'Esmeralda',
+        mode: 'dark',
+      });
+      expect(findSeedThemeForMode(pair.dark, 'light', [pair.light, pair.dark])).toEqual(
+        pair.light,
+      );
+      expect(findSeedThemeForMode(defaultThemePresets[0].theme, 'light', [
+        pair.light,
+        pair.dark,
+      ])).toBeUndefined();
     });
   });
 

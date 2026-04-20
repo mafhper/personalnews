@@ -16,6 +16,12 @@ export interface SeedThemePair {
   issues: string[];
 }
 
+export interface SeedThemeSelection {
+  idBase: string;
+  label: string;
+  mode: ThemeSeedMode;
+}
+
 // Color conversion utilities
 export const hexToRgb = (hex: string): string => {
   // Remove # if present
@@ -893,6 +899,38 @@ export const createThemeSeedPair = (
     isValid: issues.length === 0,
     issues,
   };
+};
+
+const seedThemeIdPattern = /^((?:seed|custom-seed)-[a-z0-9-]+)-(light|dark)$/i;
+
+export const getSeedThemeSelection = (
+  theme: Pick<ExtendedTheme, "id" | "name">,
+): SeedThemeSelection | null => {
+  const match = theme.id.match(seedThemeIdPattern);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    idBase: match[1],
+    label: theme.name.replace(/\s+(Claro|Escuro)$/i, ""),
+    mode: match[2] as ThemeSeedMode,
+  };
+};
+
+export const findSeedThemeForMode = (
+  theme: Pick<ExtendedTheme, "id" | "name">,
+  mode: ThemeSeedMode,
+  themes: ExtendedTheme[],
+): ExtendedTheme | undefined => {
+  const selection = getSeedThemeSelection(theme);
+
+  if (!selection) {
+    return undefined;
+  }
+
+  return themes.find((candidate) => candidate.id === `${selection.idBase}-${mode}`);
 };
 
 // Compatibility wrapper for legacy "accent color" state.

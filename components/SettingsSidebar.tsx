@@ -13,6 +13,8 @@ import { useNotificationReplacements } from '../hooks/useNotificationReplacement
 import { useLanguage } from '../hooks/useLanguage';
 import {
   createThemeSeedPair,
+  findSeedThemeForMode,
+  getSeedThemeSelection,
   hexToRgb,
   seedColorOptions,
 } from '../services/themeUtils';
@@ -136,6 +138,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     themeSettings,
     setCurrentTheme,
     defaultPresets,
+    allThemes,
   } = useExtendedTheme();
   const { applyLayoutPreset, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
   const { settings: articleLayoutSettings, updateSettings: updateArticleLayoutSettings } = useArticleLayout();
@@ -249,6 +252,17 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   const seedValidationSummary = seedThemePair.isValid
     ? 'Par claro/escuro validado'
     : seedThemePair.issues[0] ?? 'A cor precisa de ajuste';
+  const activeSeedSelection = getSeedThemeSelection(currentTheme);
+  const activeSeedStatus = activeSeedSelection
+    ? `Cor-semente ativa: ${activeSeedSelection.label} (${activeSeedSelection.mode === 'light' ? 'Claro' : 'Escuro'})`
+    : 'Tema padrão ativo';
+
+  const resolveThemeForMode = (mode: 'light' | 'dark') => {
+    return (
+      findSeedThemeForMode(currentTheme, mode, allThemes) ??
+      defaultPresets.find((preset) => preset.category === mode)?.theme
+    );
+  };
 
   const handleApplySeedTheme = () => {
     if (!seedThemePair.isValid) {
@@ -268,6 +282,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
     setCurrentTheme(activeSeedTheme);
     updateThemeSettings({
+      currentTheme: activeSeedTheme,
       customThemes: nextCustomThemes,
       autoDetectSystemTheme: false,
       systemThemeOverride: activeSeedMode,
@@ -343,8 +358,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                         if (mode.id === 'auto') {
                           updateThemeSettings({ autoDetectSystemTheme: true, systemThemeOverride: null });
                         } else {
-                          const matchingPreset = defaultPresets.find(p => p.category === mode.id);
-                          if (matchingPreset) setCurrentTheme(matchingPreset.theme);
+                          const matchingTheme = resolveThemeForMode(mode.id as 'light' | 'dark');
+                          if (matchingTheme) setCurrentTheme(matchingTheme);
                           updateThemeSettings({ autoDetectSystemTheme: false, systemThemeOverride: mode.id as 'light' | 'dark' });
                         }
                       }}
@@ -359,6 +374,11 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                     </button>
                   ))}
                 </div>
+                <p className="mt-2 text-[10px] leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                  {themeSettings.autoDetectSystemTheme
+                    ? 'Auto usa o tema completo do sistema.'
+                    : activeSeedStatus}
+                </p>
               </div>
 
               <div className="space-y-3 rounded-2xl border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/55 p-3">
