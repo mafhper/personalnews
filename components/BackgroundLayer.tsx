@@ -1,5 +1,10 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import type { BackgroundConfig, ExtendedTheme } from '../types';
+import {
+  isStoredBackgroundImageRef,
+  loadBackgroundImage,
+  parseStoredBackgroundImageRef,
+} from '../services/backgroundImageStorage';
 
 const AuraWallpaperRenderer = lazy(() => import('./AuraWallpaperRenderer'));
 
@@ -21,22 +26,73 @@ const unwrapCssUrl = (value: string): string => {
 const isImageSource = (value: string): boolean =>
   /^(data:image\/|blob:|https?:\/\/|file:)/i.test(value);
 
-const resolveBackgroundImageSource = (
+const resolveDirectBackgroundImageSource = (
   backgroundConfig: BackgroundConfig,
 ): string | null => {
   if (backgroundConfig.type !== 'image') return null;
 
   const customImage = backgroundConfig.customImage?.trim();
-  if (customImage) return customImage;
+  if (customImage && !isStoredBackgroundImageRef(customImage)) {
+    return customImage;
+  }
 
   const value = unwrapCssUrl(backgroundConfig.value || '');
+  if (isStoredBackgroundImageRef(value)) return null;
   return isImageSource(value) ? value : null;
 };
 
-export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgroundConfig: BackgroundConfig, currentTheme: ExtendedTheme }) => (
-  (() => {
+const resolveStoredBackgroundImageId = (
+  backgroundConfig: BackgroundConfig,
+): string | null => {
+  if (backgroundConfig.type !== 'image') return null;
+
+  const customImageId = parseStoredBackgroundImageRef(backgroundConfig.customImage);
+  if (customImageId) return customImageId;
+
+  return parseStoredBackgroundImageRef(unwrapCssUrl(backgroundConfig.value || ''));
+};
+
+export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: { backgroundConfig: BackgroundConfig, currentTheme: ExtendedTheme }) => {
     const isLightTheme = currentTheme.id.includes('light');
-    const imageSource = resolveBackgroundImageSource(backgroundConfig);
+    const directImageSource = useMemo(
+      () => resolveDirectBackgroundImageSource(backgroundConfig),
+      [backgroundConfig],
+    );
+    const storedImageId = useMemo(
+      () => resolveStoredBackgroundImageId(backgroundConfig),
+      [backgroundConfig],
+    );
+    const [storedImage, setStoredImage] = useState<{
+      id: string;
+      source: string;
+    } | null>(null);
+    const imageSource =
+      directImageSource ??
+      (storedImage?.id === storedImageId ? storedImage.source : null);
+
+    useEffect(() => {
+      let cancelled = false;
+
+      if (!storedImageId) return;
+
+      loadBackgroundImage(storedImageId)
+        .then((source) => {
+          if (cancelled) return;
+          if (source) {
+            setStoredImage({ id: storedImageId, source });
+          } else {
+            setStoredImage(null);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setStoredImage(null);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [storedImageId]);
+
     const overlayClass =
       backgroundConfig.type === 'solid'
         ? ''
@@ -50,7 +106,8 @@ export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: {
 
     return (
   <div
-    className={`pointer-events-none fixed inset-0 z-[-1] overflow-hidden transition-colors duration-500 ease-in-out ${backgroundConfig.type === 'solid' ? "bg-[rgb(var(--color-background))]" : ""}`}
+    className={`pointer-events-none fixed inset-0 z-0 overflow-hidden transition-colors duration-500 ease-in-out ${backgroundConfig.type === 'solid' ? "bg-[rgb(var(--color-background))]" : ""}`}
+    data-testid="app-background-layer"
     style={
       backgroundConfig.type === 'gradient' || backgroundConfig.type === 'image' || backgroundConfig.type === 'aura'
         ? {
@@ -68,6 +125,7 @@ export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: {
         alt=""
         aria-hidden="true"
         className="absolute inset-0 h-full w-full object-cover"
+        data-testid="app-background-image"
         src={imageSource}
       />
     )}
@@ -100,5 +158,4 @@ export const BackgroundLayer = React.memo(({ backgroundConfig, currentTheme }: {
     )}
   </div>
     );
-  })()
-));
+});
