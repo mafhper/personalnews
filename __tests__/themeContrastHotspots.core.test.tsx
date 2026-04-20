@@ -85,6 +85,8 @@ vi.mock("../hooks/useExtendedTheme", () => ({
       customThemes: [],
       themeTransitions: true,
     },
+    customThemes: [],
+    systemPreference: "dark",
     setCurrentTheme: setCurrentThemeMock,
     updateThemeSettings: updateThemeSettingsMock,
     defaultPresets: [
@@ -295,6 +297,69 @@ describe("theme contrast hotspots", () => {
         }),
       }),
     );
+  });
+
+  it("applies seed color presets as complete semantic light and dark themes", () => {
+    render(
+      <SettingsSidebar
+        isOpen={true}
+        onClose={vi.fn()}
+        timeFormat="24h"
+        setTimeFormat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Usar cor-semente Esmeralda" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    expect(setCurrentThemeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "seed-emerald-dark",
+        colors: expect.objectContaining({
+          primarySurface: expect.any(String),
+          onPrimary: expect.any(String),
+          accentSurface: expect.any(String),
+          onAccent: expect.any(String),
+          surfaceElevated: expect.any(String),
+          text: expect.any(String),
+          textSecondary: expect.any(String),
+        }),
+      }),
+    );
+    expect(updateThemeSettingsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        autoDetectSystemTheme: false,
+        systemThemeOverride: "dark",
+        customThemes: expect.arrayContaining([
+          expect.objectContaining({ id: "seed-emerald-light" }),
+          expect.objectContaining({ id: "seed-emerald-dark" }),
+        ]),
+      }),
+    );
+  });
+
+  it("renders seed preview coverage for CTA, outline, pagination, chips, and elevated cards", () => {
+    render(
+      <SettingsSidebar
+        isOpen={true}
+        onClose={vi.fn()}
+        timeFormat="24h"
+        setTimeFormat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+
+    expect(screen.getByTestId("seed-preview-claro")).toBeInTheDocument();
+    expect(screen.getByTestId("seed-preview-escuro")).toBeInTheDocument();
+    expect(screen.getAllByTestId("seed-preview-filled-cta")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-outline-button")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-active-pagination")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-chip")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-elevated-card")).toHaveLength(2);
   });
 
   it("maps proxy settings CTA styles to semantic accent tokens", () => {

@@ -1,6 +1,21 @@
 import type { ExtendedTheme, ThemePreset, ThemeSettings } from "../types";
 import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
 
+export type ThemeSeedMode = "light" | "dark";
+
+export interface SeedColorOption {
+  id: string;
+  label: string;
+  seed: string;
+}
+
+export interface SeedThemePair {
+  light: ExtendedTheme;
+  dark: ExtendedTheme;
+  isValid: boolean;
+  issues: string[];
+}
+
 // Color conversion utilities
 export const hexToRgb = (hex: string): string => {
   // Remove # if present
@@ -371,6 +386,25 @@ const deriveSurfaceElevated = (surface: string, background: string): string => {
   return isLightBackground
     ? shiftColor(surface, 0.08, "black")
     : shiftColor(surface, 0.12, "white");
+};
+
+const resolveSeedForeground = (
+  seedColor: string,
+  background: string,
+  surface: string,
+): string => {
+  const backgroundRatio = calculateContrastRatio(seedColor, background);
+  const surfaceRatio = calculateContrastRatio(seedColor, surface);
+
+  if (backgroundRatio >= 3 && surfaceRatio >= 3) {
+    return seedColor;
+  }
+
+  return ensureForegroundContrast(
+    ensureForegroundContrast(seedColor, background, 3),
+    surface,
+    3,
+  );
 };
 
 export const ensureThemeSemanticColors = (
@@ -747,21 +781,34 @@ export const migrateTheme = (oldTheme: unknown): ExtendedTheme | null => {
     const fallbackAccent = partialTheme.accent ?? baseColors.accent ?? baseColors.primary;
 
     if (fallbackAccent) {
+      const inferredMode: ThemeSeedMode =
+        baseColors.background && calculateLuminance(baseColors.background) > 0.5
+          ? "light"
+          : "dark";
+      const seedTheme = createThemeFromSeedColor(
+        fallbackAccent,
+        inferredMode,
+        partialTheme.name ?? "Migrated Theme",
+        partialTheme.id ?? `migrated-${Date.now()}`,
+      );
       const migratedTheme: ExtendedTheme = {
-        id: partialTheme.id ?? `migrated-${Date.now()}`,
-        name: partialTheme.name ?? "Migrated Theme",
+        id: seedTheme.id,
+        name: seedTheme.name,
         colors: ensureThemeSemanticColors({
+          ...seedTheme.colors,
           ...baseColors,
-          primary: baseColors.primary ?? fallbackAccent,
-          accent: baseColors.accent ?? fallbackAccent,
-          background: baseColors.background,
-          surface: baseColors.surface ?? baseColors.secondary,
-          text: baseColors.text,
-          textSecondary: baseColors.textSecondary,
-          border: baseColors.border,
-          success: baseColors.success,
-          warning: baseColors.warning,
-          error: baseColors.error,
+          primary: baseColors.primary ?? seedTheme.colors.primary,
+          accent: baseColors.accent ?? seedTheme.colors.accent,
+          background: baseColors.background ?? seedTheme.colors.background,
+          surface:
+            baseColors.surface ?? baseColors.secondary ?? seedTheme.colors.surface,
+          text: baseColors.text ?? seedTheme.colors.text,
+          textSecondary:
+            baseColors.textSecondary ?? seedTheme.colors.textSecondary,
+          border: baseColors.border ?? seedTheme.colors.border,
+          success: baseColors.success ?? seedTheme.colors.success,
+          warning: baseColors.warning ?? seedTheme.colors.warning,
+          error: baseColors.error ?? seedTheme.colors.error,
         }),
         layout: partialTheme.layout ?? "comfortable",
         density: partialTheme.density ?? "medium",
@@ -781,42 +828,32 @@ export const migrateTheme = (oldTheme: unknown): ExtendedTheme | null => {
   }
 };
 
-// Create a theme from a single accent color
-export const createThemeFromAccentColor = (
-  accentColor: string,
+export const createThemeFromSeedColor = (
+  seedColor: string,
+  mode: ThemeSeedMode,
   name: string,
+  id = `custom-seed-${mode}-${Date.now()}`,
 ): ExtendedTheme => {
-  const rgbValues = accentColor.split(/\s+/).map(Number);
-  const [r, g, b] = rgbValues;
-  const isDark = r * 0.299 + g * 0.587 + b * 0.114 < 128;
-  const background = isDark ? "26 32 44" : "255 255 255";
-  const surface = isDark ? "45 55 72" : "249 250 251";
-  const primary = ensureForegroundContrast(
-    ensureForegroundContrast(accentColor, background, 3),
-    surface,
-    3,
-  );
-  const accent = ensureForegroundContrast(
-    ensureForegroundContrast(accentColor, surface, 3),
-    background,
-    3,
-  );
+  const isDark = mode === "dark";
+  const background = isDark ? "10 15 30" : "255 255 255";
+  const surface = isDark ? "30 41 59" : "241 245 249";
+  const brandColor = resolveSeedForeground(seedColor, background, surface);
 
   return {
-    id: `custom-${Date.now()}`,
+    id,
     name,
     colors: ensureThemeSemanticColors({
-      primary,
-      secondary: isDark ? "45 55 72" : "229 231 235",
-      accent,
+      primary: brandColor,
+      secondary: surface,
+      accent: brandColor,
       background,
       surface,
-      text: isDark ? "247 250 252" : "17 24 39",
-      textSecondary: isDark ? "160 174 192" : "107 114 128",
-      border: isDark ? "75 85 99" : "209 213 219",
-      success: "16 185 129",
-      warning: "245 158 11",
-      error: "239 68 68",
+      text: isDark ? "255 255 255" : "15 23 42",
+      textSecondary: isDark ? "203 213 225" : "71 85 105",
+      border: isDark ? "51 65 85" : "226 232 240",
+      success: isDark ? "34 197 94" : "22 163 74",
+      warning: isDark ? "234 179 8" : "202 138 4",
+      error: isDark ? "239 68 68" : "220 38 38",
     }),
     layout: "comfortable",
     density: "medium",
@@ -825,6 +862,82 @@ export const createThemeFromAccentColor = (
     animations: true,
   };
 };
+
+export const createThemeSeedPair = (
+  seedColor: string,
+  name: string,
+  idBase = `custom-seed-${Date.now()}`,
+): SeedThemePair => {
+  const light = createThemeFromSeedColor(
+    seedColor,
+    "light",
+    `${name} Claro`,
+    `${idBase}-light`,
+  );
+  const dark = createThemeFromSeedColor(
+    seedColor,
+    "dark",
+    `${name} Escuro`,
+    `${idBase}-dark`,
+  );
+  const lightValidation = validateThemeAccessibility(light);
+  const darkValidation = validateThemeAccessibility(dark);
+  const issues = [
+    ...lightValidation.issues.map((issue) => `Claro: ${issue}`),
+    ...darkValidation.issues.map((issue) => `Escuro: ${issue}`),
+  ];
+
+  return {
+    light,
+    dark,
+    isValid: issues.length === 0,
+    issues,
+  };
+};
+
+// Compatibility wrapper for legacy "accent color" state.
+export const createThemeFromAccentColor = (
+  accentColor: string,
+  name: string,
+): ExtendedTheme => {
+  const rgbValues = accentColor.split(/\s+/).map(Number);
+  const [r, g, b] = rgbValues;
+  const mode: ThemeSeedMode =
+    r * 0.299 + g * 0.587 + b * 0.114 < 128 ? "dark" : "light";
+
+  return createThemeFromSeedColor(accentColor, mode, name, `custom-${Date.now()}`);
+};
+
+export const seedColorOptions: SeedColorOption[] = [
+  { id: "seed-blue", label: "Azul", seed: "37 99 235" },
+  { id: "seed-emerald", label: "Esmeralda", seed: "5 150 105" },
+  { id: "seed-violet", label: "Violeta", seed: "124 58 237" },
+  { id: "seed-amber", label: "Âmbar", seed: "217 119 6" },
+  { id: "seed-rose", label: "Rosa", seed: "225 29 72" },
+];
+
+export const seedThemePresets: ThemePreset[] = seedColorOptions.flatMap(
+  (option) => {
+    const pair = createThemeSeedPair(option.seed, option.label, option.id);
+
+    return [
+      {
+        id: pair.light.id,
+        name: pair.light.name,
+        description: `Cor-semente ${option.label} para tema claro`,
+        category: "light" as const,
+        theme: pair.light,
+      },
+      {
+        id: pair.dark.id,
+        name: pair.dark.name,
+        description: `Cor-semente ${option.label} para tema escuro`,
+        category: "dark" as const,
+        theme: pair.dark,
+      },
+    ];
+  },
+);
 
 // Apply theme to CSS custom properties
 
