@@ -84,6 +84,7 @@ const AppContent: React.FC = () => {
     retryFailedFeeds,
     cancelLoading: _cancelLoading,
   } = useFeeds();
+  const { settings: layoutSettings } = useArticleLayout();
 
   const buildLoadRequest = useCallback(
     (
@@ -97,6 +98,9 @@ const AppContent: React.FC = () => {
           categoryId,
           feedUrl,
           mode: "single-feed",
+          cacheTtlMinutes: forceRefresh
+            ? 0
+            : layoutSettings.feedCacheTtlMinutes,
         };
       }
 
@@ -104,6 +108,9 @@ const AppContent: React.FC = () => {
         return {
           forceRefresh,
           mode: "all",
+          cacheTtlMinutes: forceRefresh
+            ? 0
+            : layoutSettings.feedCacheTtlMinutes,
         };
       }
 
@@ -111,9 +118,12 @@ const AppContent: React.FC = () => {
         forceRefresh,
         categoryId,
         mode: "category",
+        cacheTtlMinutes: forceRefresh
+          ? 0
+          : layoutSettings.feedCacheTtlMinutes,
       };
     },
-    [],
+    [layoutSettings.feedCacheTtlMinutes],
   );
 
   // App Shell removal logic
@@ -213,9 +223,6 @@ const AppContent: React.FC = () => {
   const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
-  // Article layout settings
-  const { settings: layoutSettings } = useArticleLayout();
-
   // Theme change animation
   const [isThemeChanging, setIsThemeChanging] = useState<boolean>(false);
 
@@ -494,16 +501,8 @@ const AppContent: React.FC = () => {
   );
 
   const handleManageFeedsHeaderClick = useCallback(() => {
-    if (loadingState.errors.length > 0) {
-      openFeedManagerFocus({
-        tab: "operations",
-        section: "feed-status",
-      });
-      return;
-    }
-
     openFeedManager();
-  }, [loadingState.errors.length, openFeedManager, openFeedManagerFocus]);
+  }, [openFeedManager]);
 
   // Global event listeners for ProgressIndicator
   useEffect(() => {

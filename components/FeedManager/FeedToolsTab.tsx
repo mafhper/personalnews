@@ -5,7 +5,6 @@ import {
   Download,
   List,
   RefreshCcw,
-  Route,
   RotateCcw,
   Trash2,
   Upload,
@@ -50,9 +49,6 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   invalidCount,
 }) => {
   const { snapshot } = useProxyDashboard();
-  const localRoute = snapshot.routes.find(
-    (route) => route.routeKind === "local-backend",
-  );
   const proxyStateLabel = snapshot.summary.fallbackActive
     ? "Fallback Ativo"
     : snapshot.backend.enabled && snapshot.backend.available

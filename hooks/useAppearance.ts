@@ -297,8 +297,7 @@ export const useAppearance = () => {
     logger.debugTag('APPEARANCE', 'Applying Layout Preset:', { presetId, persist });
     const preset = LAYOUT_PRESETS.find(p => p.id === presetId);
     if (preset) {
-      // IMPORTANT: Preserve header overrides! User configured these in Settings.
-      // Only clear content overrides to prevent layout settings from bleeding.
+      // Clear content overrides only; header settings stay managed by Settings.
       if (clearContentOverrides) {
         setUserOverrides((prev) => ({
           ...prev,
@@ -306,8 +305,7 @@ export const useAppearance = () => {
         }));
       }
 
-      // Apply content preset values
-      // Content is the only thing that changes when switching layouts
+      // Merge preset content configuration
       const contentOverrides = clearContentOverrides ? {} : (userOverrides?.content || {});
 
       const mergedContent = {
@@ -316,7 +314,7 @@ export const useAppearance = () => {
         ...contentOverrides
       };
 
-      // Only update content, NOT header
+      // Only update content.
       setContentConfig(mergedContent);
 
       if (persist) {

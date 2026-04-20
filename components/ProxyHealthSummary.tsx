@@ -33,6 +33,10 @@ const statusStyles: Record<
     label: "Sem uso",
     tone: "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]",
   },
+  disabled: {
+    label: "Desativado",
+    tone: "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]",
+  },
 };
 
 const formatRelativeDate = (timestamp?: number) => {
@@ -63,6 +67,8 @@ export const ProxyHealthSummary: React.FC<ProxyHealthSummaryProps> = ({
                   ? "Fallback em nuvem ativo"
                   : data.backend.enabled && data.backend.available
                     ? "Backend local ativo"
+                    : data.runtime.backendInitializing
+                      ? "Backend local inicializando"
                     : data.backend.enabled
                       ? "Backend local indisponível"
                       : "Modo web"}

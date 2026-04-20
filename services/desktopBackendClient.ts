@@ -23,6 +23,7 @@ type HealthState = {
   checkedAt: number;
   health?: BackendHealth;
   error?: string;
+  initializing?: boolean;
 };
 
 type RuntimeState = {
@@ -31,10 +32,12 @@ type RuntimeState = {
   lastRoute?: string;
   lastCheckedAt?: number;
   backendAvailable?: boolean;
+  backendInitializing?: boolean;
   lastError?: string;
 };
 
 const HEALTH_TTL_MS = 5_000;
+const BACKEND_WARMUP_MS = 30_000;
 const LOCAL_BACKEND_PORT_START = 3001;
 const LOCAL_BACKEND_PORT_END = 3015;
 
@@ -56,19 +59,15 @@ const isLocalBrowserRuntime = () => {
 
 const normalizeFetchError = (error: unknown): string => {
   if (error instanceof Error) {
+    if (
+      error.name === "AbortError" ||
+      error.message.toLowerCase().includes("aborted")
+    ) {
+      return "health check cancelled";
+    }
     return error.message;
   }
   return String(error);
-};
-
-const mergeAbortSignals = (
-  signal?: AbortSignal,
-  timeoutSignal?: AbortSignal,
-): AbortSignal | undefined => {
-  if (signal && timeoutSignal && typeof AbortSignal.any === "function") {
-    return AbortSignal.any([signal, timeoutSignal]);
-  }
-  return signal || timeoutSignal;
 };
 
 class DesktopBackendClient {
@@ -76,6 +75,10 @@ class DesktopBackendClient {
     available: false,
     checkedAt: 0,
   };
+
+  private readonly createdAt = Date.now();
+
+  private healthCheckPromise: Promise<HealthState> | null = null;
 
   private resolvedBaseUrl: string = BACKEND_DEFAULT_URL;
 
@@ -103,6 +106,10 @@ class DesktopBackendClient {
       ...next,
       lastCheckedAt: Date.now(),
     };
+  }
+
+  private isInWarmupWindow(): boolean {
+    return Date.now() - this.createdAt < BACKEND_WARMUP_MS;
   }
 
   private getCandidateBaseUrls(): string[] {
@@ -136,18 +143,14 @@ class DesktopBackendClient {
     return candidates;
   }
 
-  private async probeHealth(
-    baseUrl: string,
-    signal?: AbortSignal,
-  ): Promise<BackendHealth> {
+  private async probeHealth(baseUrl: string): Promise<BackendHealth> {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 1500);
-    const mergedSignal = mergeAbortSignals(signal, controller.signal);
 
     try {
       const response = await fetch(`${baseUrl}/health`, {
         method: "GET",
-        signal: mergedSignal,
+        signal: controller.signal,
         headers: {
           Accept: "application/json",
         },
@@ -163,14 +166,15 @@ class DesktopBackendClient {
     }
   }
 
-  private async resolveHealthyBaseUrl(
-    signal?: AbortSignal,
-  ): Promise<{ baseUrl: string; health: BackendHealth }> {
+  private async resolveHealthyBaseUrl(): Promise<{
+    baseUrl: string;
+    health: BackendHealth;
+  }> {
     const failures: string[] = [];
 
     for (const baseUrl of this.getCandidateBaseUrls()) {
       try {
-        const health = await this.probeHealth(baseUrl, signal);
+        const health = await this.probeHealth(baseUrl);
         this.resolvedBaseUrl = baseUrl;
         return { baseUrl, health };
       } catch (error) {
@@ -185,48 +189,79 @@ class DesktopBackendClient {
     );
   }
 
+  private async runHealthCheck(now: number): Promise<HealthState> {
+    try {
+      const { health, baseUrl } = await this.resolveHealthyBaseUrl();
+      this.healthState = {
+        available: true,
+        checkedAt: now,
+        health,
+        initializing: false,
+      };
+      this.setRuntimeState({
+        activeMode: "desktop-local",
+        backendAvailable: true,
+        backendInitializing: false,
+        lastError: undefined,
+        lastRoute: baseUrl,
+      });
+      return { ...this.healthState };
+    } catch (error) {
+      const inWarmup = this.isInWarmupWindow();
+      const message = inWarmup
+        ? "Backend local inicializando"
+        : normalizeFetchError(error);
+
+      this.healthState = {
+        available: false,
+        checkedAt: now,
+        error: message,
+        initializing: inWarmup,
+      };
+      this.setRuntimeState({
+        backendAvailable: false,
+        backendInitializing: inWarmup,
+        lastError: inWarmup ? undefined : message,
+      });
+      return { ...this.healthState };
+    }
+  }
+
   async checkHealth(force = false, signal?: AbortSignal): Promise<HealthState> {
     if (!this.isEnabled()) {
       this.healthState = {
         available: false,
         checkedAt: Date.now(),
         error: "Desktop backend disabled in this runtime",
+        initializing: false,
       };
       return { ...this.healthState };
     }
 
     const now = Date.now();
+    if (signal?.aborted) {
+      return {
+        ...this.healthState,
+        checkedAt: this.healthState.checkedAt || now,
+        initializing:
+          this.healthState.initializing ||
+          (!this.healthState.available && this.isInWarmupWindow()),
+      };
+    }
+
     if (!force && now - this.healthState.checkedAt < HEALTH_TTL_MS) {
       return { ...this.healthState };
     }
 
-    try {
-      const { health, baseUrl } = await this.resolveHealthyBaseUrl(signal);
-      this.healthState = {
-        available: true,
-        checkedAt: now,
-        health,
-      };
-      this.setRuntimeState({
-        activeMode: "desktop-local",
-        backendAvailable: true,
-        lastError: undefined,
-        lastRoute: baseUrl,
-      });
-      return { ...this.healthState };
-    } catch (error) {
-      const message = normalizeFetchError(error);
-      this.healthState = {
-        available: false,
-        checkedAt: now,
-        error: message,
-      };
-      this.setRuntimeState({
-        backendAvailable: false,
-        lastError: message,
-      });
-      return { ...this.healthState };
+    if (this.healthCheckPromise) {
+      return this.healthCheckPromise;
     }
+
+    this.healthCheckPromise = this.runHealthCheck(now).finally(() => {
+      this.healthCheckPromise = null;
+    });
+
+    return this.healthCheckPromise;
   }
 
   private async requestJson<T>(

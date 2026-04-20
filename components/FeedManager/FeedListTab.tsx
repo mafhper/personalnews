@@ -63,8 +63,6 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showHealthyFeeds, setShowHealthyFeeds] = useState(false);
-  const [showPendingFeeds, setShowPendingFeeds] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     issues: false,
@@ -145,8 +143,6 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
       tone: "warning" as const,
     },
   ];
-
-  const collectionCount = validFeeds.length + uncheckedFeeds.length;
 
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));

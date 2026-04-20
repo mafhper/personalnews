@@ -55,4 +55,66 @@ describe("desktopBackendClient local discovery", () => {
       expect.objectContaining({ method: "GET" }),
     );
   });
+
+  it("does not scan ports or mark unavailable when the caller signal is already aborted", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await desktopBackendClient.checkHealth(true, controller.signal);
+
+    expect(result.available).toBe(false);
+    expect(result.initializing).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reuses an in-flight health discovery for concurrent callers", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        status: "ok",
+        service: "personalnews-backend",
+        version: "0.1.0",
+        uptimeMs: 10,
+        dbPath: "memory",
+        now: new Date().toISOString(),
+      }),
+    }));
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    const [first, second] = await Promise.all([
+      desktopBackendClient.checkHealth(true),
+      desktopBackendClient.checkHealth(true),
+    ]);
+
+    expect(first.available).toBe(true);
+    expect(second.available).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports warm-up without exposing a cascade of candidate abort errors", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new Error("connect ECONNREFUSED");
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    const result = await desktopBackendClient.checkHealth(true);
+
+    expect(result.available).toBe(false);
+    expect(result.initializing).toBe(true);
+    expect(result.error).toBe("Backend local inicializando");
+    expect(result.error).not.toContain("signal is aborted without reason");
+  });
 });

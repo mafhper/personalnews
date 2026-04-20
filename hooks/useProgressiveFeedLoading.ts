@@ -134,6 +134,16 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
   const feedsRef = useRef<FeedSource[]>(feeds);
   const articlesRef = useRef<Article[]>([]);
   const visibleScopeKeyRef = useRef<string>("all");
+  const scopedFreshCacheRef = useRef<
+    Map<
+      string,
+      {
+        loadedAt: number;
+        articles: Article[];
+        feedResults: Map<string, FeedResult>;
+      }
+    >
+  >(new Map());
 
   const [loadingState, setLoadingState] = useState<FeedLoadingState>({
     status: "idle",
@@ -417,6 +427,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const priorityCategoryId =
         mode === "category" ? request.categoryId : undefined;
       const forceRefresh = request.forceRefresh ?? false;
+      const cacheTtlMinutes = request.cacheTtlMinutes ?? 10;
+      const cacheTtlMs = cacheTtlMinutes * 60 * 1000;
       const previousArticles = articlesRef.current;
       const previousScopeKey = visibleScopeKeyRef.current;
 
@@ -452,6 +464,47 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
       const cachedArticles = getCachedArticlesFromSmartCache(scopedFeeds);
       const cachedFeedResults = getCachedFeedResultsFromSmartCache(scopedFeeds);
+      const freshScopeCache = scopedFreshCacheRef.current.get(scopeKey);
+      const hasFreshScopeCache =
+        !forceRefresh &&
+        cacheTtlMs > 0 &&
+        freshScopeCache !== undefined &&
+        Date.now() - freshScopeCache.loadedAt <= cacheTtlMs;
+
+      if (hasFreshScopeCache) {
+        setArticles(freshScopeCache.articles);
+        articlesRef.current = freshScopeCache.articles;
+        visibleScopeKeyRef.current = scopeKey;
+        setFeedResults(new Map(freshScopeCache.feedResults));
+        setLoadingState({
+          status: "success",
+          progress: 100,
+          loadedFeeds: scopedFeeds.length,
+          totalFeeds: scopedFeeds.length,
+          errors: [],
+          isBackgroundRefresh: false,
+          currentAction:
+            mode === "single-feed"
+              ? "Feed selecionado carregado do cache recente"
+              : "Feeds carregados do cache recente",
+          priorityFeedsLoaded: true,
+          isResolved: true,
+          hasScopedCache: true,
+          isHoldingPreviousContent: false,
+          scopeKey,
+        });
+
+        logger.info("Using fresh scoped feed cache without network refresh", {
+          additionalData: {
+            mode,
+            scopeKey,
+            cacheTtlMinutes,
+            articlesCount: freshScopeCache.articles.length,
+          },
+        });
+        return;
+      }
+
       const {
         hasScopedCache,
         isHoldingPreviousContent,
@@ -873,6 +926,14 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           setArticles(resolvedArticles);
           articlesRef.current = resolvedArticles;
           visibleScopeKeyRef.current = scopeKey;
+        }
+
+        if (successfulFeeds > 0 || resolvedArticles.length > 0) {
+          scopedFreshCacheRef.current.set(scopeKey, {
+            loadedAt: Date.now(),
+            articles: resolvedArticles,
+            feedResults: new Map(newFeedResults),
+          });
         }
 
         setLoadingState({

@@ -86,6 +86,11 @@ export default defineConfig(({ command, mode }) => {
   build: {
     // Output directory for GitHub Pages
     outDir: 'dist',
+    rolldownOptions: {
+      checks: {
+        pluginTimings: false,
+      },
+    },
     // Enable code splitting and chunk optimization
     rollupOptions: {
       output: {

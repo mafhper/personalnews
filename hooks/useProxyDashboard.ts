@@ -3,7 +3,7 @@ import { desktopBackendClient } from "../services/desktopBackendClient";
 import { type FeedDiagnosticInfo } from "../services/feedDiagnostics";
 import { ProxyManager, proxyManager } from "../services/proxyManager";
 
-type RouteStatus = "healthy" | "degraded" | "offline" | "idle";
+type RouteStatus = "healthy" | "degraded" | "offline" | "idle" | "disabled";
 
 export interface ProxyDashboardRoute {
   id: string;
@@ -30,6 +30,7 @@ export interface ProxyDashboardSnapshot {
     lastWarning?: string;
     warningDetails?: FeedDiagnosticInfo;
     backendAvailable: boolean;
+    backendInitializing?: boolean;
     lastCheckedAt?: number;
     lastError?: string;
   };
@@ -59,7 +60,7 @@ const getStatusFromHealth = (
   totalRequests: number,
   available = true,
 ): RouteStatus => {
-  if (!available) return "offline";
+  if (!available) return "disabled";
   if (totalRequests === 0) return "idle";
   if (healthScore >= 80) return "healthy";
   if (healthScore >= 45) return "degraded";
@@ -122,7 +123,7 @@ const buildClientRoutes = (): ProxyDashboardRoute[] => {
         routeKind: "proxy",
         enabled,
         status: getStatusFromHealth(healthScore, stats.totalRequests, enabled),
-        healthScore,
+        healthScore: enabled ? healthScore : 100,
         successRate,
         totalRequests: stats.totalRequests,
         successCount: stats.success,
@@ -131,7 +132,9 @@ const buildClientRoutes = (): ProxyDashboardRoute[] => {
         consecutiveFailures: stats.consecutiveFailures,
         lastUsedAt: stats.lastUsed || undefined,
         detail:
-          stats.totalRequests > 0
+          !enabled
+            ? "Desativado. Não entra no cálculo de saúde agregada."
+            : stats.totalRequests > 0
             ? `${stats.success}/${stats.totalRequests} sucesso nesta sessao`
             : "Ainda sem uso nesta sessao",
       };
@@ -248,7 +251,7 @@ export const buildProxyDashboardSnapshot =
             transport: "desktop-backend",
             routeKind: "local-backend",
             enabled: true,
-            status: "offline",
+            status: health.initializing ? "idle" : "offline",
             healthScore: 0,
             successRate: null,
             totalRequests: 0,
@@ -256,7 +259,9 @@ export const buildProxyDashboardSnapshot =
             failureCount: 0,
             avgResponseTime: 0,
             consecutiveFailures: 0,
-            detail: backendError || "Backend local indisponivel",
+            detail: health.initializing
+              ? "Backend local inicializando"
+              : backendError || "Backend local indisponivel",
           },
           ...baseRoutes,
         ];
@@ -277,7 +282,11 @@ export const buildProxyDashboardSnapshot =
         acc.totalRequests += route.totalRequests;
         acc.totalSuccesses += route.successCount;
         acc.totalFailures += route.failureCount;
-        if (route.status === "healthy" || route.status === "idle") {
+        if (
+          route.status === "healthy" ||
+          route.status === "idle" ||
+          route.status === "disabled"
+        ) {
           acc.healthyRoutes += 1;
         }
         return acc;
@@ -297,6 +306,7 @@ export const buildProxyDashboardSnapshot =
         lastWarning: runtimeLastWarning,
         warningDetails: runtimeWarningDetails,
         backendAvailable,
+        backendInitializing: runtimeState.backendInitializing,
         lastCheckedAt: runtimeState.lastCheckedAt,
         lastError: runtimeState.lastError,
       },

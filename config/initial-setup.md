@@ -11,14 +11,10 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Tema Padrão - Define a paleta de cores inicial da interface
 
-- Tema Padrão: dark-blue;
+- Tema Padrão: dark;
   Opções:
-- `dark-blue`: Azul Escuro (Padrão Dark)
-- `dark-green`: Verde Escuro (Nature)
-- `dark-purple`: Roxo Escuro (Cyber)
-- `light-blue`: Azul Claro (Padrão Light)
-- `light-pink`: Rosa Claro (Soft)
-- `light-cyan`: Ciano Claro (Minimal)
+- `dark`: Modo escuro padrão
+- `light`: Modo claro padrão
 
 ---
 

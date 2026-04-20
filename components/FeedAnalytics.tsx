@@ -42,10 +42,10 @@ type AffectedFeedRow = {
 
 const SURFACE_CLASS =
   "rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const INFO_SURFACE_CLASS =
+  "rounded-[24px] border border-[rgb(var(--color-border))]/10 bg-[rgb(var(--theme-manager-bg,var(--color-background)))] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.025)]";
 const MANAGER_CONTROL_CLASS =
   "rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]";
-const MANAGER_CARD_CLASS =
-  "rounded-[16px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-3";
 const MANAGER_SURFACE_CARD_CLASS =
   "rounded-[18px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-4";
 
@@ -455,7 +455,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 
   return (
     <div className="space-y-4">
-      <section id="diagnostics-overview" className={SURFACE_CLASS}>
+      <section id="diagnostics-overview" className={INFO_SURFACE_CLASS}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h3 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
@@ -506,36 +506,46 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <AccordionSection
           sectionId="diagnosis"
-          title="Problema principal"
+          title="Status da Coleção"
           isOpen={openSections.diagnosis}
           onToggle={() => toggleSection("diagnosis")}
           icon={
-            <AlertCircle className="h-5 w-5 text-[rgb(var(--color-warning))]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(var(--color-warning),0.1)] text-[rgb(var(--color-warning))]">
+              <AlertCircle className="h-4 w-4" />
+            </div>
           }
         >
-          <p className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
-            {diagnosis.label}
-          </p>
-          <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-            {diagnosis.detail}
-          </p>
+          <div className="rounded-2xl bg-[rgb(var(--theme-manager-control))] p-5 shadow-sm">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-50">Problema Dominante</h4>
+            <p className="mt-3 text-lg font-bold text-[rgb(var(--theme-text-readable))]">
+              {diagnosis.label}
+            </p>
+            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+              {diagnosis.detail}
+            </p>
+          </div>
         </AccordionSection>
 
         <AccordionSection
           sectionId="actions"
-          title="Ações"
+          title="Próximos Passos"
           isOpen={openSections.actions}
           onToggle={() => toggleSection("actions")}
           icon={
-            <CheckCircle2 className="h-5 w-5 text-[rgb(var(--color-primary))]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(var(--color-success),0.1)] text-[rgb(var(--color-success))]">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
           }
         >
-          <div className="space-y-3">
-            {actionItems.map((item) => (
+          <div className="space-y-2.5">
+            {actionItems.map((item, idx) => (
               <div
                 key={item}
-                className={`${MANAGER_CARD_CLASS} text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]`}
+                className="flex items-center gap-3 rounded-xl bg-[rgb(var(--theme-manager-control))] px-4 py-3 text-sm font-semibold text-[rgb(var(--theme-text-readable))] shadow-sm"
               >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.1)] text-[10px] text-[rgb(var(--color-accent))]">
+                  {idx + 1}
+                </span>
                 {item}
               </div>
             ))}
@@ -546,9 +556,14 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       <AccordionSection
         sectionId="feed-status"
         sectionClassName={SURFACE_CLASS}
-        title="Feeds afetados"
+        title="Feeds e Impacto"
         isOpen={openSections.affected}
         onToggle={() => toggleSection("affected")}
+        icon={
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(var(--color-accent),0.1)] text-[rgb(var(--color-accent))]">
+            <Layers3 className="h-4 w-4" />
+          </div>
+        }
         actions={
           affectedRows.length > 8 && openSections.affected ? (
             <button
@@ -557,78 +572,86 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 event.stopPropagation();
                 setShowAllRows((current) => !current);
               }}
-              className={MANAGER_CONTROL_CLASS}
+              className="text-xs font-bold text-[rgb(var(--color-accent))] hover:underline"
             >
-              {showAllRows ? "Mostrar menos" : `Mostrar ${affectedRows.length}`}
+              {showAllRows ? "Mostrar menos" : `Ver todos (+${affectedRows.length - 8})`}
             </button>
           ) : null
         }
       >
         <div className="overflow-x-auto">
-          <table className="min-w-full border-separate border-spacing-y-2">
+          <table className="w-full border-separate border-spacing-y-1.5">
             <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                <th className="px-3 py-2">Feed</th>
-                <th className="px-3 py-2">Host</th>
-                <th className="px-3 py-2">Rota</th>
-                <th className="px-3 py-2">Erro</th>
-                <th className="px-3 py-2">Checagem</th>
-                <th className="px-3 py-2">Impacto</th>
+              <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
+                <th className="px-4 py-2">Feed</th>
+                <th className="px-4 py-2">Infra / Rota</th>
+                <th className="px-4 py-2">Status / Erro</th>
+                <th className="px-4 py-2 text-right">Impacto</th>
               </tr>
             </thead>
             <tbody>
               {visibleRows.map((row) => (
                 <tr
                   key={row.url}
-                  className="rounded-[18px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))]"
+                  className="group rounded-xl bg-[rgb(var(--theme-manager-control))] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
                 >
-                  <td className="rounded-l-[18px] px-3 py-3 align-top">
-                    <div className="flex min-w-[12rem] flex-col gap-2">
-                      <span className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+                  <td className="rounded-l-xl px-4 py-3">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-[rgb(var(--theme-text-readable))] truncate max-w-[180px]">
                         {row.title}
                       </span>
+                      <span className="text-[10px] font-mono text-[rgb(var(--theme-text-secondary-readable))] opacity-50 truncate max-w-[180px]">
+                        {row.host}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-[rgb(var(--theme-text-readable))]">
+                        {row.route}
+                      </span>
+                      <span className="text-[10px] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
+                        {formatDateTime(row.lastChecked)}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
                       <span
-                        className={`w-fit rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusTone(
+                        className={`rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(
                           row.status,
                         )}`}
                       >
                         {formatStatusLabel(row.status)}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 align-top text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                    {row.host}
-                  </td>
-                  <td className="px-3 py-3 align-top text-sm text-[rgb(var(--theme-text-readable))]">
-                    {row.route}
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <div className="max-w-[22rem] space-y-1">
-                      <p className="text-sm text-[rgb(var(--theme-text-readable))]">
-                        {causeLabels[row.cause]}
-                      </p>
-                      <p className="text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      <span className="max-w-[14rem] truncate text-xs text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
                         {row.error}
-                      </p>
+                      </span>
                     </div>
                   </td>
-                  <td className="px-3 py-3 align-top text-sm text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                    {formatDateTime(row.lastChecked)}
-                  </td>
-                  <td className="rounded-r-[18px] px-3 py-3 align-top">
+                  <td className="rounded-r-xl px-4 py-3 text-right">
                     <div
-                      className={`text-sm font-semibold ${impactTone(row.impact)}`}
+                      className={`text-xs font-bold uppercase tracking-widest ${impactTone(row.impact)}`}
                     >
                       {row.impact}
                     </div>
-                    <div className="mt-1 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                      {row.articleCount} artigos
+                    <div className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
+                      {row.articleCount} arts.
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {!showAllRows && affectedRows.length > 8 && (
+            <div
+              onClick={() => setShowAllRows(true)}
+              className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[rgba(var(--color-border),0.15)] py-2 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40 hover:opacity-100 transition-opacity"
+            >
+              Expandir Tabela de Impacto
+            </div>
+          )}
         </div>
       </AccordionSection>
 
@@ -730,7 +753,7 @@ const AccordionSection: React.FC<{
   icon,
   actions,
   sectionId,
-  sectionClassName = SURFACE_CLASS,
+  sectionClassName = INFO_SURFACE_CLASS,
 }) => (
   <section id={sectionId} className={sectionClassName}>
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

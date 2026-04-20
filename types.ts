@@ -75,6 +75,7 @@ export interface FeedLoadRequest {
   categoryId?: string;
   feedUrl?: string;
   mode?: "all" | "category" | "single-feed";
+  cacheTtlMinutes?: 0 | 5 | 10;
 }
 
 export interface FeedCategory {

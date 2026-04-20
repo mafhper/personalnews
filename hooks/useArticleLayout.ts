@@ -15,6 +15,7 @@ export interface ArticleLayoutSettings {
   showPublicationTime: boolean;
   articlesPerPage: number;
   autoRefreshInterval: number; // in minutes, 0 = disabled
+  feedCacheTtlMinutes: 0 | 5 | 10; // in minutes, 0 = disabled
 }
 
 const DEFAULT_SETTINGS: ArticleLayoutSettings = {
@@ -22,6 +23,7 @@ const DEFAULT_SETTINGS: ArticleLayoutSettings = {
   showPublicationTime: true,
   articlesPerPage: 21, // 1 featured + 5 recent + 15 top stories
   autoRefreshInterval: 15,
+  feedCacheTtlMinutes: 10,
 };
 
 export const useArticleLayout = () => {
@@ -30,8 +32,13 @@ export const useArticleLayout = () => {
     DEFAULT_SETTINGS
   );
 
+  const normalizedSettings: ArticleLayoutSettings = {
+    ...DEFAULT_SETTINGS,
+    ...settings,
+  };
+
   const updateSettings = (newSettings: Partial<ArticleLayoutSettings>) => {
-    const updatedSettings = { ...settings, ...newSettings };
+    const updatedSettings = { ...normalizedSettings, ...newSettings };
 
     // Recalculate articlesPerPage when topStoriesCount changes
     if ('topStoriesCount' in newSettings) {
@@ -46,7 +53,7 @@ export const useArticleLayout = () => {
   };
 
   return {
-    settings,
+    settings: normalizedSettings,
     updateSettings,
     resetToDefaults,
   };

@@ -77,6 +77,7 @@ export const DEFAULT_ARTICLE_LAYOUT = {
     showPublicationTime: true,   // Mostrar hora de publicação
     articlesPerPage: 21,         // Artigos por página (1 featured + 5 recent + 15 top)
     autoRefreshInterval: 15,     // Intervalo de atualização automática (minutos, 0 = desabilitado)
+    feedCacheTtlMinutes: 10 as 0 | 5 | 10, // Cache temporário por escopo (0 = desabilitado)
 };
 
 // =============================================================================

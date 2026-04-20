@@ -46,12 +46,8 @@ const VALID_LAYOUTS = new Set([
 const VALID_HEADER_POSITIONS = new Set(['static', 'sticky', 'floating', 'hidden']);
 const VALID_TIME_FORMATS = new Set(['12h', '24h']);
 const VALID_THEMES = new Set([
-  'dark-blue',
-  'dark-green',
-  'dark-purple',
-  'light-blue',
-  'light-pink',
-  'light-cyan',
+  'dark',
+  'light',
 ]);
 
 const normalizeValue = (value: string) => value.trim();
@@ -102,7 +98,7 @@ function sync() {
   }];
   const feeds: FeedSource[] = [];
   const globalConfig: Record<string, unknown> = {
-    theme: 'dark-blue',
+    theme: 'dark',
     layout: 'bento',
     timeFormat: '24h'
   };

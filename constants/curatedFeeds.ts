@@ -6,7 +6,7 @@
 import { FeedSource, FeedCategory } from "../types";
 
 export const INITIAL_APP_CONFIG = {
-  "theme": "dark-blue",
+  "theme": "dark",
   "layout": "bento",
   "timeFormat": "24h",
   "header": "sticky",

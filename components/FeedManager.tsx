@@ -116,7 +116,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     Map<string, FeedValidationResult>
   >(new Map());
   const [isValidating, setIsValidating] = useState(false);
-  const [discoveryProgress, setDiscoveryProgress] = useState<
+  const [, setDiscoveryProgress] = useState<
     Map<string, { status: string; progress: number }>
   >(new Map());
   const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
@@ -544,8 +544,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const invalidCount = Array.from(feedValidations.values()).filter(
     (v) => !v.isValid,
   ).length;
-  const pendingCount = Math.max(0, currentFeeds.length - feedValidations.size);
-
   const tabs: Array<{
     id: FeedManagerTab;
     label: string;

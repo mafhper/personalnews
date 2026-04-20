@@ -93,6 +93,11 @@ let mockFeedState: MockFeedState;
 const mockApplyLayoutPreset = vi.fn();
 const mockRefreshAppearance = vi.fn();
 const mockResolveBaseLayoutMode = vi.fn();
+const mockArticleLayoutSettings = {
+  autoRefreshInterval: 0,
+  articlesPerPage: 10,
+  feedCacheTtlMinutes: 10 as 0 | 5 | 10,
+};
 
 const mockAppearanceState = {
   currentTheme: { id: "theme-dark" },
@@ -173,10 +178,7 @@ vi.mock("../hooks/usePagination", () => ({
 
 vi.mock("../hooks/useArticleLayout", () => ({
   useArticleLayout: () => ({
-    settings: {
-      autoRefreshInterval: 0,
-      articlesPerPage: 10,
-    },
+    settings: mockArticleLayoutSettings,
   }),
 }));
 
@@ -239,11 +241,13 @@ vi.mock("../components/Header", () => ({
   default: (props: {
     onNavigation: (category: string) => void;
     onGoAll?: () => void;
+    onRefreshClick?: () => void;
   }) => (
     <div data-testid="header">
       <button onClick={() => props.onNavigation("design")}>Go design</button>
       <button onClick={() => props.onNavigation("youtube")}>Go videos</button>
       <button onClick={() => props.onGoAll?.()}>Go all</button>
+      <button onClick={() => props.onRefreshClick?.()}>Refresh</button>
     </div>
   ),
 }));
@@ -359,6 +363,48 @@ describe("AppContent cache-first rendering", () => {
       cancelLoading: mockCancelLoading,
       setFeeds: mockSetFeeds,
     };
+  });
+
+  it("passes the configured cache TTL to category navigation requests", async () => {
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Go design"));
+      await Promise.resolve();
+    });
+
+    expect(mockLoadFeeds).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        categoryId: "design",
+        mode: "category",
+        forceRefresh: false,
+        cacheTtlMinutes: 10,
+      }),
+    );
+  });
+
+  it("keeps manual refresh on the force-refresh context path", async () => {
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Refresh"));
+      await Promise.resolve();
+    });
+
+    expect(mockRefreshFeeds).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categoryId: "tech",
+        mode: "category",
+        cacheTtlMinutes: 10,
+      }),
+    );
+    expect(mockLoadFeeds).not.toHaveBeenCalled();
   });
 
   it("shows the dominant skeleton on cold start without cache", async () => {

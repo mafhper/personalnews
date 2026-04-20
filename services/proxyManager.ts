@@ -62,6 +62,8 @@ export interface ProxyTestResult {
 
 export class ProxyManager {
   private static readonly DISABLED_PROXIES_STORAGE_KEY = "disabled_proxies";
+  private static readonly AUTO_DISABLE_HEALTH_SCORE = 0.1;
+  private static readonly AUTO_DISABLE_FAILURES = 5;
   private static rss2jsonApiKey: string = "";
   private static rss2jsonApiKeyOrigin: string = "not-configured"; // 'env.local', 'localStorage', 'manual', 'not-configured'
   private static corsproxyCIOApiKey: string = "";
@@ -645,6 +647,7 @@ export class ProxyManager {
 
     // Recalculate health score
     this.updateHealthScore(proxyName);
+    this.autoDisableProxyIfUnhealthy(proxyName);
   }
 
   /**
@@ -749,23 +752,13 @@ export class ProxyManager {
     })();
 
     const disabledSet = new Set(disabledNames);
-    const isTauri = ProxyManager.isTauriRuntime();
-
     this.PROXY_CONFIGS.forEach((proxy) => {
-      if (isFirstRun && isTauri) {
-        // Default behavior for new desktop installations: only LocalProxy is enabled
-        const enabled = proxy.name === "LocalProxy";
-        proxy.enabled = enabled;
-        this.proxyHealthCheck.set(proxy.name, enabled);
-      } else {
-        const enabled = !disabledSet.has(proxy.name);
-        proxy.enabled = enabled;
-        this.proxyHealthCheck.set(proxy.name, enabled);
-      }
+      const enabled = !disabledSet.has(proxy.name);
+      proxy.enabled = enabled;
+      this.proxyHealthCheck.set(proxy.name, enabled);
     });
 
-    // If we applied defaults for the first time, persist them
-    if (isFirstRun && isTauri) {
+    if (isFirstRun) {
       this.persistDisabledProxyNames();
     }
   }
@@ -1025,6 +1018,7 @@ export class ProxyManager {
 
     // Update health score
     this.updateHealthScore(attempt.proxyName);
+    this.autoDisableProxyIfUnhealthy(attempt.proxyName);
   }
 
   private updateHealthScore(proxyName: string): void {
@@ -1057,6 +1051,23 @@ export class ProxyManager {
     }
 
     stats.healthScore = Math.max(0, Math.min(1, healthScore));
+  }
+
+  private autoDisableProxyIfUnhealthy(proxyName: string): void {
+    if (proxyName === "LocalProxy") return;
+
+    const proxy = this.PROXY_CONFIGS.find((item) => item.name === proxyName);
+    const stats = this.proxyStats.get(proxyName);
+    if (!proxy || !stats || !proxy.enabled) return;
+
+    if (
+      stats.healthScore < ProxyManager.AUTO_DISABLE_HEALTH_SCORE &&
+      stats.consecutiveFailures > ProxyManager.AUTO_DISABLE_FAILURES
+    ) {
+      proxy.enabled = false;
+      this.proxyHealthCheck.set(proxyName, false);
+      this.persistDisabledProxyNames();
+    }
   }
 
   private startHealthMonitoring(): void {

@@ -91,7 +91,10 @@ if (typeof global.IntersectionObserver === 'undefined') {
     observe = vi.fn();
     unobserve = vi.fn();
     disconnect = vi.fn();
-    constructor(public callback: any, public options?: any) {}
+    constructor(
+      public callback: IntersectionObserverCallback,
+      public options?: IntersectionObserverInit,
+    ) {}
   }
   vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
 }

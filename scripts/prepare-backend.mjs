@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 
@@ -47,24 +47,10 @@ if (result.status !== 0) {
   process.exit(1);
 }
 
-// Cria dummies vazios para os outros sidecars esperados pelo tauri.conf.json
-// Isso evita que o bundler falhe ao não encontrar os binários de outras plataformas
-const expectedTargets = [
-  'x86_64-apple-darwin',
-  'aarch64-apple-darwin',
-  'x86_64-unknown-linux-gnu',
-  'x86_64-pc-windows-msvc'
-];
-
-import { writeFileSync } from 'node:fs';
-for (const t of expectedTargets) {
-  const dummyName = `personalnews-backend-${t}${t.includes('windows') ? '.exe' : ''}`;
-  const dummyPath = join(repoRoot, 'apps', 'desktop', 'src-tauri', 'binaries', dummyName);
-  
-  if (dummyName !== exeName && !existsSync(dummyPath)) {
-    console.log(`[prepare:backend] Criando dummy para ${dummyName}`);
-    writeFileSync(dummyPath, '');
-  }
+const outfileAbsolute = join(repoRoot, outfileRelative);
+if (!existsSync(outfileAbsolute) || statSync(outfileAbsolute).size === 0) {
+  console.error(`[prepare:backend] Sidecar esperado nao foi gerado: ${outfileAbsolute}`);
+  process.exit(1);
 }
 
 console.log('[prepare:backend] Backend pronto!');

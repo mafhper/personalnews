@@ -120,8 +120,6 @@ describe("FeedAnalytics dashboard", () => {
     expect(screen.getByText("Diagnóstico")).toBeInTheDocument();
     expect(screen.queryByText("Exportar relatório")).not.toBeInTheDocument();
     expect(screen.getByText("Backend local indisponível")).toBeInTheDocument();
-    expect(screen.getByText("Ações")).toBeInTheDocument();
-    expect(screen.getByText("Feeds afetados")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Detalhes/i }));
 
@@ -198,5 +196,76 @@ describe("FeedAnalytics dashboard", () => {
 
     expect(await screen.findByText("Proxies")).toBeInTheDocument();
     expect(screen.getByText("Exportar relatório")).toBeInTheDocument();
+  });
+
+  it("shows disabled proxies as neutral in aggregate health", async () => {
+    proxyDashboardSnapshot = createProxySnapshot({
+      runtime: {
+        activeMode: "web-client",
+        warningDetails: null,
+        backendAvailable: false,
+      },
+      backend: {
+        enabled: false,
+        available: false,
+      },
+      routes: [
+        {
+          id: "client:CodeTabs",
+          name: "CodeTabs",
+          transport: "client",
+          routeKind: "proxy",
+          enabled: false,
+          status: "disabled",
+          healthScore: 100,
+          successRate: null,
+          totalRequests: 0,
+          successCount: 0,
+          failureCount: 0,
+          avgResponseTime: 0,
+          consecutiveFailures: 6,
+          detail: "Desativado. Não entra no cálculo de saúde agregada.",
+        },
+        {
+          id: "client:AllOrigins",
+          name: "AllOrigins",
+          transport: "client",
+          routeKind: "proxy",
+          enabled: true,
+          status: "idle",
+          healthScore: 100,
+          successRate: null,
+          totalRequests: 0,
+          successCount: 0,
+          failureCount: 0,
+          avgResponseTime: 0,
+          consecutiveFailures: 0,
+          detail: "Ainda sem uso nesta sessao",
+        },
+      ],
+      summary: {
+        totalRoutes: 2,
+        healthyRoutes: 2,
+        totalRequests: 0,
+        totalSuccesses: 0,
+        totalFailures: 0,
+        successRate: 0,
+        fallbackActive: false,
+        missingApiKeys: [],
+      },
+    });
+
+    render(
+      <FeedAnalytics
+        feeds={[]}
+        articles={[]}
+        feedValidations={new Map()}
+        focusSection="proxy-health"
+      />,
+    );
+
+    expect(await screen.findByText("Proxies")).toBeInTheDocument();
+    expect(screen.getByText("Desativado")).toBeInTheDocument();
+    expect(screen.getByText("2/2")).toBeInTheDocument();
   });
 });

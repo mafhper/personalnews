@@ -6,9 +6,9 @@ import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
 import { useAppearance, LAYOUT_PRESETS } from '../hooks/useAppearance';
 import { useFeedCategories } from '../hooks/useFeedCategories';
+import { useArticleLayout } from '../hooks/useArticleLayout';
 import { Switch } from './ui/Switch';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
-import { adjustColorBrightness, autoFixThemeAccessibility } from '../services/themeUtils';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
 import { useLanguage } from '../hooks/useLanguage';
 import { HeaderConfig, ContentConfig, Language } from '../types';
@@ -28,8 +28,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   setTimeFormat
 }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const { currentTheme, updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
+  const { updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
   const { applyLayoutPreset, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
+  const { settings: articleLayoutSettings, updateSettings: updateArticleLayoutSettings } = useArticleLayout();
   const { alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
   const { language, setLanguage } = useLanguage();
   const { resetCategoryLayouts } = useFeedCategories();
@@ -116,38 +117,6 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
-  };
-
-  const setThemeColor = (colors: { accent: string; surface?: string }, presetName?: string) => {
-    const isDark = currentTheme.id.includes('dark') || (themeSettings.autoDetectSystemTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-    const backgroundColor = colors.surface || currentTheme.colors.background;
-    const surfaceColor = colors.surface
-      ? adjustColorBrightness(colors.surface, isDark ? 1.14 : 0.97)
-      : currentTheme.colors.surface;
-    const surfaceElevated = adjustColorBrightness(
-      surfaceColor,
-      isDark ? 1.08 : 0.92,
-    );
-
-    const seededTheme = {
-      ...currentTheme,
-      id: `quick-color-${Date.now()}`,
-      name: presetName ? `${currentTheme.name} (${presetName})` : `${currentTheme.name} (Custom)`,
-      colors: {
-        ...currentTheme.colors,
-        accent: colors.accent,
-        ...(colors.surface
-          ? {
-              background: backgroundColor,
-              surface: surfaceColor,
-              surfaceElevated,
-            }
-          : {}),
-      },
-    };
-
-    setCurrentTheme(autoFixThemeAccessibility(seededTheme));
   };
 
   const fieldLabelClass =
@@ -423,6 +392,26 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                   <option value="loadMore">Botão "Carregar Mais"</option>
                   {/* <option value="infinite">Rolagem Infinita</option> */}
                 </select>
+              </div>
+
+              <div>
+                  <label className={fieldLabelClass}>Cache temporário de feeds</label>
+                <select
+                  value={articleLayoutSettings.feedCacheTtlMinutes}
+                  onChange={(e) =>
+                    updateArticleLayoutSettings({
+                      feedCacheTtlMinutes: Number(e.target.value) as 0 | 5 | 10,
+                    })
+                  }
+                    className={surfaceInputClass}
+                >
+                  <option value={10}>10 min</option>
+                  <option value={5}>5 min</option>
+                  <option value={0}>Desativado</option>
+                </select>
+                <p className="mt-2 text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                  Evita recarregar feeds ao alternar categorias enquanto o cache do destino ainda estiver recente.
+                </p>
               </div>
             </div>
           </AccordionSection>
