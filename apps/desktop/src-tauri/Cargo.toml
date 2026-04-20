@@ -3,7 +3,7 @@
 # will apply when that lands. See https://github.com/tauri-apps/tauri/pull/12098
 [package]
 name = "personalnews"
-version = "1.5.1"
+version = "1.6.0"
 description = "PersonalNews"
 authors = ["mafhper"]
 license = "MIT"
