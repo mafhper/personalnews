@@ -103,43 +103,6 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [mobileExpandedCategory, setMobileExpandedCategory] = useState<string | null>(null);
 
-  // Mobile: Header visibility (logo, icons) - hidden by default, shows on interaction
-  // Categories stay always visible for easy navigation
-  const [isMobileHeaderVisible, setIsMobileHeaderVisible] = useState(true);
-  const mobileHeaderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    const handleActivity = () => {
-      setIsMobileHeaderVisible(true);
-      if (mobileHeaderTimeoutRef.current) clearTimeout(mobileHeaderTimeoutRef.current);
-      mobileHeaderTimeoutRef.current = setTimeout(() => {
-        // Only hide if scrolled down
-        if (window.scrollY > 100) {
-          setIsMobileHeaderVisible(false);
-        }
-      }, 3000);
-    };
-
-    // Show header initially, then hide after delay if scrolled
-    const initialTimeout = setTimeout(() => {
-      if (window.scrollY > 100) {
-        setIsMobileHeaderVisible(false);
-      }
-    }, 3000);
-
-    window.addEventListener("scroll", handleActivity, { passive: true });
-    window.addEventListener("touchmove", handleActivity, { passive: true });
-    window.addEventListener("touchstart", handleActivity, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleActivity);
-      window.removeEventListener("touchmove", handleActivity);
-      window.removeEventListener("touchstart", handleActivity);
-      if (mobileHeaderTimeoutRef.current) clearTimeout(mobileHeaderTimeoutRef.current);
-      clearTimeout(initialTimeout);
-    };
-  }, []);
-
-
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -498,7 +461,6 @@ const Header: React.FC<HeaderProps> = (props) => {
     isHeaderVisible,
     mobileMenuOpen,
     mobileCategoriesOpen,
-    isMobileHeaderVisible,
     activeCategories.length,
     headerConfig.height,
     headerConfig.showLogo,
@@ -575,13 +537,13 @@ const Header: React.FC<HeaderProps> = (props) => {
         />
         <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''} overflow-hidden`}>
 
-          {/* Main header row - on mobile, hidden when scrolled. On desktop, always visible */}
+          {/* Main header row - desktop/tablet shell. Phones use the compact category rail below. */}
           {/* Auto height when logo and title are both hidden */}
             <div className={`
             flex items-center transition-all duration-300
             ${headerHeightClasses[headerConfig.height] || 'h-14 lg:h-16'}
             ${headerStyleClasses[headerConfig.style]}
-            ${!isMobileHeaderVisible ? 'hidden md:flex' : 'flex'}
+            hidden md:flex
           `}>
 
             {/* Left Section: Logo & Title */}
@@ -711,7 +673,7 @@ const Header: React.FC<HeaderProps> = (props) => {
             <div className={`flex items-center justify-end space-x-2 flex-shrink-0 ${isCentered ? 'lg:absolute lg:right-4' : ''}`}>
 
               {/* Desktop Actions */}
-              <div className="hidden md:flex items-center space-x-1">
+              <div className="hidden lg:flex items-center space-x-1">
                 <button
                   onClick={props.onRefreshClick}
                   className="feed-header-control"
@@ -777,12 +739,21 @@ const Header: React.FC<HeaderProps> = (props) => {
 
           {/* MOBILE/TABLET: Categories (Second row) - always visible, expandable */}
           <div className="feed-header-mobile-bar md:hidden w-full py-1.5">
-            <div className="flex items-center gap-1.5 px-3">
+            <div className="flex items-center gap-1.5 px-2 sm:px-3">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className={`feed-header-control feed-header-control--filled shrink-0 ${mobileMenuOpen ? "ring-1 ring-[rgb(var(--color-primary))]/40" : ""}`}
+                aria-label="Menu"
+              >
+                <HeaderIcons.Menu
+                  showBackground={false}
+                  size="md"
+                  isActive={mobileMenuOpen}
+                />
+              </button>
               <div className="relative flex-1 min-w-0">
-                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[rgb(var(--color-background))]/70 to-transparent" />
-                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[rgb(var(--color-background))]/70 to-transparent" />
                 <div className="overflow-x-auto no-scrollbar w-full" style={{ scrollbarWidth: 'none' }}>
-                  <div className="flex items-center gap-2 pr-2 snap-x snap-mandatory">
+                  <div className="flex items-center gap-1.5 pr-2 snap-x snap-mandatory">
                     {activeCategories.map((category) => {
                       const isActive = props.selectedCategory === category.id;
                       return (
@@ -869,10 +840,8 @@ const Header: React.FC<HeaderProps> = (props) => {
       </header>
 
       {/* Mobile Drawer */}
-      <div
-        className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-      >
+      {mobileMenuOpen && (
+      <div className="fixed inset-0 z-50 opacity-100 pointer-events-auto lg:hidden transition-opacity duration-300">
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -881,8 +850,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
         {/* Drawer Content */}
         <div
-          className={`feed-header-drawer absolute top-0 right-0 bottom-0 w-[80%] max-w-sm border-l border-[rgb(var(--color-border))]/35 shadow-2xl transform transition-transform duration-300 ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-            }`}
+          className="feed-header-drawer absolute top-0 right-0 bottom-0 w-[80%] max-w-sm translate-x-0 border-l border-[rgb(var(--color-border))]/35 shadow-2xl transform transition-transform duration-300"
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between border-b border-[rgb(var(--color-border))]/35 p-4">
@@ -951,6 +919,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           </div>
         </div>
       </div>
+      )}
     </>
   );
 };

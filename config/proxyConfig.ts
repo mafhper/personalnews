@@ -126,27 +126,29 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
     id: "codetabs",
     name: "CodeTabs",
     website: "https://api.codetabs.com",
-    description: "Simple CORS proxy with stable uptime - no API key required",
+    description:
+      "Simple CORS proxy with no API key, but currently inconsistent for browser RSS fallback",
     hasApiKey: false,
     rateLimits: {
       notes:
         "Undocumented but stable - appears to have reasonable implicit limits",
     },
-    reliability: "excellent",
-    responseTime: "fast",
+    reliability: "fair",
+    responseTime: "moderate",
     freeTier: {
       available: true,
-      notes: "Completely free, no authentication required, very reliable",
+      notes:
+        "Completely free and no authentication required, but observed 429/400/empty responses on several feeds",
     },
     recommendations: [
-      "Excellent choice as primary free proxy",
-      "Consistently reliable with good uptime",
-      "One of the best unmaintained free CORS proxies",
-      "Use as primary in fallback chain when RSS2JSON API key unavailable",
+      "Keep as fallback after RSS2JSON and CorsProxy.io",
+      "Useful for some RSS/XML feeds",
+      "Expect occasional 429 or invalid upstream responses",
+      "Do not use as primary in the browser fallback chain",
     ],
     bestFor: ["RSS", "HTML", "JSON", "XML"],
     tags: ["free", "stable", "no-auth", "recommended"],
-    priority: 0,
+    priority: 2,
     includeInFallback: true,
   },
 
@@ -154,27 +156,29 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
     id: "allorigins",
     name: "AllOrigins",
     website: "https://allorigins.win",
-    description: "Simple and fast CORS proxy, good for basic use cases",
+    description:
+      "Simple CORS proxy that works for some feeds but is often slow or aborts in browser mode",
     hasApiKey: false,
     rateLimits: {
       notes: "Implicit limits - works well for small to medium volume",
     },
-    reliability: "good",
-    responseTime: "fast",
+    reliability: "fair",
+    responseTime: "slow",
     freeTier: {
       available: true,
       limitations: ["No official rate limit documentation"],
-      notes: "Works well for simple requests and popular feeds",
+      notes:
+        "Observed frequent browser aborts/timeouts; keep only as last automatic fallback",
     },
     recommendations: [
-      "Good secondary fallback option",
-      "Reliable for RSS/XML feeds",
-      "Works best with popular/cached feeds",
-      "May have undocumented rate limits",
+      "Use only after RSS2JSON, CorsProxy.io and CodeTabs",
+      "Works best with small or cached feeds",
+      "Expect browser timeouts on larger feeds",
+      "Do not place before faster browser-compatible proxies",
     ],
     bestFor: ["RSS", "XML", "HTML"],
     tags: ["free", "simple", "cache-friendly"],
-    priority: 1,
+    priority: 4,
     includeInFallback: true,
   },
 
@@ -211,7 +215,7 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
     ],
     bestFor: ["RSS", "HTML", "XML", "JSON"],
     tags: ["api-key-optional", "managed-service", "self-hostable"],
-    priority: 2,
+    priority: 0,
     includeInFallback: true,
   },
 
@@ -225,25 +229,26 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
       freeRpm: 20,
       notes: "~20 requests per minute per origin (implicit)",
     },
-    reliability: "fair",
-    responseTime: "moderate",
+    reliability: "unstable",
+    responseTime: "slow",
     freeTier: {
       available: true,
       limitations: [
         "Lower rate limit than alternatives (~20 RPM)",
         "Community maintained - less predictable",
       ],
-      notes: "Works but not as reliable as CodeTabs or AllOrigins",
+      notes:
+        "Not currently usable from GitHub Pages/browser mode due CORS/availability failures",
     },
     recommendations: [
-      "Use as fallback option (not primary)",
-      "Good for testing but may have occasional issues",
-      "Better alternatives exist (CodeTabs, AllOrigins)",
+      "Keep available only for manual testing",
+      "Do not include in automatic browser fallback",
+      "Prefer RSS2JSON, CorsProxy.io, CodeTabs or AllOrigins",
     ],
     bestFor: ["RSS", "JSON"],
     tags: ["free", "community-maintained", "fallback"],
     priority: 6,
-    includeInFallback: true,
+    includeInFallback: false,
   },
 
   "cors-anywhere": {
@@ -268,7 +273,7 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
       notes: "Self-hosting is recommended if you use this",
     },
     recommendations: [
-      "Use only as absolute last fallback",
+      "Keep available only for manual testing or self-hosted deployments",
       "Public instance is unreliable - not recommended",
       "Deploy your own instance if you need it",
       "Consider other proxies first",
@@ -276,7 +281,7 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
     bestFor: ["RSS", "HTML", "XML"],
     tags: ["self-hostable", "fallback-only", "unreliable-public"],
     priority: 3,
-    includeInFallback: true,
+    includeInFallback: false,
   },
 
   textproxy: {
@@ -288,7 +293,7 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
     rateLimits: {
       notes: "Undocumented - appears to have tight limits",
     },
-    reliability: "fair",
+    reliability: "unstable",
     responseTime: "slow",
     freeTier: {
       available: true,
@@ -296,17 +301,18 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
         "Inconsistent response quality",
         "Limited maintenance - may be abandoned",
       ],
-      notes: "Not recommended as primary choice",
+      notes:
+        "Not currently usable from GitHub Pages/browser mode due fetch/CORS failures",
     },
     recommendations: [
-      "Use only as emergency fallback",
+      "Keep available only for manual testing",
       "Better alternatives available",
       "Limited active maintenance",
     ],
     bestFor: ["Text", "HTML"],
     tags: ["fallback", "text-focus", "unmaintained"],
     priority: 5,
-    includeInFallback: true,
+    includeInFallback: false,
   },
 
   "jina-reader": {
@@ -328,13 +334,13 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
     recommendations: [
       "Excellent for content normalization and cleaning",
       "Very stable service with good uptime",
-      "Good as alternative primary or secondary proxy",
-      "Use as fallback for HTML content",
+      "Good candidate for article extraction, not current RSS fallback",
+      "Requires a dedicated parser path before enabling for feeds",
     ],
-    bestFor: ["HTML", "Text", "RSS"],
+    bestFor: ["HTML", "Text"],
     tags: ["free", "excellent-uptime", "content-cleaning", "recommended"],
     priority: 4,
-    includeInFallback: true,
+    includeInFallback: false,
   },
 };
 
@@ -343,9 +349,9 @@ export const PROXY_CONFIGS: Record<string, ProxyMetadata> = {
  */
 export const PROXIES_BY_CATEGORY = {
   development: ["local-proxy"],
-  recommended: ["rss2json", "codetabs", "jina-reader"],
+  recommended: ["rss2json", "corsproxy-io", "codetabs", "allorigins"],
   withApiKeys: ["rss2json", "corsproxy-io"],
-  fallback: ["allorigins", "whateverorigin", "cors-anywhere", "textproxy"],
+  fallback: ["codetabs", "allorigins"],
   all: Object.keys(PROXY_CONFIGS),
 };
 

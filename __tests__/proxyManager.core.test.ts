@@ -96,6 +96,11 @@ describe("ProxyManager preference loading", () => {
   });
 
   it("persists disabled proxies across preference reloads", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+
     proxyManager.disableProxy("CodeTabs");
 
     expect(localStorage.getItem("disabled_proxies")).toContain("CodeTabs");

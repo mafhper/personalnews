@@ -11,7 +11,7 @@ import {
 import { PROXY_CONFIGS, getRecommendedProxyOrder } from "../config/proxyConfig";
 import { useProxyConfig } from "../hooks/useProxyConfig";
 import { useProxyDashboard } from "../hooks/useProxyDashboard";
-import type { ProxyTestResult } from "../services/proxyManager";
+import { ProxyManager, type ProxyTestResult } from "../services/proxyManager";
 
 export interface ProxySettingsProps {
   detailed?: boolean;
@@ -412,6 +412,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                 proxy.name,
                 snapshot.routes,
               );
+              const canDisableProxy = ProxyManager.canDisableRuntimeProxy(
+                proxy.name,
+              );
 
               return (
                 <div
@@ -506,14 +509,21 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                         <button
                           type="button"
                           onClick={() => setProxyEnabled(proxy.id, !proxy.enabled)}
+                          disabled={!canDisableProxy}
                           className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
-                            proxy.enabled
+                            !canDisableProxy
+                              ? "cursor-not-allowed border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.06)] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
+                              : proxy.enabled
                               ? "border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))] hover:bg-[rgba(var(--color-warning),0.18)]"
                               : "border-[rgba(var(--color-success),0.24)] bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))] hover:bg-[rgba(var(--color-success),0.18)]"
                           }`}
                         >
                           <Route className="h-4 w-4" />
-                          {proxy.enabled ? "Desativar rota" : "Reativar rota"}
+                          {!canDisableProxy
+                            ? "Sempre ativo no modo web"
+                            : proxy.enabled
+                              ? "Desativar rota"
+                              : "Reativar rota"}
                         </button>
                         <button
                           type="button"

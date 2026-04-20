@@ -18,6 +18,7 @@ export interface ProxyConfig {
   timeout?: number;
   priority: number;
   enabled: boolean;
+  includeInFallback?: boolean;
 }
 
 export interface ProxyStats {
@@ -97,6 +98,14 @@ export class ProxyManager {
 
   private static isBackendRuntimeEnabled(): boolean {
     return this.getEnvValue("VITE_BACKEND_ENABLED") === "true";
+  }
+
+  static keepsRemoteProxiesEnabled(): boolean {
+    return !this.isTauriRuntime() && !this.isBackendRuntimeEnabled();
+  }
+
+  static canDisableRuntimeProxy(proxyName: string): boolean {
+    return proxyName === "LocalProxy" || !this.keepsRemoteProxiesEnabled();
   }
 
   static setRss2jsonApiKey(key: string, origin?: string) {
@@ -259,9 +268,10 @@ export class ProxyManager {
       headers: {
         Accept: "application/json",
       },
-      timeout: 10000,
-      priority: 0,
+      timeout: 7000,
+      priority: 4,
       enabled: true,
+      includeInFallback: true,
     },
     {
       url: "https://api.codetabs.com/v1/proxy?quest=",
@@ -276,9 +286,10 @@ export class ProxyManager {
           return response;
         }
       },
-      timeout: 15000,
-      priority: 1,
+      timeout: 10000,
+      priority: 2,
       enabled: true,
+      includeInFallback: true,
     },
     {
       url: "https://whatever-origin.herokuapp.com/get?url=",
@@ -294,9 +305,10 @@ export class ProxyManager {
       headers: {
         Accept: "application/json",
       },
-      timeout: 12000,
-      priority: 2,
+      timeout: 5000,
+      priority: 7,
       enabled: true,
+      includeInFallback: false,
     },
     {
       url: "https://textproxy.io/api/proxy?url=",
@@ -306,9 +318,10 @@ export class ProxyManager {
           "application/rss+xml, application/atom+xml, application/xml, text/xml",
         "User-Agent": "Personal News Dashboard/1.0",
       },
-      timeout: 10000,
-      priority: 3,
+      timeout: 5000,
+      priority: 6,
       enabled: true,
+      includeInFallback: false,
     },
     {
       url: "https://corsproxy.io/?",
@@ -319,8 +332,9 @@ export class ProxyManager {
         "User-Agent": "Personal News Dashboard/1.0",
       },
       timeout: 8000,
-      priority: 4,
+      priority: 0,
       enabled: true,
+      includeInFallback: true,
     },
     {
       url: "https://api.rss2json.com/v1/api.json?rss_url=",
@@ -330,9 +344,10 @@ export class ProxyManager {
         // Note: fetch() .text() will already return stringified JSON if the response is JSON
         return response;
       },
-      priority: 5,
+      priority: 1,
       enabled: true,
       timeout: 5000,
+      includeInFallback: true,
     },
     {
       url: "https://cors-anywhere.herokuapp.com/",
@@ -343,9 +358,10 @@ export class ProxyManager {
         "User-Agent": "Personal News Dashboard/1.0",
         "X-Requested-With": "XMLHttpRequest",
       },
-      timeout: 12000,
-      priority: 6,
+      timeout: 5000,
+      priority: 8,
       enabled: true,
+      includeInFallback: false,
     },
     // (moved above in free-first ordering)
   ];
@@ -390,12 +406,15 @@ export class ProxyManager {
         window.location.hostname.endsWith(".local"));
     const allowLocalProxy =
       !isTauri && (ProxyManager.preferLocalProxy || isLocalhost);
+    const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
 
     // Create a copy to modify priorities dynamically
     const configsToSort = this.PROXY_CONFIGS.filter(
       (proxy) =>
         proxy.enabled &&
-        this.isProxyHealthy(proxy.name) &&
+        proxy.includeInFallback !== false &&
+        (this.isProxyHealthy(proxy.name) ||
+          (keepRemoteProxiesEnabled && proxy.name !== "LocalProxy")) &&
         (proxy.name !== "LocalProxy" || allowLocalProxy),
     )
       .map((proxy) => {
@@ -412,7 +431,7 @@ export class ProxyManager {
         if (proxy.name === "RSS2JSON") {
           return {
             ...proxy,
-            priority: ProxyManager.rss2jsonApiKey ? 1 : 5,
+            priority: ProxyManager.rss2jsonApiKey ? -1 : 1,
           };
         }
 
@@ -495,16 +514,17 @@ export class ProxyManager {
 
       let content = await response.text();
 
+      // Apply response transformation before validation. Wrapper proxies such as
+      // AllOrigins return JSON envelopes whose contents may be RSS/XML.
+      if (proxyConfig.responseTransform) {
+        content = proxyConfig.responseTransform(content);
+      }
+
       // Validate content structure
       if (!this.validateProxyResponse(content, contentType)) {
         throw new Error(
           `Invalid response structure from proxy: ${proxyConfig.name}`,
         );
-      }
-
-      // Apply response transformation if configured
-      if (proxyConfig.responseTransform) {
-        content = proxyConfig.responseTransform(content);
       }
 
       // Record successful attempt
@@ -695,6 +715,8 @@ export class ProxyManager {
    * Disable a proxy
    */
   disableProxy(proxyName: string): void {
+    if (!ProxyManager.canDisableRuntimeProxy(proxyName)) return;
+
     const proxy = this.PROXY_CONFIGS.find((p) => p.name === proxyName);
     if (proxy) {
       proxy.enabled = false;
@@ -751,14 +773,22 @@ export class ProxyManager {
       }
     })();
 
+    const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
     const disabledSet = new Set(disabledNames);
+    let ignoredPersistedRemoteDisable = false;
+
     this.PROXY_CONFIGS.forEach((proxy) => {
-      const enabled = !disabledSet.has(proxy.name);
+      const shouldIgnoreDisabledState =
+        keepRemoteProxiesEnabled && proxy.name !== "LocalProxy";
+      if (shouldIgnoreDisabledState && disabledSet.has(proxy.name)) {
+        ignoredPersistedRemoteDisable = true;
+      }
+      const enabled = shouldIgnoreDisabledState || !disabledSet.has(proxy.name);
       proxy.enabled = enabled;
       this.proxyHealthCheck.set(proxy.name, enabled);
     });
 
-    if (isFirstRun) {
+    if (isFirstRun || ignoredPersistedRemoteDisable) {
       this.persistDisabledProxyNames();
     }
   }
@@ -920,25 +950,28 @@ export class ProxyManager {
 
     const trimmed = content.trim();
 
-    // Reject HTML pages (potential XSS or phishing)
+    // Reject full HTML/error pages, but do not reject valid RSS items just
+    // because descriptions contain embedded markup from publishers.
     if (
       trimmed.toLowerCase().includes("<!doctype html") ||
       trimmed.toLowerCase().startsWith("<html") ||
-      trimmed.toLowerCase().includes("<script")
+      trimmed.toLowerCase().startsWith("<script")
     ) {
       return false;
     }
 
     // Validate expected content types
     const lowerContentType = contentType.toLowerCase();
-    const isJson =
-      lowerContentType.includes("application/json") || trimmed.startsWith("{");
     const isXml =
+      trimmed.startsWith("<") ||
       lowerContentType.includes("application/xml") ||
       lowerContentType.includes("text/xml") ||
       lowerContentType.includes("application/rss+xml") ||
-      lowerContentType.includes("application/atom+xml") ||
-      trimmed.startsWith("<");
+      lowerContentType.includes("application/atom+xml");
+    const isJson =
+      trimmed.startsWith("{") ||
+      trimmed.startsWith("[") ||
+      (lowerContentType.includes("application/json") && !trimmed.startsWith("<"));
 
     // Must be either JSON or XML
     if (!isJson && !isXml) {
@@ -971,21 +1004,16 @@ export class ProxyManager {
       if (!trimmed.includes("<") || !trimmed.includes(">")) {
         return false;
       }
-      // Reject if it looks like HTML (potential XSS)
-      const htmlTags = ["<html", "<body", "<head", "<div", "<span"];
+      // Reject if the document itself is an HTML page rather than a feed.
+      const htmlTags = ["<html", "<body", "<head"];
       if (htmlTags.some((tag) => trimmed.toLowerCase().includes(tag))) {
         return false;
       }
     }
 
-    // Reject suspicious patterns
-    const suspiciousPatterns = [
-      /javascript:/i,
-      /on\w+\s*=/i, // Event handlers
-      /<iframe/i,
-      /<object/i,
-      /<embed/i,
-    ];
+    // Reject standalone executable documents. Feed item HTML is sanitized later
+    // by the reader/parser layer and should not make the transport look broken.
+    const suspiciousPatterns = [/^<script/i, /^<iframe/i, /^<object/i, /^<embed/i];
 
     if (suspiciousPatterns.some((pattern) => pattern.test(trimmed))) {
       return false;
@@ -1055,6 +1083,7 @@ export class ProxyManager {
 
   private autoDisableProxyIfUnhealthy(proxyName: string): void {
     if (proxyName === "LocalProxy") return;
+    if (ProxyManager.keepsRemoteProxiesEnabled()) return;
 
     const proxy = this.PROXY_CONFIGS.find((item) => item.name === proxyName);
     const stats = this.proxyStats.get(proxyName);
