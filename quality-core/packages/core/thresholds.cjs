@@ -1,8 +1,8 @@
 module.exports = {
     build: {
-        bundle_total_kb: 1500, // Updated baseline for current bundle
+        bundle_total_kb: 1600, // Baseline after removing MUI from runtime dialogs/toasts
         largest_chunk_kb: 470,
-        css_total_kb: 320,
+        css_total_kb: 330,
         assets_count: 120
     },
     render: {

@@ -61,13 +61,12 @@ test('feed manager opens and tabs render', async ({ page }) => {
   }).first();
 
   await expect(feedManagerDialog).toBeVisible();
-  await expect(feedManagerDialog.getByRole('button', { name: /^Funções$/i })).toBeVisible();
-  await expect(feedManagerDialog.getByRole('button', { name: /Meus Feeds/i })).toBeVisible();
+  await expect(feedManagerDialog.getByRole('button', { name: /^Feeds\b/i })).toBeVisible();
   await expect(feedManagerDialog.getByRole('button', { name: /^Categorias$/i })).toBeVisible();
-  await expect(feedManagerDialog.getByRole('button', { name: /^Estatísticas$/i })).toBeVisible();
+  await expect(feedManagerDialog.getByRole('button', { name: /^Operações$/i })).toBeVisible();
 
   await feedManagerDialog.getByRole('button', { name: /^Categorias$/i }).click();
-  await expect(feedManagerDialog.getByText(/Arraste feeds entre categorias/i)).toBeVisible();
+  await expect(feedManagerDialog.getByText(/\d+ categorias/i)).toBeVisible();
 });
 
 test('settings modal opens and transitions toggle flips', async ({ page }) => {

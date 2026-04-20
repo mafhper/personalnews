@@ -1,12 +1,5 @@
-import React from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-} from "@mui/material";
+import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, AlertCircle, Info, X } from "lucide-react";
 import type { ConfirmDialogOptions } from "../types";
 
@@ -28,15 +21,15 @@ const getIcon = (type: ConfirmDialogOptions["type"]) => {
   }
 };
 
-const getButtonColor = (type: ConfirmDialogOptions["type"]) => {
+const getConfirmButtonClassName = (type: ConfirmDialogOptions["type"]) => {
   switch (type) {
     case "danger":
-      return "error";
+      return "bg-red-500 hover:bg-red-600";
     case "warning":
-      return "warning";
+      return "bg-amber-500 hover:bg-amber-600";
     case "info":
     default:
-      return "primary";
+      return "bg-blue-500 hover:bg-blue-600";
   }
 };
 
@@ -65,100 +58,67 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     onClose(false);
   };
 
-  return (
-    <Dialog
-      open={isOpen}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      slotProps={{
-        paper: {
-          sx: {
-            backgroundColor: "#1e1e1e",
-            color: "white",
-            border: "1px solid #374151",
-            borderRadius: "8px",
-          },
-        },
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) handleClose();
       }}
     >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          color: "white",
-          borderBottom: "1px solid #374151",
-          paddingBottom: 2,
-        }}
+      <section
+        aria-modal="true"
+        className="w-full max-w-lg overflow-hidden rounded-lg border border-gray-700 bg-[#1e1e1e] text-white shadow-2xl"
+        role="dialog"
       >
-        {getIcon(type)}
-        <Typography variant="h6" component="span" sx={{ color: "white" }}>
-          {title}
-        </Typography>
-        <Button
-          onClick={handleClose}
-          sx={{
-            marginLeft: "auto",
-            minWidth: "auto",
-            padding: "4px",
-            color: "#9ca3af",
-            "&:hover": {
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              color: "white",
-            },
-          }}
-        >
-          <X size={20} />
-        </Button>
-      </DialogTitle>
+        <header className="flex items-center gap-3 border-b border-gray-700 px-5 py-4">
+          {getIcon(type)}
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button
+            aria-label="Fechar"
+            className="ml-auto rounded p-1 text-gray-400 transition hover:bg-white/10 hover:text-white"
+            onClick={handleClose}
+            type="button"
+          >
+            <X size={20} />
+          </button>
+        </header>
 
-      <DialogContent sx={{ paddingTop: 3, paddingBottom: 2 }}>
-        <Typography sx={{ color: "#d1d5db", lineHeight: 1.6 }}>
-          {message}
-        </Typography>
-      </DialogContent>
+        <div className="px-5 py-5">
+          <p className="text-sm leading-6 text-gray-300">{message}</p>
+        </div>
 
-      <DialogActions sx={{ padding: 3, paddingTop: 1, gap: 1 }}>
-        <Button
-          onClick={handleCancel}
-          variant="outlined"
-          sx={{
-            color: "#9ca3af",
-            borderColor: "#4b5563",
-            "&:hover": {
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              borderColor: "#6b7280",
-              color: "white",
-            },
-          }}
-        >
-          {cancelText}
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          variant="contained"
-          color={getButtonColor(type)}
-          sx={{
-            backgroundColor:
-              type === "danger"
-                ? "#ef4444"
-                : type === "warning"
-                ? "#f59e0b"
-                : "#3b82f6",
-            "&:hover": {
-              backgroundColor:
-                type === "danger"
-                  ? "#dc2626"
-                  : type === "warning"
-                  ? "#d97706"
-                  : "#2563eb",
-            },
-          }}
-        >
-          {confirmText}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <footer className="flex justify-end gap-2 px-5 pb-5">
+          <button
+            className="rounded-md border border-gray-600 px-4 py-2 text-sm font-semibold text-gray-300 transition hover:border-gray-500 hover:bg-white/10 hover:text-white"
+            onClick={handleCancel}
+            type="button"
+          >
+            {cancelText}
+          </button>
+          <button
+            className={`${getConfirmButtonClassName(type)} rounded-md px-4 py-2 text-sm font-semibold text-white transition`}
+            onClick={handleConfirm}
+            type="button"
+          >
+            {confirmText}
+          </button>
+        </footer>
+      </section>
+    </div>,
+    document.body,
   );
 };
