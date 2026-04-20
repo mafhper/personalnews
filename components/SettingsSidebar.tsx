@@ -11,7 +11,14 @@ import { Switch } from './ui/Switch';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
 import { useLanguage } from '../hooks/useLanguage';
-import { HeaderConfig, ContentConfig, Language } from '../types';
+import {
+  createThemeSeedPair,
+  findSeedThemeForMode,
+  getSeedThemeSelection,
+  hexToRgb,
+  seedColorOptions,
+} from '../services/themeUtils';
+import type { HeaderConfig, ContentConfig, Language, ExtendedTheme } from '../types';
 import { FEED_LAYOUT_GROUPS } from '../config/feedLayoutCatalog';
 
 interface SettingsSidebarProps {
@@ -21,6 +28,99 @@ interface SettingsSidebarProps {
   setTimeFormat: (format: '12h' | '24h') => void;
 }
 
+const themeColorKeys: Array<keyof ExtendedTheme['colors']> = [
+  'primary',
+  'primarySurface',
+  'onPrimary',
+  'secondary',
+  'accent',
+  'accentSurface',
+  'onAccent',
+  'background',
+  'surface',
+  'surfaceElevated',
+  'text',
+  'textSecondary',
+  'border',
+  'success',
+  'warning',
+  'error',
+];
+
+const createPreviewStyle = (theme: ExtendedTheme): React.CSSProperties => {
+  const customProperties = themeColorKeys.reduce<Record<string, string>>(
+    (acc, key) => {
+      acc[`--color-${key}`] = theme.colors[key];
+      return acc;
+    },
+    {},
+  );
+
+  return customProperties as React.CSSProperties;
+};
+
+const SeedThemePreview: React.FC<{
+  label: string;
+  theme: ExtendedTheme;
+}> = ({ label, theme }) => (
+  <div
+    data-testid={`seed-preview-${label.toLowerCase()}`}
+    style={createPreviewStyle(theme)}
+    className="rounded-2xl border border-[rgb(var(--color-border))]/40 bg-[rgb(var(--color-background))] p-3 text-[rgb(var(--color-text))] shadow-sm"
+  >
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-[rgb(var(--color-textSecondary))]">
+        {label}
+      </span>
+      <span
+        data-testid="seed-preview-chip"
+        className="rounded-full border border-[rgb(var(--color-accentSurface))]/30 bg-[rgb(var(--color-accentSurface))]/15 px-2 py-0.5 text-[10px] font-semibold text-[rgb(var(--color-accent))]"
+      >
+        Tech
+      </span>
+    </div>
+
+    <div
+      data-testid="seed-preview-elevated-card"
+      className="rounded-xl border border-[rgb(var(--color-border))]/45 bg-[rgb(var(--color-surfaceElevated))] p-3"
+    >
+      <p className="text-xs font-semibold text-[rgb(var(--color-text))]">
+        Card elevado
+      </p>
+      <p className="mt-1 text-[10px] leading-relaxed text-[rgb(var(--color-textSecondary))]">
+        Texto secundário validado no mesmo conjunto semântico.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          data-testid="seed-preview-filled-cta"
+          className="rounded-lg bg-[rgb(var(--color-accentSurface))] px-3 py-1.5 text-[10px] font-bold text-[rgb(var(--color-onAccent))] shadow-sm"
+          type="button"
+        >
+          Abrir feed
+        </button>
+        <button
+          data-testid="seed-preview-outline-button"
+          className="rounded-lg border border-[rgb(var(--color-accentSurface))] px-3 py-1.5 text-[10px] font-bold text-[rgb(var(--color-accent))]"
+          type="button"
+        >
+          Detalhes
+        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <span
+            data-testid="seed-preview-active-pagination"
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgb(var(--color-accentSurface))] text-[10px] font-bold text-[rgb(var(--color-onAccent))]"
+          >
+            1
+          </span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[rgb(var(--color-border))] text-[10px] text-[rgb(var(--color-textSecondary))]">
+            2
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   isOpen,
   onClose,
@@ -28,7 +128,18 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   setTimeFormat
 }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const { updateThemeSettings, themeSettings, setCurrentTheme, defaultPresets } = useExtendedTheme();
+  const [selectedSeedId, setSelectedSeedId] = useState(seedColorOptions[0].id);
+  const [customSeedHex, setCustomSeedHex] = useState('#2563eb');
+  const {
+    currentTheme,
+    customThemes,
+    systemPreference,
+    updateThemeSettings,
+    themeSettings,
+    setCurrentTheme,
+    defaultPresets,
+    allThemes,
+  } = useExtendedTheme();
   const { applyLayoutPreset, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
   const { settings: articleLayoutSettings, updateSettings: updateArticleLayoutSettings } = useArticleLayout();
   const { alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
@@ -119,6 +230,66 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const selectedSeedOption = seedColorOptions.find(
+    (option) => option.id === selectedSeedId,
+  );
+  const selectedSeedRgb = selectedSeedOption
+    ? selectedSeedOption.seed
+    : hexToRgb(customSeedHex);
+  const selectedSeedName = selectedSeedOption?.label ?? 'Personalizada';
+  const selectedSeedIdBase = selectedSeedOption?.id ?? `custom-seed-${customSeedHex.replace('#', '').toLowerCase()}`;
+  const seedThemePair = createThemeSeedPair(
+    selectedSeedRgb,
+    selectedSeedName,
+    selectedSeedIdBase,
+  );
+  const activeSeedMode =
+    themeSettings.autoDetectSystemTheme && !themeSettings.systemThemeOverride
+      ? systemPreference
+      : themeSettings.systemThemeOverride ??
+        (currentTheme.id.includes('light') ? 'light' : 'dark');
+  const activeSeedTheme = seedThemePair[activeSeedMode];
+  const seedValidationSummary = seedThemePair.isValid
+    ? 'Par claro/escuro validado'
+    : seedThemePair.issues[0] ?? 'A cor precisa de ajuste';
+  const activeSeedSelection = getSeedThemeSelection(currentTheme);
+  const activeSeedStatus = activeSeedSelection
+    ? `Cor-semente ativa: ${activeSeedSelection.label} (${activeSeedSelection.mode === 'light' ? 'Claro' : 'Escuro'})`
+    : 'Tema padrão ativo';
+
+  const resolveThemeForMode = (mode: 'light' | 'dark') => {
+    return (
+      findSeedThemeForMode(currentTheme, mode, allThemes) ??
+      defaultPresets.find((preset) => preset.category === mode)?.theme
+    );
+  };
+
+  const handleApplySeedTheme = () => {
+    if (!seedThemePair.isValid) {
+      alertError(seedValidationSummary);
+      return;
+    }
+
+    const nextCustomThemes = [
+      ...customThemes.filter(
+        (theme) =>
+          theme.id !== seedThemePair.light.id &&
+          theme.id !== seedThemePair.dark.id,
+      ),
+      seedThemePair.light,
+      seedThemePair.dark,
+    ];
+
+    setCurrentTheme(activeSeedTheme);
+    updateThemeSettings({
+      currentTheme: activeSeedTheme,
+      customThemes: nextCustomThemes,
+      autoDetectSystemTheme: false,
+      systemThemeOverride: activeSeedMode,
+    });
+    alertSuccess('Cor-semente aplicada.');
+  };
+
   const fieldLabelClass =
     "block text-xs mb-2 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]";
   const surfaceInputClass =
@@ -187,8 +358,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                         if (mode.id === 'auto') {
                           updateThemeSettings({ autoDetectSystemTheme: true, systemThemeOverride: null });
                         } else {
-                          const matchingPreset = defaultPresets.find(p => p.category === mode.id);
-                          if (matchingPreset) setCurrentTheme(matchingPreset.theme);
+                          const matchingTheme = resolveThemeForMode(mode.id as 'light' | 'dark');
+                          if (matchingTheme) setCurrentTheme(matchingTheme);
                           updateThemeSettings({ autoDetectSystemTheme: false, systemThemeOverride: mode.id as 'light' | 'dark' });
                         }
                       }}
@@ -202,6 +373,88 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                       {mode.label}
                     </button>
                   ))}
+                </div>
+                <p className="mt-2 text-[10px] leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                  {themeSettings.autoDetectSystemTheme
+                    ? 'Auto usa o tema completo do sistema.'
+                    : activeSeedStatus}
+                </p>
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/55 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <label className={fieldLabelClass}>Cor-semente</label>
+                    <p className="text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      Escolha uma marca visual. O app gera o conjunto completo
+                      de tokens para claro e escuro.
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full border px-2 py-1 text-[10px] font-bold ${
+                      seedThemePair.isValid
+                        ? 'border-[rgba(var(--color-success),0.32)] bg-[rgba(var(--color-success),0.14)] text-[rgb(var(--color-success))]'
+                        : 'border-[rgba(var(--color-warning),0.32)] bg-[rgba(var(--color-warning),0.14)] text-[rgb(var(--color-warning))]'
+                    }`}
+                  >
+                    {seedThemePair.isValid ? 'AA' : 'Ajustar'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {seedColorOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-label={`Usar cor-semente ${option.label}`}
+                      title={option.label}
+                      onClick={() => setSelectedSeedId(option.id)}
+                      className={`flex h-10 items-center justify-center rounded-xl border transition-all ${
+                        selectedSeedId === option.id
+                          ? 'border-[rgb(var(--color-accentSurface))] ring-2 ring-[rgb(var(--color-accentSurface))]/30'
+                          : 'border-[rgb(var(--color-border))]/35 hover:border-[rgb(var(--color-accentSurface))]/55'
+                      }`}
+                    >
+                      <span
+                        className="h-5 w-5 rounded-full shadow-sm"
+                        style={{ backgroundColor: `rgb(${option.seed})` }}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    aria-label="Cor-semente personalizada"
+                    type="color"
+                    value={customSeedHex}
+                    onChange={(event) => {
+                      setSelectedSeedId('custom');
+                      setCustomSeedHex(event.target.value);
+                    }}
+                    className="h-9 w-12 cursor-pointer rounded-lg border border-[rgb(var(--color-border))]/35 bg-transparent p-1"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">
+                      {selectedSeedName}
+                    </p>
+                    <p className="truncate text-[10px] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                      {seedValidationSummary}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleApplySeedTheme}
+                    className="rounded-lg bg-[rgb(var(--color-accentSurface))] px-3 py-2 text-xs font-bold text-[rgb(var(--color-onAccent))] shadow-sm transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!seedThemePair.isValid}
+                  >
+                    Aplicar
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2">
+                  <SeedThemePreview label="Claro" theme={seedThemePair.light} />
+                  <SeedThemePreview label="Escuro" theme={seedThemePair.dark} />
                 </div>
               </div>
 

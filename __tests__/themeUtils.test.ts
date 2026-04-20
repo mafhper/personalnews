@@ -3,6 +3,10 @@ import {
   validateTheme,
   migrateTheme,
   createThemeFromAccentColor,
+  createThemeFromSeedColor,
+  createThemeSeedPair,
+  findSeedThemeForMode,
+  getSeedThemeSelection,
   applyThemeToDOM,
   getSystemThemePreference,
   exportTheme,
@@ -10,6 +14,7 @@ import {
   defaultThemePresets,
   hexToRgb,
   resolveThemeContrastTokens,
+  seedThemePresets,
   validateThemeAccessibility,
 } from '../services/themeUtils';
 import type { ExtendedTheme } from '../types';
@@ -280,7 +285,7 @@ describe('themeUtils', () => {
     it('should create a dark theme from dark accent color', () => {
       const theme = createThemeFromAccentColor('20 20 20', 'Dark Test');
       expect(theme.name).toBe('Dark Test');
-      expect(theme.colors.background).toBe('26 32 44'); // Dark background
+      expect(theme.colors.background).toBe('10 15 30'); // Seed dark background
       expect(theme.colors.accentSurface).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
       expect(theme.colors.onAccent).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
       expect(validateTheme(theme)).toBe(true);
@@ -299,6 +304,76 @@ describe('themeUtils', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
       const theme2 = createThemeFromAccentColor('100 100 100', 'Test 2');
       expect(theme1.id).not.toBe(theme2.id);
+    });
+  });
+
+  describe('createThemeFromSeedColor', () => {
+    it('should create valid light and dark themes from the same seed', () => {
+      const lightTheme = createThemeFromSeedColor('37 99 235', 'light', 'Seed Blue Light', 'seed-blue-light-test');
+      const darkTheme = createThemeFromSeedColor('37 99 235', 'dark', 'Seed Blue Dark', 'seed-blue-dark-test');
+
+      expect(lightTheme.id).toBe('seed-blue-light-test');
+      expect(darkTheme.id).toBe('seed-blue-dark-test');
+      expect(lightTheme.colors.background).toBe('255 255 255');
+      expect(darkTheme.colors.background).toBe('10 15 30');
+      expect(validateTheme(lightTheme)).toBe(true);
+      expect(validateTheme(darkTheme)).toBe(true);
+    });
+
+    it('should preserve the brand accent when the seed meets contrast expectations', () => {
+      const theme = createThemeFromSeedColor('37 99 235', 'light', 'Brand Blue');
+
+      expect(theme.colors.accent).toBe('37 99 235');
+      expect(theme.colors.primary).toBe('37 99 235');
+      expect(validateTheme(theme)).toBe(true);
+    });
+
+    it('should adjust contrast-sensitive tokens when the raw seed cannot be preserved', () => {
+      const theme = createThemeFromSeedColor('191 219 254', 'light', 'Pale Blue');
+
+      expect(theme.colors.accent).not.toBe('191 219 254');
+      expect(theme.colors.accentSurface).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
+      expect(theme.colors.onAccent).toMatch(/^\d{1,3}\s+\d{1,3}\s+\d{1,3}$/);
+      expect(validateTheme(theme)).toBe(true);
+    });
+
+    it('should validate custom seed pairs across light and dark at the same time', () => {
+      const pair = createThemeSeedPair('225 29 72', 'Rosa', 'seed-rose-test');
+
+      expect(pair.isValid).toBe(true);
+      expect(pair.issues).toEqual([]);
+      expect(validateTheme(pair.light)).toBe(true);
+      expect(validateTheme(pair.dark)).toBe(true);
+    });
+
+    it('should expose stable validated seed presets by theme mode', () => {
+      const ids = seedThemePresets.map((preset) => preset.id);
+
+      expect(ids).toContain('seed-blue-light');
+      expect(ids).toContain('seed-blue-dark');
+      seedThemePresets.forEach((preset) => {
+        expect(validateTheme(preset.theme)).toBe(true);
+        expect(['light', 'dark']).toContain(preset.category);
+        expect(preset.theme.colors.accentSurface).toBeTruthy();
+        expect(preset.theme.colors.onAccent).toBeTruthy();
+      });
+    });
+
+    it('should identify seed themes and find their paired mode', () => {
+      const pair = createThemeSeedPair('5 150 105', 'Esmeralda', 'seed-emerald');
+
+      expect(getSeedThemeSelection(pair.dark)).toEqual({
+        idBase: 'seed-emerald',
+        label: 'Esmeralda',
+        mode: 'dark',
+      });
+      expect(findSeedThemeForMode(pair.dark, 'light', [pair.light, pair.dark])).toEqual(
+        pair.light,
+      );
+      expect(findSeedThemeForMode(defaultThemePresets[0].theme, 'light', [
+        pair.light,
+        pair.dark,
+      ])).toBeUndefined();
     });
   });
 
@@ -356,6 +431,29 @@ describe('themeUtils', () => {
       expect(migratedTheme?.colors.primarySurface).toBeTruthy();
       expect(migratedTheme?.colors.onPrimary).toBeTruthy();
       expect(migratedTheme?.colors.surfaceElevated).toBeTruthy();
+      expect(validateTheme(migratedTheme!)).toBe(true);
+    });
+
+    it('should migrate legacy accent-only objects through a complete seed theme', () => {
+      const migratedTheme = migrateTheme({
+        id: 'legacy-accent-only',
+        name: 'Legacy Accent Only',
+        accent: '37 99 235',
+      });
+
+      expect(migratedTheme).toBeTruthy();
+      expect(migratedTheme?.colors).toEqual(
+        expect.objectContaining({
+          accent: expect.any(String),
+          accentSurface: expect.any(String),
+          onAccent: expect.any(String),
+          primarySurface: expect.any(String),
+          onPrimary: expect.any(String),
+          surfaceElevated: expect.any(String),
+          text: expect.any(String),
+          textSecondary: expect.any(String),
+        }),
+      );
       expect(validateTheme(migratedTheme!)).toBe(true);
     });
   });

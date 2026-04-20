@@ -879,7 +879,7 @@ const AppContent: React.FC = () => {
         />
       </Suspense>
       <div
-        className={`text-[rgb(var(--color-text))] min-h-screen font-sans antialiased relative flex flex-col theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""}`}
+        className={`text-[rgb(var(--color-text))] relative z-[1] flex min-h-screen flex-col font-sans antialiased theme-transition-all ${isThemeChanging ? "theme-change-animation" : ""}`}
       >
         <Suspense fallback={null}>
           <SkipLinks />

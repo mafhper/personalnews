@@ -1,5 +1,4 @@
 import React from "react";
-import { Alert, Snackbar, IconButton } from "@mui/material";
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { useNotification } from "../hooks/useNotification";
 import { Notification } from "../types";
@@ -11,21 +10,29 @@ interface NotificationToastProps {
 const getIcon = (type: Notification["type"]) => {
   switch (type) {
     case "success":
-      return <CheckCircle size={20} />;
+      return <CheckCircle size={20} className="shrink-0" />;
     case "error":
-      return <AlertCircle size={20} />;
+      return <AlertCircle size={20} className="shrink-0" />;
     case "warning":
-      return <AlertTriangle size={20} />;
+      return <AlertTriangle size={20} className="shrink-0" />;
     case "info":
     default:
-      return <Info size={20} />;
+      return <Info size={20} className="shrink-0" />;
   }
 };
 
-const getSeverity = (
-  type: Notification["type"],
-): "success" | "error" | "warning" | "info" => {
-  return type;
+const getToneClassName = (type: Notification["type"]) => {
+  switch (type) {
+    case "success":
+      return "border-emerald-500 text-emerald-400";
+    case "error":
+      return "border-red-500 text-red-400";
+    case "warning":
+      return "border-amber-500 text-amber-400";
+    case "info":
+    default:
+      return "border-blue-500 text-blue-400";
+  }
 };
 
 export const NotificationToast: React.FC<NotificationToastProps> = ({
@@ -38,66 +45,25 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
   };
 
   return (
-    <Snackbar
-      open={true}
-      autoHideDuration={notification.persistent ? null : notification.duration}
-      onClose={notification.persistent ? undefined : handleClose}
-      anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      sx={{
-        "& .MuiSnackbar-root": {
-          position: "relative",
-        },
-      }}
+    <div
+      className={`flex w-full items-start gap-3 rounded-lg border bg-[#1e1e1e]/95 p-3 text-white shadow-2xl ${getToneClassName(
+        notification.type,
+      )}`}
+      role={notification.type === "error" ? "alert" : "status"}
     >
-      <Alert
-        severity={getSeverity(notification.type)}
-        icon={getIcon(notification.type)}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleClose}
-            sx={{
-              color: "inherit",
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-              },
-            }}
-          >
-            <X size={16} />
-          </IconButton>
-        }
-        sx={{
-          backgroundColor: "rgba(30, 30, 30, 0.95)",
-          color: "white",
-          border: `1px solid ${
-            notification.type === "success"
-              ? "#10b981"
-              : notification.type === "error"
-                ? "#ef4444"
-                : notification.type === "warning"
-                  ? "#f59e0b"
-                  : "#3b82f6"
-          }`,
-          "& .MuiAlert-icon": {
-            color:
-              notification.type === "success"
-                ? "#10b981"
-                : notification.type === "error"
-                  ? "#ef4444"
-                  : notification.type === "warning"
-                    ? "#f59e0b"
-                    : "#3b82f6",
-          },
-          "& .MuiAlert-message": {
-            color: "white",
-          },
-        }}
-      >
+      {getIcon(notification.type)}
+      <p className="min-w-0 flex-1 text-sm leading-5 text-white">
         {notification.message}
-      </Alert>
-    </Snackbar>
+      </p>
+      <button
+        aria-label="Fechar notificação"
+        className="rounded p-1 text-white/80 transition hover:bg-white/10 hover:text-white"
+        onClick={handleClose}
+        type="button"
+      >
+        <X size={16} />
+      </button>
+    </div>
   );
 };
 

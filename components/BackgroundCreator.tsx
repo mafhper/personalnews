@@ -5,13 +5,26 @@ import { BackgroundConfig, WallpaperConfig } from '../types';
 import AuraWallpaperRenderer from './AuraWallpaperRenderer';
 import { DEFAULT_CONFIG, generateRandomConfig, generateVariations, PRESETS } from '../services/auraWallpaperService';
 import { Button } from './ui/Button'; // Assuming you have a Button component
-
+import {
+  DEFAULT_BACKGROUND_IMAGE_ID,
+  saveBackgroundImage,
+  removeBackgroundImage,
+} from '../services/backgroundImageStorage';
 interface BackgroundCreatorProps {
   config: BackgroundConfig;
   onChange: (updates: Partial<BackgroundConfig>) => void;
 }
 
-
+const ACCEPTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+];
+const ACCEPTED_IMAGE_FORMAT_LABEL = 'JPG, PNG, WebP, GIF ou SVG';
+const MAX_BACKGROUND_IMAGE_SIZE_MB = 10;
+const MAX_BACKGROUND_IMAGE_SIZE_BYTES = MAX_BACKGROUND_IMAGE_SIZE_MB * 1024 * 1024;
 
 export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, onChange }) => {
   const [activeTab, setActiveTab] = useState<'solid' | 'aura' | 'image'>(() => {
@@ -26,6 +39,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
   const [downloadFormat, setDownloadFormat] = useState<'svg' | 'jpeg'>('svg');
   const [downloadSize, setDownloadSize] = useState<'s' | 'm' | 'x' | 'xg'>('m');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const secondaryTextClass =
     'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]';
   const subtleSurfaceClass =
@@ -157,17 +171,46 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onChange({ 
-          type: 'image', 
-          value: `url(${reader.result})`,
-          customImage: reader.result as string 
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setImageError(null);
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setImageError(`Formato não aceito. Use ${ACCEPTED_IMAGE_FORMAT_LABEL}.`);
+      e.target.value = '';
+      return;
     }
+
+    if (file.size > MAX_BACKGROUND_IMAGE_SIZE_BYTES) {
+      setImageError(`Imagem muito grande. Use arquivo de até ${MAX_BACKGROUND_IMAGE_SIZE_MB} MB.`);
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl !== 'string') {
+        setImageError('Não foi possível ler a imagem selecionada.');
+        return;
+      }
+
+      void saveBackgroundImage(dataUrl, DEFAULT_BACKGROUND_IMAGE_ID)
+        .then((storedRef) => {
+          onChange({
+            type: 'image',
+            value: storedRef,
+            customImage: storedRef,
+          });
+        })
+        .catch(() => {
+          setImageError('Não foi possível salvar a imagem neste navegador.');
+        });
+    };
+    reader.onerror = () => {
+      setImageError('Não foi possível ler a imagem selecionada.');
+    };
+    reader.readAsDataURL(file);
   };
 
   // Download Aura Wallpaper
@@ -473,7 +516,12 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
             <div className="flex items-center gap-3">
               <label className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${subtleSurfaceClass}`}>
                 Escolher Arquivo
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                <input
+                  type="file"
+                  accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
               </label>
               {config.customImage && (
                 <div className="flex items-center gap-2">
@@ -481,8 +529,11 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
                     Imagem carregada
                   </span>
-                  <button 
-                    onClick={() => onChange({ type: 'solid', value: '#121212', customImage: null })}
+                  <button
+                    onClick={() => {
+                      void removeBackgroundImage(DEFAULT_BACKGROUND_IMAGE_ID);
+                      onChange({ type: 'solid', value: '#121212', customImage: null });
+                    }}
                     className="text-xs font-medium text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200"
                   >
                     Remover
@@ -490,6 +541,14 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                 </div>
               )}
             </div>
+            <p className={`text-[11px] leading-4 ${secondaryTextClass}`}>
+              Formatos aceitos: {ACCEPTED_IMAGE_FORMAT_LABEL}. Tamanho máximo: {MAX_BACKGROUND_IMAGE_SIZE_MB} MB.
+            </p>
+            {imageError && (
+              <p className="text-[11px] leading-4 text-rose-600 dark:text-rose-300">
+                {imageError}
+              </p>
+            )}
           </div>
         )}
       </Card>

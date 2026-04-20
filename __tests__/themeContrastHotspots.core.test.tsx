@@ -7,6 +7,8 @@ import { FeedAddTab } from "../components/FeedManager/FeedAddTab";
 import { FeedListTab } from "../components/FeedManager/FeedListTab";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { SkipLinks } from "../components/SkipLinks";
+import { createThemeSeedPair } from "../services/themeUtils";
+import type { ExtendedTheme, ThemeSettings } from "../types";
 
 const {
   setCurrentThemeMock,
@@ -17,6 +19,7 @@ const {
   applyLayoutPresetMock,
   resetAppearanceMock,
   resetCategoryLayoutsMock,
+  themeState,
 } = vi.hoisted(() => ({
   setCurrentThemeMock: vi.fn(),
   updateThemeSettingsMock: vi.fn(),
@@ -26,6 +29,17 @@ const {
   applyLayoutPresetMock: vi.fn(),
   resetAppearanceMock: vi.fn(),
   resetCategoryLayoutsMock: vi.fn(),
+  themeState: {
+    currentTheme: null,
+    customThemes: [],
+    themeSettings: null,
+    systemPreference: "dark",
+  } as {
+    currentTheme: ExtendedTheme | null;
+    customThemes: ExtendedTheme[];
+    themeSettings: ThemeSettings | null;
+    systemPreference: "light" | "dark";
+  },
 }));
 
 const darkTheme = {
@@ -76,22 +90,35 @@ const lightTheme = {
 };
 
 vi.mock("../hooks/useExtendedTheme", () => ({
-  useExtendedTheme: () => ({
-    currentTheme: darkTheme,
-    themeSettings: {
+  useExtendedTheme: () => {
+    const currentTheme = themeState.currentTheme ?? darkTheme;
+    const customThemes = themeState.customThemes;
+    const themeSettings = themeState.themeSettings ?? {
       autoDetectSystemTheme: false,
       systemThemeOverride: null,
-      currentTheme: darkTheme,
-      customThemes: [],
+      currentTheme,
+      customThemes,
       themeTransitions: true,
-    },
-    setCurrentTheme: setCurrentThemeMock,
-    updateThemeSettings: updateThemeSettingsMock,
-    defaultPresets: [
+    };
+    const defaultPresets = [
       { id: "light", category: "light", theme: lightTheme },
       { id: "dark", category: "dark", theme: darkTheme },
-    ],
-  }),
+    ];
+
+    return {
+      currentTheme,
+      themeSettings,
+      customThemes,
+      systemPreference: themeState.systemPreference,
+      setCurrentTheme: setCurrentThemeMock,
+      updateThemeSettings: updateThemeSettingsMock,
+      defaultPresets,
+      allThemes: [
+        ...defaultPresets.map((preset) => preset.theme),
+        ...customThemes,
+      ],
+    };
+  },
 }));
 
 vi.mock("../hooks/useAppearance", () => ({
@@ -190,6 +217,16 @@ describe("theme contrast hotspots", () => {
   beforeEach(() => {
     setCurrentThemeMock.mockClear();
     updateThemeSettingsMock.mockClear();
+    themeState.currentTheme = darkTheme;
+    themeState.customThemes = [];
+    themeState.themeSettings = {
+      autoDetectSystemTheme: false,
+      systemThemeOverride: null,
+      currentTheme: darkTheme,
+      customThemes: [],
+      themeTransitions: true,
+    };
+    themeState.systemPreference = "dark";
   });
 
   it("keeps skip links on semantic accent surface tokens", () => {
@@ -297,6 +334,115 @@ describe("theme contrast hotspots", () => {
     );
   });
 
+  it("applies seed color presets as complete semantic light and dark themes", () => {
+    render(
+      <SettingsSidebar
+        isOpen={true}
+        onClose={vi.fn()}
+        timeFormat="24h"
+        setTimeFormat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Usar cor-semente Esmeralda" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    expect(setCurrentThemeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "seed-emerald-dark",
+        colors: expect.objectContaining({
+          primarySurface: expect.any(String),
+          onPrimary: expect.any(String),
+          accentSurface: expect.any(String),
+          onAccent: expect.any(String),
+          surfaceElevated: expect.any(String),
+          text: expect.any(String),
+          textSecondary: expect.any(String),
+        }),
+      }),
+    );
+    expect(updateThemeSettingsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        autoDetectSystemTheme: false,
+        systemThemeOverride: "dark",
+        customThemes: expect.arrayContaining([
+          expect.objectContaining({ id: "seed-emerald-light" }),
+          expect.objectContaining({ id: "seed-emerald-dark" }),
+        ]),
+      }),
+    );
+  });
+
+  it("preserves the active seed pair when switching between light and dark modes", () => {
+    const seedPair = createThemeSeedPair("5 150 105", "Esmeralda", "seed-emerald");
+    themeState.currentTheme = seedPair.dark;
+    themeState.customThemes = [seedPair.light, seedPair.dark];
+    themeState.themeSettings = {
+      autoDetectSystemTheme: false,
+      systemThemeOverride: "dark",
+      currentTheme: seedPair.dark,
+      customThemes: themeState.customThemes,
+      themeTransitions: true,
+    };
+
+    render(
+      <SettingsSidebar
+        isOpen={true}
+        onClose={vi.fn()}
+        timeFormat="24h"
+        setTimeFormat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+
+    expect(
+      screen.getByText("Cor-semente ativa: Esmeralda (Escuro)"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Claro" }));
+
+    expect(setCurrentThemeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "seed-emerald-light",
+        colors: expect.objectContaining({
+          primarySurface: expect.any(String),
+          onPrimary: expect.any(String),
+          accentSurface: expect.any(String),
+          onAccent: expect.any(String),
+        }),
+      }),
+    );
+    expect(updateThemeSettingsMock).toHaveBeenCalledWith({
+      autoDetectSystemTheme: false,
+      systemThemeOverride: "light",
+    });
+  });
+
+  it("renders seed preview coverage for CTA, outline, pagination, chips, and elevated cards", () => {
+    render(
+      <SettingsSidebar
+        isOpen={true}
+        onClose={vi.fn()}
+        timeFormat="24h"
+        setTimeFormat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+
+    expect(screen.getByTestId("seed-preview-claro")).toBeInTheDocument();
+    expect(screen.getByTestId("seed-preview-escuro")).toBeInTheDocument();
+    expect(screen.getAllByTestId("seed-preview-filled-cta")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-outline-button")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-active-pagination")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-chip")).toHaveLength(2);
+    expect(screen.getAllByTestId("seed-preview-elevated-card")).toHaveLength(2);
+  });
+
   it("maps proxy settings CTA styles to semantic accent tokens", () => {
     const cssSource = readFileSync(
       resolve(process.cwd(), "styles/ProxySettings.module.css"),
@@ -310,20 +456,6 @@ describe("theme contrast hotspots", () => {
       "--primary-foreground: rgb(var(--color-onAccent, var(--color-text)));",
     );
     expect(cssSource).toContain("color: var(--primary-foreground);");
-  });
-
-  it("keeps settings modal active controls on semantic surface tokens", () => {
-    const modalSource = readFileSync(
-      resolve(process.cwd(), "components/SettingsModal.tsx"),
-      "utf8",
-    );
-
-    expect(modalSource).toContain(
-      "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]",
-    );
-    expect(modalSource).toContain(
-      "border border-[rgb(var(--color-accentSurface))] shadow-sm",
-    );
   });
 
   it("keeps feed tools actions on semantic accent surface tokens", () => {

@@ -1,13 +1,5 @@
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-} from "@mui/material";
 import type { FeedSource, Article } from "../types";
 import { parseOpml } from "../services/rssParser";
 import { FeedCategoryManager } from "./FeedCategoryManager";
@@ -90,6 +82,77 @@ const shouldOpenDiagnostics = (
     return true;
   }
   return false;
+};
+
+const EditFeedDialog: React.FC<{
+  isOpen: boolean;
+  title: string;
+  value: string;
+  placeholder: string;
+  submitLabel: string;
+  onChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}> = ({
+  isOpen,
+  title,
+  value,
+  placeholder,
+  submitLabel,
+  onChange,
+  onClose,
+  onSubmit,
+}) => {
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <form
+        aria-modal="true"
+        className="w-full max-w-lg overflow-hidden rounded-xl border border-[rgba(var(--color-border),0.18)] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] text-[rgb(var(--theme-manager-text,var(--color-text)))] shadow-2xl"
+        role="dialog"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
+        <div className="border-b border-[rgba(var(--color-border),0.18)] px-5 py-4">
+          <h3 className="text-base font-bold">{title}</h3>
+        </div>
+        <div className="px-5 py-5">
+          <input
+            autoFocus
+            className="w-full rounded-lg border border-[rgba(var(--color-border),0.18)] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))] outline-none transition focus:border-[rgb(var(--color-accentSurface))] focus:ring-2 focus:ring-[rgba(var(--color-accent),0.22)]"
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={placeholder}
+            value={value}
+          />
+        </div>
+        <div className="flex justify-end gap-2 px-5 pb-5">
+          <button
+            className="rounded-lg border border-[rgba(var(--color-border),0.28)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+            onClick={onClose}
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            className="rounded-lg border border-[rgb(var(--color-accentSurface))] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
+            type="submit"
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </form>
+    </div>,
+    document.body,
+  );
 };
 
 export const FeedManager: React.FC<FeedManagerProps> = ({
@@ -834,139 +897,27 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         />
       )}
 
-      <Dialog
-        open={!!editingFeedUrl}
+      <EditFeedDialog
+        isOpen={!!editingFeedUrl}
+        onChange={setEditUrlDraft}
         onClose={handleCloseEditDialog}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              backgroundColor: "rgb(var(--theme-manager-surface))",
-              color: "rgb(var(--theme-manager-text))",
-              border: "1px solid rgba(var(--color-border),0.18)",
-              borderRadius: "12px",
-            },
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            color: "rgb(var(--theme-manager-text))",
-            borderBottom: "1px solid rgba(var(--color-border),0.18)",
-          }}
-        >
-          Editar URL do feed
-        </DialogTitle>
-        <DialogContent sx={{ paddingTop: 3 }}>
-          <TextField
-            autoFocus
-            fullWidth
-            value={editUrlDraft}
-            onChange={(event) => setEditUrlDraft(event.target.value)}
-            placeholder="https://site.com/rss"
-            variant="outlined"
-            sx={{
-              marginTop: 1,
-              "& .MuiOutlinedInput-root": {
-                color: "rgb(var(--theme-manager-text))",
-                backgroundColor: "rgb(var(--theme-manager-control))",
-                "& fieldset": { borderColor: "rgba(var(--color-border),0.18)" },
-                "&:hover fieldset": {
-                  borderColor: "rgba(var(--color-border),0.28)",
-                },
-                "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
-              },
-            }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ padding: 3 }}>
-          <Button
-            onClick={handleCloseEditDialog}
-            variant="outlined"
-            sx={{ color: "#9ca3af", borderColor: "#4b5563" }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => void handleSubmitEditDialog()}
-            variant="contained"
-            sx={{
-              backgroundColor: "#3b82f6",
-              "&:hover": { backgroundColor: "#2563eb" },
-            }}
-          >
-            Salvar
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={() => void handleSubmitEditDialog()}
+        placeholder="https://site.com/rss"
+        submitLabel="Salvar"
+        title="Editar URL do feed"
+        value={editUrlDraft}
+      />
 
-      <Dialog
-        open={!!editingFeedTitleUrl}
+      <EditFeedDialog
+        isOpen={!!editingFeedTitleUrl}
+        onChange={setEditTitleDraft}
         onClose={handleCloseEditTitleDialog}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              backgroundColor: "rgb(var(--theme-manager-surface))",
-              color: "rgb(var(--theme-manager-text))",
-              border: "1px solid rgba(var(--color-border),0.18)",
-              borderRadius: "12px",
-            },
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            color: "rgb(var(--theme-manager-text))",
-            borderBottom: "1px solid rgba(var(--color-border),0.18)",
-          }}
-        >
-          Editar nome do feed
-        </DialogTitle>
-        <DialogContent sx={{ paddingTop: 3 }}>
-          <TextField
-            autoFocus
-            fullWidth
-            value={editTitleDraft}
-            onChange={(event) => setEditTitleDraft(event.target.value)}
-            placeholder="Nome exibido do feed"
-            variant="outlined"
-            sx={{
-              marginTop: 1,
-              "& .MuiOutlinedInput-root": {
-                color: "rgb(var(--theme-manager-text))",
-                backgroundColor: "rgb(var(--theme-manager-control))",
-                "& fieldset": { borderColor: "rgba(var(--color-border),0.18)" },
-                "&:hover fieldset": {
-                  borderColor: "rgba(var(--color-border),0.28)",
-                },
-                "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
-              },
-            }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ padding: 3 }}>
-          <Button
-            onClick={handleCloseEditTitleDialog}
-            variant="outlined"
-            sx={{ color: "#9ca3af", borderColor: "#4b5563" }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => void handleSubmitEditTitleDialog()}
-            variant="contained"
-            sx={{
-              backgroundColor: "#3b82f6",
-              "&:hover": { backgroundColor: "#2563eb" },
-            }}
-          >
-            Salvar nome
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={() => void handleSubmitEditTitleDialog()}
+        placeholder="Nome exibido do feed"
+        submitLabel="Salvar nome"
+        title="Editar nome do feed"
+        value={editTitleDraft}
+      />
 
       <FeedCleanupModal
         isOpen={showCleanupModal}
