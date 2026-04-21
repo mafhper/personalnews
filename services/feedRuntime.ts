@@ -56,6 +56,71 @@ const buildBackendRoute = (cached: boolean): FeedRouteInfo => ({
     : "Servido diretamente pelo backend local",
 });
 
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Request was cancelled", "AbortError"));
+      return;
+    }
+
+    const timeoutId = window.setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(timeoutId);
+        reject(new DOMException("Request was cancelled", "AbortError"));
+      },
+      { once: true },
+    );
+  });
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+const getBackendErrorStatusCode = (error: unknown): number | undefined => {
+  if (!error || typeof error !== "object") return undefined;
+  const statusCode = (error as { statusCode?: unknown }).statusCode;
+  return typeof statusCode === "number" ? statusCode : undefined;
+};
+
+const isBackendReachabilityError = (error: unknown) => {
+  const statusCode = getBackendErrorStatusCode(error);
+  if (statusCode) return false;
+
+  const message = getErrorMessage(error).toLowerCase();
+  if (
+    message.includes("abort") ||
+    message.includes("cancelled") ||
+    message.includes("timeout")
+  ) {
+    return false;
+  }
+
+  return (
+    message.includes("backend local indisponivel") ||
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("econnrefused") ||
+    message.includes("connection refused") ||
+    message.includes("no backend candidates responded")
+  );
+};
+
+const waitForBackendWarmup = async (
+  initialHealth: Awaited<ReturnType<typeof desktopBackendClient.checkHealth>>,
+  signal?: AbortSignal,
+) => {
+  let health = initialHealth;
+  const deadline = Date.now() + 4_000;
+
+  while (!health.available && health.initializing && Date.now() < deadline) {
+    await sleep(250, signal);
+    health = await desktopBackendClient.checkHealth(true, signal);
+  }
+
+  return health;
+};
+
 export const getFeedRuntimeState = (): FeedRuntimeState => ({
   ...runtimeState,
 });
@@ -104,7 +169,10 @@ export async function loadFeedWithRuntime(
   }
 
   if (hasBackendRuntime) {
-    const health = await desktopBackendClient.checkHealth(false, signal);
+    const health = await waitForBackendWarmup(
+      await desktopBackendClient.checkHealth(false, signal),
+      signal,
+    );
 
     if (health.available) {
       try {
@@ -134,18 +202,41 @@ export async function loadFeedWithRuntime(
           source: "backend",
         };
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Backend local failed";
+        const message = getErrorMessage(error);
+        const statusCode = getBackendErrorStatusCode(error);
+        const backendRoute: FeedRouteInfo = {
+          transport: "desktop-backend",
+          routeKind: "local-backend",
+          routeName: "LocalBackend",
+          viaFallback: false,
+          checkedAt: Date.now(),
+        };
+
+        if (!isBackendReachabilityError(error)) {
+          updateRuntimeState({
+            activeMode: "desktop-local",
+            lastRoute: backendRoute,
+            lastWarning: buildFeedDiagnosticInfo(
+              message,
+              statusCode,
+              backendRoute,
+            ),
+            backendAvailable: true,
+          });
+          desktopBackendClient.setRuntimeState({
+            activeMode: "desktop-local",
+            lastRoute: "LocalBackend",
+            lastWarning: undefined,
+            backendAvailable: true,
+            lastError: message,
+          });
+          throw error;
+        }
+
         const warning = buildFeedDiagnosticInfo(
           `Backend unavailable: ${message}`,
           undefined,
-          {
-            transport: "desktop-backend",
-            routeKind: "local-backend",
-            routeName: "LocalBackend",
-            viaFallback: false,
-            checkedAt: Date.now(),
-          },
+          backendRoute,
           "Fallback automatico para proxies em nuvem ativado.",
         );
 

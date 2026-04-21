@@ -135,6 +135,43 @@ describe("feedRuntime", () => {
     expect(result.warning?.action).toContain("backend local");
   });
 
+  it("does not fall back to cloud proxies when the healthy backend reports a feed error", async () => {
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: true,
+      isProduction: false,
+      isGitHubPages: false,
+      isLocalhost: true,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: false,
+      corsMode: "mixed",
+    });
+    mockCheckHealth.mockResolvedValue({
+      available: true,
+      checkedAt: Date.now(),
+    });
+    const backendFeedError = new Error("Feed nao encontrado") as Error & {
+      statusCode: number;
+    };
+    backendFeedError.statusCode = 404;
+    mockFetchFeed.mockRejectedValue(backendFeedError);
+
+    await expect(
+      loadFeedWithRuntime("https://example.com/missing.xml"),
+    ).rejects.toThrow("Feed nao encontrado");
+
+    expect(mockParseRssUrlDetailed).not.toHaveBeenCalled();
+    expect(mockSetRuntimeState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeMode: "desktop-local",
+        lastRoute: "LocalBackend",
+        lastWarning: undefined,
+        backendAvailable: true,
+        lastError: "Feed nao encontrado",
+      }),
+    );
+  });
+
   it("uses the local backend in web dev when the backend runtime is enabled", async () => {
     mockDetectEnvironment.mockReturnValue({
       isDevelopment: true,

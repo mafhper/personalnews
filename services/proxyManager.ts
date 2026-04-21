@@ -96,6 +96,16 @@ export class ProxyManager {
     );
   }
 
+  private static isLocalBrowserRuntime(): boolean {
+    if (typeof window === "undefined") return false;
+    const { hostname, port, protocol } = window.location;
+    return (
+      protocol.startsWith("http") &&
+      (hostname === "localhost" || hostname === "127.0.0.1") &&
+      port.length > 0
+    );
+  }
+
   private static isBackendRuntimeEnabled(): boolean {
     return this.getEnvValue("VITE_BACKEND_ENABLED") === "true";
   }
@@ -205,9 +215,15 @@ export class ProxyManager {
       const defaultMode =
         this.getEnvValue("VITE_BACKEND_DEFAULT_MODE") || "auto";
       const shouldForceLocalPreference =
-        this.isBackendRuntimeEnabled() && defaultMode === "on";
+        defaultMode !== "off" &&
+        (this.isTauriRuntime() ||
+          this.isLocalBrowserRuntime() ||
+          this.isBackendRuntimeEnabled());
 
-      if (shouldForceLocalPreference) {
+      if (defaultMode === "off") {
+        this.preferLocalProxy = false;
+        localStorage.setItem("prefer_local_proxy", "false");
+      } else if (shouldForceLocalPreference) {
         this.preferLocalProxy = true;
         localStorage.setItem("prefer_local_proxy", "true");
       } else if (savedPrefer) {

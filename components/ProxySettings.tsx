@@ -60,6 +60,33 @@ const routeLabels: Record<ProxyTestResult["route"], string> = {
   "client-proxy": "proxy em nuvem",
 };
 
+const formatRuntimeNotice = (
+  runtime: ReturnType<typeof useProxyDashboard>["snapshot"]["runtime"],
+) => {
+  if (runtime.warningDetails) {
+    return (
+      runtime.warningDetails.warning ||
+      `${runtime.warningDetails.summary}. ${runtime.warningDetails.action}`
+    );
+  }
+
+  if (!runtime.lastWarning) return undefined;
+
+  try {
+    const parsed = JSON.parse(runtime.lastWarning) as {
+      summary?: string;
+      action?: string;
+      warning?: string;
+    };
+    return (
+      parsed.warning ||
+      [parsed.summary, parsed.action].filter(Boolean).join(". ")
+    );
+  } catch {
+    return runtime.lastWarning;
+  }
+};
+
 const formatDate = (value?: number) => {
   if (!value) return "Nunca";
   return new Intl.DateTimeFormat("pt-BR", {
@@ -91,12 +118,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
     apiKeys,
     validationErrors,
     isLoading,
-    preferLocalProxy,
-    setPreferLocalProxy,
     setProxyEnabled,
     setApiKey,
     clearApiKey,
-    getApiKeyStatus,
     getAllProxiesStatus,
     testProxy,
   } = useProxyConfig();
@@ -112,8 +136,6 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
     return apiKeysOnly ? all.filter((proxy) => proxy.hasApiKey) : all;
   }, [apiKeysOnly, getAllProxiesStatus]);
 
-  const apiKeyStatuses = getApiKeyStatus();
-  const missingApiKeys = snapshot.summary.missingApiKeys;
   const isLocalBackendRuntime = snapshot.backend.enabled;
   const isTauriRuntime =
     typeof window !== "undefined" &&
@@ -192,7 +214,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 xl:grid-cols-3">
+        <div className="mt-5 grid gap-3 xl:grid-cols-2">
           <div className={MANAGER_CARD_CLASS}>
             <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               Rota ativa
@@ -205,7 +227,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                   : "Cliente / proxies"}
             </p>
             <p className={`mt-2 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-              {snapshot.runtime.lastWarning ||
+              {formatRuntimeNotice(snapshot.runtime) ||
                 (isLocalBackendRuntime && snapshot.backend.available
                   ? "Backend local disponível."
                   : "Sem alertas no momento.")}
@@ -230,144 +252,8 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                   : "Modo cliente/proxy.")}
             </p>
           </div>
-
-          <div className={MANAGER_CARD_CLASS}>
-            <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-              Chaves recomendadas
-            </p>
-            <p className={`mt-2 text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
-              {missingApiKeys.length > 0
-                ? `${missingApiKeys.length} pendentes`
-                : "Todas configuradas"}
-            </p>
-            <p className={`mt-2 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-              {missingApiKeys.length > 0
-                ? missingApiKeys.join(" • ")
-                : "Todas disponíveis"}
-            </p>
-          </div>
         </div>
       </section>
-
-      {isLocalBackendRuntime && missingApiKeys.length > 0 && (
-        <section className="rounded-[22px] bg-[rgba(var(--color-warning),0.1)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 text-[rgb(var(--color-warning))]" />
-            <div>
-              <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
-                Chaves pendentes
-              </h3>
-              <p className={`mt-2 text-sm ${MANAGER_TEXT_CLASS}`}>
-                {missingApiKeys.join(" • ")}
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section className={PANEL_CLASS}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
-              Preferência de rota local
-            </h3>
-          </div>
-          <label className="inline-flex cursor-pointer items-center gap-3 rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <input
-              type="checkbox"
-              checked={preferLocalProxy}
-              onChange={(event) => setPreferLocalProxy(event.target.checked)}
-              className="h-4 w-4 rounded border-[rgb(var(--color-border))]/18"
-            />
-            Preferir rota local
-          </label>
-        </div>
-      </section>
-
-      {!apiKeysOnly && (
-        <section className={PANEL_CLASS}>
-          <div className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-[rgb(var(--color-primary))]" />
-            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
-              Chaves de API
-            </h3>
-          </div>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {apiKeyStatuses.map((status) => {
-              const config = PROXY_CONFIGS[status.proxyId];
-              return (
-                <div
-                  key={status.proxyId}
-                  className={MANAGER_CARD_CLASS}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h4 className={`text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
-                        {status.proxyName}
-                      </h4>
-                      <p className={`mt-1 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-                        Origem:{" "}
-                        {originLabels[status.origin || "not-configured"] ||
-                          status.origin}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
-                        status.isValid
-                          ? "border-[rgba(var(--color-success),0.22)] bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]"
-                          : "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
-                      }`}
-                    >
-                      {status.hasKey ? "configurada" : "ausente"}
-                    </span>
-                  </div>
-
-                  <input
-                    type="password"
-                    value={apiKeys[status.proxyId] || ""}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      if (!value) {
-                        clearApiKey(status.proxyId);
-                        return;
-                      }
-                      setApiKey(status.proxyId, value);
-                    }}
-                    placeholder={`Cole a chave de ${status.proxyName}`}
-                    className="mt-4 w-full rounded-[14px] border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-2 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] outline-none transition-all placeholder:text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] focus:border-[rgba(var(--color-primary),0.35)]"
-                  />
-
-                  {validationErrors[status.proxyId] && (
-                    <p className="mt-2 text-xs text-[rgb(var(--color-error))]">
-                      {validationErrors[status.proxyId]}
-                    </p>
-                  )}
-
-                  <div className={`mt-3 flex flex-wrap items-center gap-3 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-                    <a
-                      href={config.apiKeyUrl || config.website}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-semibold text-[rgb(var(--color-primary))]"
-                    >
-                      Obter chave
-                    </a>
-                    {status.hasKey && (
-                      <button
-                        type="button"
-                        onClick={() => clearApiKey(status.proxyId)}
-                        className="font-semibold text-[rgb(var(--color-error))]"
-                      >
-                        Limpar chave
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {detailed && (
         <section className={PANEL_CLASS}>
@@ -401,12 +287,14 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
       {detailed && (
         <section className={PANEL_CLASS}>
           <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
-            Testes reais e saúde por rota
+            Rotas, saúde e credenciais
           </h3>
           <div className="mt-4 space-y-3">
             {displayedProxies.map((proxy) => {
               const isExpanded = expandedProxy === proxy.id;
               const result = testResults[proxy.id];
+              const proxyConfig = PROXY_CONFIGS[proxy.id];
+              const apiKeyStatus = proxy.apiKeyStatus;
               const runtimeRoute = getRuntimeRouteForProxy(
                 proxy.id,
                 proxy.name,
@@ -443,8 +331,14 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                           saúde{" "}
                           {runtimeRoute?.healthScore ?? proxy.health.score}%
                         </span>
-                        {proxy.apiKeyStatus?.hasKey && (
-                          <span className="rounded-full border border-[rgba(var(--color-success),0.22)] bg-[rgba(var(--color-success),0.12)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-success))]">
+                        {proxy.hasApiKey && (
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
+                              apiKeyStatus?.hasKey
+                                ? "border-[rgba(var(--color-success),0.22)] bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]"
+                                : "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
+                            }`}
+                          >
                             api key
                           </span>
                         )}
@@ -456,7 +350,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                       </div>
                       <p className={`mt-1 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
                         {runtimeRoute?.detail ||
-                          PROXY_CONFIGS[proxy.id].description}
+                          proxyConfig.description}
                       </p>
                     </div>
                     {isExpanded ? (
@@ -504,6 +398,73 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                           </p>
                         </div>
                       </div>
+
+                      {proxy.hasApiKey && apiKeyStatus && (
+                        <div className="mt-4 rounded-[16px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="flex items-start gap-2">
+                              <KeyRound className="mt-0.5 h-4 w-4 text-[rgb(var(--color-primary))]" />
+                              <div>
+                                <p className={`text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
+                                  Chave de API
+                                </p>
+                                <p className={`mt-1 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
+                                  Origem:{" "}
+                                  {originLabels[
+                                    apiKeyStatus.origin || "not-configured"
+                                  ] || apiKeyStatus.origin}
+                                </p>
+                              </div>
+                            </div>
+                            {apiKeyStatus.hasKey && (
+                              <span className="rounded-full border border-[rgba(var(--color-success),0.22)] bg-[rgba(var(--color-success),0.12)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-success))]">
+                                configurada
+                              </span>
+                            )}
+                          </div>
+
+                          <input
+                            type="password"
+                            value={apiKeys[apiKeyStatus.proxyId] || ""}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              if (!value) {
+                                clearApiKey(apiKeyStatus.proxyId);
+                                return;
+                              }
+                              setApiKey(apiKeyStatus.proxyId, value);
+                            }}
+                            placeholder={`Cole a chave de ${apiKeyStatus.proxyName}`}
+                            className="mt-3 w-full rounded-[14px] border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] px-3 py-2 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] outline-none transition-all placeholder:text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] focus:border-[rgba(var(--color-primary),0.35)]"
+                          />
+
+                          {validationErrors[apiKeyStatus.proxyId] && (
+                            <p className="mt-2 text-xs text-[rgb(var(--color-error))]">
+                              {validationErrors[apiKeyStatus.proxyId]}
+                            </p>
+                          )}
+
+                          <div className={`mt-3 flex flex-wrap items-center gap-3 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
+                            <a
+                              href={proxyConfig.apiKeyUrl || proxyConfig.website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-semibold text-[rgb(var(--color-primary))]"
+                            >
+                              Obter chave
+                            </a>
+                            {apiKeyStatus.hasKey && (
+                              <button
+                                type="button"
+                                onClick={() => clearApiKey(apiKeyStatus.proxyId)}
+                                className="font-semibold text-[rgb(var(--color-error))]"
+                              >
+                                Limpar chave
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         <button

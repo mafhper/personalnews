@@ -84,6 +84,36 @@ describe("ProxyManager preference loading", () => {
     expect(localStorage.getItem("prefer_local_proxy")).toBe("true");
   });
 
+  it("forces the local route in backend auto mode even when a stale saved preference was false", () => {
+    vi.stubEnv("VITE_BACKEND_ENABLED", "true");
+    vi.stubEnv("VITE_BACKEND_DEFAULT_MODE", "auto");
+    setImportMetaEnv({
+      VITE_BACKEND_ENABLED: "true",
+      VITE_BACKEND_DEFAULT_MODE: "auto",
+    });
+    localStorage.setItem("prefer_local_proxy", "false");
+
+    ProxyManager.loadPreferences();
+
+    expect(ProxyManager.getPreferLocalProxy()).toBe(true);
+    expect(localStorage.getItem("prefer_local_proxy")).toBe("true");
+  });
+
+  it("lets explicit backend off override a stale saved local preference", () => {
+    vi.stubEnv("VITE_BACKEND_ENABLED", "true");
+    vi.stubEnv("VITE_BACKEND_DEFAULT_MODE", "off");
+    setImportMetaEnv({
+      VITE_BACKEND_ENABLED: "true",
+      VITE_BACKEND_DEFAULT_MODE: "off",
+    });
+    localStorage.setItem("prefer_local_proxy", "true");
+
+    ProxyManager.loadPreferences();
+
+    expect(ProxyManager.getPreferLocalProxy()).toBe(false);
+    expect(localStorage.getItem("prefer_local_proxy")).toBe("false");
+  });
+
   it("respects explicit local preference and persists both API keys with the correct names", () => {
     ProxyManager.setRss2jsonApiKey("rss-key", "manual");
     ProxyManager.setCorsproxyCIOApiKey("cors-key", "manual");

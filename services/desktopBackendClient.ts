@@ -41,6 +41,32 @@ const BACKEND_WARMUP_MS = 30_000;
 const LOCAL_BACKEND_PORT_START = 3001;
 const LOCAL_BACKEND_PORT_END = 3015;
 
+export class BackendRequestError extends Error {
+  readonly statusCode: number;
+
+  readonly body: unknown;
+
+  constructor(message: string, statusCode: number, body: unknown) {
+    super(message);
+    this.name = "BackendRequestError";
+    this.statusCode = statusCode;
+    this.body = body;
+  }
+}
+
+const getConfiguredBackendUrl = () => {
+  const meta = import.meta as ImportMeta & {
+    env?: Record<string, string | undefined>;
+  };
+  const processEnv =
+    typeof process !== "undefined"
+      ? (process.env as Record<string, string | undefined>)
+      : undefined;
+  const value = meta.env?.VITE_LOCAL_BACKEND_URL || processEnv?.VITE_LOCAL_BACKEND_URL;
+  const normalized = value?.trim().replace(/\/$/, "");
+  return normalized || null;
+};
+
 const isTauriRuntime = () =>
   typeof window !== "undefined" &&
   (!!(window as Window & { __TAURI__?: unknown }).__TAURI__ ||
@@ -115,6 +141,7 @@ class DesktopBackendClient {
   private getCandidateBaseUrls(): string[] {
     const seen = new Set<string>();
     const candidates: string[] = [];
+    const configuredBackendUrl = getConfiguredBackendUrl();
 
     const pushCandidate = (value?: string) => {
       if (!value) return;
@@ -127,6 +154,11 @@ class DesktopBackendClient {
 
     pushCandidate(this.resolvedBaseUrl);
     pushCandidate(BACKEND_DEFAULT_URL);
+
+    if (configuredBackendUrl) {
+      pushCandidate(configuredBackendUrl);
+      return candidates;
+    }
 
     if (isLocalBrowserRuntime() || isTauriRuntime()) {
       for (const host of ["127.0.0.1", "localhost"]) {
@@ -286,7 +318,7 @@ class DesktopBackendClient {
               (body as { error?: unknown }).error || `HTTP ${response.status}`,
             )
           : `HTTP ${response.status}`;
-      throw new Error(message);
+      throw new BackendRequestError(message, response.status, body);
     }
 
     return parse(body);

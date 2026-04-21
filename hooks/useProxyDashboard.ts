@@ -78,6 +78,14 @@ const normalizeWarningDetails = (
   }
 };
 
+const formatWarningDetails = (
+  details: FeedDiagnosticInfo | undefined,
+  fallback: string | undefined,
+) => {
+  if (!details) return fallback;
+  return details.warning || `${details.summary}. ${details.action}`;
+};
+
 const buildInitialSnapshot = (): ProxyDashboardSnapshot => ({
   runtime: {
     activeMode: "unknown",
@@ -275,7 +283,7 @@ export const buildProxyDashboardSnapshot =
       : warningDetails;
     const runtimeLastWarning = staleBackendWarning
       ? undefined
-      : runtimeState.lastWarning;
+      : formatWarningDetails(warningDetails, runtimeState.lastWarning);
 
     const totals = routes.reduce(
       (acc, route) => {

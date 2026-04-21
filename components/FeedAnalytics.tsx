@@ -114,6 +114,34 @@ const causeLabels: Record<AffectedFeedRow["cause"], string> = {
   healthy: "Sem problema ativo",
 };
 
+const formatRuntimeWarningDetail = (
+  runtime: ReturnType<typeof useProxyDashboard>["snapshot"]["runtime"],
+) => {
+  if (runtime.warningDetails) {
+    return (
+      runtime.warningDetails.warning ||
+      `${runtime.warningDetails.summary}. ${runtime.warningDetails.action}`
+    );
+  }
+
+  if (!runtime.lastWarning) return "Fallback em nuvem ativo após falha na rota local.";
+
+  try {
+    const parsed = JSON.parse(runtime.lastWarning) as {
+      summary?: string;
+      action?: string;
+      warning?: string;
+    };
+    return (
+      parsed.warning ||
+      [parsed.summary, parsed.action].filter(Boolean).join(". ") ||
+      runtime.lastWarning
+    );
+  } catch {
+    return runtime.lastWarning;
+  }
+};
+
 const getImpact = (
   articleCount: number,
   isValid: boolean,
@@ -301,16 +329,13 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   const hasAttentionItems =
     invalidRows.length > 0 ||
     uncheckedRows.length > 0 ||
-    snapshot.summary.fallbackActive ||
-    snapshot.summary.missingApiKeys.length > 0;
+    snapshot.summary.fallbackActive;
 
   const diagnosis = useMemo(() => {
     if (snapshot.summary.fallbackActive && snapshot.runtime.warningDetails) {
       return {
         label: snapshot.runtime.warningDetails.summary,
-        detail:
-          snapshot.runtime.lastWarning ||
-          "Fallback em nuvem ativo após falha na rota local.",
+        detail: formatRuntimeWarningDetail(snapshot.runtime),
         action:
           snapshot.runtime.warningDetails.action ||
           "Verifique o backend local e revalide os feeds afetados.",
@@ -337,14 +362,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       }
     }
 
-    if (snapshot.summary.missingApiKeys.length > 0) {
-      return {
-        label: "Chaves recomendadas ausentes",
-        detail: `Configure ${snapshot.summary.missingApiKeys.join(" e ")}.`,
-        action: "Abrir Proxies.",
-      };
-    }
-
     return {
       label: "Sem falha dominante",
       detail: "Nenhum grupo de erro domina a coleção neste momento.",
@@ -364,10 +381,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       items.add(
         snapshot.runtime.warningDetails?.action || "Verificar backend local.",
       );
-    }
-
-    if (snapshot.summary.missingApiKeys.length > 0) {
-      items.add(`Configurar ${snapshot.summary.missingApiKeys.join(" e ")}.`);
     }
 
     if (invalidRows.length > 0) {
