@@ -2413,8 +2413,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
-name = "personalnews_desktop"
-version = "1.4.0"
+name = "personalnews"
+version = "1.7.1"
 dependencies = [
  "serde",
  "serde_json",
