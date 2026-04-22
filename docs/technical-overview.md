@@ -3,7 +3,7 @@
 Personal News is a feed aggregation application built for two delivery targets:
 
 - a web app deployed from `main`
-- a desktop app released through Tauri
+- a desktop app packaged and released through Tauri
 
 The project is intentionally centered on reading performance, resilient feed handling, and flexible presentation modes for different content categories.
 
@@ -60,13 +60,13 @@ The article pipeline is designed to be resilient to real-world feed quality:
 
 The application also supports full-article extraction flows so a cleaner reader view can be built on top of publisher pages.
 
-When full extraction fails because of publisher-side blocking, proxy failure, or CORS limits, the reader now falls back to the content already present in the feed instead of breaking the reading flow.
+When full extraction fails because of publisher-side blocking, proxy failure, or CORS limits, the reader falls back to the content already present in the feed instead of breaking the reading flow.
 
 ## Layout system
 
 Layout is not treated as a purely cosmetic toggle. Categories may carry their own preferred presentation mode, which is why the app preserves category-specific layout identity during navigation.
 
-Current layout vocabulary includes:
+The layout vocabulary includes:
 
 - `bento`
 - `list`

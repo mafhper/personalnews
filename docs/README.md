@@ -2,6 +2,8 @@
 
 This directory contains the public technical documentation for Personal News.
 
+These docs intentionally avoid pinning exact dependency versions or one-off release state. Use `package.json`, `apps/desktop/src-tauri/tauri.conf.json`, and the GitHub Releases page as the source of truth for values that change frequently.
+
 ## Documents
 
 - [Technical overview](technical-overview.md): architecture, feed pipeline, caching model, layouts, and quality surface.

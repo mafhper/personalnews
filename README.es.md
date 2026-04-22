@@ -30,13 +30,13 @@ La aplicación normaliza datos de fuentes externas, extrae metadatos útiles de 
 
 ## Stack técnica
 
-- React 19
-- TypeScript 6
-- Vite 8
+- React, TypeScript y Vite en la aplicación principal
 - Bun como gestor de paquetes y ejecutor principal de scripts
 - Vitest y Playwright para pruebas
 - Tauri para empaquetado desktop
 - Quality Core para validación y reportes del repositorio
+
+Las versiones exactas de herramientas y bibliotecas viven en `package.json` y en los metadatos de la app desktop, para que este README se mantenga centrado en el comportamiento estable del proyecto.
 
 ## Inicio rápido
 
@@ -90,8 +90,8 @@ Use este flujo cuando quiera levantar la app junto con su stack local de apoyo.
 ## Modelo de release
 
 - Los pushes a `main` actualizan el deploy de GitHub Pages.
-- Las GitHub Releases y los instaladores desktop solo se crean cuando se envía una tag de versión como `v1.3.2`.
-- Si haces bump de versión de la aplicación, envía también la tag `v*` correspondiente como parte del flujo de release.
+- Las GitHub Releases y los instaladores desktop solo se crean cuando se envía una tag de versión como `vX.Y.Z`.
+- Si haces bump de versión de la aplicación, mantén alineados la versión del paquete raíz y los metadatos desktop antes de enviar la tag `v*` correspondiente.
 
 ## Contribución
 

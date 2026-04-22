@@ -2,6 +2,8 @@
 
 This document summarizes the scripts that matter most when developing and validating Personal News. The repository contains a larger automation surface, but most contributors only need a focused subset.
 
+`package.json` is the source of truth for the command list. This guide documents the stable, commonly used entry points and should avoid one-off workflow status or exact tool versions that can drift quickly.
+
 ## Daily development
 
 | Script | What it does | When to use it |
@@ -37,7 +39,9 @@ This document summarizes the scripts that matter most when developing and valida
 
 ## Release note
 
-`bun run build` and `bun run desktop:build` do not create a GitHub Release by themselves. The repository creates desktop release artifacts on GitHub only when a version tag such as `v1.3.1` is pushed.
+`bun run build` and `bun run desktop:build` do not create a GitHub Release by themselves. The repository creates desktop release artifacts on GitHub only when a version tag such as `vX.Y.Z` is pushed.
+
+Before pushing a release tag, keep the root package version and desktop metadata in sync so the generated installers and release assets use the intended version.
 
 ## End-to-end and broader validation
 

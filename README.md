@@ -30,13 +30,13 @@ The app normalizes external feed data, extracts useful article metadata, and san
 
 ## Tech stack
 
-- React 19
-- TypeScript 6
-- Vite 8
+- React, TypeScript, and Vite for the main app
 - Bun for package management and most local scripts
 - Vitest and Playwright for testing
 - Tauri for desktop packaging
 - Quality Core tooling for repo-level validation and reports
+
+Exact tool and library versions live in `package.json` and the desktop metadata files so this README can stay focused on stable project behavior.
 
 ## Quick start
 
@@ -90,8 +90,8 @@ Use this when you want the app and its local support stack to start together.
 ## Release model
 
 - Pushes to `main` update the GitHub Pages deployment.
-- GitHub Releases and desktop installers are created only when a version tag like `v1.3.2` is pushed.
-- If you bump the app version, make sure the matching `v*` tag is pushed as part of the release flow.
+- GitHub Releases and desktop installers are created only when a version tag like `vX.Y.Z` is pushed.
+- If you bump the app version, keep the root package version and desktop metadata aligned before pushing the matching `v*` tag.
 
 ## Contributing
 

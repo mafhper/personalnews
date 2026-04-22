@@ -80,10 +80,10 @@ Use the full gate when a change touches multiple layers or when you want a relea
 
 If your change includes a version bump:
 
-1. update the versioned app metadata
+1. update the root package version and the desktop version metadata
 2. run the release-grade validation commands
 3. push the commit to `main`
-4. push the matching version tag such as `v1.3.2`
+4. push the matching version tag, using the `vX.Y.Z` format
 
 The repository publishes GitHub Pages from `main`, but GitHub Releases and desktop installers are generated only from `v*` tags.
 
