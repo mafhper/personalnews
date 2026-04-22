@@ -65,6 +65,7 @@ export class ProxyManager {
   private static readonly DISABLED_PROXIES_STORAGE_KEY = "disabled_proxies";
   private static readonly AUTO_DISABLE_HEALTH_SCORE = 0.1;
   private static readonly AUTO_DISABLE_FAILURES = 5;
+  private static readonly RSS2JSON_TIMEOUT_MS = 12_000;
   private static rss2jsonApiKey: string = "";
   private static rss2jsonApiKeyOrigin: string = "not-configured"; // 'env.local', 'localStorage', 'manual', 'not-configured'
   private static corsproxyCIOApiKey: string = "";
@@ -362,7 +363,7 @@ export class ProxyManager {
       },
       priority: 1,
       enabled: true,
-      timeout: 5000,
+      timeout: ProxyManager.RSS2JSON_TIMEOUT_MS,
       includeInFallback: true,
     },
     {
@@ -476,13 +477,23 @@ export class ProxyManager {
    */
   async tryProxy(proxyConfig: ProxyConfig, targetUrl: string): Promise<string> {
     const startTime = Date.now();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
+    const timeout = proxyConfig.timeout || this.config.defaultTimeout;
 
     try {
       const proxyUrl = this.buildProxyUrl(proxyConfig, targetUrl);
-      const timeout = proxyConfig.timeout || this.config.defaultTimeout;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      timeoutId = setTimeout(() => {
+        timedOut = true;
+        controller.abort(
+          new DOMException(
+            `Proxy request timed out after ${timeout}ms`,
+            "TimeoutError",
+          ),
+        );
+      }, timeout);
 
       const response = await fetch(proxyUrl, {
         method: "GET",
@@ -556,7 +567,17 @@ export class ProxyManager {
 
       return content;
     } catch (error: unknown) {
+      if (timeoutId) clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
+      const normalizedError =
+        timedOut
+          ? new Error(`Request timed out after ${timeout}ms`)
+          : error instanceof Error &&
+              error.message.toLowerCase().includes("aborted")
+            ? new Error(
+                `Request aborted while using ${proxyConfig.name}. Check network timeout or browser cancellation.`,
+              )
+            : error;
 
       // Record failed attempt
       this.recordProxyAttempt({
@@ -566,10 +587,13 @@ export class ProxyManager {
         timestamp: startTime,
         success: false,
         responseTime,
-        error: error instanceof Error ? error.message : String(error),
+        error:
+          normalizedError instanceof Error
+            ? normalizedError.message
+            : String(normalizedError),
       });
 
-      throw error;
+      throw normalizedError;
     }
   }
 
@@ -938,13 +962,15 @@ export class ProxyManager {
     // For CorsProxy.io, add API key if available
     if (proxyConfig.name === "CorsProxy.io") {
       const apiKey = ProxyManager.corsproxyCIOApiKey;
+      const baseUrl = "https://corsproxy.io/";
+      const query = new URLSearchParams();
+
       if (apiKey) {
-        // If API key is available, use it via authorization header
-        // The header will be added in tryProxy method
-        return proxyConfig.url + encodeURIComponent(targetUrl);
+        query.set("key", apiKey);
       }
-      // Fallback without API key
-      return proxyConfig.url + encodeURIComponent(targetUrl);
+      query.set("url", targetUrl);
+
+      return `${baseUrl}?${query.toString()}`;
     }
 
     // For other proxies, use URL as-is
