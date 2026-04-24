@@ -1,9 +1,6 @@
-# Security: GHSA-wrw7-89jp-8q8g (glib VariantStrIter) affects glib < 0.20.0, pulled in by Tauri's
-# Linux stack. Fix requires Tauri/wry to depend on glib >= 0.20; we use tauri "2" so updates
-# will apply when that lands. See https://github.com/tauri-apps/tauri/pull/12098
 [package]
 name = "personalnews"
-version = "1.7.2"
+version = "1.7.3"
 description = "PersonalNews"
 authors = ["mafhper"]
 license = "MIT"
