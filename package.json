@@ -161,7 +161,7 @@
     "eslint-plugin-security": "^4.0.0",
     "i18next": "^25.10.10",
     "lucide-react": "^1.7.0",
-    "marked": "^17.0.5",
+    "marked": "^18.0.2",
     "npm-run-all2": "^8.0.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
