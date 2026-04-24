@@ -149,7 +149,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.58.1",
     "vite": "^8.0.5",
-    "vitest": "4.1.2"
+    "vitest": "4.1.5"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
