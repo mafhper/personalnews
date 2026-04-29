@@ -5,6 +5,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { useModal } from "../hooks/useModal";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { openExternalLink } from "../utils/openExternalLink";
+import { sanitizeUrl } from "../utils/sanitization";
 import { detectEnvironment } from "../services/environmentDetector";
 
 interface ArticleReaderModalProps {
@@ -103,6 +104,33 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
       setPreferences((prev) => ({ ...prev, [key]: value }));
     },
     [setPreferences],
+  );
+
+  const handleArticleContentLinkClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      const target = event.target as Element | null;
+      const link = target?.closest?.("a[href]") as HTMLAnchorElement | null;
+
+      if (!link) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const rawHref = link.getAttribute("href") || "";
+      let href = rawHref;
+
+      try {
+        href = new URL(rawHref, article.link).toString();
+      } catch {
+        // Keep the raw href for sanitizeUrl to reject unsupported values.
+      }
+
+      const safeHref = sanitizeUrl(href);
+      if (safeHref) {
+        void openExternalLink(safeHref);
+      }
+    },
+    [article.link],
   );
 
   useEffect(() => {
@@ -654,6 +682,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                       prose-pre:bg-[rgb(var(--color-background))]
                       prose-img:rounded-xl prose-img:shadow-lg
                     `}
+                    onClick={handleArticleContentLinkClick}
                     dangerouslySetInnerHTML={{ __html: contentHtml }}
                   />
                 )}
@@ -804,6 +833,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                     <div
                       dangerouslySetInnerHTML={{ __html: contentHtml }}
                       className="article-content animate-in fade-in duration-500"
+                      onClick={handleArticleContentLinkClick}
                     />
                   )}
                 </article>

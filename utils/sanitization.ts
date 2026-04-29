@@ -13,7 +13,7 @@ const purify = DOMPurify(typeof window !== 'undefined' ? window : undefined);
 // Add hooks for target="_blank" on links
 if (typeof purify.addHook === 'function') {
   purify.addHook('afterSanitizeAttributes', function (node) {
-    if ('target' in node && node.tagName === 'A') {
+    if (node.tagName === 'A') {
       node.setAttribute('target', '_blank');
       node.setAttribute('rel', 'noopener noreferrer');
     }

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeUrl, sanitizeArticleDescription } from '../../utils/sanitization';
+import {
+  sanitizeUrl,
+  sanitizeArticleDescription,
+  sanitizeWithDomPurify,
+} from '../../utils/sanitization';
 
 describe('sanitization', () => {
   it('blocks dangerous protocols', () => {
@@ -16,5 +20,11 @@ describe('sanitization', () => {
     const out = sanitizeArticleDescription(text, 100);
     expect(out.length).toBeLessThanOrEqual(103);
     expect(out.endsWith('...')).toBe(true);
+  });
+
+  it('marks all sanitized article links as external', () => {
+    const out = sanitizeWithDomPurify('<a href="https://example.com/story">Read more</a>');
+    expect(out).toContain('target="_blank"');
+    expect(out).toContain('rel="noopener noreferrer"');
   });
 });

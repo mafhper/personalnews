@@ -37,14 +37,12 @@ export async function openExternalLink(url: string): Promise<void> {
       return;
     } catch (error) {
       console.warn("[external-link] failed to use desktop opener", error);
+      return;
     }
   }
 
   const externalWindow = window.open(url, "_blank", "noopener,noreferrer");
   if (externalWindow) {
     externalWindow.opener = null;
-    return;
   }
-
-  window.location.assign(url);
 }
