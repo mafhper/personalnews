@@ -117,4 +117,55 @@ describe("desktopBackendClient local discovery", () => {
     expect(result.error).toBe("Backend local inicializando");
     expect(result.error).not.toContain("signal is aborted without reason");
   });
+
+  it("sends the Tauri backend auth token on protected backend requests", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_auth_token") return "desktop-token";
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url.endsWith("/health")) {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+
+      const headers = new Headers(init?.headers);
+      expect(headers.get("x-personalnews-backend-token")).toBe("desktop-token");
+      return {
+        ok: true,
+        json: async () => ({
+          settings: {
+            backendMode: "on",
+            windowStyle: "native_thin",
+            cacheTtlMinutes: 30,
+            updatedAt: new Date().toISOString(),
+          },
+        }),
+      } as Response;
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(desktopBackendClient.setSettings({ backendMode: "on" })).resolves.toBe("on");
+  });
 });

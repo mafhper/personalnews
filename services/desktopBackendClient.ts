@@ -1,5 +1,7 @@
 import {
   BACKEND_DEFAULT_URL,
+  BACKEND_AUTH_TOKEN_HEADER,
+  BACKEND_DEV_AUTH_TOKEN,
   BACKEND_RUNTIME_ENABLED,
   BackendHealthSchema,
   FeedFetchResponseSchema,
@@ -111,6 +113,8 @@ class DesktopBackendClient {
   private runtimeState: RuntimeState = {
     activeMode: "unknown",
   };
+
+  private authTokenPromise: Promise<string | null> | null = null;
 
   isEnabled(): boolean {
     return (
@@ -308,7 +312,16 @@ class DesktopBackendClient {
       }
     }
 
-    const response = await fetch(`${this.getBaseUrl()}${path}`, init);
+    const token = await this.getAuthToken();
+    const headers = new Headers(init.headers);
+    if (token) {
+      headers.set(BACKEND_AUTH_TOKEN_HEADER, token);
+    }
+
+    const response = await fetch(`${this.getBaseUrl()}${path}`, {
+      ...init,
+      headers,
+    });
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
@@ -322,6 +335,39 @@ class DesktopBackendClient {
     }
 
     return parse(body);
+  }
+
+  private async getAuthToken(): Promise<string | null> {
+    if (BACKEND_DEV_AUTH_TOKEN) return BACKEND_DEV_AUTH_TOKEN;
+    if (!isTauriRuntime()) return null;
+
+    if (!this.authTokenPromise) {
+      this.authTokenPromise = (async () => {
+        const invoke =
+          (window as Window & {
+            __TAURI_INTERNALS__?: { invoke?: (command: string) => Promise<unknown> };
+            __TAURI__?: {
+              core?: { invoke?: (command: string) => Promise<unknown> };
+              invoke?: (command: string) => Promise<unknown>;
+            };
+          }).__TAURI_INTERNALS__?.invoke ||
+          (window as Window & {
+            __TAURI__?: {
+              core?: { invoke?: (command: string) => Promise<unknown> };
+              invoke?: (command: string) => Promise<unknown>;
+            };
+          }).__TAURI__?.core?.invoke ||
+          (window as Window & {
+            __TAURI__?: { invoke?: (command: string) => Promise<unknown> };
+          }).__TAURI__?.invoke;
+
+        if (!invoke) return null;
+        const token = await invoke("get_backend_auth_token").catch(() => null);
+        return typeof token === "string" && token.length > 0 ? token : null;
+      })();
+    }
+
+    return this.authTokenPromise;
   }
 
   async fetchFeed(

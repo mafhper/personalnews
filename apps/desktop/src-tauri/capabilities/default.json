@@ -17,6 +17,7 @@
     },
     "opener:default",
     "allow-set-window-style",
-    "allow-open-external-url"
+    "allow-open-external-url",
+    "allow-get-backend-auth-token"
   ]
 }

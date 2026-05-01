@@ -1,6 +1,7 @@
 import { DOMParser } from "@xmldom/xmldom";
 import type { ArticleWire } from "../../../shared/contracts/backend";
 import { BackendHttpError } from "./errors";
+import { validateTargetFeedUrl } from "./security";
 
 const USER_AGENT = "PersonalNewsBackend/1.0 (+https://github.com/mafhper/personalnews)";
 const MAX_XML_SIZE_BYTES = 10 * 1024 * 1024;
@@ -12,6 +13,40 @@ const IMAGE_PLACEHOLDER_PATTERNS = [
   /[?&](w|width)=1(&|$)/i,
   /[?&](h|height)=1(&|$)/i,
 ];
+
+const ALLOWED_CONTENT_TAGS = new Set([
+  "p",
+  "br",
+  "b",
+  "i",
+  "em",
+  "strong",
+  "u",
+  "a",
+  "img",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "code",
+  "pre",
+  "span",
+  "div",
+]);
+
+const VOID_CONTENT_TAGS = new Set(["br", "img"]);
+const MAX_REDIRECTS = 5;
+
+export type FeedFetchOptions = {
+  validateUrl?: (targetUrl: string) => Promise<URL | void>;
+  maxRedirects?: number;
+};
 
 function extractYouTubeVideoId(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -163,6 +198,85 @@ function cleanText(value: string): string {
     .trim();
 }
 
+function sanitizeContentUrl(rawValue: string, baseUrl?: string): string | null {
+  const decoded = decodeCommonHtmlEntities(rawValue.trim());
+  if (!decoded) return null;
+
+  try {
+    const parsed = baseUrl ? new URL(decoded, baseUrl) : new URL(decoded);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:" || parsed.protocol === "mailto:") {
+      return parsed.toString();
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function sanitizeContentAttributes(tagName: string, attrs: string, baseUrl?: string): string {
+  const allowed: string[] = [];
+  const attrPattern = /([a-z0-9:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = attrPattern.exec(attrs)) !== null) {
+    const name = match[1].toLowerCase();
+    const value = match[2] || match[3] || match[4] || "";
+    if (name.startsWith("on") || name === "style" || name === "srcset") continue;
+
+    if (tagName === "a" && name === "href") {
+      const href = sanitizeContentUrl(value, baseUrl);
+      if (href) {
+        allowed.push(`href="${href}"`, `target="_blank"`, `rel="noopener noreferrer"`);
+      }
+      continue;
+    }
+
+    if (tagName === "img" && name === "src") {
+      const src = sanitizeContentUrl(value, baseUrl);
+      if (src && !src.startsWith("mailto:")) {
+        allowed.push(`src="${src}"`);
+      }
+      continue;
+    }
+
+    if (["alt", "title", "width", "height"].includes(name)) {
+      const escaped = value
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      allowed.push(`${name}="${escaped}"`);
+    }
+  }
+
+  return allowed.length > 0 ? ` ${allowed.join(" ")}` : "";
+}
+
+function sanitizeFeedHtmlContent(content: string | undefined, articleLink?: string): string | undefined {
+  if (!content) return undefined;
+
+  const withoutDangerousBlocks = content
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style|iframe|object|embed|form|input|button)\b[\s\S]*?<\/\1>/gi, "")
+    .replace(/<(script|style|iframe|object|embed|form|input|button)\b[^>]*\/?>/gi, "");
+
+  const sanitized = withoutDangerousBlocks.replace(
+    /<\/?([a-z0-9:-]+)\b([^>]*)>/gi,
+    (fullTag, rawTagName: string, attrs: string) => {
+      const tagName = rawTagName.toLowerCase();
+      if (!ALLOWED_CONTENT_TAGS.has(tagName)) return "";
+      if (fullTag.startsWith("</")) {
+        return VOID_CONTENT_TAGS.has(tagName) ? "" : `</${tagName}>`;
+      }
+      const safeAttrs = sanitizeContentAttributes(tagName, attrs || "", articleLink);
+      return VOID_CONTENT_TAGS.has(tagName) ? `<${tagName}${safeAttrs}>` : `<${tagName}${safeAttrs}>`;
+    }
+  );
+
+  return sanitized.trim() || undefined;
+}
+
 function normalizeDate(raw: string | null | undefined): string {
   if (!raw) return new Date().toISOString();
   const date = new Date(raw);
@@ -235,7 +349,7 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
         sourceTitle: title,
         feedUrl,
         description: cleanText(descriptionRaw).slice(0, 800),
-        content: contentRaw,
+        content: sanitizeFeedHtmlContent(contentRaw, articleLink),
         author:
           textOf(firstChildByTag(item, "author")) ||
           textOf(firstChildByTag(item, "dc:creator")) ||
@@ -288,7 +402,7 @@ function parseAtom(doc: Document, feedUrl: string): { title: string; articles: A
         sourceTitle: title,
         feedUrl,
         description: cleanText(summaryRaw).slice(0, 800),
-        content: contentRaw,
+        content: sanitizeFeedHtmlContent(contentRaw, articleLink),
         author:
           textOf(firstChildByTag(firstChildByTag(entry, "author") || entry, "name")) ||
           textOf(firstChildByTag(entry, "author")) ||
@@ -324,18 +438,47 @@ function parseXml(body: string): Document {
   return doc;
 }
 
-export async function fetchAndParseFeed(url: string): Promise<{ title: string; articles: ArticleWire[] }> {
-  const timeoutController = new AbortController();
-  const timeoutId = setTimeout(() => timeoutController.abort(), UPSTREAM_FETCH_TIMEOUT_MS);
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      signal: timeoutController.signal,
+async function fetchWithValidatedRedirects(
+  url: string,
+  signal: AbortSignal,
+  options: FeedFetchOptions
+): Promise<Response> {
+  const validateUrl = options.validateUrl || validateTargetFeedUrl;
+  const maxRedirects = options.maxRedirects ?? MAX_REDIRECTS;
+  let currentUrl = url;
+
+  for (let redirects = 0; redirects <= maxRedirects; redirects += 1) {
+    await validateUrl(currentUrl);
+    const response = await fetch(currentUrl, {
+      signal,
+      redirect: "manual",
       headers: {
         "user-agent": USER_AGENT,
         accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
       },
     });
+
+    if (![301, 302, 303, 307, 308].includes(response.status)) {
+      return response;
+    }
+
+    const location = response.headers.get("location");
+    if (!location) return response;
+    currentUrl = new URL(location, currentUrl).toString();
+  }
+
+  throw new BackendHttpError(508, "Too many upstream feed redirects");
+}
+
+export async function fetchAndParseFeed(
+  url: string,
+  options: FeedFetchOptions = {}
+): Promise<{ title: string; articles: ArticleWire[] }> {
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), UPSTREAM_FETCH_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetchWithValidatedRedirects(url, timeoutController.signal, options);
   } catch (error) {
     if (timeoutController.signal.aborted) {
       throw new BackendHttpError(

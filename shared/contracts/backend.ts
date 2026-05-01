@@ -23,6 +23,11 @@ export const BACKEND_RUNTIME_ENABLED =
 export const BACKEND_DEFAULT_MODE = (getImportMetaEnv()
   .VITE_BACKEND_DEFAULT_MODE || "auto") as "auto" | "on" | "off";
 
+export const BACKEND_AUTH_TOKEN_HEADER = "x-personalnews-backend-token";
+
+export const BACKEND_DEV_AUTH_TOKEN =
+  getImportMetaEnv().VITE_LOCAL_BACKEND_TOKEN?.trim() || null;
+
 export const BackendModeSchema = z.enum(["auto", "on", "off"]);
 export type BackendMode = z.infer<typeof BackendModeSchema>;
 

@@ -8,10 +8,12 @@ use tauri_plugin_opener::OpenerExt;
 #[derive(Default)]
 struct BackendSidecarState {
     child: Mutex<Option<CommandChild>>,
+    auth_token: Mutex<Option<String>>,
 }
 
 fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
     let backend_db_path = resolve_backend_db_path(app)?;
+    let backend_auth_token = generate_backend_auth_token()?;
     eprintln!("[desktop] backend db path: {backend_db_path}");
     let command = app
         .shell()
@@ -20,6 +22,7 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
         .env("BACKEND_HOST", "127.0.0.1")
         .env("BACKEND_PORT", "3001")
         .env("BACKEND_DEFAULT_MODE", "on")
+        .env("BACKEND_AUTH_TOKEN", backend_auth_token.clone())
         .env("BACKEND_DB_PATH", backend_db_path);
 
     let (_rx, child) = command
@@ -32,7 +35,19 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
         .lock()
         .map_err(|_| "failed to lock backend sidecar state".to_string())?;
     *guard = Some(child);
+    let mut token_guard = state
+        .auth_token
+        .lock()
+        .map_err(|_| "failed to lock backend auth token state".to_string())?;
+    *token_guard = Some(backend_auth_token);
     Ok(())
+}
+
+fn generate_backend_auth_token() -> Result<String, String> {
+    let mut bytes = [0_u8; 32];
+    getrandom::getrandom(&mut bytes)
+        .map_err(|e| format!("failed to generate backend auth token: {e}"))?;
+    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
 fn resolve_backend_db_path(app: &AppHandle) -> Result<String, String> {
@@ -105,6 +120,16 @@ fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_backend_auth_token(app: AppHandle) -> Result<Option<String>, String> {
+    let state = app.state::<BackendSidecarState>();
+    let guard = state
+        .auth_token
+        .lock()
+        .map_err(|_| "failed to lock backend auth token state".to_string())?;
+    Ok(guard.clone())
+}
+
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -118,7 +143,11 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![set_window_style, open_external_url])
+        .invoke_handler(tauri::generate_handler![
+            set_window_style,
+            open_external_url,
+            get_backend_auth_token
+        ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 

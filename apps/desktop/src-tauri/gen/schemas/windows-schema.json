@@ -555,6 +555,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Permite que a janela principal autentique chamadas ao backend local",
+          "type": "string",
+          "const": "allow-get-backend-auth-token",
+          "markdownDescription": "Permite que a janela principal autentique chamadas ao backend local"
+        },
+        {
           "description": "Permite abrir URLs externas",
           "type": "string",
           "const": "allow-open-external-url",

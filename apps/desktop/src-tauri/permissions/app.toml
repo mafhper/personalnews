@@ -11,3 +11,10 @@ description = "Permite abrir URLs externas"
 commands.allow = [
   "open_external_url"
 ]
+
+[[permission]]
+identifier = "allow-get-backend-auth-token"
+description = "Permite que a janela principal autentique chamadas ao backend local"
+commands.allow = [
+  "get_backend_auth_token"
+]

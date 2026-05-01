@@ -27,6 +27,11 @@ import {
 } from "./security";
 import { mapUnhandledErrorStatus } from "./errors";
 import { classifyValidationStatus } from "./validationStatus";
+import {
+  buildJsonHeaders,
+  preflightResponse,
+  validateBackendRequest,
+} from "./httpSecurity";
 
 const BACKEND_VERSION = "0.1.0";
 const PORT = Number.parseInt(process.env.BACKEND_PORT || "3001", 10);
@@ -35,23 +40,15 @@ const HOST = process.env.BACKEND_HOST || "127.0.0.1";
 const db = new BackendDatabase(process.env.BACKEND_DB_PATH);
 const startedAt = Date.now();
 
-const jsonHeaders: HeadersInit = {
-  "content-type": "application/json; charset=utf-8",
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,POST,PUT,OPTIONS",
-  "access-control-allow-headers": "content-type",
-  "cache-control": "no-store",
-};
-
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, req?: Request): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: jsonHeaders,
+    headers: buildJsonHeaders(req),
   });
 }
 
-function errorResponse(status: number, message: string): Response {
-  return json({ error: message }, status);
+function errorResponse(status: number, message: string, req?: Request): Response {
+  return json({ error: message }, status, req);
 }
 
 function parseForceRefresh(value: string | null): "0" | "1" {
@@ -84,7 +81,9 @@ async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchRes
 
   const started = Date.now();
   try {
-    const parsedFeed = await fetchAndParseFeed(validatedUrl.toString());
+    const parsedFeed = await fetchAndParseFeed(validatedUrl.toString(), {
+      validateUrl: validateTargetFeedUrl,
+    });
     const elapsedMs = Date.now() - started;
     db.recordProxyTelemetry("LocalProxy", targetHost, true, elapsedMs);
 
@@ -114,19 +113,19 @@ async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchRes
   }
 }
 
-async function handleFeedRequest(reqUrl: URL): Promise<Response> {
+async function handleFeedRequest(req: Request, reqUrl: URL): Promise<Response> {
   const parsedQuery = FeedFetchQuerySchema.safeParse({
     url: reqUrl.searchParams.get("url"),
     forceRefresh: parseForceRefresh(reqUrl.searchParams.get("forceRefresh")),
   });
 
   if (!parsedQuery.success) {
-    return errorResponse(400, "Invalid query parameters");
+    return errorResponse(400, "Invalid query parameters", req);
   }
 
   const forceRefresh = parsedQuery.data.forceRefresh === "1";
   const result = await getFeed(parsedQuery.data.url, forceRefresh);
-  return json(result, 200);
+  return json(result, 200, req);
 }
 
 async function handleFeedBatchRequest(req: Request): Promise<Response> {
@@ -134,7 +133,7 @@ async function handleFeedBatchRequest(req: Request): Promise<Response> {
   const parsedBody = FeedBatchRequestSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return errorResponse(400, "Invalid batch payload");
+    return errorResponse(400, "Invalid batch payload", req);
   }
 
   const items: Array<{
@@ -165,7 +164,7 @@ async function handleFeedBatchRequest(req: Request): Promise<Response> {
   };
 
   FeedBatchResponseSchema.parse(response);
-  return json(response);
+  return json(response, 200, req);
 }
 
 async function handleFeedValidateRequest(req: Request): Promise<Response> {
@@ -173,7 +172,7 @@ async function handleFeedValidateRequest(req: Request): Promise<Response> {
   const parsedBody = FeedValidateRequestSchema.safeParse(body);
 
   if (!parsedBody.success) {
-    return errorResponse(400, "Invalid validation payload");
+    return errorResponse(400, "Invalid validation payload", req);
   }
 
   const items: Array<{
@@ -224,16 +223,16 @@ async function handleFeedValidateRequest(req: Request): Promise<Response> {
   };
 
   FeedValidateResponseSchema.parse(response);
-  return json(response);
+  return json(response, 200, req);
 }
 
-function handleSettingsGet(): Response {
+function handleSettingsGet(req: Request): Response {
   const payload = {
     settings: db.getSettings(),
   };
 
   SettingsGetResponseSchema.parse(payload);
-  return json(payload);
+  return json(payload, 200, req);
 }
 
 async function handleSettingsPut(req: Request): Promise<Response> {
@@ -241,43 +240,43 @@ async function handleSettingsPut(req: Request): Promise<Response> {
   const parsed = SettingsPutSchema.safeParse(body);
 
   if (!parsed.success) {
-    return errorResponse(400, "Invalid settings payload");
+    return errorResponse(400, "Invalid settings payload", req);
   }
 
   const updated = db.updateSettings(parsed.data);
   const payload = { settings: updated };
   SettingsGetResponseSchema.parse(payload);
-  return json(payload);
+  return json(payload, 200, req);
 }
 
-function handleCacheStats(): Response {
+function handleCacheStats(req: Request): Response {
   const stats = db.getCacheStats();
   CacheStatsSchema.parse(stats);
-  return json(stats);
+  return json(stats, 200, req);
 }
 
-function handleCacheEntries(reqUrl: URL): Response {
+function handleCacheEntries(req: Request, reqUrl: URL): Response {
   const limitRaw = reqUrl.searchParams.get("limit");
   const limit = limitRaw ? Number.parseInt(limitRaw, 10) : 50;
   const entries = db.getCacheEntries(Number.isFinite(limit) ? limit : 50);
   const payload = { entries };
   CacheEntriesResponseSchema.parse(payload);
-  return json(payload);
+  return json(payload, 200, req);
 }
 
-function handleCacheClear(): Response {
+function handleCacheClear(req: Request): Response {
   const cleared = db.clearCache();
   const payload = { cleared };
   CacheClearResponseSchema.parse(payload);
-  return json(payload);
+  return json(payload, 200, req);
 }
 
-function handleProxyStats(): Response {
+function handleProxyStats(req: Request): Response {
   const payload = {
     localProxy: db.getProxyStats(),
   };
   ProxyStatsResponseSchema.parse(payload);
-  return json(payload);
+  return json(payload, 200, req);
 }
 
 async function handleMigration(req: Request): Promise<Response> {
@@ -290,7 +289,7 @@ async function handleMigration(req: Request): Promise<Response> {
 
   const result = db.importLocalStorageSnapshot(parsed.data.data);
   LocalStorageMigrationResponseSchema.parse(result);
-  return json(result);
+  return json(result, 200, req);
 }
 
 function getHealthPayload() {
@@ -312,25 +311,30 @@ const server = Bun.serve({
   idleTimeout: 30,
   async fetch(req: Request) {
     if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: jsonHeaders });
+      return preflightResponse(req);
     }
 
     const reqUrl = new URL(req.url);
     const pathname = reqUrl.pathname;
 
     if (pathname === "/health") {
-      return json(getHealthPayload());
+      return json(getHealthPayload(), 200, req);
+    }
+
+    const requestValidation = validateBackendRequest(req);
+    if (requestValidation) {
+      return requestValidation;
     }
 
     const clientId = resolveClientId(req);
     const rl = checkRateLimit(clientId);
     if (!rl.allowed) {
-      return json({ error: "Rate limit exceeded", retryAfterMs: rl.retryAfterMs }, 429);
+      return json({ error: "Rate limit exceeded", retryAfterMs: rl.retryAfterMs }, 429, req);
     }
 
     try {
       if (req.method === "GET" && pathname === "/api/v1/feed") {
-        return await handleFeedRequest(reqUrl);
+        return await handleFeedRequest(req, reqUrl);
       }
 
       if (req.method === "POST" && pathname === "/api/v1/feeds/batch") {
@@ -342,7 +346,7 @@ const server = Bun.serve({
       }
 
       if (req.method === "GET" && pathname === "/api/v1/settings") {
-        return handleSettingsGet();
+        return handleSettingsGet(req);
       }
 
       if (req.method === "PUT" && pathname === "/api/v1/settings") {
@@ -350,33 +354,33 @@ const server = Bun.serve({
       }
 
       if (req.method === "GET" && pathname === "/api/v1/cache/stats") {
-        return handleCacheStats();
+        return handleCacheStats(req);
       }
 
       if (req.method === "GET" && pathname === "/api/v1/cache/entries") {
-        return handleCacheEntries(reqUrl);
+        return handleCacheEntries(req, reqUrl);
       }
 
       if (req.method === "POST" && pathname === "/api/v1/cache/clear") {
-        return handleCacheClear();
+        return handleCacheClear(req);
       }
 
       if (req.method === "GET" && pathname === "/api/v1/proxy/stats") {
-        return handleProxyStats();
+        return handleProxyStats(req);
       }
 
       if (req.method === "POST" && pathname === "/api/v1/migrate/local-storage") {
         return await handleMigration(req);
       }
 
-      return errorResponse(404, "Not found");
+      return errorResponse(404, "Not found", req);
     } catch (error) {
       if (error instanceof SecurityValidationError) {
-        return errorResponse(error.status, error.message);
+        return errorResponse(error.status, error.message, req);
       }
 
       const message = error instanceof Error ? error.message : "Internal server error";
-      return errorResponse(mapUnhandledErrorStatus(error), message);
+      return errorResponse(mapUnhandledErrorStatus(error), message, req);
     }
   },
 });
