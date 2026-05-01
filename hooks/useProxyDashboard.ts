@@ -39,6 +39,11 @@ export interface ProxyDashboardSnapshot {
     available: boolean;
     checkedAt?: number;
     error?: string;
+    baseUrl?: string;
+    diagnostic?: string;
+    health?: string;
+    pid?: number;
+    restartAvailable?: boolean;
   };
   routes: ProxyDashboardRoute[];
   summary: {
@@ -94,6 +99,7 @@ const buildInitialSnapshot = (): ProxyDashboardSnapshot => ({
   backend: {
     enabled: desktopBackendClient.isEnabled(),
     available: false,
+    restartAvailable: false,
   },
   routes: [],
   summary: {
@@ -179,6 +185,7 @@ export const buildProxyDashboardSnapshot =
     let backendAvailable = false;
     let backendCheckedAt: number | undefined;
     let backendError: string | undefined;
+    const desktopStatus = await desktopBackendClient.getDesktopStatus();
 
     if (desktopBackendClient.isEnabled()) {
       const health = await desktopBackendClient.checkHealth(false);
@@ -323,6 +330,11 @@ export const buildProxyDashboardSnapshot =
         available: backendAvailable,
         checkedAt: backendCheckedAt,
         error: backendError,
+        baseUrl: desktopStatus?.baseUrl,
+        diagnostic: desktopStatus?.diagnostic,
+        health: desktopStatus?.health,
+        pid: desktopStatus?.pid,
+        restartAvailable: Boolean(desktopStatus),
       },
       routes,
       summary: {
@@ -358,6 +370,11 @@ export function useProxyDashboard(options: { enabled?: boolean } = {}) {
     }
   }, []);
 
+  const restartBackend = useCallback(async () => {
+    await desktopBackendClient.restartBackend();
+    await refresh();
+  }, [refresh]);
+
   useEffect(() => {
     if (!enabled) {
       setIsLoading(false);
@@ -375,5 +392,6 @@ export function useProxyDashboard(options: { enabled?: boolean } = {}) {
     snapshot,
     isLoading,
     refresh,
+    restartBackend,
   };
 }

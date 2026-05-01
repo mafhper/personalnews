@@ -340,6 +340,9 @@ const App: React.FC = () => {
     import("./services/proxyManager").then(({ ProxyManager }) => {
       ProxyManager.loadPreferences();
     });
+    import("./services/desktopBackendClient").then(({ desktopBackendClient }) => {
+      desktopBackendClient.startWarmupMonitor();
+    });
   }, []);
 
   return (

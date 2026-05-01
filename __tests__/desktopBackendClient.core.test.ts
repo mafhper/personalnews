@@ -168,4 +168,135 @@ describe("desktopBackendClient local discovery", () => {
 
     await expect(desktopBackendClient.setSettings({ backendMode: "on" })).resolves.toBe("on");
   });
+
+  it("uses the Tauri backend status URL instead of scanning local ports", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: true,
+              baseUrl: "http://127.0.0.1:3020",
+              port: 3020,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "ready",
+              diagnostic: "ready",
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "http://127.0.0.1:3020/health") {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    const result = await desktopBackendClient.checkHealth(true);
+
+    expect(result.available).toBe(true);
+    expect(desktopBackendClient.getBaseUrl()).toBe("http://127.0.0.1:3020");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "http://127.0.0.1:3001/health",
+      expect.anything(),
+    );
+  });
+
+  it("refreshes the Tauri token once after a protected request returns 401", async () => {
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "get_backend_status") {
+        return {
+          sidecarSpawned: true,
+          baseUrl: "http://127.0.0.1:3001",
+          port: 3001,
+          dbPath: "memory",
+          tokenAvailable: true,
+          health: "ready",
+          diagnostic: "ready",
+        };
+      }
+      if (command === "get_backend_auth_token") {
+        return invoke.mock.calls.filter(([name]) => name === command).length === 1
+          ? "old-token"
+          : "new-token";
+      }
+      return null;
+    });
+
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: { invoke },
+      configurable: true,
+    });
+
+    const protectedHeaders: Array<string | null> = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/health")) {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+
+      protectedHeaders.push(
+        new Headers(init?.headers).get("x-personalnews-backend-token"),
+      );
+      if (protectedHeaders.length === 1) {
+        return {
+          ok: false,
+          status: 401,
+          json: async () => ({ error: "Backend authentication required" }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          settings: {
+            backendMode: "on",
+            windowStyle: "native_thin",
+            cacheTtlMinutes: 30,
+            updatedAt: new Date().toISOString(),
+          },
+        }),
+      } as Response;
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(desktopBackendClient.getSettings()).resolves.toBe("on");
+    expect(protectedHeaders).toEqual(["old-token", "new-token"]);
+  });
 });

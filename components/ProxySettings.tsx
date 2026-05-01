@@ -60,6 +60,21 @@ const routeLabels: Record<ProxyTestResult["route"], string> = {
   "client-proxy": "proxy em nuvem",
 };
 
+const backendDiagnosticLabels: Record<string, string> = {
+  not_started: "Backend ainda não iniciado pelo launcher.",
+  starting: "Backend inicializando; novas tentativas estão em andamento.",
+  ready: "Backend pronto e respondendo ao health check.",
+  port_occupied:
+    "Porta preferencial ocupada; o launcher selecionou outra porta local.",
+  binary_missing: "Binário do backend não foi encontrado no pacote desktop.",
+  spawn_blocked:
+    "Launcher não conseguiu iniciar o backend; verifique antivírus, firewall ou permissões.",
+  health_failed:
+    "Backend iniciou, mas o health check não ficou saudável; pode haver bloqueio local, firewall ou falha interna.",
+  crashed: "Backend encerrou após a inicialização.",
+  unknown: "Estado do backend ainda não determinado.",
+};
+
 const formatRuntimeNotice = (
   runtime: ReturnType<typeof useProxyDashboard>["snapshot"]["runtime"],
 ) => {
@@ -124,9 +139,10 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
     getAllProxiesStatus,
     testProxy,
   } = useProxyConfig();
-  const { snapshot, refresh } = useProxyDashboard();
+  const { snapshot, refresh, restartBackend } = useProxyDashboard();
   const [expandedProxy, setExpandedProxy] = useState<string | null>(null);
   const [testingProxy, setTestingProxy] = useState<string | null>(null);
+  const [restartingBackend, setRestartingBackend] = useState(false);
   const [testResults, setTestResults] = useState<
     Record<string, ProxyTestResult>
   >({});
@@ -156,6 +172,15 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
       await refresh();
     } finally {
       setTestingProxy(null);
+    }
+  };
+
+  const handleRestartBackend = async () => {
+    setRestartingBackend(true);
+    try {
+      await restartBackend();
+    } finally {
+      setRestartingBackend(false);
     }
   };
 
@@ -242,15 +267,42 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               {isLocalBackendRuntime
                 ? snapshot.backend.available
                   ? "Ativo"
-                  : "Indisponível"
+                  : snapshot.backend.health === "starting"
+                    ? "Inicializando"
+                    : "Indisponível"
                 : "Não aplicável ao modo web"}
             </p>
             <p className={`mt-2 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               {snapshot.backend.error ||
+                (snapshot.backend.diagnostic
+                  ? backendDiagnosticLabels[snapshot.backend.diagnostic] ||
+                    snapshot.backend.diagnostic
+                  : undefined) ||
                 (isLocalBackendRuntime
                   ? `Requisições do ${localRuntimeLabel} passam pelo backend local.`
                   : "Modo cliente/proxy.")}
             </p>
+            {snapshot.backend.baseUrl && (
+              <p className={`mt-2 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
+                {snapshot.backend.baseUrl}
+                {snapshot.backend.pid ? ` · PID ${snapshot.backend.pid}` : ""}
+              </p>
+            )}
+            {snapshot.backend.restartAvailable && (
+              <button
+                type="button"
+                onClick={() => void handleRestartBackend()}
+                disabled={restartingBackend}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.18)] disabled:cursor-wait disabled:opacity-70"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${
+                    restartingBackend ? "animate-spin" : ""
+                  }`}
+                />
+                {restartingBackend ? "Reiniciando..." : "Reiniciar backend"}
+              </button>
+            )}
           </div>
         </div>
       </section>
