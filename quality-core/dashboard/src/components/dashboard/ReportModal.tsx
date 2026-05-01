@@ -56,7 +56,11 @@ export function ReportModal({ isOpen, onOpenChange, reportFile }: ReportModalPro
 
   useEffect(() => {
     if (isOpen && reportFile) {
-      loadReport();
+      const timeoutId = window.setTimeout(() => {
+        void loadReport();
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
   }, [isOpen, reportFile, loadReport]);
 
