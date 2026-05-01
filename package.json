@@ -156,7 +156,7 @@
     "@types/dompurify": "^3.2.0",
     "@xmldom/xmldom": "^0.9.10",
     "baseline-browser-mapping": "^2.10.17",
-    "caniuse-lite": "^1.0.30001780",
+    "caniuse-lite": "^1.0.30001791",
     "dompurify": "^3.4.0",
     "eslint-plugin-security": "^4.0.0",
     "i18next": "^25.10.10",
