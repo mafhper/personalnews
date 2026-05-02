@@ -20,6 +20,7 @@ use tauri_plugin_shell::{
 
 const BACKEND_HOST: &str = "127.0.0.1";
 const BACKEND_READY_EVENT: &str = "backend-ready";
+const BACKEND_STATUS_CHANGED_EVENT: &str = "backend-status-changed";
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -103,11 +104,16 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
             last_exit_code: None,
         };
     }
+    emit_backend_status_changed(app);
 
     let command = app
         .shell()
         .sidecar("personalnews-backend")
-        .map_err(|e| format!("failed to resolve backend sidecar: {e}"))?
+        .map_err(|e| {
+            let message = format!("failed to resolve backend sidecar: {e}");
+            set_backend_start_error(app, &message, classify_spawn_error(&message));
+            message
+        })?
         .env("BACKEND_HOST", BACKEND_HOST)
         .env("BACKEND_PORT", port.to_string())
         .env("BACKEND_DEFAULT_MODE", "on")
@@ -141,6 +147,7 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
         status.sidecar_spawned = true;
         status.pid = Some(pid);
     }
+    emit_backend_status_changed(app);
 
     log_desktop_event(
         app,
@@ -180,6 +187,7 @@ fn set_backend_start_error(app: &AppHandle, message: &str, diagnostic: &str) {
         status.last_start_error = Some(message.to_string());
     }
     log_desktop_event(app, message);
+    emit_backend_status_changed(app);
 }
 
 fn monitor_backend_process(
@@ -222,6 +230,7 @@ fn monitor_backend_process(
                         status.last_exit_code = payload.code;
                         status.last_health_error = Some(message);
                     }
+                    emit_backend_status_changed(&app);
                     let _ = app.emit("backend-failed", get_backend_status_snapshot(&app));
                     break;
                 }
@@ -252,6 +261,7 @@ fn mark_backend_ready_from_stdout(app: &AppHandle, pid: u32, process_started_at:
             app,
             &format!("backend ready signal received base_url={base_url} uptime_ms={uptime_ms}"),
         );
+        emit_backend_status_changed(app);
         let _ = app.emit(BACKEND_READY_EVENT, get_backend_status_snapshot(app));
     }
 }
@@ -319,6 +329,7 @@ fn set_backend_health(
     last_health_error: Option<String>,
 ) {
     let state = app.state::<BackendSidecarState>();
+    let mut changed = false;
     if let Ok(mut status) = state.status.lock() {
         if status.base_url != expected_base_url {
             return;
@@ -326,16 +337,25 @@ fn set_backend_health(
         if status.health == "ready" && health != "failed" {
             return;
         }
-        status.health = health.to_string();
-        if status.diagnostic != "port_occupied"
+        let next_diagnostic = if status.diagnostic != "port_occupied"
             || diagnostic == "ready"
             || diagnostic == "health_failed"
         {
-            status.diagnostic = diagnostic.to_string();
-        }
+            diagnostic.to_string()
+        } else {
+            status.diagnostic.clone()
+        };
+        changed = status.health != health
+            || status.diagnostic != next_diagnostic
+            || status.last_health_error != last_health_error;
+        status.health = health.to_string();
+        status.diagnostic = next_diagnostic;
         status.uptime_ms = uptime_ms;
         status.last_health_error = last_health_error;
     };
+    if changed {
+        emit_backend_status_changed(app);
+    }
 }
 
 fn probe_backend_health(base_url: &str, timeout: Duration) -> Result<(), String> {
@@ -534,6 +554,13 @@ fn get_backend_status_snapshot(app: &AppHandle) -> DesktopBackendStatus {
         .unwrap_or_default()
 }
 
+fn emit_backend_status_changed(app: &AppHandle) {
+    let _ = app.emit(
+        BACKEND_STATUS_CHANGED_EVENT,
+        get_backend_status_snapshot(app),
+    );
+}
+
 #[tauri::command]
 fn get_backend_status(app: AppHandle) -> Result<DesktopBackendStatus, String> {
     Ok(get_backend_status_snapshot(&app))
@@ -560,6 +587,7 @@ fn main() {
                         status.health = "failed".to_string();
                         status.last_start_error = Some(error.clone());
                     }
+                    emit_backend_status_changed(app.handle());
                     eprintln!("[desktop] backend sidecar start failed: {error}");
                 }
             }

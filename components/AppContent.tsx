@@ -557,6 +557,37 @@ const AppContent: React.FC = () => {
     !loadingState.hasScopedCache &&
     (!loadingState.isResolved ||
       (loadingState.status === "loading" && !loadingState.isBackgroundRefresh));
+  const skeletonStartedAtRef = React.useRef<number | null>(null);
+  const [skeletonElapsedMs, setSkeletonElapsedMs] = useState(0);
+  useEffect(() => {
+    if (!showSkeleton) {
+      skeletonStartedAtRef.current = null;
+      return;
+    }
+
+    skeletonStartedAtRef.current = skeletonStartedAtRef.current ?? Date.now();
+    const intervalId = window.setInterval(() => {
+      setSkeletonElapsedMs(
+        Date.now() - (skeletonStartedAtRef.current ?? Date.now()),
+      );
+    }, 1_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [showSkeleton]);
+
+  const initialLoadIsStalled =
+    showSkeleton &&
+    loadingState.loadedFeeds === 0 &&
+    skeletonElapsedMs >= 18_000;
+  const initialLoadProgressLabel =
+    loadingState.totalFeeds > 0
+      ? `${loadingState.loadedFeeds}/${loadingState.totalFeeds} fontes verificadas`
+      : "Preparando a colecao";
+  const initialLoadMessage =
+    initialLoadIsStalled
+      ? "A inicializacao demorou mais que o esperado. Estou tentando recuperar o backend local e reiniciar a carga automaticamente."
+      : loadingState.currentAction ||
+        "Preparando backend local e carregando as primeiras noticias.";
 
   useEffect(() => {
     if (!showSkeleton || !activeTransitionLayout) return;
@@ -988,6 +1019,55 @@ const AppContent: React.FC = () => {
 
           {showSkeleton ? (
             <div className={contentContainerClass}>
+              <div className="mb-5 rounded-[18px] border border-white/10 bg-black/35 px-5 py-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.22)] backdrop-blur-md sm:flex sm:items-center sm:justify-between sm:gap-5">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">
+                    Inicializacao
+                  </p>
+                  <h2 className="mt-1 text-base font-semibold text-white sm:text-lg">
+                    {initialLoadIsStalled
+                      ? "Recuperando carregamento"
+                      : "Preparando suas noticias"}
+                  </h2>
+                  <p className="mt-1 max-w-3xl text-sm leading-6 text-white/70">
+                    {initialLoadMessage}
+                  </p>
+                  <div className="mt-3 h-1.5 w-full max-w-xl overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-[rgb(var(--color-accent))] transition-[width] duration-500"
+                      style={{
+                        width: `${Math.max(8, Math.min(100, loadingState.progress || 8))}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs font-medium text-white/55">
+                    {initialLoadProgressLabel}
+                  </p>
+                </div>
+                {initialLoadIsStalled && (
+                  <div className="mt-4 flex shrink-0 flex-wrap gap-2 sm:mt-0 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={handleRefresh}
+                      className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/40 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/35"
+                    >
+                      Tentar novamente
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openFeedManagerFocus({
+                          tab: "operations",
+                          section: "feed-status",
+                        })
+                      }
+                      className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-white/45"
+                    >
+                      Ver diagnostico
+                    </button>
+                  </div>
+                )}
+              </div>
               <FeedSkeleton
                 count={layoutSettings.articlesPerPage}
                 layoutMode={currentLayoutMode as string}

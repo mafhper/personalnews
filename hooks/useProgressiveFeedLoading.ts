@@ -17,6 +17,7 @@ import { getCachedArticles } from "../services/smartCache";
 import { useLogger } from "../services/logger";
 import { categorizeFeedError } from "../services/feedErrorCategorization";
 import { loadFeedWithRuntime } from "../services/feedRuntime";
+import { desktopBackendClient } from "../services/desktopBackendClient";
 import type {
   FeedDiagnosticInfo,
   FeedFailureCause,
@@ -277,23 +278,39 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const cachedSnapshot = skipCache ? getCachedArticles(feed.url) : null;
 
       // Set timeout
-      const timeoutId = setTimeout(
-        () => timeoutController.abort(),
-        FEED_TIMEOUT_MS,
-      );
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          timeoutController.abort(
+            new DOMException(
+              `Feed timeout after ${FEED_TIMEOUT_MS}ms`,
+              "TimeoutError",
+            ),
+          );
+          reject(
+            new DOMException(
+              `Feed timeout after ${FEED_TIMEOUT_MS}ms`,
+              "TimeoutError",
+            ),
+          );
+        }, FEED_TIMEOUT_MS);
+      });
 
       try {
         logger.debug(`Loading feed: ${feed.url}`);
 
-        const result = await loadFeedWithRuntime(feed.url, {
-          signal: signal
-            ? AbortSignal.any([signal, timeoutController.signal])
-            : timeoutController.signal,
-          skipCache,
-          forceRefresh: skipCache,
-        });
+        const result = await Promise.race([
+          loadFeedWithRuntime(feed.url, {
+            signal: signal
+              ? AbortSignal.any([signal, timeoutController.signal])
+              : timeoutController.signal,
+            skipCache,
+            forceRefresh: skipCache,
+          }),
+          timeoutPromise,
+        ]);
 
-        clearTimeout(timeoutId);
+        if (timeoutId) clearTimeout(timeoutId);
         const normalizedFetchedArticles = result.articles.map((article) =>
           normalizeArticleForFeed(feed, article),
         );
@@ -362,8 +379,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           source: result.source,
         };
       } catch (error) {
-        clearTimeout(timeoutId);
-
+        if (timeoutId) clearTimeout(timeoutId);
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         const isTimeout =
@@ -599,6 +615,168 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const newFeedResults = new Map<string, FeedResult>(cachedFeedResults);
       const errors: FeedError[] = [];
       let loadedCount = 0;
+
+      if (desktopBackendClient.isDesktopRuntime()) {
+        const batchSize = 8;
+        const batches: FeedSource[][] = [];
+        for (let index = 0; index < scopedFeeds.length; index += batchSize) {
+          batches.push(scopedFeeds.slice(index, index + batchSize));
+        }
+
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+          const batch = batches[batchIndex];
+          setLoadingState((prev) => ({
+            ...prev,
+            currentAction: `Carregando lote ${batchIndex + 1} de ${batches.length} pelo backend local...`,
+          }));
+
+          try {
+            const response = await desktopBackendClient.fetchFeedsBatch(
+              batch.map((feed) => feed.url),
+              {
+                forceRefresh: forceRefresh || shouldBypassCache,
+                signal: abortControllerRef.current?.signal,
+              },
+            );
+
+            response.items.forEach((item) => {
+              const feed = scopedFeeds.find((candidate) => candidate.url === item.url);
+              loadedCount += 1;
+
+              if (item.success && item.result && feed) {
+                const articlesForFeed = item.result.articles.map((article) =>
+                  normalizeArticleForFeed(feed, {
+                    ...article,
+                    pubDate: new Date(article.pubDate),
+                  }),
+                );
+                newFeedResults.set(item.url, {
+                  url: item.url,
+                  articles: articlesForFeed,
+                  title: getFeedDisplayName(feed, item.result.title),
+                  success: true,
+                  route: {
+                    transport: "desktop-backend",
+                    routeKind: item.result.meta.cached
+                      ? "cache"
+                      : "local-backend",
+                    routeName: "LocalBackend",
+                    viaFallback: false,
+                    checkedAt: Date.now(),
+                    detail: item.result.meta.cached
+                      ? "Servido pelo cache do backend local"
+                      : "Servido pelo backend local em lote",
+                  },
+                  source: "backend",
+                });
+              } else {
+                const errorMessage = item.error || "Feed indisponivel";
+                const errorType = categorizeFeedError(errorMessage);
+                errors.push({
+                  url: item.url,
+                  error: errorMessage,
+                  timestamp: Date.now(),
+                  feedTitle: feed ? getFeedDisplayName(feed) : item.url,
+                  errorType,
+                });
+                if (!cachedFeedResults.has(item.url)) {
+                  newFeedResults.set(item.url, {
+                    url: item.url,
+                    articles: [],
+                    title: feed ? getFeedDisplayName(feed) : item.url,
+                    success: false,
+                    error: errorMessage,
+                    source: "backend",
+                  });
+                }
+              }
+            });
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Falha no lote do backend";
+            batch.forEach((feed) => {
+              loadedCount += 1;
+              errors.push({
+                url: feed.url,
+                error: errorMessage,
+                timestamp: Date.now(),
+                feedTitle: getFeedDisplayName(feed),
+                errorType: categorizeFeedError(errorMessage),
+              });
+              if (!cachedFeedResults.has(feed.url)) {
+                newFeedResults.set(feed.url, {
+                  url: feed.url,
+                  articles: [],
+                  title: getFeedDisplayName(feed),
+                  success: false,
+                  error: errorMessage,
+                  source: "backend",
+                });
+              }
+            });
+          }
+
+          const progress = (loadedCount / scopedFeeds.length) * 100;
+          const nextArticles = collectArticlesFromFeedResults(newFeedResults);
+          setFeedResults(new Map(newFeedResults));
+          if (nextArticles.length > 0 || !preserveVisibleArticlesOnFailure) {
+            setArticles(nextArticles);
+            articlesRef.current = nextArticles;
+            visibleScopeKeyRef.current = scopeKey;
+          }
+          setLoadingState((prev) => ({
+            ...prev,
+            loadedFeeds: loadedCount,
+            progress,
+            priorityFeedsLoaded: true,
+            currentAction:
+              loadedCount < scopedFeeds.length
+                ? `Backend local carregou ${loadedCount}/${scopedFeeds.length} fontes...`
+                : "Backend local concluiu a carga de feeds",
+          }));
+        }
+
+        const resolvedArticles = collectArticlesFromFeedResults(newFeedResults);
+        const successfulFeeds = Array.from(newFeedResults.values()).filter(
+          (result) => result.success,
+        ).length;
+
+        if (successfulFeeds > 0 || resolvedArticles.length > 0) {
+          scopedFreshCacheRef.current.set(scopeKey, {
+            loadedAt: Date.now(),
+            articles: resolvedArticles,
+            feedResults: new Map(newFeedResults),
+          });
+        }
+
+        setLoadingState({
+          status: successfulFeeds > 0 || resolvedArticles.length > 0 ? "success" : "error",
+          progress: 100,
+          loadedFeeds: scopedFeeds.length,
+          totalFeeds: scopedFeeds.length,
+          errors,
+          isBackgroundRefresh: false,
+          currentAction:
+            errors.length > 0
+              ? `${errors.length} feeds falharam nesta atualizacao`
+              : "Todos os feeds carregados pelo backend local",
+          priorityFeedsLoaded: true,
+          isResolved: true,
+          hasScopedCache,
+          isHoldingPreviousContent: false,
+          scopeKey,
+        });
+
+        logger.info("Desktop backend batch feed loading completed", {
+          additionalData: {
+            totalFeeds: scopedFeeds.length,
+            successfulFeeds,
+            failedFeeds: errors.length,
+            articlesCount: resolvedArticles.length,
+          },
+        });
+        return;
+      }
 
       // Get problematic feeds from localStorage (feeds that failed in previous sessions)
       const problematicFeedsKey = "feed-error-history";
@@ -1034,6 +1212,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       getCachedFeedResultsFromSmartCache,
       loadSingleFeedWithTimeout,
       logger,
+      normalizeArticleForFeed,
     ],
   );
 

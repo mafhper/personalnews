@@ -7,6 +7,17 @@ import { getDefaultFeeds, migrateFeeds } from "../utils/feedMigration";
 import { FeedLoadRequest, FeedSource } from "../types";
 import { FeedContext } from "./FeedContextState";
 import { useLogger } from "../services/logger";
+import { desktopBackendClient } from "../services/desktopBackendClient";
+
+const buildFeedSignature = (feeds: FeedSource[]) =>
+  JSON.stringify(
+    feeds.map((feed) => ({
+      url: feed.url,
+      categoryId: feed.categoryId || null,
+      customTitle: feed.customTitle || null,
+      hideFromAll: Boolean(feed.hideFromAll),
+    })),
+  );
 
 export const FeedProvider: React.FC<{
   children: ReactNode;
@@ -19,6 +30,14 @@ export const FeedProvider: React.FC<{
   const { showNotification } = useNotification();
   const logger = useLogger("FeedProvider");
   const loadGuard = useInitialLoadGuard();
+  const usesBackendCollection = desktopBackendClient.isDesktopRuntime();
+  const [collectionReady, setCollectionReady] = React.useState(
+    !usesBackendCollection,
+  );
+  const backendCollectionReadyRef = React.useRef(!usesBackendCollection);
+  const applyingBackendCollectionRef = React.useRef(false);
+  const backendFeedSignatureRef = React.useRef<string | null>(null);
+  const startupRecoveryAttemptedRef = React.useRef(false);
 
   // Feed migration logic
   useEffect(() => {
@@ -49,6 +68,81 @@ export const FeedProvider: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
 
+  useEffect(() => {
+    if (!usesBackendCollection) return;
+    let cancelled = false;
+
+    const syncBackendCollection = async () => {
+      try {
+        const health = await desktopBackendClient.waitUntilReady({
+          timeoutMs: 12_000,
+        });
+
+        if (!health.available || cancelled) {
+          setCollectionReady(true);
+          backendCollectionReadyRef.current = true;
+          return;
+        }
+
+        await desktopBackendClient.importLocalFeedCollection(feeds);
+        const collection = await desktopBackendClient.getFeedCollection();
+        if (cancelled) return;
+
+        const nextFeeds = collection.feeds.map((feed) => ({
+          url: feed.url,
+          categoryId: feed.categoryId,
+          customTitle: feed.customTitle,
+          hideFromAll: feed.hideFromAll,
+        }));
+
+        backendFeedSignatureRef.current = buildFeedSignature(nextFeeds);
+        if (nextFeeds.length > 0 && backendFeedSignatureRef.current !== buildFeedSignature(feeds)) {
+          applyingBackendCollectionRef.current = true;
+          setFeeds(nextFeeds);
+          window.setTimeout(() => {
+            applyingBackendCollectionRef.current = false;
+          }, 0);
+        }
+
+        backendCollectionReadyRef.current = true;
+        setCollectionReady(true);
+      } catch (error) {
+        logger.warn("Backend feed collection sync failed; using local feeds", {
+          additionalData: {
+            error: error instanceof Error ? error.message : String(error),
+          },
+        });
+        backendCollectionReadyRef.current = true;
+        setCollectionReady(true);
+      }
+    };
+
+    void syncBackendCollection();
+
+    return () => {
+      cancelled = true;
+    };
+    // Run only once with the startup localStorage snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!usesBackendCollection || !backendCollectionReadyRef.current) return;
+    if (applyingBackendCollectionRef.current) return;
+
+    const signature = buildFeedSignature(feeds);
+    if (signature === backendFeedSignatureRef.current) return;
+    backendFeedSignatureRef.current = signature;
+
+    void desktopBackendClient.replaceFeedCollection(feeds).catch((error) => {
+      logger.warn("Failed to persist feeds in backend collection", {
+        additionalData: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+    });
+  }, [feeds, logger, usesBackendCollection]);
+
   const { articles, loadingState, loadFeeds, retryFailedFeeds, cancelLoading } =
     useProgressiveFeedLoading(feeds);
 
@@ -74,6 +168,7 @@ export const FeedProvider: React.FC<{
   const startInitialLoad = useCallback(async () => {
     if (isInitialized.current) return;
     if (feeds.length === 0) return;
+    if (usesBackendCollection && !collectionReady) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const currentCategory = urlParams.get("category") || "all";
@@ -92,13 +187,75 @@ export const FeedProvider: React.FC<{
       categoryId: currentCategory,
       mode: currentCategory === "all" ? "all" : "category",
     });
-  }, [feeds.length, loadFeeds, loadGuard, logger, autoStart]);
+  }, [
+    feeds.length,
+    loadFeeds,
+    loadGuard,
+    logger,
+    autoStart,
+    usesBackendCollection,
+    collectionReady,
+  ]);
 
   // Inicializar carregamento automaticamente quando permitido
   useEffect(() => {
     if (!autoStart) return;
     void startInitialLoad();
   }, [autoStart, startInitialLoad]);
+
+  useEffect(() => {
+    if (!autoStart || !usesBackendCollection) return;
+    if (loadingState.status !== "loading" || loadingState.loadedFeeds > 0) {
+      return;
+    }
+    if (startupRecoveryAttemptedRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      if (startupRecoveryAttemptedRef.current) return;
+      startupRecoveryAttemptedRef.current = true;
+
+      const recoverStartupLoad = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentCategory = urlParams.get("category") || "all";
+        const request: FeedLoadRequest = {
+          categoryId: currentCategory,
+          mode: currentCategory === "all" ? "all" : "category",
+          forceRefresh: true,
+        };
+
+        logger.warn("Startup feed load stalled; attempting desktop recovery", {
+          additionalData: {
+            currentCategory,
+            totalFeeds: loadingState.totalFeeds,
+            currentAction: loadingState.currentAction,
+          },
+        });
+
+        const health = await desktopBackendClient.checkHealth(true).catch(() => null);
+        if (!health?.available) {
+          await desktopBackendClient.restartBackend().catch(() => null);
+          await desktopBackendClient.waitUntilReady({ timeoutMs: 8_000 }).catch(
+            () => null,
+          );
+        }
+
+        await loadFeeds(request);
+      };
+
+      void recoverStartupLoad();
+    }, 18_000);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    autoStart,
+    loadFeeds,
+    loadingState.currentAction,
+    loadingState.loadedFeeds,
+    loadingState.status,
+    loadingState.totalFeeds,
+    logger,
+    usesBackendCollection,
+  ]);
 
   // Listener para visibilitychange - retoma carregamento quando aba volta a ficar visível
   useEffect(() => {

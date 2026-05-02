@@ -67,6 +67,124 @@ vi.mock("../hooks/useProxyDashboard", () => ({
 }));
 
 describe("FeedAnalytics dashboard", () => {
+  it("uses a single collection situation message instead of duplicated dominant problem copy", () => {
+    proxyDashboardSnapshot = createProxySnapshot({
+      runtime: {
+        activeMode: "desktop-local",
+        warningDetails: null,
+        backendAvailable: true,
+      },
+      backend: {
+        enabled: true,
+        available: true,
+      },
+      summary: {
+        totalRoutes: 1,
+        healthyRoutes: 1,
+        totalRequests: 1,
+        totalSuccesses: 1,
+        totalFailures: 0,
+        successRate: 100,
+        fallbackActive: false,
+        missingApiKeys: [],
+      },
+    });
+    const feeds: FeedSource[] = [
+      { url: "https://example.com/missing.xml", customTitle: "Missing" },
+    ];
+    const feedValidations = new Map<string, FeedValidationResult>([
+      [
+        feeds[0].url,
+        {
+          url: feeds[0].url,
+          isValid: false,
+          status: "not_found",
+          lastChecked: Date.now(),
+          validationAttempts: [],
+          suggestions: [],
+          totalRetries: 0,
+          totalValidationTime: 0,
+          error: "Feed nao encontrado",
+          diagnostics: {
+            cause: "not_found",
+            summary: "Feed nao encontrado",
+            action: "Revise a URL do feed.",
+          },
+        },
+      ],
+    ]);
+
+    render(
+      <FeedAnalytics
+        feeds={feeds}
+        articles={[]}
+        feedValidations={feedValidations}
+      />,
+    );
+
+    expect(screen.getByText("Situação da coleção")).toBeInTheDocument();
+    expect(screen.queryByText("Problema Dominante")).not.toBeInTheDocument();
+    expect(screen.getByText("Inválidos reais")).toBeInTheDocument();
+  });
+
+  it("treats stale cached validations as warning instead of dominant errors", () => {
+    proxyDashboardSnapshot = createProxySnapshot({
+      runtime: {
+        activeMode: "desktop-local",
+        warningDetails: null,
+        backendAvailable: true,
+      },
+      backend: {
+        enabled: true,
+        available: true,
+      },
+      summary: {
+        totalRoutes: 1,
+        healthyRoutes: 1,
+        totalRequests: 1,
+        totalSuccesses: 1,
+        totalFailures: 0,
+        successRate: 100,
+        fallbackActive: false,
+        missingApiKeys: [],
+      },
+    });
+    const feeds: FeedSource[] = [
+      { url: "https://example.com/flaky.xml", customTitle: "Flaky" },
+    ];
+    const feedValidations = new Map<string, FeedValidationResult>([
+      [
+        feeds[0].url,
+        {
+          url: feeds[0].url,
+          isValid: true,
+          status: "degraded_stale",
+          severity: "warning",
+          usedCache: true,
+          lastSuccessfulFetchAt: new Date().toISOString(),
+          lastChecked: Date.now(),
+          validationAttempts: [],
+          suggestions: [],
+          totalRetries: 0,
+          totalValidationTime: 0,
+          diagnostic: "Falha transitória; cache recente mantido.",
+        },
+      ],
+    ]);
+
+    render(
+      <FeedAnalytics
+        feeds={feeds}
+        articles={[]}
+        feedValidations={feedValidations}
+      />,
+    );
+
+    expect(screen.getByText("Coleção operando com cache")).toBeInTheDocument();
+    expect(screen.getByText("Cache disponível")).toBeInTheDocument();
+    expect(screen.getByText("degradado")).toBeInTheDocument();
+  });
+
   it("keeps details collapsed until explicitly opened when diagnostics exist", async () => {
     proxyDashboardSnapshot = createProxySnapshot();
     const feeds: FeedSource[] = [

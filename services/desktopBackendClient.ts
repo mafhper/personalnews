@@ -5,7 +5,13 @@ import {
   BACKEND_RUNTIME_ENABLED,
   BackendHealthSchema,
   DesktopBackendStatusSchema,
+  FeedBatchResponseSchema,
+  FeedCategoriesPutRequestSchema,
+  FeedCollectionImportResponseSchema,
+  FeedCollectionPutRequestSchema,
+  FeedCollectionResponseSchema,
   FeedFetchResponseSchema,
+  FeedHealthResponseSchema,
   FeedValidateResponseSchema,
   ProxyStatsResponseSchema,
   SettingsGetResponseSchema,
@@ -13,7 +19,13 @@ import {
   type BackendHealth,
   type BackendMode,
   type DesktopBackendStatus,
+  type FeedCollectionImportResponse,
+  type FeedBatchResponse,
+  type FeedCategoryItem,
+  type FeedCollectionItem,
+  type FeedCollectionResponse,
   type FeedFetchResponse,
+  type FeedHealthResponse,
   type FeedValidateResponse,
   type ProxyStatsResponse,
 } from "../shared/contracts/backend";
@@ -69,6 +81,10 @@ class BackendStillStartingError extends Error {
 }
 
 type TauriInvoke = (command: string) => Promise<unknown>;
+type TauriListen = (
+  event: string,
+  handler: (event: { payload: unknown }) => void,
+) => Promise<() => void>;
 
 const getConfiguredBackendUrl = () => {
   const meta = import.meta as ImportMeta & {
@@ -106,6 +122,23 @@ const getTauriInvoke = (): TauriInvoke | null => {
   );
 };
 
+const getTauriListen = (): TauriListen | null => {
+  if (typeof window === "undefined") return null;
+  const target = window as Window & {
+    __TAURI_INTERNALS__?: { listen?: TauriListen };
+    __TAURI__?: {
+      event?: { listen?: TauriListen };
+      listen?: TauriListen;
+    };
+  };
+  return (
+    target.__TAURI_INTERNALS__?.listen ||
+    target.__TAURI__?.event?.listen ||
+    target.__TAURI__?.listen ||
+    null
+  );
+};
+
 const isLocalBrowserRuntime = () => {
   if (typeof window === "undefined") return false;
   const { hostname, port, protocol } = window.location;
@@ -116,18 +149,52 @@ const isLocalBrowserRuntime = () => {
   );
 };
 
-const normalizeFetchError = (error: unknown): string => {
-  if (error instanceof Error) {
-    if (
-      error.name === "AbortError" ||
-      error.message.toLowerCase().includes("aborted")
-    ) {
-      return "health check cancelled";
-    }
-    return error.message;
+const isAbortLikeError = (error: unknown): boolean => {
+  const maybeError =
+    error && typeof error === "object"
+      ? (error as { name?: unknown; message?: unknown })
+      : null;
+  const name = typeof maybeError?.name === "string" ? maybeError.name : "";
+  const message =
+    typeof maybeError?.message === "string"
+      ? maybeError.message.toLowerCase()
+      : "";
+  if (
+    name === "AbortError" ||
+    name === "TimeoutError" ||
+    message.includes("aborted") ||
+    message.includes("cancelled")
+  ) {
+    return true;
   }
+
+  if (error instanceof Error) {
+    return (
+      error.name === "AbortError" ||
+      error.name === "TimeoutError" ||
+      message.includes("aborted") ||
+      message.includes("cancelled")
+    );
+  }
+  return false;
+};
+
+const normalizeFetchError = (error: unknown): string => {
+  if (isAbortLikeError(error)) {
+    return "Backend local ainda respondendo";
+  }
+  if (error instanceof Error) return error.message;
   return String(error);
 };
+
+const buildSyntheticHealth = (status: DesktopBackendStatus): BackendHealth => ({
+  status: "ok",
+  service: "personalnews-backend",
+  version: "desktop-supervisor",
+  uptimeMs: status.uptimeMs ?? 0,
+  dbPath: status.dbPath,
+  now: new Date().toISOString(),
+});
 
 class DesktopBackendClient {
   private healthState: HealthState = {
@@ -154,6 +221,12 @@ class DesktopBackendClient {
 
   private healthProbeAttempt = 0;
 
+  private backendStatusListenerStarted = false;
+
+  constructor() {
+    this.startBackendStatusListener();
+  }
+
   isEnabled(): boolean {
     return (
       isTauriRuntime() || BACKEND_RUNTIME_ENABLED || isLocalBrowserRuntime()
@@ -165,7 +238,12 @@ class DesktopBackendClient {
   }
 
   getRuntimeState(): RuntimeState {
+    this.startBackendStatusListener();
     return { ...this.runtimeState };
+  }
+
+  isDesktopRuntime(): boolean {
+    return isTauriRuntime();
   }
 
   async getDesktopStatus(): Promise<DesktopBackendStatus | null> {
@@ -207,6 +285,66 @@ class DesktopBackendClient {
 
   private isInWarmupWindow(): boolean {
     return Date.now() - this.createdAt < BACKEND_WARMUP_MS;
+  }
+
+  private applyDesktopStatus(status: DesktopBackendStatus) {
+    if (status.baseUrl) {
+      this.resolvedBaseUrl = status.baseUrl.replace(/\/$/, "");
+    }
+
+    if (status.health === "ready") {
+      this.healthState = {
+        available: true,
+        checkedAt: Date.now(),
+        initializing: false,
+      };
+      this.setRuntimeState({
+        activeMode: "desktop-local",
+        backendAvailable: true,
+        backendInitializing: false,
+        lastError: undefined,
+        lastRoute: this.resolvedBaseUrl,
+      });
+      return;
+    }
+
+    const initializing = status.health === "starting";
+    const error =
+      status.lastHealthError ||
+      status.lastStartError ||
+      (initializing ? "Backend local inicializando" : "Backend local indisponivel");
+
+    this.healthState = {
+      available: false,
+      checkedAt: Date.now(),
+      initializing,
+      error,
+    };
+    this.setRuntimeState({
+      backendAvailable: false,
+      backendInitializing: initializing,
+      lastError: initializing ? undefined : error,
+      lastRoute: this.resolvedBaseUrl,
+    });
+  }
+
+  private startBackendStatusListener(): void {
+    if (this.backendStatusListenerStarted || !isTauriRuntime()) return;
+    const listen = getTauriListen();
+    if (!listen) return;
+
+    this.backendStatusListenerStarted = true;
+    const applyEventStatus = (event: { payload: unknown }) => {
+      const parsed = DesktopBackendStatusSchema.safeParse(event.payload);
+      if (parsed.success) {
+        this.applyDesktopStatus(parsed.data);
+      }
+    };
+
+    void listen("backend-status-changed", applyEventStatus).catch(() => {
+      this.backendStatusListenerStarted = false;
+    });
+    void listen("backend-ready", applyEventStatus).catch(() => undefined);
   }
 
   async waitUntilReady(
@@ -324,7 +462,16 @@ class DesktopBackendClient {
     const controller = new AbortController();
     const timeoutMs = Math.min(2_500, 700 + this.healthProbeAttempt * 300);
     this.healthProbeAttempt += 1;
-    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+    const timeoutId = window.setTimeout(
+      () =>
+        controller.abort(
+          new DOMException(
+            `Health check timed out after ${timeoutMs}ms`,
+            "TimeoutError",
+          ),
+        ),
+      timeoutMs,
+    );
 
     try {
       const response = await fetch(`${baseUrl}/health`, {
@@ -365,8 +512,12 @@ class DesktopBackendClient {
         );
       }
 
-      const health = await this.probeHealth(this.resolvedBaseUrl);
-      return { baseUrl: this.resolvedBaseUrl, health };
+      if (desktopStatus.health === "ready") {
+        return {
+          baseUrl: this.resolvedBaseUrl,
+          health: buildSyntheticHealth(desktopStatus),
+        };
+      }
     }
 
     const failures: string[] = [];
@@ -406,6 +557,23 @@ class DesktopBackendClient {
       });
       return { ...this.healthState };
     } catch (error) {
+      if (isAbortLikeError(error) && this.healthState.available) {
+        this.healthState = {
+          ...this.healthState,
+          checkedAt: now,
+          initializing: false,
+        };
+        return { ...this.healthState };
+      }
+
+      if (isAbortLikeError(error) && isTauriRuntime()) {
+        const desktopStatus = await this.getDesktopBackendStatus(true);
+        if (desktopStatus?.health === "ready") {
+          this.applyDesktopStatus(desktopStatus);
+          return { ...this.healthState };
+        }
+      }
+
       const inWarmup =
         error instanceof BackendStillStartingError || this.isInWarmupWindow();
       const message = inWarmup
@@ -466,6 +634,13 @@ class DesktopBackendClient {
     }
 
     if (!force && now - this.healthState.checkedAt < HEALTH_TTL_MS) {
+      if (isTauriRuntime() && !this.healthState.available) {
+        const desktopStatus = await this.getDesktopBackendStatus(true);
+        if (desktopStatus?.health === "ready") {
+          this.applyDesktopStatus(desktopStatus);
+          return { ...this.healthState };
+        }
+      }
       return { ...this.healthState };
     }
 
@@ -488,7 +663,16 @@ class DesktopBackendClient {
     if (!this.healthState.available) {
       const health = await this.checkHealth(true, init.signal ?? undefined);
       if (!health.available) {
-        throw new Error(health.error || "Backend local indisponivel");
+        if (isTauriRuntime()) {
+          const desktopStatus = await this.getDesktopBackendStatus(true);
+          if (desktopStatus?.health === "ready") {
+            this.applyDesktopStatus(desktopStatus);
+          } else {
+            throw new Error(health.error || "Backend local indisponivel");
+          }
+        } else {
+          throw new Error(health.error || "Backend local indisponivel");
+        }
       }
     }
 
@@ -571,6 +755,28 @@ class DesktopBackendClient {
     );
   }
 
+  async fetchFeedsBatch(
+    urls: string[],
+    options: { forceRefresh?: boolean; signal?: AbortSignal } = {},
+  ): Promise<FeedBatchResponse> {
+    return this.requestJson(
+      "/api/v1/feeds/batch",
+      {
+        method: "POST",
+        signal: options.signal,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          urls,
+          forceRefresh: options.forceRefresh ?? false,
+        }),
+      },
+      (value) => FeedBatchResponseSchema.parse(value),
+    );
+  }
+
   async validateFeeds(
     urls: string[],
     options: { forceRefresh?: boolean; signal?: AbortSignal } = {},
@@ -590,6 +796,100 @@ class DesktopBackendClient {
         }),
       },
       (value) => FeedValidateResponseSchema.parse(value),
+    );
+  }
+
+  async getFeedCollection(signal?: AbortSignal): Promise<FeedCollectionResponse> {
+    return this.requestJson(
+      "/api/v1/feeds",
+      {
+        method: "GET",
+        signal,
+        headers: {
+          Accept: "application/json",
+        },
+      },
+      (value) => FeedCollectionResponseSchema.parse(value),
+    );
+  }
+
+  async replaceFeedCollection(
+    feeds: FeedCollectionItem[],
+    options: { categories?: FeedCategoryItem[]; signal?: AbortSignal } = {},
+  ): Promise<FeedCollectionResponse> {
+    const payload = FeedCollectionPutRequestSchema.parse({
+      feeds,
+      ...(options.categories ? { categories: options.categories } : {}),
+    });
+    return this.requestJson(
+      "/api/v1/feeds",
+      {
+        method: "PUT",
+        signal: options.signal,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      },
+      (value) => FeedCollectionResponseSchema.parse(value),
+    );
+  }
+
+  async importLocalFeedCollection(
+    feeds: FeedCollectionItem[],
+    options: { categories?: FeedCategoryItem[]; signal?: AbortSignal } = {},
+  ): Promise<FeedCollectionImportResponse> {
+    const payload = FeedCollectionPutRequestSchema.parse({
+      feeds,
+      ...(options.categories ? { categories: options.categories } : {}),
+    });
+    return this.requestJson(
+      "/api/v1/feeds/import-local-storage",
+      {
+        method: "POST",
+        signal: options.signal,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...payload, source: "localStorage" }),
+      },
+      (value) => FeedCollectionImportResponseSchema.parse(value),
+    );
+  }
+
+  async replaceFeedCategories(
+    categories: FeedCategoryItem[],
+    options: { signal?: AbortSignal } = {},
+  ): Promise<FeedCollectionResponse> {
+    const payload = FeedCategoriesPutRequestSchema.parse({ categories });
+    return this.requestJson(
+      "/api/v1/feeds/categories",
+      {
+        method: "PUT",
+        signal: options.signal,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      },
+      (value) => FeedCollectionResponseSchema.parse(value),
+    );
+  }
+
+  async getFeedHealth(signal?: AbortSignal): Promise<FeedHealthResponse> {
+    return this.requestJson(
+      "/api/v1/feeds/health",
+      {
+        method: "GET",
+        signal,
+        headers: {
+          Accept: "application/json",
+        },
+      },
+      (value) => FeedHealthResponseSchema.parse(value),
     );
   }
 

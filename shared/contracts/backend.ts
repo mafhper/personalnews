@@ -69,6 +69,14 @@ export const DesktopBackendStatusSchema = z.object({
 });
 export type DesktopBackendStatus = z.infer<typeof DesktopBackendStatusSchema>;
 
+export const DesktopRuntimeStateSchema = z.enum([
+  "booting",
+  "ready",
+  "degraded",
+  "failed",
+]);
+export type DesktopRuntimeState = z.infer<typeof DesktopRuntimeStateSchema>;
+
 export const BackendModeSchema = z.enum(["auto", "on", "off"]);
 export type BackendMode = z.infer<typeof BackendModeSchema>;
 
@@ -134,6 +142,7 @@ export const FeedBatchResponseSchema = z.object({
   failed: z.number().int().nonnegative(),
   items: z.array(FeedBatchItemSchema),
 });
+export type FeedBatchResponse = z.infer<typeof FeedBatchResponseSchema>;
 
 export const FeedValidationStatusSchema = z.enum([
   "valid",
@@ -163,6 +172,11 @@ export const FeedValidateItemSchema = z.object({
   responseTimeMs: z.number().int().nonnegative(),
   checkedAt: z.string(),
   method: z.literal("backend"),
+  severity: z.enum(["ok", "warning", "error", "pending"]).optional(),
+  lastSuccessfulFetchAt: z.string().nullable().optional(),
+  usedCache: z.boolean().optional(),
+  route: z.string().optional(),
+  diagnostic: z.string().optional(),
 });
 
 export const FeedValidateResponseSchema = z.object({
@@ -172,6 +186,113 @@ export const FeedValidateResponseSchema = z.object({
   items: z.array(FeedValidateItemSchema),
 });
 export type FeedValidateResponse = z.infer<typeof FeedValidateResponseSchema>;
+
+export const FeedHealthSeveritySchema = z.enum([
+  "ok",
+  "warning",
+  "error",
+  "pending",
+]);
+export type FeedHealthSeverity = z.infer<typeof FeedHealthSeveritySchema>;
+
+export const FeedHealthStatusSchema = z.enum([
+  "valid",
+  "degraded_stale",
+  "not_found",
+  "timeout",
+  "rate_limited",
+  "server_error",
+  "parse_error",
+  "network_error",
+  "unknown",
+]);
+export type FeedHealthStatus = z.infer<typeof FeedHealthStatusSchema>;
+
+export const FeedCollectionItemSchema = z.object({
+  url: z.string().url(),
+  categoryId: z.string().optional(),
+  customTitle: z.string().optional(),
+  hideFromAll: z.boolean().optional(),
+  order: z.number().int().nonnegative().optional(),
+});
+export type FeedCollectionItem = z.infer<typeof FeedCollectionItemSchema>;
+
+export const FeedCategoryItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string().optional(),
+  order: z.number().int().optional(),
+  isDefault: z.boolean().optional(),
+  isPinned: z.boolean().optional(),
+  description: z.string().optional(),
+  layoutMode: z.string().optional(),
+  autoDiscovery: z.boolean().optional(),
+  hideFromAll: z.boolean().optional(),
+});
+export type FeedCategoryItem = z.infer<typeof FeedCategoryItemSchema>;
+
+export const FeedCollectionResponseSchema = z.object({
+  feeds: z.array(FeedCollectionItemSchema),
+  categories: z.array(FeedCategoryItemSchema).default([]),
+  source: z.literal("backend"),
+  updatedAt: z.string(),
+});
+export type FeedCollectionResponse = z.infer<
+  typeof FeedCollectionResponseSchema
+>;
+
+export const FeedCollectionPutRequestSchema = z.object({
+  feeds: z.array(FeedCollectionItemSchema).max(500),
+  categories: z.array(FeedCategoryItemSchema).optional(),
+});
+export type FeedCollectionPutRequest = z.infer<
+  typeof FeedCollectionPutRequestSchema
+>;
+
+export const FeedCategoriesPutRequestSchema = z.object({
+  categories: z.array(FeedCategoryItemSchema).max(100),
+});
+export type FeedCategoriesPutRequest = z.infer<
+  typeof FeedCategoriesPutRequestSchema
+>;
+
+export const FeedCollectionImportRequestSchema =
+  FeedCollectionPutRequestSchema.extend({
+    source: z.literal("localStorage").optional().default("localStorage"),
+  });
+
+export const FeedCollectionImportResponseSchema = z.object({
+  importedFeeds: z.number().int().nonnegative(),
+  skippedFeeds: z.number().int().nonnegative(),
+  importedCategories: z.number().int().nonnegative(),
+  skippedCategories: z.number().int().nonnegative(),
+  updatedAt: z.string(),
+});
+export type FeedCollectionImportResponse = z.infer<
+  typeof FeedCollectionImportResponseSchema
+>;
+
+export const FeedHealthItemSchema = z.object({
+  url: z.string().url(),
+  isValid: z.boolean(),
+  status: FeedHealthStatusSchema,
+  severity: FeedHealthSeveritySchema,
+  title: z.string().optional(),
+  error: z.string().optional(),
+  diagnostic: z.string().optional(),
+  route: z.string().optional(),
+  checkedAt: z.string(),
+  lastSuccessfulFetchAt: z.string().nullable(),
+  usedCache: z.boolean(),
+  responseTimeMs: z.number().int().nonnegative(),
+});
+export type FeedHealthItem = z.infer<typeof FeedHealthItemSchema>;
+
+export const FeedHealthResponseSchema = z.object({
+  items: z.array(FeedHealthItemSchema),
+  checkedAt: z.string(),
+});
+export type FeedHealthResponse = z.infer<typeof FeedHealthResponseSchema>;
 
 export const UserPreferencesV2Schema = z.object({
   backendMode: BackendModeSchema.default("auto"),

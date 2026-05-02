@@ -248,6 +248,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     const urls = currentFeeds.map((feed) => feed.url);
 
     try {
+      feedValidator.clearCache();
       const results = await feedValidator.validateFeeds(urls);
       const validationMap = new Map<string, FeedValidationResult>();
       results.forEach((result) => validationMap.set(result.url, result));
@@ -270,6 +271,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const validateSingleFeed = async (url: string) => {
     try {
+      feedValidator.clearCache();
       const result = await feedValidator.validateFeed(url);
       setFeedValidations((prev) => new Map(prev.set(url, result)));
       return result;
@@ -846,6 +848,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 feedValidations={feedValidations}
                 focusSection={diagnosticsFocus || undefined}
                 onFocusConsumed={() => setDiagnosticsFocus(null)}
+                onRefreshDiagnostics={validateAllFeeds}
+                onRevalidateFeed={(url) => {
+                  void validateSingleFeed(url);
+                }}
               />
             </div>
           </div>

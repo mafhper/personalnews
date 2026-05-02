@@ -17,6 +17,8 @@ interface FeedAnalyticsProps {
   feedValidations: Map<string, FeedValidationResult>;
   focusSection?: string;
   onFocusConsumed?: () => void;
+  onRefreshDiagnostics?: () => Promise<void> | void;
+  onRevalidateFeed?: (url: string) => Promise<void> | void;
 }
 
 type AnalyticsAccordionSection =
@@ -34,10 +36,14 @@ type AffectedFeedRow = {
   route: string;
   error: string;
   action: string;
-  cause: FeedFailureCause | "unchecked" | "healthy";
+  cause: FeedFailureCause | "degraded_stale" | "unchecked" | "healthy";
   lastChecked?: number;
   impact: "alto" | "médio" | "baixo";
   isValid: boolean;
+  severity?: "ok" | "warning" | "error" | "pending";
+  usedCache?: boolean;
+  lastSuccessfulFetchAt?: string | null;
+  diagnostic?: string;
 };
 
 const SURFACE_CLASS =
@@ -72,7 +78,10 @@ const safeHostname = (value?: string) => {
   }
 };
 
-const formatStatusLabel = (status: string) => status.replace(/_/g, " ");
+const formatStatusLabel = (status: string) => {
+  if (status === "degraded_stale") return "degradado";
+  return status.replace(/_/g, " ");
+};
 
 const formatDateTime = (timestamp?: number) => {
   if (!timestamp) return "—";
@@ -86,7 +95,10 @@ const statusTone = (status: string) => {
   if (status === "valid") {
     return "border-[rgba(var(--color-success),0.22)] bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]";
   }
-  if (status === "unchecked") {
+  if (status === "degraded_stale" || status === "timeout" || status === "server_error" || status === "rate_limited") {
+    return "border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]";
+  }
+  if (status === "unchecked" || status === "checking") {
     return "border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]";
   }
   return "border-[rgba(var(--color-error),0.22)] bg-[rgba(var(--color-error),0.12)] text-[rgb(var(--color-error))]";
@@ -106,6 +118,7 @@ const causeLabels: Record<AffectedFeedRow["cause"], string> = {
   parse_error: "Conteúdo inválido para feed",
   network_error: "Erro de rede",
   not_found: "Feed não encontrado",
+  degraded_stale: "Falha transitória com cache disponível",
   timeout: "Tempo limite excedido",
   cors_error: "Bloqueio de CORS",
   invalid_feed: "Feed inválido",
@@ -152,15 +165,23 @@ const getImpact = (
   return "baixo";
 };
 
+const equivalentMessage = (left: string, right: string) =>
+  normalizeLabel(left).normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
+  normalizeLabel(right).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   feeds,
   articles,
   feedValidations,
   focusSection,
   onFocusConsumed,
+  onRefreshDiagnostics,
+  onRevalidateFeed,
 }) => {
   const { snapshot, refresh } = useProxyDashboard();
   const [showAllRows, setShowAllRows] = useState(false);
+  const [ignoredUrls, setIgnoredUrls] = useState<Set<string>>(() => new Set());
+  const [refreshingDiagnostics, setRefreshingDiagnostics] = useState(false);
 
   const activityStats = useMemo(() => {
     const countByFeed = new Map<string, number>();
@@ -257,12 +278,14 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   const affectedRows = useMemo<AffectedFeedRow[]>(() => {
     const statusWeight: Record<string, number> = {
       invalid: 0,
-      timeout: 1,
+      not_found: 1,
       network_error: 2,
       parse_error: 3,
       cors_error: 4,
-      not_found: 5,
+      timeout: 5,
       server_error: 6,
+      rate_limited: 7,
+      degraded_stale: 8,
       discovery_required: 7,
       checking: 8,
       unchecked: 9,
@@ -275,24 +298,33 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         const articleCount =
           activityStats.countsByFeed.get(normalizeUrlKey(feed.url)) || 0;
         const isValid = validation?.isValid ?? false;
-        const cause: AffectedFeedRow["cause"] = validation?.diagnostics?.cause
-          ? validation.diagnostics.cause
-          : validation
-            ? isValid
-              ? "healthy"
-              : "unknown"
-            : "unchecked";
+        const isStaleCache =
+          validation?.status === "degraded_stale" ||
+          Boolean(validation?.usedCache && validation?.severity === "warning");
+        const cause: AffectedFeedRow["cause"] = isStaleCache
+          ? "degraded_stale"
+          : validation?.diagnostics?.cause
+            ? validation.diagnostics.cause
+            : validation
+              ? isValid
+                ? "healthy"
+                : "unknown"
+              : "unchecked";
+        const status = isStaleCache
+          ? "degraded_stale"
+          : validation?.status || "unchecked";
 
         return {
           url: feed.url,
           title: feed.customTitle || validation?.title || feed.url,
           host: safeHostname(feed.url),
-          status: validation?.status || "unchecked",
+          status,
           articleCount,
           route: validation?.route
             ? formatFeedRouteLabel(validation.route)
             : validation?.finalMethod || "Rota não registrada",
           error:
+            validation?.diagnostic ||
             validation?.diagnostics?.summary ||
             validation?.error ||
             (validation ? "Falha sem detalhe adicional" : "Ainda não validado"),
@@ -305,8 +337,13 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           lastChecked: validation?.lastChecked,
           impact: getImpact(articleCount, isValid),
           isValid,
+          severity: validation?.severity,
+          usedCache: validation?.usedCache,
+          lastSuccessfulFetchAt: validation?.lastSuccessfulFetchAt,
+          diagnostic: validation?.diagnostic,
         };
       })
+      .filter((row) => !ignoredUrls.has(row.url))
       .sort((a, b) => {
         const weightA = statusWeight[a.status] ?? 99;
         const weightB = statusWeight[b.status] ?? 99;
@@ -317,17 +354,27 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         }
         return a.title.localeCompare(b.title);
       });
-  }, [activityStats.countsByFeed, feedValidations, feeds]);
+  }, [activityStats.countsByFeed, feedValidations, feeds, ignoredUrls]);
 
   const visibleRows = showAllRows ? affectedRows : affectedRows.slice(0, 8);
   const invalidRows = affectedRows.filter(
     (row) => !row.isValid && row.status !== "unchecked",
+  );
+  const transientRows = affectedRows.filter((row) =>
+    ["timeout", "server_error", "rate_limited", "network_error"].includes(row.status),
+  );
+  const cachedRows = affectedRows.filter(
+    (row) => row.status === "degraded_stale" || row.usedCache,
+  );
+  const realInvalidRows = invalidRows.filter(
+    (row) => !transientRows.includes(row) && !cachedRows.includes(row),
   );
   const uncheckedRows = affectedRows.filter(
     (row) => row.status === "unchecked",
   );
   const hasAttentionItems =
     invalidRows.length > 0 ||
+    cachedRows.length > 0 ||
     uncheckedRows.length > 0 ||
     snapshot.summary.fallbackActive;
 
@@ -342,8 +389,16 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       };
     }
 
-    if (invalidRows.length > 0) {
-      const counts = invalidRows.reduce<Record<string, number>>((acc, row) => {
+    if (cachedRows.length > 0 && invalidRows.length === 0) {
+      return {
+        label: "Coleção operando com cache",
+        detail: `${cachedRows.length} feed${cachedRows.length === 1 ? "" : "s"} com falha transitória mantiveram conteúdo recente.`,
+        action: "Revalidar quando a conexão ou o provedor estabilizar.",
+      };
+    }
+
+    if (realInvalidRows.length > 0) {
+      const counts = realInvalidRows.reduce<Record<string, number>>((acc, row) => {
         acc[row.cause] = (acc[row.cause] || 0) + 1;
         return acc;
       }, {});
@@ -352,10 +407,13 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       )[0]?.[0] as FeedFailureCause | undefined;
 
       if (topCause) {
-        const topRow = invalidRows.find((row) => row.cause === topCause);
+        const topRow = realInvalidRows.find((row) => row.cause === topCause);
         return {
           label: causeLabels[topCause],
-          detail: topRow?.error || getFeedSummaryForCause(topCause),
+          detail:
+            topRow?.error && !equivalentMessage(topRow.error, causeLabels[topCause])
+              ? topRow.error
+              : getFeedSummaryForCause(topCause),
           action:
             topRow?.action || "Revalidar os feeds afetados e revisar proxies.",
         };
@@ -367,7 +425,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       detail: "Nenhum grupo de erro domina a coleção neste momento.",
       action: "Revalidar se precisar atualizar o status.",
     };
-  }, [invalidRows, snapshot]);
+  }, [cachedRows, invalidRows.length, realInvalidRows, snapshot]);
 
   const actionItems = useMemo(() => {
     const items = new Set<string>();
@@ -383,8 +441,12 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       );
     }
 
-    if (invalidRows.length > 0) {
-      items.add(invalidRows[0].action);
+    if (realInvalidRows.length > 0) {
+      items.add(realInvalidRows[0].action);
+    }
+
+    if (cachedRows.length > 0) {
+      items.add("Manter o cache recente e revalidar os feeds em alguns minutos.");
     }
 
     if (uncheckedRows.length > 0) {
@@ -396,7 +458,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     }
 
     return Array.from(items).slice(0, 3);
-  }, [diagnosis.action, invalidRows, snapshot, uncheckedRows.length]);
+  }, [cachedRows.length, diagnosis.action, realInvalidRows, snapshot, uncheckedRows.length]);
 
   const exportFeeds = useMemo(
     () =>
@@ -497,16 +559,32 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 
           <button
             type="button"
-            onClick={() => void refresh()}
+            onClick={async () => {
+              setRefreshingDiagnostics(true);
+              try {
+                await Promise.all([
+                  Promise.resolve(refresh()),
+                  Promise.resolve(onRefreshDiagnostics?.()),
+                ]);
+              } finally {
+                setRefreshingDiagnostics(false);
+              }
+            }}
+            disabled={refreshingDiagnostics}
             className={MANAGER_CONTROL_CLASS}
           >
-            Atualizar
+            {refreshingDiagnostics ? "Atualizando..." : "Atualizar"}
           </button>
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-4">
           <StatCard label="Feeds" value={feeds.length} />
           <StatCard label="Com erro" value={invalidRows.length} tone="danger" />
+          <StatCard
+            label="Com cache"
+            value={cachedRows.length}
+            tone="warning"
+          />
           <StatCard
             label="Pendentes"
             value={uncheckedRows.length}
@@ -529,13 +607,15 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           }
         >
           <div className="rounded-2xl bg-[rgb(var(--theme-manager-control))] p-5 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-50">Problema Dominante</h4>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-50">Situação da coleção</h4>
             <p className="mt-3 text-lg font-bold text-[rgb(var(--theme-text-readable))]">
               {diagnosis.label}
             </p>
-            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
-              {diagnosis.detail}
-            </p>
+            {!equivalentMessage(diagnosis.label, diagnosis.detail) && (
+              <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+                {diagnosis.detail}
+              </p>
+            )}
           </div>
         </AccordionSection>
 
@@ -592,6 +672,26 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           ) : null
         }
       >
+        <div className="mb-4 grid gap-3 md:grid-cols-3">
+          <SignalGroup
+            title="Falhas transitórias"
+            value={transientRows.length}
+            detail="Timeouts, rede ou servidor instável."
+            tone="warning"
+          />
+          <SignalGroup
+            title="Cache disponível"
+            value={cachedRows.length}
+            detail="Conteúdo recente preservado."
+            tone="success"
+          />
+          <SignalGroup
+            title="Inválidos reais"
+            value={realInvalidRows.length}
+            detail="URLs para revisar ou substituir."
+            tone="danger"
+          />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-y-1.5">
             <thead>
@@ -599,6 +699,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 <th className="px-4 py-2">Feed</th>
                 <th className="px-4 py-2">Infra / Rota</th>
                 <th className="px-4 py-2">Status / Erro</th>
+                <th className="px-4 py-2">Ação</th>
                 <th className="px-4 py-2 text-right">Impacto</th>
               </tr>
             </thead>
@@ -641,6 +742,19 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                         {row.error}
                       </span>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <RowAction
+                      row={row}
+                      onRevalidateFeed={onRevalidateFeed}
+                      onIgnore={() =>
+                        setIgnoredUrls((current) => {
+                          const next = new Set(current);
+                          next.add(row.url);
+                          return next;
+                        })
+                      }
+                    />
                   </td>
                   <td className="rounded-r-xl px-4 py-3 text-right">
                     <div
@@ -795,6 +909,70 @@ const AccordionSection: React.FC<{
     {isOpen && <div className="mt-4">{children}</div>}
   </section>
 );
+
+const SignalGroup: React.FC<{
+  title: string;
+  value: number;
+  detail: string;
+  tone: "success" | "warning" | "danger";
+}> = ({ title, value, detail, tone }) => {
+  const toneClass =
+    tone === "success"
+      ? "border-[rgba(var(--color-success),0.18)] bg-[rgba(var(--color-success),0.08)] text-[rgb(var(--color-success))]"
+      : tone === "warning"
+        ? "border-[rgba(var(--color-warning),0.2)] bg-[rgba(var(--color-warning),0.08)] text-[rgb(var(--color-warning))]"
+        : "border-[rgba(var(--color-error),0.18)] bg-[rgba(var(--color-error),0.08)] text-[rgb(var(--color-error))]";
+
+  return (
+    <div className={`rounded-2xl border p-4 ${toneClass}`}>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-xs font-bold uppercase tracking-[0.14em]">
+          {title}
+        </p>
+        <span className="text-xl font-black">{value}</span>
+      </div>
+      <p className="mt-2 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+        {detail}
+      </p>
+    </div>
+  );
+};
+
+const RowAction: React.FC<{
+  row: AffectedFeedRow;
+  onRevalidateFeed?: (url: string) => Promise<void> | void;
+  onIgnore: () => void;
+}> = ({ row, onRevalidateFeed, onIgnore }) => {
+  const openUrl = () => {
+    window.open(row.url, "_blank", "noopener,noreferrer");
+  };
+
+  if (row.status === "not_found" || row.cause === "not_found") {
+    return (
+      <button type="button" onClick={openUrl} className={MANAGER_CONTROL_CLASS}>
+        Abrir URL
+      </button>
+    );
+  }
+
+  if (row.isValid && !row.usedCache) {
+    return (
+      <button type="button" onClick={onIgnore} className={MANAGER_CONTROL_CLASS}>
+        Ignorar alerta
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void onRevalidateFeed?.(row.url)}
+      className={MANAGER_CONTROL_CLASS}
+    >
+      Revalidar
+    </button>
+  );
+};
 
 const StatusBadge: React.FC<{
   label: string;

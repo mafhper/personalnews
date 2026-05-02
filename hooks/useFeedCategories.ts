@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useEffect } from 'react';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { FeedCategory, FeedSource } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants/curatedFeeds';
 import { getFeedSortKey } from '../utils/feedDisplay';
+import { desktopBackendClient } from '../services/desktopBackendClient';
+import type { FeedCategoryItem } from '../shared/contracts/backend';
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
@@ -19,8 +21,54 @@ export interface UseFeedCategoriesReturn {
   resetCategoryLayouts: () => void;
 }
 
+const categoryToBackendItem = (category: FeedCategory): FeedCategoryItem => ({
+  id: category.id,
+  name: category.name,
+  color: category.color,
+  order: category.order,
+  isDefault: category.isDefault,
+  isPinned: category.isPinned,
+  description: category.description,
+  layoutMode: category.layoutMode,
+  autoDiscovery: category.autoDiscovery,
+  hideFromAll: category.hideFromAll,
+});
+
+const backendItemToCategory = (category: FeedCategoryItem): FeedCategory => ({
+  id: category.id,
+  name: category.name,
+  color: category.color || '#6B7280',
+  order: category.order ?? 0,
+  isDefault: category.isDefault,
+  isPinned: category.isPinned,
+  description: category.description,
+  layoutMode: category.layoutMode as FeedCategory['layoutMode'],
+  autoDiscovery: category.autoDiscovery,
+  hideFromAll: category.hideFromAll,
+});
+
+const buildCategorySignature = (categories: FeedCategory[]) =>
+  JSON.stringify(
+    categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      order: category.order,
+      isDefault: Boolean(category.isDefault),
+      isPinned: Boolean(category.isPinned),
+      description: category.description || null,
+      layoutMode: category.layoutMode || null,
+      autoDiscovery: category.autoDiscovery ?? null,
+      hideFromAll: Boolean(category.hideFromAll),
+    })),
+  );
+
 export const useFeedCategories = (): UseFeedCategoriesReturn => {
   const [categories, setCategories] = useLocalStorage<FeedCategory[]>('feed-categories', DEFAULT_CATEGORIES);
+  const usesBackendCollection = desktopBackendClient.isDesktopRuntime();
+  const backendReadyRef = useRef(!usesBackendCollection);
+  const applyingBackendCategoriesRef = useRef(false);
+  const backendCategorySignatureRef = useRef<string | null>(null);
 
   // Ensure all default categories exist (migration for existing users)
   useEffect(() => {
@@ -71,6 +119,72 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
       return prev;
     });
   }, [setCategories]);
+
+  useEffect(() => {
+    if (!usesBackendCollection) return;
+    let cancelled = false;
+
+    const syncBackendCategories = async () => {
+      try {
+        const health = await desktopBackendClient.waitUntilReady({
+          timeoutMs: 12_000,
+        });
+
+        if (!health.available || cancelled) {
+          backendReadyRef.current = true;
+          return;
+        }
+
+        await desktopBackendClient.importLocalFeedCollection([], {
+          categories: categories.map(categoryToBackendItem),
+        });
+        const collection = await desktopBackendClient.getFeedCollection();
+        if (cancelled) return;
+
+        const nextCategories = collection.categories.map(backendItemToCategory);
+        backendCategorySignatureRef.current =
+          buildCategorySignature(nextCategories);
+        if (
+          nextCategories.length > 0 &&
+          backendCategorySignatureRef.current !==
+            buildCategorySignature(categories)
+        ) {
+          applyingBackendCategoriesRef.current = true;
+          setCategories(nextCategories);
+          window.setTimeout(() => {
+            applyingBackendCategoriesRef.current = false;
+          }, 0);
+        }
+
+        backendReadyRef.current = true;
+      } catch {
+        backendReadyRef.current = true;
+      }
+    };
+
+    void syncBackendCategories();
+
+    return () => {
+      cancelled = true;
+    };
+    // Run only once with the startup localStorage snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!usesBackendCollection || !backendReadyRef.current) return;
+    if (applyingBackendCategoriesRef.current) return;
+
+    const signature = buildCategorySignature(categories);
+    if (signature === backendCategorySignatureRef.current) return;
+    backendCategorySignatureRef.current = signature;
+
+    void desktopBackendClient
+      .replaceFeedCategories(categories.map(categoryToBackendItem))
+      .catch(() => {
+        backendCategorySignatureRef.current = null;
+      });
+  }, [categories, usesBackendCollection]);
 
   const createCategory = useCallback((name: string, color: string, description?: string, layoutMode?: FeedCategory['layoutMode'], autoDiscovery?: boolean): FeedCategory => {
     const newCategory: FeedCategory = {

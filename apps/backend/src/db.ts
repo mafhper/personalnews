@@ -1,7 +1,15 @@
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { Database } from "bun:sqlite";
-import type { CacheStats, UserPreferencesV2 } from "../../../shared/contracts/backend";
+import type {
+  CacheStats,
+  FeedCategoryItem,
+  FeedCollectionItem,
+  FeedHealthItem,
+  FeedHealthSeverity,
+  FeedHealthStatus,
+  UserPreferencesV2,
+} from "../../../shared/contracts/backend";
 
 const DEFAULT_DB_PATH = resolve(process.cwd(), "apps/backend/data/personalnews.db");
 
@@ -100,6 +108,39 @@ const MIGRATIONS: Array<{ version: number; sql: string }> = [
       );
 
       CREATE INDEX IF NOT EXISTS idx_proxy_telemetry_created_at ON proxy_telemetry (created_at);
+    `,
+  },
+  {
+    version: 2,
+    sql: `
+      CREATE TABLE IF NOT EXISTS feed_health (
+        url TEXT PRIMARY KEY,
+        is_valid INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        title TEXT,
+        error TEXT,
+        diagnostic TEXT,
+        route TEXT,
+        checked_at TEXT NOT NULL,
+        last_successful_fetch_at TEXT,
+        used_cache INTEGER NOT NULL DEFAULT 0,
+        response_time_ms INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_feed_health_checked_at ON feed_health (checked_at);
+    `,
+  },
+  {
+    version: 3,
+    sql: `
+      ALTER TABLE feeds ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE categories ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE categories ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE categories ADD COLUMN description TEXT;
+      ALTER TABLE categories ADD COLUMN layout_mode TEXT;
+      ALTER TABLE categories ADD COLUMN auto_discovery INTEGER;
+      ALTER TABLE categories ADD COLUMN hide_from_all INTEGER NOT NULL DEFAULT 0;
     `,
   },
 ];
@@ -267,6 +308,310 @@ export class BackendDatabase {
       lastUsedAt: row.last_used_at,
       hitCount: row.hit_count,
       payloadBytes: Number(row.payload_bytes || 0),
+    }));
+  }
+
+  getFeeds(): FeedCollectionItem[] {
+    const rows = this.db
+      .query(
+        "SELECT url, category_id, custom_title, hide_from_all, display_order FROM feeds ORDER BY display_order, id, url"
+      )
+      .all() as Array<{
+      url: string;
+      category_id: string | null;
+      custom_title: string | null;
+      hide_from_all: number;
+      display_order: number;
+    }>;
+
+    return rows.map((row) => ({
+      url: row.url,
+      categoryId: row.category_id || undefined,
+      customTitle: row.custom_title || undefined,
+      hideFromAll: row.hide_from_all === 1 || undefined,
+      order: Number(row.display_order || 0),
+    }));
+  }
+
+  getCategories(): FeedCategoryItem[] {
+    const rows = this.db
+      .query(
+        'SELECT id, name, color, "order", is_default, is_pinned, description, layout_mode, auto_discovery, hide_from_all FROM categories ORDER BY "order", name'
+      )
+      .all() as Array<{
+      id: string;
+      name: string;
+      color: string | null;
+      order: number | null;
+      is_default: number;
+      is_pinned: number;
+      description: string | null;
+      layout_mode: string | null;
+      auto_discovery: number | null;
+      hide_from_all: number;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      color: row.color || undefined,
+      order: Number(row.order || 0),
+      isDefault: row.is_default === 1 || undefined,
+      isPinned: row.is_pinned === 1 || undefined,
+      description: row.description || undefined,
+      layoutMode: row.layout_mode || undefined,
+      autoDiscovery:
+        row.auto_discovery === null ? undefined : row.auto_discovery === 1,
+      hideFromAll: row.hide_from_all === 1 || undefined,
+    }));
+  }
+
+  replaceFeedCollection(
+    feeds: FeedCollectionItem[],
+    categories: FeedCategoryItem[] = [],
+  ): { feeds: number; categories: number; updatedAt: string } {
+    const now = new Date().toISOString();
+    this.db.run("BEGIN");
+    try {
+      this.db.run("DELETE FROM feeds");
+      this.db.run("DELETE FROM categories");
+
+      const insertFeed = this.db.query(
+        "INSERT INTO feeds (url, category_id, custom_title, hide_from_all, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      );
+      const seenFeeds = new Set<string>();
+      for (const [index, feed] of feeds.entries()) {
+        if (seenFeeds.has(feed.url)) continue;
+        seenFeeds.add(feed.url);
+        insertFeed.run(
+          feed.url,
+          feed.categoryId || null,
+          feed.customTitle || null,
+          feed.hideFromAll ? 1 : 0,
+          feed.order ?? index,
+          now,
+          now,
+        );
+      }
+
+      const insertCategory = this.db.query(
+        'INSERT INTO categories (id, name, color, "order", is_default, is_pinned, description, layout_mode, auto_discovery, hide_from_all, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      );
+      const seenCategories = new Set<string>();
+      for (const category of categories) {
+        if (seenCategories.has(category.id)) continue;
+        seenCategories.add(category.id);
+        insertCategory.run(
+          category.id,
+          category.name,
+          category.color || null,
+          category.order ?? 0,
+          category.isDefault ? 1 : 0,
+          category.isPinned ? 1 : 0,
+          category.description || null,
+          category.layoutMode || null,
+          category.autoDiscovery === undefined
+            ? null
+            : category.autoDiscovery
+              ? 1
+              : 0,
+          category.hideFromAll ? 1 : 0,
+          now,
+          now,
+        );
+      }
+
+      this.db.run("COMMIT");
+      return { feeds: seenFeeds.size, categories: seenCategories.size, updatedAt: now };
+    } catch (error) {
+      this.db.run("ROLLBACK");
+      throw error;
+    }
+  }
+
+  replaceCategories(categories: FeedCategoryItem[]): {
+    categories: number;
+    updatedAt: string;
+  } {
+    const now = new Date().toISOString();
+    this.db.run("BEGIN");
+    try {
+      this.db.run("DELETE FROM categories");
+      const insertCategory = this.db.query(
+        'INSERT INTO categories (id, name, color, "order", is_default, is_pinned, description, layout_mode, auto_discovery, hide_from_all, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      );
+      const seenCategories = new Set<string>();
+      for (const category of categories) {
+        if (seenCategories.has(category.id)) continue;
+        seenCategories.add(category.id);
+        insertCategory.run(
+          category.id,
+          category.name,
+          category.color || null,
+          category.order ?? 0,
+          category.isDefault ? 1 : 0,
+          category.isPinned ? 1 : 0,
+          category.description || null,
+          category.layoutMode || null,
+          category.autoDiscovery === undefined
+            ? null
+            : category.autoDiscovery
+              ? 1
+              : 0,
+          category.hideFromAll ? 1 : 0,
+          now,
+          now,
+        );
+      }
+      this.db.run("COMMIT");
+      return { categories: seenCategories.size, updatedAt: now };
+    } catch (error) {
+      this.db.run("ROLLBACK");
+      throw error;
+    }
+  }
+
+  importFeedCollection(
+    feeds: FeedCollectionItem[],
+    categories: FeedCategoryItem[] = [],
+  ): {
+    importedFeeds: number;
+    skippedFeeds: number;
+    importedCategories: number;
+    skippedCategories: number;
+    updatedAt: string;
+  } {
+    const now = new Date().toISOString();
+    const insertFeed = this.db.query(
+      "INSERT INTO feeds (url, category_id, custom_title, hide_from_all, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(url) DO NOTHING"
+    );
+    const insertCategory = this.db.query(
+      'INSERT INTO categories (id, name, color, "order", is_default, is_pinned, description, layout_mode, auto_discovery, hide_from_all, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING'
+    );
+    let importedFeeds = 0;
+    let skippedFeeds = 0;
+    let importedCategories = 0;
+    let skippedCategories = 0;
+
+    this.db.run("BEGIN");
+    try {
+      for (const [index, feed] of feeds.entries()) {
+        const result = insertFeed.run(
+          feed.url,
+          feed.categoryId || null,
+          feed.customTitle || null,
+          feed.hideFromAll ? 1 : 0,
+          feed.order ?? index,
+          now,
+          now,
+        );
+        if (Number(result.changes || 0) > 0) importedFeeds += 1;
+        else skippedFeeds += 1;
+      }
+
+      for (const category of categories) {
+        const result = insertCategory.run(
+          category.id,
+          category.name,
+          category.color || null,
+          category.order ?? 0,
+          category.isDefault ? 1 : 0,
+          category.isPinned ? 1 : 0,
+          category.description || null,
+          category.layoutMode || null,
+          category.autoDiscovery === undefined
+            ? null
+            : category.autoDiscovery
+              ? 1
+              : 0,
+          category.hideFromAll ? 1 : 0,
+          now,
+          now,
+        );
+        if (Number(result.changes || 0) > 0) importedCategories += 1;
+        else skippedCategories += 1;
+      }
+
+      this.db.run("COMMIT");
+    } catch (error) {
+      this.db.run("ROLLBACK");
+      throw error;
+    }
+
+    return {
+      importedFeeds,
+      skippedFeeds,
+      importedCategories,
+      skippedCategories,
+      updatedAt: now,
+    };
+  }
+
+  setFeedHealth(item: FeedHealthItem) {
+    const stmt = this.db.query(
+      "INSERT INTO feed_health (url, is_valid, status, severity, title, error, diagnostic, route, checked_at, last_successful_fetch_at, used_cache, response_time_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(url) DO UPDATE SET is_valid=excluded.is_valid, status=excluded.status, severity=excluded.severity, title=excluded.title, error=excluded.error, diagnostic=excluded.diagnostic, route=excluded.route, checked_at=excluded.checked_at, last_successful_fetch_at=excluded.last_successful_fetch_at, used_cache=excluded.used_cache, response_time_ms=excluded.response_time_ms"
+    );
+    stmt.run(
+      item.url,
+      item.isValid ? 1 : 0,
+      item.status,
+      item.severity,
+      item.title || null,
+      item.error || null,
+      item.diagnostic || null,
+      item.route || null,
+      item.checkedAt,
+      item.lastSuccessfulFetchAt,
+      item.usedCache ? 1 : 0,
+      item.responseTimeMs,
+    );
+  }
+
+  getFeedHealth(urls?: string[]): FeedHealthItem[] {
+    const rows = (
+      urls && urls.length > 0
+        ? urls
+            .map((url) =>
+              this.db
+                .query(
+                  "SELECT url, is_valid, status, severity, title, error, diagnostic, route, checked_at, last_successful_fetch_at, used_cache, response_time_ms FROM feed_health WHERE url = ?"
+                )
+                .get(url),
+            )
+            .filter(Boolean)
+        : this.db
+            .query(
+              "SELECT url, is_valid, status, severity, title, error, diagnostic, route, checked_at, last_successful_fetch_at, used_cache, response_time_ms FROM feed_health ORDER BY checked_at DESC"
+            )
+            .all()
+    ) as Array<{
+      url: string;
+      is_valid: number;
+      status: FeedHealthStatus;
+      severity: FeedHealthSeverity;
+      title: string | null;
+      error: string | null;
+      diagnostic: string | null;
+      route: string | null;
+      checked_at: string;
+      last_successful_fetch_at: string | null;
+      used_cache: number;
+      response_time_ms: number;
+    }>;
+
+    return rows.map((row) => ({
+      url: row.url,
+      isValid: row.is_valid === 1,
+      status: row.status,
+      severity: row.severity,
+      title: row.title || undefined,
+      error: row.error || undefined,
+      diagnostic: row.diagnostic || undefined,
+      route: row.route || undefined,
+      checkedAt: row.checked_at,
+      lastSuccessfulFetchAt: row.last_successful_fetch_at,
+      usedCache: row.used_cache === 1,
+      responseTimeMs: Number(row.response_time_ms || 0),
     }));
   }
 

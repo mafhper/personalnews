@@ -188,7 +188,15 @@ export const buildProxyDashboardSnapshot =
     const desktopStatus = await desktopBackendClient.getDesktopStatus();
 
     if (desktopBackendClient.isEnabled()) {
-      const health = await desktopBackendClient.checkHealth(false);
+      const health =
+        desktopStatus?.health === "ready"
+          ? {
+              available: true,
+              checkedAt: Date.now(),
+              error: undefined,
+              initializing: false,
+            }
+          : await desktopBackendClient.checkHealth(false);
       backendAvailable = health.available;
       backendCheckedAt = health.checkedAt;
       backendError = health.error;

@@ -108,6 +108,7 @@ export interface FeedValidationResult {
     | "timeout"
     | "network_error"
     | "parse_error"
+    | "degraded_stale"
     | "checking"
     | "cors_error"
     | "not_found"
@@ -131,6 +132,10 @@ export interface FeedValidationResult {
   requiresUserSelection?: boolean;
   route?: FeedRouteInfo;
   diagnostics?: FeedDiagnosticInfo;
+  severity?: "ok" | "warning" | "error" | "pending";
+  lastSuccessfulFetchAt?: string | null;
+  usedCache?: boolean;
+  diagnostic?: string;
 }
 
 export interface FeedValidationSummary {
@@ -463,6 +468,18 @@ class FeedValidatorService {
             result.isValid = true;
             result.status = "valid";
             result.title = item.title;
+            result.severity = item.severity;
+            result.lastSuccessfulFetchAt = item.lastSuccessfulFetchAt;
+            result.usedCache = item.usedCache;
+            result.diagnostic = item.diagnostic;
+            result.route = {
+              transport: "desktop-backend",
+              routeKind: item.usedCache ? "cache" : "local-backend",
+              routeName: item.route || "LocalBackend",
+              viaFallback: false,
+              checkedAt: Date.now(),
+              detail: item.diagnostic,
+            };
             result.totalValidationTime = Date.now() - validationStartTime;
             smartValidationCache.set(`validation:${url}`, result);
             return result;
@@ -481,6 +498,10 @@ class FeedValidatorService {
             result.isValid = false;
             result.status = item.status as FeedValidationResult["status"];
             result.error = item.error || item.status;
+            result.severity = item.severity;
+            result.lastSuccessfulFetchAt = item.lastSuccessfulFetchAt;
+            result.usedCache = item.usedCache;
+            result.diagnostic = item.diagnostic;
             result.finalError = {
               type: this.mapStatusToErrorType(item.status),
               message: item.error || item.status,
@@ -488,7 +509,7 @@ class FeedValidatorService {
               retryable: false,
             };
             result.diagnostics = buildFeedDiagnosticInfo(
-              item.error || item.status,
+              item.diagnostic || item.error || item.status,
               undefined,
               backendRoute,
             );

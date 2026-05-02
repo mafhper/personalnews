@@ -3,6 +3,12 @@ import {
   CacheClearResponseSchema,
   CacheEntriesResponseSchema,
   CacheStatsSchema,
+  FeedCategoriesPutRequestSchema,
+  FeedCollectionImportRequestSchema,
+  FeedCollectionImportResponseSchema,
+  FeedCollectionPutRequestSchema,
+  FeedCollectionResponseSchema,
+  FeedHealthResponseSchema,
   FeedValidateRequestSchema,
   FeedValidateResponseSchema,
   FeedBatchRequestSchema,
@@ -15,6 +21,9 @@ import {
   SettingsGetResponseSchema,
   SettingsPutSchema,
   type FeedValidationStatus,
+  type FeedHealthItem,
+  type FeedHealthSeverity,
+  type FeedHealthStatus,
   type FeedFetchResponse,
 } from "../../../shared/contracts/backend";
 import { BackendDatabase } from "./db";
@@ -39,6 +48,8 @@ const HOST = process.env.BACKEND_HOST || "127.0.0.1";
 
 const db = new BackendDatabase(process.env.BACKEND_DB_PATH);
 const startedAt = Date.now();
+const STALE_CACHE_GRACE_MS = 24 * 60 * 60 * 1000;
+const FEED_BATCH_CONCURRENCY = 6;
 
 function json(data: unknown, status = 200, req?: Request): Response {
   return new Response(JSON.stringify(data), {
@@ -55,7 +66,11 @@ function parseForceRefresh(value: string | null): "0" | "1" {
   return value === "1" ? "1" : "0";
 }
 
-async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchResponse> {
+async function getFeed(
+  url: string,
+  forceRefresh: boolean,
+  options: { allowStaleCacheOnError?: boolean } = {},
+): Promise<FeedFetchResponse> {
   const validatedUrl = await validateTargetFeedUrl(url);
   const targetHost = validatedUrl.hostname || "unknown";
   const cacheRecord = db.getCache(validatedUrl.toString());
@@ -109,7 +124,130 @@ async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchRes
     return response;
   } catch (error) {
     db.recordProxyTelemetry("LocalProxy", targetHost, false, Date.now() - started);
+    if (options.allowStaleCacheOnError !== false && cacheRecord && isTransientFeedError(error)) {
+      db.touchCacheHit(validatedUrl.toString());
+      const parsed = JSON.parse(cacheRecord.payloadJson);
+      return FeedFetchResponseSchema.parse({
+        ...parsed,
+        meta: {
+          source: "backend",
+          cached: true,
+          fetchedAt: cacheRecord.fetchedAt,
+          latencyMs: Date.now() - started,
+        },
+      });
+    }
     throw error;
+  }
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  const status = (error as { status?: unknown })?.status;
+  return typeof status === "number" ? status : undefined;
+}
+
+function isTransientFeedError(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  if (status === 404 || status === 403 || status === 422) return false;
+  if (status && status >= 500) return true;
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    message.includes("timeout") ||
+    message.includes("network") ||
+    message.includes("fetch") ||
+    message.includes("rate limit") ||
+    message.includes("429")
+  );
+}
+
+function mapHealthStatus(
+  validationStatus: FeedValidationStatus,
+  usedCache: boolean,
+): FeedHealthStatus {
+  if (usedCache && validationStatus !== "valid") return "degraded_stale";
+  if (validationStatus === "valid") return "valid";
+  if (validationStatus === "invalid" || validationStatus === "forbidden") return "unknown";
+  return validationStatus;
+}
+
+function severityForStatus(status: FeedHealthStatus): FeedHealthSeverity {
+  if (status === "valid") return "ok";
+  if (status === "degraded_stale" || status === "timeout" || status === "rate_limited" || status === "server_error") {
+    return "warning";
+  }
+  return "error";
+}
+
+function latestCacheSuccess(url: string): string | null {
+  const cache = db.getCache(url);
+  if (!cache) return null;
+  const fetchedAt = Date.parse(cache.fetchedAt);
+  if (Number.isNaN(fetchedAt)) return cache.fetchedAt;
+  return Date.now() - fetchedAt <= STALE_CACHE_GRACE_MS ? cache.fetchedAt : null;
+}
+
+function logFeedValidation(item: FeedHealthItem) {
+  console.log(
+    `PERSONALNEWS_FEED_VALIDATION ${JSON.stringify({
+      url: item.url,
+      status: item.status,
+      severity: item.severity,
+      usedCache: item.usedCache,
+      route: item.route,
+      responseTimeMs: item.responseTimeMs,
+    })}`,
+  );
+}
+
+async function validateFeedHealth(feedUrl: string, forceRefresh: boolean): Promise<FeedHealthItem> {
+  const startedAt = Date.now();
+  const checkedAt = new Date().toISOString();
+  const normalizedUrl = (await validateTargetFeedUrl(feedUrl)).toString();
+
+  try {
+    const feed = await getFeed(normalizedUrl, forceRefresh, {
+      allowStaleCacheOnError: false,
+    });
+    const item: FeedHealthItem = {
+      url: normalizedUrl,
+      isValid: true,
+      status: "valid",
+      severity: "ok",
+      title: feed.title,
+      responseTimeMs: Date.now() - startedAt,
+      checkedAt,
+      route: feed.meta.cached ? "LocalBackend cache" : "LocalBackend",
+      lastSuccessfulFetchAt: feed.meta.fetchedAt,
+      usedCache: feed.meta.cached,
+      diagnostic: feed.meta.cached ? "Servido pelo cache local." : "Feed validado pelo backend local.",
+    };
+    db.setFeedHealth(item);
+    logFeedValidation(item);
+    return item;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown validation error";
+    const status = classifyValidationStatus(message);
+    const cacheSuccess = latestCacheSuccess(normalizedUrl);
+    const useStale = Boolean(cacheSuccess && isTransientFeedError(error));
+    const healthStatus = mapHealthStatus(status, useStale);
+    const item: FeedHealthItem = {
+      url: normalizedUrl,
+      isValid: useStale,
+      status: healthStatus,
+      severity: severityForStatus(healthStatus),
+      error: message,
+      diagnostic: useStale
+        ? "Falha transitória; cache recente mantido como fonte temporária."
+        : message,
+      responseTimeMs: Date.now() - startedAt,
+      checkedAt,
+      route: "LocalBackend",
+      lastSuccessfulFetchAt: cacheSuccess,
+      usedCache: useStale,
+    };
+    db.setFeedHealth(item);
+    logFeedValidation(item);
+    return item;
   }
 }
 
@@ -143,18 +281,35 @@ async function handleFeedBatchRequest(req: Request): Promise<Response> {
     error?: string;
   }> = [];
 
-  for (const feedUrl of parsedBody.data.urls) {
-    try {
-      const result = await getFeed(feedUrl, parsedBody.data.forceRefresh);
-      items.push({ url: feedUrl, success: true, result });
-    } catch (error) {
-      items.push({
-        url: feedUrl,
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown feed error",
-      });
+  const queue = parsedBody.data.urls.map((url, index) => ({ url, index }));
+  const orderedItems = new Array<(typeof items)[number]>(queue.length);
+
+  async function worker() {
+    while (queue.length > 0) {
+      const next = queue.shift();
+      if (!next) return;
+
+      try {
+        const result = await getFeed(next.url, parsedBody.data.forceRefresh);
+        orderedItems[next.index] = { url: next.url, success: true, result };
+      } catch (error) {
+        orderedItems[next.index] = {
+          url: next.url,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown feed error",
+        };
+      }
     }
   }
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(FEED_BATCH_CONCURRENCY, queue.length) },
+      () => worker(),
+    ),
+  );
+
+  items.push(...orderedItems.filter(Boolean));
 
   const response = {
     total: items.length,
@@ -184,35 +339,36 @@ async function handleFeedValidateRequest(req: Request): Promise<Response> {
     responseTimeMs: number;
     checkedAt: string;
     method: "backend";
+    severity?: FeedHealthSeverity;
+    lastSuccessfulFetchAt?: string | null;
+    usedCache?: boolean;
+    route?: string;
+    diagnostic?: string;
   }> = [];
 
   for (const feedUrl of parsedBody.data.urls) {
-    const startedAt = Date.now();
-    const checkedAt = new Date().toISOString();
-
-    try {
-      const feed = await getFeed(feedUrl, parsedBody.data.forceRefresh);
-      items.push({
-        url: feedUrl,
-        isValid: true,
-        status: "valid",
-        title: feed.title,
-        responseTimeMs: Date.now() - startedAt,
-        checkedAt,
-        method: "backend",
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown validation error";
-      items.push({
-        url: feedUrl,
-        isValid: false,
-        status: classifyValidationStatus(message),
-        error: message,
-        responseTimeMs: Date.now() - startedAt,
-        checkedAt,
-        method: "backend",
-      });
-    }
+    const health = await validateFeedHealth(feedUrl, parsedBody.data.forceRefresh);
+    const validationStatus: FeedValidationStatus =
+      health.status === "degraded_stale"
+        ? "valid"
+        : health.status === "unknown"
+          ? "invalid"
+          : health.status;
+    items.push({
+      url: health.url,
+      isValid: health.isValid,
+      status: validationStatus,
+      error: health.error,
+      title: health.title,
+      responseTimeMs: health.responseTimeMs,
+      checkedAt: health.checkedAt,
+      method: "backend",
+      severity: health.severity,
+      lastSuccessfulFetchAt: health.lastSuccessfulFetchAt,
+      usedCache: health.usedCache,
+      route: health.route,
+      diagnostic: health.diagnostic,
+    });
   }
 
   const response = {
@@ -224,6 +380,79 @@ async function handleFeedValidateRequest(req: Request): Promise<Response> {
 
   FeedValidateResponseSchema.parse(response);
   return json(response, 200, req);
+}
+
+function handleFeedCollectionGet(req: Request): Response {
+  const payload = {
+    feeds: db.getFeeds(),
+    categories: db.getCategories(),
+    source: "backend" as const,
+    updatedAt: new Date().toISOString(),
+  };
+  FeedCollectionResponseSchema.parse(payload);
+  return json(payload, 200, req);
+}
+
+async function handleFeedCollectionPut(req: Request): Promise<Response> {
+  const body = await req.json().catch(() => null);
+  const parsed = FeedCollectionPutRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return errorResponse(400, "Invalid feed collection payload", req);
+  }
+
+  const categories = parsed.data.categories ?? db.getCategories();
+  const result = db.replaceFeedCollection(parsed.data.feeds, categories);
+  const payload = {
+    feeds: db.getFeeds(),
+    categories: db.getCategories(),
+    source: "backend" as const,
+    updatedAt: result.updatedAt,
+  };
+  FeedCollectionResponseSchema.parse(payload);
+  return json(payload, 200, req);
+}
+
+async function handleFeedCategoriesPut(req: Request): Promise<Response> {
+  const body = await req.json().catch(() => null);
+  const parsed = FeedCategoriesPutRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return errorResponse(400, "Invalid feed categories payload", req);
+  }
+
+  const result = db.replaceCategories(parsed.data.categories);
+  const payload = {
+    feeds: db.getFeeds(),
+    categories: db.getCategories(),
+    source: "backend" as const,
+    updatedAt: result.updatedAt,
+  };
+  FeedCollectionResponseSchema.parse(payload);
+  return json(payload, 200, req);
+}
+
+async function handleFeedCollectionImport(req: Request): Promise<Response> {
+  const body = await req.json().catch(() => null);
+  const parsed = FeedCollectionImportRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return errorResponse(400, "Invalid feed import payload", req);
+  }
+
+  const result = db.importFeedCollection(parsed.data.feeds, parsed.data.categories);
+  FeedCollectionImportResponseSchema.parse(result);
+  return json(result, 200, req);
+}
+
+function handleFeedHealthGet(req: Request, reqUrl: URL): Response {
+  const urls = reqUrl.searchParams.getAll("url");
+  const payload = {
+    items: db.getFeedHealth(urls.length > 0 ? urls : undefined),
+    checkedAt: new Date().toISOString(),
+  };
+  FeedHealthResponseSchema.parse(payload);
+  return json(payload, 200, req);
 }
 
 function handleSettingsGet(req: Request): Response {
@@ -333,6 +562,26 @@ const server = Bun.serve({
     }
 
     try {
+      if (req.method === "GET" && pathname === "/api/v1/feeds") {
+        return handleFeedCollectionGet(req);
+      }
+
+      if (req.method === "PUT" && pathname === "/api/v1/feeds") {
+        return await handleFeedCollectionPut(req);
+      }
+
+      if (req.method === "PUT" && pathname === "/api/v1/feeds/categories") {
+        return await handleFeedCategoriesPut(req);
+      }
+
+      if (req.method === "POST" && pathname === "/api/v1/feeds/import-local-storage") {
+        return await handleFeedCollectionImport(req);
+      }
+
+      if (req.method === "GET" && pathname === "/api/v1/feeds/health") {
+        return handleFeedHealthGet(req, reqUrl);
+      }
+
       if (req.method === "GET" && pathname === "/api/v1/feed") {
         return await handleFeedRequest(req, reqUrl);
       }
