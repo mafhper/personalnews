@@ -551,6 +551,24 @@ fn log_backend_event(app: &AppHandle, stream: &str, message: &str) {
     }
 }
 
+fn frontend_log_path(app: &AppHandle) -> Option<PathBuf> {
+    let dir = app.path().app_local_data_dir().ok()?;
+    let _ = fs::create_dir_all(&dir);
+    Some(dir.join("personalnews-frontend.log"))
+}
+
+fn log_frontend_event(app: &AppHandle, message: &str, payload: Option<&str>) {
+    if let Some(path) = frontend_log_path(app) {
+        let safe_payload = payload.unwrap_or("").replace('\n', "\\n");
+        let line = format!("{} message={} payload={}\n", chrono_like_now(), message, safe_payload);
+        let _ = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .and_then(|mut file| file.write_all(line.as_bytes()));
+    }
+}
+
 fn chrono_like_now() -> String {
     format!("{:?}", std::time::SystemTime::now())
 }
@@ -704,6 +722,16 @@ fn get_backend_status(app: AppHandle) -> Result<DesktopBackendStatus, String> {
 }
 
 #[tauri::command]
+fn append_frontend_log(
+    app: AppHandle,
+    message: String,
+    payload: Option<String>,
+) -> Result<(), String> {
+    log_frontend_event(&app, &message, payload.as_deref());
+    Ok(())
+}
+
+#[tauri::command]
 fn restart_backend_sidecar(app: AppHandle) -> Result<DesktopBackendStatus, String> {
     log_desktop_event(&app, "event=restart_requested");
     stop_backend_sidecar(&app);
@@ -737,6 +765,7 @@ fn main() {
             open_external_url,
             get_backend_auth_token,
             get_backend_status,
+            append_frontend_log,
             restart_backend_sidecar
         ])
         .build(tauri::generate_context!())

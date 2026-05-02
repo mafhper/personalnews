@@ -1,3 +1,5 @@
+import { invoke as tauriInvoke } from "@tauri-apps/api/core";
+import { listen as tauriListen } from "@tauri-apps/api/event";
 import {
   BACKEND_DEFAULT_URL,
   BACKEND_AUTH_TOKEN_HEADER,
@@ -93,7 +95,10 @@ class BackendStillStartingError extends Error {
   }
 }
 
-type TauriInvoke = (command: string) => Promise<unknown>;
+type TauriInvoke = (
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<unknown>;
 type TauriListen = (
   event: string,
   handler: (event: { payload: unknown }) => void,
@@ -114,9 +119,11 @@ const getConfiguredBackendUrl = () => {
 
 const isTauriRuntime = () =>
   typeof window !== "undefined" &&
-  (!!(window as Window & { __TAURI__?: unknown }).__TAURI__ ||
+  (Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__) ||
     !!(window as Window & { __TAURI_INTERNALS__?: unknown })
-      .__TAURI_INTERNALS__);
+      .__TAURI_INTERNALS__ ||
+    (typeof navigator !== "undefined" &&
+      navigator.userAgent.toLowerCase().includes(" tauri")));
 
 const getTauriInvoke = (): TauriInvoke | null => {
   if (typeof window === "undefined") return null;
@@ -127,12 +134,13 @@ const getTauriInvoke = (): TauriInvoke | null => {
       invoke?: TauriInvoke;
     };
   };
-  return (
+  const globalInvoke =
     target.__TAURI_INTERNALS__?.invoke ||
     target.__TAURI__?.core?.invoke ||
-    target.__TAURI__?.invoke ||
-    null
-  );
+    target.__TAURI__?.invoke;
+  if (globalInvoke) return globalInvoke;
+
+  return tauriInvoke as TauriInvoke;
 };
 
 const getTauriListen = (): TauriListen | null => {
@@ -144,12 +152,33 @@ const getTauriListen = (): TauriListen | null => {
       listen?: TauriListen;
     };
   };
-  return (
+  const globalListen =
     target.__TAURI_INTERNALS__?.listen ||
     target.__TAURI__?.event?.listen ||
-    target.__TAURI__?.listen ||
-    null
-  );
+    target.__TAURI__?.listen;
+  if (globalListen) return globalListen;
+
+  return tauriListen as TauriListen;
+};
+
+const stringifyLogPayload = (payload: unknown): string => {
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return String(payload);
+  }
+};
+
+const appendFrontendLog = (message: string, payload?: unknown): void => {
+  if (!isTauriRuntime()) return;
+  const invoke = getTauriInvoke();
+  if (!invoke) return;
+
+  void invoke("append_frontend_log", {
+    message,
+    payload:
+      typeof payload === "undefined" ? undefined : stringifyLogPayload(payload),
+  }).catch(() => undefined);
 };
 
 const isLocalBrowserRuntime = () => {
@@ -202,7 +231,16 @@ const parseDesktopBackendStatus = (
   source: string,
 ): DesktopBackendStatus | null => {
   const parsed = DesktopBackendStatusSchema.safeParse(raw);
-  if (parsed.success) return parsed.data;
+  if (parsed.success) {
+    appendFrontendLog("backend_status_parse_ok", {
+      source,
+      health: parsed.data.health,
+      diagnostic: parsed.data.diagnostic,
+      baseUrl: parsed.data.baseUrl,
+      pid: parsed.data.pid,
+    });
+    return parsed.data;
+  }
 
   if (typeof console !== "undefined") {
     console.warn("[desktop-backend] invalid backend status payload", {
@@ -211,6 +249,11 @@ const parseDesktopBackendStatus = (
       issues: parsed.error.issues,
     });
   }
+  appendFrontendLog("backend_status_parse_failed", {
+    source,
+    raw,
+    issues: parsed.error.issues,
+  });
 
   return null;
 };
@@ -320,7 +363,13 @@ class DesktopBackendClient {
     };
     this.authTokenPromise = null;
     this.warmupMonitorStarted = false;
-    const raw = await invoke("restart_backend_sidecar").catch(() => null);
+    appendFrontendLog("restart_backend_sidecar_call");
+    const raw = await invoke("restart_backend_sidecar").catch((error) => {
+      appendFrontendLog("restart_backend_sidecar_failed", {
+        error: normalizeFetchError(error),
+      });
+      return null;
+    });
     const status = parseDesktopBackendStatus(raw, "restart_backend_sidecar");
     if (!status) return null;
 
@@ -402,6 +451,7 @@ class DesktopBackendClient {
 
     this.backendStatusListenerStarted = true;
     const applyEventStatus = (event: { payload: unknown }) => {
+      appendFrontendLog("backend_status_event", event.payload);
       const status = parseDesktopBackendStatus(
         event.payload,
         "tauri-event",
@@ -411,10 +461,32 @@ class DesktopBackendClient {
       }
     };
 
-    void listen("backend-status-changed", applyEventStatus).catch(() => {
+    appendFrontendLog("backend_status_listener_start", {
+      hasGlobalTauri:
+        typeof window !== "undefined" &&
+        Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__),
+      hasInternalTauri:
+        typeof window !== "undefined" &&
+        Boolean(
+          (window as Window & { __TAURI_INTERNALS__?: unknown })
+            .__TAURI_INTERNALS__,
+        ),
+      userAgent:
+        typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+    });
+
+    void listen("backend-status-changed", applyEventStatus).catch((error) => {
+      appendFrontendLog("backend_status_listener_failed", {
+        event: "backend-status-changed",
+        error: normalizeFetchError(error),
+      });
       this.backendStatusListenerStarted = false;
     });
-    void listen("backend-ready", applyEventStatus).catch(() => undefined);
+    void listen("backend-ready", applyEventStatus).catch((error) => {
+      appendFrontendLog("backend_ready_listener_failed", {
+        error: normalizeFetchError(error),
+      });
+    });
   }
 
   async waitUntilReady(
@@ -472,9 +544,29 @@ class DesktopBackendClient {
 
     this.desktopStatusPromise = (async () => {
       const invoke = getTauriInvoke();
-      if (!invoke) return null;
+      if (!invoke) {
+        appendFrontendLog("get_backend_status_no_invoke", {
+          hasGlobalTauri:
+            typeof window !== "undefined" &&
+            Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__),
+          hasInternalTauri:
+            typeof window !== "undefined" &&
+            Boolean(
+              (window as Window & { __TAURI_INTERNALS__?: unknown })
+                .__TAURI_INTERNALS__,
+            ),
+        });
+        return null;
+      }
 
-      const raw = await invoke("get_backend_status").catch(() => null);
+      appendFrontendLog("get_backend_status_call");
+      const raw = await invoke("get_backend_status").catch((error) => {
+        appendFrontendLog("get_backend_status_failed", {
+          error: normalizeFetchError(error),
+        });
+        return null;
+      });
+      appendFrontendLog("get_backend_status_raw", raw);
       const status = parseDesktopBackendStatus(raw, "get_backend_status");
       if (!status) return null;
 
