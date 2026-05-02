@@ -63,6 +63,7 @@ const routeLabels: Record<ProxyTestResult["route"], string> = {
 const backendDiagnosticLabels: Record<string, string> = {
   not_started: "Backend ainda não iniciado pelo launcher.",
   starting: "Backend inicializando; novas tentativas estão em andamento.",
+  restarting: "Backend reiniciando; aguarde o supervisor concluir a troca.",
   ready: "Backend pronto e respondendo ao health check.",
   port_occupied:
     "Porta preferencial ocupada; o launcher selecionou outra porta local.",
@@ -162,6 +163,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
   const showLocalProxyUnavailableNotice =
     !ProxyManager.supportsLocalProxyRoute();
   const displayedProxyIds = displayedProxies.map((proxy) => proxy.id);
+  const backendIsWarmingUp =
+    snapshot.backend.health === "starting" ||
+    snapshot.backend.health === "restarting";
 
   const handleTestProxy = async (proxyId: string) => {
     setTestingProxy(proxyId);
@@ -269,7 +273,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               {isLocalBackendRuntime
                 ? snapshot.backend.available
                   ? "Ativo"
-                  : snapshot.backend.health === "starting"
+                  : backendIsWarmingUp
                     ? "Inicializando"
                     : "Indisponível"
                 : "Não aplicável ao modo web"}
@@ -294,15 +298,19 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               <button
                 type="button"
                 onClick={() => void handleRestartBackend()}
-                disabled={restartingBackend}
+                disabled={restartingBackend || backendIsWarmingUp}
                 className="mt-4 inline-flex items-center gap-2 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition-all hover:bg-[rgba(var(--color-primary),0.18)] disabled:cursor-wait disabled:opacity-70"
               >
                 <RefreshCw
                   className={`h-4 w-4 ${
-                    restartingBackend ? "animate-spin" : ""
+                    restartingBackend || backendIsWarmingUp ? "animate-spin" : ""
                   }`}
                 />
-                {restartingBackend ? "Reiniciando..." : "Reiniciar backend"}
+                {restartingBackend || snapshot.backend.health === "restarting"
+                  ? "Reiniciando..."
+                  : snapshot.backend.health === "starting"
+                    ? "Aguardando..."
+                    : "Reiniciar backend"}
               </button>
             )}
           </div>

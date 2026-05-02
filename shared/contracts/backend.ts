@@ -54,20 +54,45 @@ export type DesktopBackendDiagnostic = z.infer<
   typeof DesktopBackendDiagnosticSchema
 >;
 
+const nullableOptionalString = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+const nullableOptionalInt = z
+  .number()
+  .int()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+const nullableOptionalPositiveInt = z
+  .number()
+  .int()
+  .positive()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+const nullableOptionalNonNegativeNumber = z
+  .number()
+  .nonnegative()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+
 export const DesktopBackendStatusSchema = z.object({
   generation: z.number().int().nonnegative().default(0),
   sidecarSpawned: z.boolean(),
-  pid: z.number().int().positive().optional(),
+  pid: nullableOptionalPositiveInt,
   baseUrl: z.string(),
   port: z.number().int().positive(),
   dbPath: z.string(),
   tokenAvailable: z.boolean(),
   health: DesktopBackendHealthStateSchema,
   diagnostic: DesktopBackendDiagnosticSchema.default("unknown"),
-  uptimeMs: z.number().nonnegative().optional(),
-  lastStartError: z.string().optional(),
-  lastHealthError: z.string().optional(),
-  lastExitCode: z.number().int().optional(),
+  uptimeMs: nullableOptionalNonNegativeNumber,
+  lastStartError: nullableOptionalString,
+  lastHealthError: nullableOptionalString,
+  lastExitCode: nullableOptionalInt,
 });
 export type DesktopBackendStatus = z.infer<typeof DesktopBackendStatusSchema>;
 

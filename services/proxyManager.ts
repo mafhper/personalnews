@@ -873,23 +873,34 @@ export class ProxyManager {
 
     if (proxyName === "LocalProxy" && ProxyManager.isTauriRuntime()) {
       const desktopStatus = await desktopBackendClient.getDesktopStatus();
-      const health =
-        desktopStatus?.health === "ready"
-          ? {
-              available: true,
-              checkedAt: Date.now(),
-              error: undefined,
-              initializing: false,
-            }
-          : await desktopBackendClient.checkHealth(true);
       const responseTime = Date.now() - startedAt;
 
-      if (!health.available) {
+      if (
+        desktopStatus?.health === "starting" ||
+        desktopStatus?.health === "restarting"
+      ) {
+        return {
+          success: true,
+          responseTime,
+          detail:
+            desktopStatus.health === "restarting"
+              ? "Backend local reiniciando. O supervisor ainda esta preparando o servico."
+              : "Backend local inicializando. O supervisor ainda esta preparando o servico.",
+          route: "backend-health",
+        };
+      }
+
+      if (desktopStatus?.health !== "ready") {
         return {
           success: false,
           responseTime,
-          error: health.error,
-          detail: "Backend local nao respondeu ao health check.",
+          error:
+            desktopStatus?.lastHealthError ||
+            desktopStatus?.lastStartError ||
+            (desktopStatus
+              ? `Supervisor reportou estado ${desktopStatus.health}.`
+              : "Status do supervisor indisponivel."),
+          detail: "Backend local indisponivel pelo supervisor.",
           route: "backend-health",
         };
       }
@@ -909,7 +920,7 @@ export class ProxyManager {
           success: true,
           responseTime,
           detail:
-            "Backend local respondeu ao health check, mas as estatisticas nao puderam ser carregadas.",
+            "Backend local esta pronto pelo supervisor, mas as estatisticas nao puderam ser carregadas.",
           error: error instanceof Error ? error.message : String(error),
           route: "backend-health",
         };

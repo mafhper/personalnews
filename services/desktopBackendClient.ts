@@ -197,6 +197,24 @@ const getBootstrappedBackendConfig = (): DesktopBackendBootstrapConfig | null =>
   return window.__PERSONALNEWS_BACKEND_CONFIG__ || null;
 };
 
+const parseDesktopBackendStatus = (
+  raw: unknown,
+  source: string,
+): DesktopBackendStatus | null => {
+  const parsed = DesktopBackendStatusSchema.safeParse(raw);
+  if (parsed.success) return parsed.data;
+
+  if (typeof console !== "undefined") {
+    console.warn("[desktop-backend] invalid backend status payload", {
+      source,
+      raw,
+      issues: parsed.error.issues,
+    });
+  }
+
+  return null;
+};
+
 const normalizeFetchError = (error: unknown): string => {
   if (isAbortLikeError(error)) {
     return "Backend local ainda respondendo";
@@ -303,10 +321,9 @@ class DesktopBackendClient {
     this.authTokenPromise = null;
     this.warmupMonitorStarted = false;
     const raw = await invoke("restart_backend_sidecar").catch(() => null);
-    const parsed = DesktopBackendStatusSchema.safeParse(raw);
-    if (!parsed.success) return null;
+    const status = parseDesktopBackendStatus(raw, "restart_backend_sidecar");
+    if (!status) return null;
 
-    const status = parsed.data;
     if (status.baseUrl) {
       this.resolvedBaseUrl = status.baseUrl.replace(/\/$/, "");
     }
@@ -385,9 +402,12 @@ class DesktopBackendClient {
 
     this.backendStatusListenerStarted = true;
     const applyEventStatus = (event: { payload: unknown }) => {
-      const parsed = DesktopBackendStatusSchema.safeParse(event.payload);
-      if (parsed.success) {
-        this.applyDesktopStatus(parsed.data);
+      const status = parseDesktopBackendStatus(
+        event.payload,
+        "tauri-event",
+      );
+      if (status) {
+        this.applyDesktopStatus(status);
       }
     };
 
@@ -455,10 +475,9 @@ class DesktopBackendClient {
       if (!invoke) return null;
 
       const raw = await invoke("get_backend_status").catch(() => null);
-      const parsed = DesktopBackendStatusSchema.safeParse(raw);
-      if (!parsed.success) return null;
+      const status = parseDesktopBackendStatus(raw, "get_backend_status");
+      if (!status) return null;
 
-      const status = parsed.data;
       if (status.baseUrl) {
         this.resolvedBaseUrl = status.baseUrl.replace(/\/$/, "");
       }

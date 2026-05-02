@@ -177,3 +177,106 @@ describe("ProxyManager preference loading", () => {
     expect(availableProxy).toBeDefined();
   });
 });
+
+describe("ProxyManager desktop LocalProxy diagnostics", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    localStorage.clear();
+    delete (window as Window & { __TAURI__?: unknown }).__TAURI__;
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: undefined,
+      configurable: true,
+    });
+    setImportMetaEnv({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    setImportMetaEnv({});
+  });
+
+  it("does not turn a starting desktop supervisor into a health-check failure", async () => {
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "get_backend_status") {
+        return {
+          generation: 1,
+          sidecarSpawned: true,
+          pid: null,
+          baseUrl: "http://127.0.0.1:3001",
+          port: 3001,
+          dbPath: "memory",
+          tokenAvailable: true,
+          health: "starting",
+          diagnostic: "starting",
+          uptimeMs: 1200,
+          lastStartError: null,
+          lastHealthError: null,
+          lastExitCode: null,
+        };
+      }
+      return null;
+    });
+
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: { invoke },
+      configurable: true,
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { proxyManager: desktopProxyManager } =
+      await import("../services/proxyManager");
+
+    const result = await desktopProxyManager.testProxy("LocalProxy");
+
+    expect(result).toMatchObject({
+      success: true,
+      route: "backend-health",
+    });
+    expect(result.detail).toContain("inicializando");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not turn a restarting desktop supervisor into a health-check failure", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              generation: 2,
+              sidecarSpawned: true,
+              pid: null,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "restarting",
+              diagnostic: "starting",
+              uptimeMs: 0,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { proxyManager: desktopProxyManager } =
+      await import("../services/proxyManager");
+
+    const result = await desktopProxyManager.testProxy("LocalProxy");
+
+    expect(result).toMatchObject({
+      success: true,
+      route: "backend-health",
+    });
+    expect(result.detail).toContain("reiniciando");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

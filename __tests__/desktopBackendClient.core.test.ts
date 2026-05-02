@@ -232,6 +232,54 @@ describe("desktopBackendClient local discovery", () => {
     );
   });
 
+  it("accepts nullable Rust status fields and normalizes them internally", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              generation: 1,
+              sidecarSpawned: true,
+              pid: null,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "ready",
+              diagnostic: "ready",
+              uptimeMs: null,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    const status = await desktopBackendClient.getDesktopStatus();
+
+    expect(status).toMatchObject({
+      health: "ready",
+      baseUrl: "http://127.0.0.1:3001",
+    });
+    expect(status?.pid).toBeUndefined();
+    expect(status?.lastHealthError).toBeUndefined();
+    await expect(desktopBackendClient.checkHealth(true)).resolves.toMatchObject({
+      available: true,
+      initializing: false,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("keeps a starting Tauri backend in warmup without probing the default port", async () => {
     Object.defineProperty(window, "__TAURI_INTERNALS__", {
       value: {
@@ -606,13 +654,17 @@ describe("desktopBackendClient local discovery", () => {
     handlers.get("backend-ready")?.({
       payload: {
         sidecarSpawned: true,
-        pid: 123,
+        pid: null,
         baseUrl: "http://127.0.0.1:3022",
         port: 3022,
         dbPath: "memory",
         tokenAvailable: true,
         health: "ready",
         diagnostic: "ready",
+        uptimeMs: null,
+        lastStartError: null,
+        lastHealthError: null,
+        lastExitCode: null,
       },
     });
 

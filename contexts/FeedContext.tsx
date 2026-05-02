@@ -231,11 +231,26 @@ export const FeedProvider: React.FC<{
           },
         });
 
-        const health = await desktopBackendClient.checkHealth(true).catch(() => null);
-        if (!health?.available) {
+        const desktopStatus = await desktopBackendClient
+          .getDesktopStatus()
+          .catch(() => null);
+        const shouldRestartBackend =
+          desktopStatus?.health === "failed" &&
+          [
+            "crashed",
+            "health_failed",
+            "spawn_blocked",
+            "binary_missing",
+          ].includes(desktopStatus.diagnostic);
+
+        if (shouldRestartBackend) {
           await desktopBackendClient.restartBackend().catch(() => null);
           await desktopBackendClient.waitUntilReady({ timeoutMs: 8_000 }).catch(
             () => null,
+          );
+        } else if (!desktopStatus) {
+          logger.warn(
+            "Startup recovery skipped backend restart because supervisor status was unavailable",
           );
         }
 
