@@ -46,6 +46,7 @@ const LOCAL_BACKEND_PORT_START = 3001;
 const LOCAL_BACKEND_PORT_END = 3015;
 const BACKEND_READY_POLL_MS = 750;
 const BACKEND_READY_POLL_DEADLINE_MS = 20_000;
+const BACKEND_FIRST_LOAD_READY_TIMEOUT_MS = 12_000;
 
 export class BackendRequestError extends Error {
   readonly statusCode: number;
@@ -206,6 +207,50 @@ class DesktopBackendClient {
 
   private isInWarmupWindow(): boolean {
     return Date.now() - this.createdAt < BACKEND_WARMUP_MS;
+  }
+
+  async waitUntilReady(
+    options: { timeoutMs?: number; signal?: AbortSignal } = {},
+  ): Promise<HealthState> {
+    const timeoutMs = options.timeoutMs ?? BACKEND_FIRST_LOAD_READY_TIMEOUT_MS;
+    const deadline = Date.now() + timeoutMs;
+    let delayMs = 250;
+    let lastHealth = await this.checkHealth(true, options.signal);
+
+    while (
+      !lastHealth.available &&
+      (lastHealth.initializing || isTauriRuntime()) &&
+      Date.now() < deadline
+    ) {
+      await this.sleep(delayMs, options.signal);
+      delayMs = Math.min(1_000, Math.round(delayMs * 1.35));
+      lastHealth = await this.checkHealth(true, options.signal);
+
+      if (!lastHealth.initializing && !isTauriRuntime()) {
+        break;
+      }
+    }
+
+    return lastHealth;
+  }
+
+  private sleep(ms: number, signal?: AbortSignal) {
+    return new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new DOMException("Request was cancelled", "AbortError"));
+        return;
+      }
+
+      const timeoutId = window.setTimeout(resolve, ms);
+      signal?.addEventListener(
+        "abort",
+        () => {
+          window.clearTimeout(timeoutId);
+          reject(new DOMException("Request was cancelled", "AbortError"));
+        },
+        { once: true },
+      );
+    });
   }
 
   private async getDesktopBackendStatus(

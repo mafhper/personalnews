@@ -334,7 +334,7 @@ export const buildProxyDashboardSnapshot =
         diagnostic: desktopStatus?.diagnostic,
         health: desktopStatus?.health,
         pid: desktopStatus?.pid,
-        restartAvailable: Boolean(desktopStatus),
+        restartAvailable: desktopBackendClient.isEnabled(),
       },
       routes,
       summary: {

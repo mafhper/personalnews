@@ -4,6 +4,7 @@ const {
   mockDetectEnvironment,
   mockIsEnabled,
   mockCheckHealth,
+  mockWaitUntilReady,
   mockFetchFeed,
   mockSetRuntimeState,
   mockParseRssUrlDetailed,
@@ -12,6 +13,7 @@ const {
   mockDetectEnvironment: vi.fn(),
   mockIsEnabled: vi.fn(),
   mockCheckHealth: vi.fn(),
+  mockWaitUntilReady: vi.fn(),
   mockFetchFeed: vi.fn(),
   mockSetRuntimeState: vi.fn(),
   mockParseRssUrlDetailed: vi.fn(),
@@ -26,6 +28,7 @@ vi.mock("../services/desktopBackendClient", () => ({
   desktopBackendClient: {
     isEnabled: mockIsEnabled,
     checkHealth: mockCheckHealth,
+    waitUntilReady: mockWaitUntilReady,
     fetchFeed: mockFetchFeed,
     setRuntimeState: mockSetRuntimeState,
   },
@@ -48,6 +51,7 @@ describe("feedRuntime", () => {
     vi.clearAllMocks();
     mockIsEnabled.mockReturnValue(true);
     mockGetPreferLocalProxy.mockReturnValue(true);
+    mockWaitUntilReady.mockImplementation(() => mockCheckHealth());
   });
 
   it("uses the desktop backend first when the backend is healthy", async () => {

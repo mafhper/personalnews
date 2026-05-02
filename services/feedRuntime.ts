@@ -56,24 +56,6 @@ const buildBackendRoute = (cached: boolean): FeedRouteInfo => ({
     : "Servido diretamente pelo backend local",
 });
 
-const sleep = (ms: number, signal?: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new DOMException("Request was cancelled", "AbortError"));
-      return;
-    }
-
-    const timeoutId = window.setTimeout(resolve, ms);
-    signal?.addEventListener(
-      "abort",
-      () => {
-        window.clearTimeout(timeoutId);
-        reject(new DOMException("Request was cancelled", "AbortError"));
-      },
-      { once: true },
-    );
-  });
-
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
@@ -104,21 +86,6 @@ const isBackendReachabilityError = (error: unknown) => {
     message.includes("connection refused") ||
     message.includes("no backend candidates responded")
   );
-};
-
-const waitForBackendWarmup = async (
-  initialHealth: Awaited<ReturnType<typeof desktopBackendClient.checkHealth>>,
-  signal?: AbortSignal,
-) => {
-  let health = initialHealth;
-  const deadline = Date.now() + 4_000;
-
-  while (!health.available && health.initializing && Date.now() < deadline) {
-    await sleep(250, signal);
-    health = await desktopBackendClient.checkHealth(true, signal);
-  }
-
-  return health;
 };
 
 export const getFeedRuntimeState = (): FeedRuntimeState => ({
@@ -169,10 +136,7 @@ export async function loadFeedWithRuntime(
   }
 
   if (hasBackendRuntime) {
-    const health = await waitForBackendWarmup(
-      await desktopBackendClient.checkHealth(false, signal),
-      signal,
-    );
+    const health = await desktopBackendClient.waitUntilReady({ signal });
 
     if (health.available) {
       try {

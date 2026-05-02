@@ -388,6 +388,13 @@ const server = Bun.serve({
 console.log(
   `[personalnews-backend] listening on http://${HOST}:${PORT} (db: ${db.dbPath})`
 );
+console.log(
+  `PERSONALNEWS_BACKEND_READY ${JSON.stringify({
+    baseUrl: `http://${HOST}:${PORT}`,
+    dbPath: db.dbPath,
+    version: BACKEND_VERSION,
+  })}`
+);
 
 process.on("SIGINT", () => {
   db.close();

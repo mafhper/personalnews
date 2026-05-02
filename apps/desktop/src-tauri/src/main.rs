@@ -146,7 +146,8 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
         app,
         &format!("backend spawned pid={pid} base_url={base_url}"),
     );
-    monitor_backend_process(app.clone(), pid, rx);
+    let process_started_at = Instant::now();
+    monitor_backend_process(app.clone(), pid, process_started_at, rx);
     monitor_backend_readiness(app.clone(), base_url);
     Ok(())
 }
@@ -181,12 +182,21 @@ fn set_backend_start_error(app: &AppHandle, message: &str, diagnostic: &str) {
     log_desktop_event(app, message);
 }
 
-fn monitor_backend_process(app: AppHandle, pid: u32, mut rx: Receiver<CommandEvent>) {
+fn monitor_backend_process(
+    app: AppHandle,
+    pid: u32,
+    process_started_at: Instant,
+    mut rx: Receiver<CommandEvent>,
+) {
     tauri::async_runtime::spawn(async move {
         while let Some(event) = rx.recv().await {
             match event {
                 CommandEvent::Stdout(line) => {
-                    log_backend_event(&app, "stdout", &String::from_utf8_lossy(&line));
+                    let text = String::from_utf8_lossy(&line);
+                    log_backend_event(&app, "stdout", &text);
+                    if text.contains("PERSONALNEWS_BACKEND_READY") {
+                        mark_backend_ready_from_stdout(&app, pid, process_started_at);
+                    }
                 }
                 CommandEvent::Stderr(line) => {
                     log_backend_event(&app, "stderr", &String::from_utf8_lossy(&line));
@@ -219,6 +229,31 @@ fn monitor_backend_process(app: AppHandle, pid: u32, mut rx: Receiver<CommandEve
             }
         }
     });
+}
+
+fn mark_backend_ready_from_stdout(app: &AppHandle, pid: u32, process_started_at: Instant) {
+    let state = app.state::<BackendSidecarState>();
+    let mut base_url: Option<String> = None;
+    let uptime_ms = process_started_at.elapsed().as_millis() as u64;
+
+    if let Ok(mut status) = state.status.lock() {
+        if status.pid != Some(pid) || status.health == "ready" {
+            return;
+        }
+        status.health = "ready".to_string();
+        status.diagnostic = "ready".to_string();
+        status.uptime_ms = Some(uptime_ms);
+        status.last_health_error = None;
+        base_url = Some(status.base_url.clone());
+    }
+
+    if let Some(base_url) = base_url {
+        log_desktop_event(
+            app,
+            &format!("backend ready signal received base_url={base_url} uptime_ms={uptime_ms}"),
+        );
+        let _ = app.emit(BACKEND_READY_EVENT, get_backend_status_snapshot(app));
+    }
 }
 
 fn monitor_backend_readiness(app: AppHandle, base_url: String) {
@@ -286,6 +321,9 @@ fn set_backend_health(
     let state = app.state::<BackendSidecarState>();
     if let Ok(mut status) = state.status.lock() {
         if status.base_url != expected_base_url {
+            return;
+        }
+        if status.health == "ready" && health != "failed" {
             return;
         }
         status.health = health.to_string();
