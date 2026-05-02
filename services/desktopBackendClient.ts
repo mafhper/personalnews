@@ -357,7 +357,8 @@ class DesktopBackendClient {
       return;
     }
 
-    const initializing = status.health === "starting";
+    const initializing =
+      status.health === "starting" || status.health === "restarting";
     const error =
       status.lastHealthError ||
       status.lastStartError ||
@@ -558,7 +559,11 @@ class DesktopBackendClient {
     const desktopStatus = await this.getDesktopBackendStatus(true);
     if (desktopStatus && isTauriRuntime()) {
       this.resolvedBaseUrl = desktopStatus.baseUrl.replace(/\/$/, "");
-      if (desktopStatus.health === "starting" || !desktopStatus.sidecarSpawned) {
+      if (
+        desktopStatus.health === "starting" ||
+        desktopStatus.health === "restarting" ||
+        !desktopStatus.sidecarSpawned
+      ) {
         throw new BackendStillStartingError("Backend local inicializando");
       }
       if (desktopStatus.health === "failed") {

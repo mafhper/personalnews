@@ -31,6 +31,7 @@ export const BACKEND_DEV_AUTH_TOKEN =
 export const DesktopBackendHealthStateSchema = z.enum([
   "unknown",
   "starting",
+  "restarting",
   "ready",
   "failed",
 ]);
@@ -54,6 +55,7 @@ export type DesktopBackendDiagnostic = z.infer<
 >;
 
 export const DesktopBackendStatusSchema = z.object({
+  generation: z.number().int().nonnegative().default(0),
   sidecarSpawned: z.boolean(),
   pid: z.number().int().positive().optional(),
   baseUrl: z.string(),

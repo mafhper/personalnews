@@ -25,6 +25,7 @@ const BACKEND_STATUS_CHANGED_EVENT: &str = "backend-status-changed";
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DesktopBackendStatus {
+    generation: u64,
     sidecar_spawned: bool,
     pid: Option<u32>,
     base_url: String,
@@ -42,6 +43,7 @@ struct DesktopBackendStatus {
 impl Default for DesktopBackendStatus {
     fn default() -> Self {
         Self {
+            generation: 0,
             sidecar_spawned: false,
             pid: None,
             base_url: format!("http://{BACKEND_HOST}:3001"),
@@ -63,6 +65,7 @@ struct BackendSidecarState {
     child: Mutex<Option<CommandChild>>,
     auth_token: Mutex<Option<String>>,
     status: Mutex<DesktopBackendStatus>,
+    generation: Mutex<u64>,
 }
 
 fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
@@ -70,18 +73,22 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
     let backend_auth_token = generate_backend_auth_token()?;
     let (port, preferred_port_occupied) = pick_backend_port()?;
     let base_url = format!("http://{BACKEND_HOST}:{port}");
+    let state = app.state::<BackendSidecarState>();
+    let generation = next_backend_generation(&state)?;
     log_desktop_event(
         app,
-        &format!("backend spawn requested base_url={base_url} db_path={backend_db_path}"),
+        &format!(
+            "event=start_requested generation={generation} base_url={base_url} db_path={backend_db_path}"
+        ),
     );
 
     {
-        let state = app.state::<BackendSidecarState>();
         let mut status = state
             .status
             .lock()
             .map_err(|_| "failed to lock backend status state".to_string())?;
         *status = DesktopBackendStatus {
+            generation,
             sidecar_spawned: false,
             pid: None,
             base_url: base_url.clone(),
@@ -127,7 +134,6 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
     })?;
     let pid = child.pid();
 
-    let state = app.state::<BackendSidecarState>();
     let mut guard = state
         .child
         .lock()
@@ -151,12 +157,47 @@ fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
 
     log_desktop_event(
         app,
-        &format!("backend spawned pid={pid} base_url={base_url}"),
+        &format!("event=spawn_succeeded generation={generation} pid={pid} base_url={base_url}"),
     );
     let process_started_at = Instant::now();
-    monitor_backend_process(app.clone(), pid, process_started_at, rx);
-    monitor_backend_readiness(app.clone(), base_url);
+    monitor_backend_process(app.clone(), pid, generation, process_started_at, rx);
+    monitor_backend_readiness(app.clone(), base_url, pid, generation);
     Ok(())
+}
+
+fn next_backend_generation(state: &BackendSidecarState) -> Result<u64, String> {
+    let mut guard = state
+        .generation
+        .lock()
+        .map_err(|_| "failed to lock backend generation state".to_string())?;
+    *guard = guard.saturating_add(1);
+    Ok(*guard)
+}
+
+fn is_current_backend_generation(
+    app: &AppHandle,
+    expected_pid: u32,
+    expected_generation: u64,
+) -> bool {
+    let state = app.state::<BackendSidecarState>();
+    state
+        .status
+        .lock()
+        .map(|status| status.pid == Some(expected_pid) && status.generation == expected_generation)
+        .unwrap_or(false)
+}
+
+fn is_current_backend_ready(app: &AppHandle, expected_pid: u32, expected_generation: u64) -> bool {
+    let state = app.state::<BackendSidecarState>();
+    state
+        .status
+        .lock()
+        .map(|status| {
+            status.pid == Some(expected_pid)
+                && status.generation == expected_generation
+                && status.health == "ready"
+        })
+        .unwrap_or(false)
 }
 
 fn classify_spawn_error(message: &str) -> &str {
@@ -193,17 +234,25 @@ fn set_backend_start_error(app: &AppHandle, message: &str, diagnostic: &str) {
 fn monitor_backend_process(
     app: AppHandle,
     pid: u32,
+    generation: u64,
     process_started_at: Instant,
     mut rx: Receiver<CommandEvent>,
 ) {
     tauri::async_runtime::spawn(async move {
         while let Some(event) = rx.recv().await {
+            if !is_current_backend_generation(&app, pid, generation) {
+                log_desktop_event(
+                    &app,
+                    &format!("event=stale_monitor_ignored generation={generation} pid={pid} source=process"),
+                );
+                break;
+            }
             match event {
                 CommandEvent::Stdout(line) => {
                     let text = String::from_utf8_lossy(&line);
                     log_backend_event(&app, "stdout", &text);
                     if text.contains("PERSONALNEWS_BACKEND_READY") {
-                        mark_backend_ready_from_stdout(&app, pid, process_started_at);
+                        mark_backend_ready_from_stdout(&app, pid, generation, process_started_at);
                     }
                 }
                 CommandEvent::Stderr(line) => {
@@ -220,7 +269,7 @@ fn monitor_backend_process(
                     log_backend_event(&app, "terminated", &message);
                     let state = app.state::<BackendSidecarState>();
                     if let Ok(mut status) = state.status.lock() {
-                        if status.pid != Some(pid) {
+                        if status.pid != Some(pid) || status.generation != generation {
                             break;
                         }
                         status.sidecar_spawned = false;
@@ -240,13 +289,18 @@ fn monitor_backend_process(
     });
 }
 
-fn mark_backend_ready_from_stdout(app: &AppHandle, pid: u32, process_started_at: Instant) {
+fn mark_backend_ready_from_stdout(
+    app: &AppHandle,
+    pid: u32,
+    generation: u64,
+    process_started_at: Instant,
+) {
     let state = app.state::<BackendSidecarState>();
     let mut base_url: Option<String> = None;
     let uptime_ms = process_started_at.elapsed().as_millis() as u64;
 
     if let Ok(mut status) = state.status.lock() {
-        if status.pid != Some(pid) || status.health == "ready" {
+        if status.pid != Some(pid) || status.generation != generation || status.health == "ready" {
             return;
         }
         status.health = "ready".to_string();
@@ -259,31 +313,71 @@ fn mark_backend_ready_from_stdout(app: &AppHandle, pid: u32, process_started_at:
     if let Some(base_url) = base_url {
         log_desktop_event(
             app,
-            &format!("backend ready signal received base_url={base_url} uptime_ms={uptime_ms}"),
+            &format!(
+                "event=stdout_ready_seen generation={generation} pid={pid} base_url={base_url} uptime_ms={uptime_ms}"
+            ),
         );
         emit_backend_status_changed(app);
         let _ = app.emit(BACKEND_READY_EVENT, get_backend_status_snapshot(app));
     }
 }
 
-fn monitor_backend_readiness(app: AppHandle, base_url: String) {
+fn monitor_backend_readiness(app: AppHandle, base_url: String, pid: u32, generation: u64) {
     thread::spawn(move || {
         let started = Instant::now();
-        let deadline = Duration::from_secs(20);
+        let deadline = Duration::from_secs(90);
         let interval = Duration::from_millis(300);
         let mut last_error: Option<String> = None;
         let mut attempt: u64 = 0;
 
         while started.elapsed() < deadline {
+            if !is_current_backend_generation(&app, pid, generation) {
+                log_desktop_event(
+                    &app,
+                    &format!(
+                        "event=stale_monitor_ignored generation={generation} pid={pid} source=health"
+                    ),
+                );
+                return;
+            }
+            if is_current_backend_ready(&app, pid, generation) {
+                log_desktop_event(
+                    &app,
+                    &format!(
+                        "event=health_monitor_completed generation={generation} pid={pid} source=already_ready"
+                    ),
+                );
+                return;
+            }
             attempt += 1;
             let timeout = Duration::from_millis((300 + attempt * 150).min(1_500));
+            if attempt == 1 || attempt % 10 == 0 {
+                log_desktop_event(
+                    &app,
+                    &format!(
+                        "event=health_probe_attempt generation={generation} pid={pid} attempt={attempt} base_url={base_url} elapsed_ms={}",
+                        started.elapsed().as_millis()
+                    ),
+                );
+            }
             match probe_backend_health(&base_url, timeout) {
                 Ok(()) => {
                     let uptime_ms = started.elapsed().as_millis() as u64;
-                    set_backend_health(&app, &base_url, "ready", "ready", Some(uptime_ms), None);
+                    set_backend_health(
+                        &app,
+                        &base_url,
+                        pid,
+                        generation,
+                        "ready",
+                        "ready",
+                        Some(uptime_ms),
+                        None,
+                    );
                     log_desktop_event(
                         &app,
-                        &format!("backend ready base_url={base_url} uptime_ms={uptime_ms}"),
+                        &format!(
+                            "event=health_ready generation={generation} pid={pid} base_url={base_url} uptime_ms={uptime_ms} attempts={attempt}"
+                        ),
                     );
                     let _ = app.emit(BACKEND_READY_EVENT, get_backend_status_snapshot(&app));
                     return;
@@ -293,6 +387,8 @@ fn monitor_backend_readiness(app: AppHandle, base_url: String) {
                     set_backend_health(
                         &app,
                         &base_url,
+                        pid,
+                        generation,
                         "starting",
                         "starting",
                         Some(started.elapsed().as_millis() as u64),
@@ -308,6 +404,8 @@ fn monitor_backend_readiness(app: AppHandle, base_url: String) {
         set_backend_health(
             &app,
             &base_url,
+            pid,
+            generation,
             "failed",
             "health_failed",
             Some(started.elapsed().as_millis() as u64),
@@ -315,7 +413,9 @@ fn monitor_backend_readiness(app: AppHandle, base_url: String) {
         );
         log_desktop_event(
             &app,
-            &format!("backend readiness failed base_url={base_url} error={message}"),
+            &format!(
+                "event=health_timeout generation={generation} pid={pid} base_url={base_url} error={message}"
+            ),
         );
     });
 }
@@ -323,6 +423,8 @@ fn monitor_backend_readiness(app: AppHandle, base_url: String) {
 fn set_backend_health(
     app: &AppHandle,
     expected_base_url: &str,
+    expected_pid: u32,
+    expected_generation: u64,
     health: &str,
     diagnostic: &str,
     uptime_ms: Option<u64>,
@@ -331,10 +433,13 @@ fn set_backend_health(
     let state = app.state::<BackendSidecarState>();
     let mut changed = false;
     if let Ok(mut status) = state.status.lock() {
-        if status.base_url != expected_base_url {
+        if status.base_url != expected_base_url
+            || status.pid != Some(expected_pid)
+            || status.generation != expected_generation
+        {
             return;
         }
-        if status.health == "ready" && health != "failed" {
+        if status.health == "ready" && health != "ready" {
             return;
         }
         let next_diagnostic = if status.diagnostic != "port_occupied"
@@ -471,6 +576,30 @@ fn resolve_backend_db_path(app: &AppHandle) -> Result<String, String> {
 
 fn stop_backend_sidecar(app: &AppHandle) {
     let state = app.state::<BackendSidecarState>();
+    let generation = next_backend_generation(&state).ok();
+    let previous_pid = state.status.lock().ok().and_then(|status| status.pid);
+    log_desktop_event(
+        app,
+        &format!(
+            "event=stop_requested generation={} pid={}",
+            generation.unwrap_or_default(),
+            previous_pid
+                .map(|pid| pid.to_string())
+                .unwrap_or_else(|| "none".to_string())
+        ),
+    );
+
+    if let Ok(mut status) = state.status.lock() {
+        if let Some(generation) = generation {
+            status.generation = generation;
+        }
+        status.health = "restarting".to_string();
+        status.diagnostic = "starting".to_string();
+        status.last_health_error = None;
+        status.last_start_error = None;
+    }
+    emit_backend_status_changed(app);
+
     let child = match state.child.lock() {
         Ok(mut guard) => guard.take(),
         Err(_) => None,
@@ -483,10 +612,18 @@ fn stop_backend_sidecar(app: &AppHandle) {
     if let Ok(mut status) = state.status.lock() {
         status.sidecar_spawned = false;
         status.pid = None;
-        if status.health == "ready" || status.health == "starting" {
-            status.health = "unknown".to_string();
-        }
     };
+    log_desktop_event(
+        app,
+        &format!(
+            "event=stop_completed generation={} pid={}",
+            generation.unwrap_or_default(),
+            previous_pid
+                .map(|pid| pid.to_string())
+                .unwrap_or_else(|| "none".to_string())
+        ),
+    );
+    emit_backend_status_changed(app);
 }
 
 #[tauri::command]
@@ -568,7 +705,9 @@ fn get_backend_status(app: AppHandle) -> Result<DesktopBackendStatus, String> {
 
 #[tauri::command]
 fn restart_backend_sidecar(app: AppHandle) -> Result<DesktopBackendStatus, String> {
+    log_desktop_event(&app, "event=restart_requested");
     stop_backend_sidecar(&app);
+    thread::sleep(Duration::from_millis(500));
     start_backend_sidecar(&app)?;
     Ok(get_backend_status_snapshot(&app))
 }
