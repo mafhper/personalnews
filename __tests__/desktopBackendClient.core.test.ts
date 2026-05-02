@@ -11,6 +11,11 @@ describe("desktopBackendClient local discovery", () => {
       value: undefined,
       configurable: true,
     });
+    Object.defineProperty(window, "__PERSONALNEWS_BACKEND_CONFIG__", {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
     Object.defineProperty(window, "location", {
       value: {
         ...window.location,
@@ -130,6 +135,17 @@ describe("desktopBackendClient local discovery", () => {
     Object.defineProperty(window, "__TAURI_INTERNALS__", {
       value: {
         invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: true,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "ready",
+              diagnostic: "ready",
+            };
+          }
           if (command === "get_backend_auth_token") return "desktop-token";
           return null;
         }),
@@ -214,6 +230,81 @@ describe("desktopBackendClient local discovery", () => {
       "http://127.0.0.1:3001/health",
       expect.anything(),
     );
+  });
+
+  it("keeps a starting Tauri backend in warmup without probing the default port", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: true,
+              baseUrl: "http://127.0.0.1:3020",
+              port: 3020,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "starting",
+              diagnostic: "starting",
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    const result = await desktopBackendClient.checkHealth(true);
+
+    expect(result).toMatchObject({
+      available: false,
+      initializing: true,
+      error: "Backend local inicializando",
+    });
+    expect(desktopBackendClient.getBaseUrl()).toBe("http://127.0.0.1:3020");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("bootstraps the Tauri supervisor URL before the app renders", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: true,
+              baseUrl: "http://127.0.0.1:3033",
+              port: 3033,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "ready",
+              diagnostic: "ready",
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(desktopBackendClient.bootstrapFromSupervisor()).resolves.toMatchObject({
+      baseUrl: "http://127.0.0.1:3033",
+      health: "ready",
+    });
+    expect(desktopBackendClient.getBaseUrl()).toBe("http://127.0.0.1:3033");
+    expect(window.__PERSONALNEWS_BACKEND_CONFIG__).toMatchObject({
+      baseUrl: "http://127.0.0.1:3033",
+      status: {
+        health: "ready",
+      },
+    });
   });
 
   it("trusts a ready Tauri supervisor when the browser health probe is cancelled", async () => {

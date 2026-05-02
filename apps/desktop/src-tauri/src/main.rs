@@ -604,6 +604,13 @@ fn main() {
         .expect("error while building tauri application");
 
     app.run(|app_handle, event| match event {
+        RunEvent::Ready => {
+            emit_backend_status_changed(app_handle);
+            let status = get_backend_status_snapshot(app_handle);
+            if status.health == "ready" {
+                let _ = app_handle.emit(BACKEND_READY_EVENT, status);
+            }
+        }
         RunEvent::Exit | RunEvent::ExitRequested { .. } => {
             stop_backend_sidecar(app_handle);
         }

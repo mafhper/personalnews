@@ -52,8 +52,21 @@ type RuntimeState = {
   lastError?: string;
 };
 
+type DesktopBackendBootstrapConfig = {
+  status?: DesktopBackendStatus;
+  baseUrl?: string;
+  token?: string | null;
+  bootstrappedAt?: number;
+};
+
+declare global {
+  interface Window {
+    __PERSONALNEWS_BACKEND_CONFIG__?: DesktopBackendBootstrapConfig;
+  }
+}
+
 const HEALTH_TTL_MS = 5_000;
-const BACKEND_WARMUP_MS = 30_000;
+const BACKEND_WARMUP_MS = 90_000;
 const LOCAL_BACKEND_PORT_START = 3001;
 const LOCAL_BACKEND_PORT_END = 3015;
 const BACKEND_READY_POLL_MS = 750;
@@ -179,6 +192,11 @@ const isAbortLikeError = (error: unknown): boolean => {
   return false;
 };
 
+const getBootstrappedBackendConfig = (): DesktopBackendBootstrapConfig | null => {
+  if (typeof window === "undefined") return null;
+  return window.__PERSONALNEWS_BACKEND_CONFIG__ || null;
+};
+
 const normalizeFetchError = (error: unknown): string => {
   if (isAbortLikeError(error)) {
     return "Backend local ainda respondendo";
@@ -206,7 +224,10 @@ class DesktopBackendClient {
 
   private healthCheckPromise: Promise<HealthState> | null = null;
 
-  private resolvedBaseUrl: string = BACKEND_DEFAULT_URL;
+  private resolvedBaseUrl: string | null =
+    getBootstrappedBackendConfig()?.baseUrl ||
+    getBootstrappedBackendConfig()?.status?.baseUrl ||
+    (isTauriRuntime() ? null : BACKEND_DEFAULT_URL);
 
   private runtimeState: RuntimeState = {
     activeMode: "unknown",
@@ -234,7 +255,7 @@ class DesktopBackendClient {
   }
 
   getBaseUrl(): string {
-    return this.resolvedBaseUrl || BACKEND_DEFAULT_URL;
+    return this.resolvedBaseUrl || (isTauriRuntime() ? "" : BACKEND_DEFAULT_URL);
   }
 
   getRuntimeState(): RuntimeState {
@@ -248,6 +269,24 @@ class DesktopBackendClient {
 
   async getDesktopStatus(): Promise<DesktopBackendStatus | null> {
     return this.getDesktopBackendStatus(true);
+  }
+
+  async bootstrapFromSupervisor(): Promise<DesktopBackendStatus | null> {
+    if (!isTauriRuntime()) return null;
+    const status = await this.getDesktopBackendStatus(true);
+    if (!status) return null;
+
+    this.applyDesktopStatus(status);
+    window.__PERSONALNEWS_BACKEND_CONFIG__ = {
+      ...window.__PERSONALNEWS_BACKEND_CONFIG__,
+      status,
+      baseUrl: status.baseUrl.replace(/\/$/, ""),
+      bootstrappedAt: Date.now(),
+    };
+    if (status.health !== "ready") {
+      this.startWarmupMonitor();
+    }
+    return status;
   }
 
   async restartBackend(): Promise<DesktopBackendStatus | null> {
@@ -290,6 +329,16 @@ class DesktopBackendClient {
   private applyDesktopStatus(status: DesktopBackendStatus) {
     if (status.baseUrl) {
       this.resolvedBaseUrl = status.baseUrl.replace(/\/$/, "");
+      if (typeof window !== "undefined") {
+        window.__PERSONALNEWS_BACKEND_CONFIG__ = {
+          ...window.__PERSONALNEWS_BACKEND_CONFIG__,
+          status,
+          baseUrl: this.resolvedBaseUrl,
+          bootstrappedAt:
+            window.__PERSONALNEWS_BACKEND_CONFIG__?.bootstrappedAt ||
+            Date.now(),
+        };
+      }
     }
 
     if (status.health === "ready") {
@@ -303,7 +352,7 @@ class DesktopBackendClient {
         backendAvailable: true,
         backendInitializing: false,
         lastError: undefined,
-        lastRoute: this.resolvedBaseUrl,
+        lastRoute: this.resolvedBaseUrl || undefined,
       });
       return;
     }
@@ -324,7 +373,7 @@ class DesktopBackendClient {
       backendAvailable: false,
       backendInitializing: initializing,
       lastError: initializing ? undefined : error,
-      lastRoute: this.resolvedBaseUrl,
+      lastRoute: this.resolvedBaseUrl || undefined,
     });
   }
 
@@ -353,7 +402,7 @@ class DesktopBackendClient {
     const timeoutMs = options.timeoutMs ?? BACKEND_FIRST_LOAD_READY_TIMEOUT_MS;
     const deadline = Date.now() + timeoutMs;
     let delayMs = 250;
-    let lastHealth = await this.checkHealth(true, options.signal);
+    let lastHealth = await this.checkHealth(true);
 
     while (
       !lastHealth.available &&
@@ -362,7 +411,10 @@ class DesktopBackendClient {
     ) {
       await this.sleep(delayMs, options.signal);
       delayMs = Math.min(1_000, Math.round(delayMs * 1.35));
-      lastHealth = await this.checkHealth(true, options.signal);
+      if (options.signal?.aborted) {
+        return { ...this.healthState };
+      }
+      lastHealth = await this.checkHealth(true);
 
       if (!lastHealth.initializing && !isTauriRuntime()) {
         break;
@@ -431,7 +483,12 @@ class DesktopBackendClient {
       }
     };
 
-    pushCandidate(this.resolvedBaseUrl);
+    pushCandidate(this.resolvedBaseUrl || undefined);
+
+    if (isTauriRuntime()) {
+      return candidates;
+    }
+
     pushCandidate(BACKEND_DEFAULT_URL);
 
     if (configuredBackendUrl) {
@@ -520,6 +577,10 @@ class DesktopBackendClient {
       }
     }
 
+    if (isTauriRuntime()) {
+      throw new BackendStillStartingError("Backend local inicializando");
+    }
+
     const failures: string[] = [];
 
     for (const baseUrl of this.getCandidateBaseUrls()) {
@@ -567,11 +628,11 @@ class DesktopBackendClient {
       }
 
       if (isAbortLikeError(error) && isTauriRuntime()) {
-        const desktopStatus = await this.getDesktopBackendStatus(true);
-        if (desktopStatus?.health === "ready") {
-          this.applyDesktopStatus(desktopStatus);
-          return { ...this.healthState };
-        }
+        return {
+          ...this.healthState,
+          checkedAt: this.healthState.checkedAt || now,
+          initializing: true,
+        };
       }
 
       const inWarmup =
@@ -661,7 +722,7 @@ class DesktopBackendClient {
     parse: (value: unknown) => T,
   ): Promise<T> {
     if (!this.healthState.available) {
-      const health = await this.checkHealth(true, init.signal ?? undefined);
+      const health = await this.checkHealth(true);
       if (!health.available) {
         if (isTauriRuntime()) {
           const desktopStatus = await this.getDesktopBackendStatus(true);
