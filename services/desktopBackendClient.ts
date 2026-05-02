@@ -119,11 +119,10 @@ const getConfiguredBackendUrl = () => {
 
 const isTauriRuntime = () =>
   typeof window !== "undefined" &&
-  (Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__) ||
+  (Boolean((globalThis as typeof globalThis & { isTauri?: unknown }).isTauri) ||
+    Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__) ||
     !!(window as Window & { __TAURI_INTERNALS__?: unknown })
-      .__TAURI_INTERNALS__ ||
-    (typeof navigator !== "undefined" &&
-      navigator.userAgent.toLowerCase().includes(" tauri")));
+      .__TAURI_INTERNALS__);
 
 const getTauriInvoke = (): TauriInvoke | null => {
   if (typeof window === "undefined") return null;
