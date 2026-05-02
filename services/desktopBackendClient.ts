@@ -122,7 +122,9 @@ const isTauriRuntime = () =>
   (Boolean((globalThis as typeof globalThis & { isTauri?: unknown }).isTauri) ||
     Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__) ||
     !!(window as Window & { __TAURI_INTERNALS__?: unknown })
-      .__TAURI_INTERNALS__);
+      .__TAURI_INTERNALS__ ||
+    window.location.protocol === "tauri:" ||
+    window.location.hostname === "tauri.localhost");
 
 const getTauriInvoke = (): TauriInvoke | null => {
   if (typeof window === "undefined") return null;
@@ -169,7 +171,6 @@ const stringifyLogPayload = (payload: unknown): string => {
 };
 
 const appendFrontendLog = (message: string, payload?: unknown): void => {
-  if (!isTauriRuntime()) return;
   const invoke = getTauriInvoke();
   if (!invoke) return;
 
@@ -332,7 +333,6 @@ class DesktopBackendClient {
   }
 
   async bootstrapFromSupervisor(): Promise<DesktopBackendStatus | null> {
-    if (!isTauriRuntime()) return null;
     const status = await this.getDesktopBackendStatus(true);
     if (!status) return null;
 
@@ -350,7 +350,6 @@ class DesktopBackendClient {
   }
 
   async restartBackend(): Promise<DesktopBackendStatus | null> {
-    if (!isTauriRuntime()) return null;
     const invoke = getTauriInvoke();
     if (!invoke) return null;
 
@@ -444,7 +443,7 @@ class DesktopBackendClient {
   }
 
   private startBackendStatusListener(): void {
-    if (this.backendStatusListenerStarted || !isTauriRuntime()) return;
+    if (this.backendStatusListenerStarted) return;
     const listen = getTauriListen();
     if (!listen) return;
 
@@ -538,7 +537,6 @@ class DesktopBackendClient {
   private async getDesktopBackendStatus(
     force = false,
   ): Promise<DesktopBackendStatus | null> {
-    if (!isTauriRuntime()) return null;
     if (!force && this.desktopStatusPromise) return this.desktopStatusPromise;
 
     this.desktopStatusPromise = (async () => {
@@ -566,6 +564,7 @@ class DesktopBackendClient {
         return null;
       });
       appendFrontendLog("get_backend_status_raw", raw);
+      if (raw === null) return null;
       const status = parseDesktopBackendStatus(raw, "get_backend_status");
       if (!status) return null;
 
