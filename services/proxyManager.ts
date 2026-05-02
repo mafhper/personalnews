@@ -872,7 +872,16 @@ export class ProxyManager {
     const startedAt = Date.now();
 
     if (proxyName === "LocalProxy" && ProxyManager.isTauriRuntime()) {
-      const health = await desktopBackendClient.checkHealth(true);
+      const desktopStatus = await desktopBackendClient.getDesktopStatus();
+      const health =
+        desktopStatus?.health === "ready"
+          ? {
+              available: true,
+              checkedAt: Date.now(),
+              error: undefined,
+              initializing: false,
+            }
+          : await desktopBackendClient.checkHealth(true);
       const responseTime = Date.now() - startedAt;
 
       if (!health.available) {

@@ -73,10 +73,19 @@ interface FeedResult {
   source?: "backend" | "client-fallback" | "client";
 }
 
-const FEED_TIMEOUT_MS = 4000; // 4 seconds per feed (reduzido para mais velocidade inicial)
+const FEED_TIMEOUT_MS = 4000; // 4 seconds per feed in web mode
+const DESKTOP_FEED_TIMEOUT_MS = 20_000; // includes local backend warmup on Windows
 const BATCH_SIZE = 8; // Aumentado para 8 feeds por batch
 const BATCH_DELAY_MS = 500; // Reduzido para 500ms entre batches
 const BATCH_DELAY_BACKGROUND_MS = 50; // Delay menor em abas inativas (o navegador vai limitar a 1s de qualquer forma)
+
+const isTauriRuntime = () =>
+  typeof window !== "undefined" &&
+  (!!(window as Window & { __TAURI__?: unknown }).__TAURI__ ||
+    !!(window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
+
+const getFeedTimeoutMs = () =>
+  isTauriRuntime() ? DESKTOP_FEED_TIMEOUT_MS : FEED_TIMEOUT_MS;
 
 /**
  * Helper function to wait for batch delay with visibility awareness
@@ -280,6 +289,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     ): Promise<FeedResult> => {
       const timeoutController = new AbortController();
       const cachedSnapshot = skipCache ? getCachedArticles(feed.url) : null;
+      const feedTimeoutMs = getFeedTimeoutMs();
 
       // Set timeout
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -287,17 +297,17 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         timeoutId = setTimeout(() => {
           timeoutController.abort(
             new DOMException(
-              `Feed timeout after ${FEED_TIMEOUT_MS}ms`,
+              `Feed timeout after ${feedTimeoutMs}ms`,
               "TimeoutError",
             ),
           );
           reject(
             new DOMException(
-              `Feed timeout after ${FEED_TIMEOUT_MS}ms`,
+              `Feed timeout after ${feedTimeoutMs}ms`,
               "TimeoutError",
             ),
           );
-        }, FEED_TIMEOUT_MS);
+        }, feedTimeoutMs);
       });
 
       try {
@@ -403,7 +413,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           title: getFeedDisplayName(feed),
           success: false,
           error: isTimeout
-            ? `Feed timeout after ${FEED_TIMEOUT_MS}ms`
+            ? `Feed timeout after ${feedTimeoutMs}ms`
             : errorMessage,
         };
       }
