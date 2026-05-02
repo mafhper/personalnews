@@ -37,7 +37,12 @@ const buildKeyState = (): ProxyApiKeysState => ({
 });
 
 const getRuntimeProxyNameSet = () =>
-  new Set(proxyManager.getProxyConfigs().map((config) => config.name));
+  new Set(
+    proxyManager
+      .getProxyConfigs()
+      .filter((config) => ProxyManager.isProxyVisibleInSettings(config.name))
+      .map((config) => config.name),
+  );
 
 const isRuntimeSupportedProxy = (proxyId: string) => {
   const config = PROXY_CONFIGS[proxyId];
@@ -219,7 +224,10 @@ export function useProxyConfig() {
   const getAllProxiesStatus = useCallback(() => {
     const runtimeStats = proxyManager.getProxyStats();
     const runtimeConfigs = new Map(
-      proxyManager.getProxyConfigs().map((config) => [config.name, config]),
+      proxyManager
+        .getProxyConfigs()
+        .filter((config) => ProxyManager.isProxyVisibleInSettings(config.name))
+        .map((config) => [config.name, config]),
     );
 
     return Object.keys(PROXY_CONFIGS)
@@ -243,11 +251,15 @@ export function useProxyConfig() {
           enabled: runtimeConfig?.enabled ?? true,
           health: {
             score:
-              runtime && runtime.totalRequests > 0
-                ? Math.round(runtime.healthScore * 100)
-                : fallbackHealth.score,
+              runtimeConfig?.enabled === false
+                ? 0
+                : runtime && runtime.totalRequests > 0
+                  ? Math.round(runtime.healthScore * 100)
+                  : fallbackHealth.score,
             recommendation:
-              runtime && runtime.totalRequests > 0
+              runtimeConfig?.enabled === false
+                ? "Desativado neste runtime"
+                : runtime && runtime.totalRequests > 0
                 ? `Sessao atual: ${runtime.success}/${runtime.totalRequests} sucesso`
                 : fallbackHealth.recommendation,
           },

@@ -13,11 +13,15 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Article, FeedLoadRequest, FeedSource } from "../types";
-import { getCachedArticles } from "../services/smartCache";
+import {
+  getCachedArticles,
+  setCachedArticles,
+} from "../services/smartCache";
 import { useLogger } from "../services/logger";
 import { categorizeFeedError } from "../services/feedErrorCategorization";
 import { loadFeedWithRuntime } from "../services/feedRuntime";
 import { desktopBackendClient } from "../services/desktopBackendClient";
+import { ProxyManager } from "../services/proxyManager";
 import type {
   FeedDiagnosticInfo,
   FeedFailureCause,
@@ -436,6 +440,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
    */
   const loadFeedsProgressively = useCallback(
     async (request: FeedLoadRequest = {}) => {
+      ProxyManager.loadPreferences();
       const currentFeeds = feedsRef.current;
       const scopedFeeds = resolveFeedLoadScope(currentFeeds, request);
       const mode = resolveScopeMode(request);
@@ -616,8 +621,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const errors: FeedError[] = [];
       let loadedCount = 0;
 
-      if (desktopBackendClient.isDesktopRuntime()) {
-        const batchSize = 8;
+      if (desktopBackendClient.isEnabled() && ProxyManager.getPreferLocalProxy()) {
+        const batchSize = 6;
         const batches: FeedSource[][] = [];
         for (let index = 0; index < scopedFeeds.length; index += batchSize) {
           batches.push(scopedFeeds.slice(index, index + batchSize));
@@ -650,6 +655,13 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
                     pubDate: new Date(article.pubDate),
                   }),
                 );
+                if (articlesForFeed.length > 0) {
+                  setCachedArticles(
+                    item.url,
+                    articlesForFeed,
+                    getFeedDisplayName(feed, item.result.title),
+                  );
+                }
                 newFeedResults.set(item.url, {
                   url: item.url,
                   articles: articlesForFeed,

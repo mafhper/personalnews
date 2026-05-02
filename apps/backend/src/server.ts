@@ -267,6 +267,7 @@ async function handleFeedRequest(req: Request, reqUrl: URL): Promise<Response> {
 }
 
 async function handleFeedBatchRequest(req: Request): Promise<Response> {
+  const startedAt = Date.now();
   const body = await req.json().catch(() => null);
   const parsedBody = FeedBatchRequestSchema.safeParse(body);
 
@@ -317,6 +318,16 @@ async function handleFeedBatchRequest(req: Request): Promise<Response> {
     failed: items.filter((it) => !it.success).length,
     items,
   };
+
+  console.log(
+    `PERSONALNEWS_FEED_BATCH ${JSON.stringify({
+      total: response.total,
+      success: response.success,
+      failed: response.failed,
+      forceRefresh: parsedBody.data.forceRefresh,
+      durationMs: Date.now() - startedAt,
+    })}`,
+  );
 
   FeedBatchResponseSchema.parse(response);
   return json(response, 200, req);

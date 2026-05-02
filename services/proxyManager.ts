@@ -111,6 +111,26 @@ export class ProxyManager {
     return this.getEnvValue("VITE_BACKEND_ENABLED") === "true";
   }
 
+  static isDesktopRuntime(): boolean {
+    return this.isTauriRuntime();
+  }
+
+  static supportsLocalProxyRoute(): boolean {
+    return (
+      this.isTauriRuntime() ||
+      this.isLocalBrowserRuntime() ||
+      this.isBackendRuntimeEnabled()
+    );
+  }
+
+  static isProxyVisibleInSettings(proxyName: string): boolean {
+    if (proxyName === "LocalProxy") {
+      return this.supportsLocalProxyRoute();
+    }
+
+    return true;
+  }
+
   static keepsRemoteProxiesEnabled(): boolean {
     return !this.isTauriRuntime() && !this.isBackendRuntimeEnabled();
   }
@@ -421,6 +441,7 @@ export class ProxyManager {
       (window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1" ||
         window.location.hostname.endsWith(".local"));
+
     const allowLocalProxy =
       !isTauri && (ProxyManager.preferLocalProxy || isLocalhost);
     const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
@@ -823,7 +844,11 @@ export class ProxyManager {
       if (shouldIgnoreDisabledState && disabledSet.has(proxy.name)) {
         ignoredPersistedRemoteDisable = true;
       }
-      const enabled = shouldIgnoreDisabledState || !disabledSet.has(proxy.name);
+      const disabledByRuntime =
+        ProxyManager.isTauriRuntime() && proxy.name !== "LocalProxy";
+      const enabled =
+        !disabledByRuntime &&
+        (shouldIgnoreDisabledState || !disabledSet.has(proxy.name));
       proxy.enabled = enabled;
       this.proxyHealthCheck.set(proxy.name, enabled);
     });

@@ -145,4 +145,35 @@ describe("ProxyManager preference loading", () => {
 
     expect(codeTabs?.enabled).toBe(false);
   });
+
+  it("starts remote fallback proxies disabled by default in desktop runtime", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    localStorage.removeItem("disabled_proxies");
+
+    ProxyManager.loadPreferences();
+
+    const remoteProxy = proxyManager
+      .getProxyConfigs()
+      .find((config) => config.name === "CodeTabs");
+    expect(remoteProxy?.enabled).toBe(false);
+  });
+
+  it("allows manually enabling an optional remote proxy during a desktop session", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    localStorage.removeItem("disabled_proxies");
+    ProxyManager.loadPreferences();
+
+    proxyManager.enableProxy("CodeTabs");
+
+    const availableProxy = proxyManager
+      .getAvailableProxies()
+      .find((config) => config.name === "CodeTabs");
+    expect(availableProxy).toBeDefined();
+  });
 });

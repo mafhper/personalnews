@@ -137,7 +137,7 @@ const buildClientRoutes = (): ProxyDashboardRoute[] => {
         routeKind: "proxy",
         enabled,
         status: getStatusFromHealth(healthScore, stats.totalRequests, enabled),
-        healthScore: enabled ? healthScore : 100,
+        healthScore: enabled ? healthScore : 0,
         successRate,
         totalRequests: stats.totalRequests,
         successCount: stats.success,

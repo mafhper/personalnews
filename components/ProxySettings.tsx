@@ -159,6 +159,8 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
       !!(window as Window & { __TAURI_INTERNALS__?: unknown })
         .__TAURI_INTERNALS__);
   const localRuntimeLabel = isTauriRuntime ? "desktop" : "modo local";
+  const showLocalProxyUnavailableNotice =
+    !ProxyManager.supportsLocalProxyRoute();
   const displayedProxyIds = displayedProxies.map((proxy) => proxy.id);
 
   const handleTestProxy = async (proxyId: string) => {
@@ -341,6 +343,17 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
           <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
             Rotas, saúde e credenciais
           </h3>
+          {showLocalProxyUnavailableNotice && (
+            <div className="mt-3 rounded-[16px] border border-[rgba(var(--color-primary),0.18)] bg-[rgba(var(--color-primary),0.08)] px-4 py-3">
+              <p className={`text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
+                Backend local disponível apenas no PersonalNews Desktop
+              </p>
+              <p className={`mt-1 text-xs ${MANAGER_TEXT_SECONDARY_CLASS}`}>
+                Nesta versão web publicada, o LocalProxy fica oculto e não
+                participa dos testes ou da ordem de fallback.
+              </p>
+            </div>
+          )}
           <div className="mt-4 space-y-3">
             {displayedProxies.map((proxy) => {
               const isExpanded = expandedProxy === proxy.id;
@@ -355,6 +368,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               const canDisableProxy = ProxyManager.canDisableRuntimeProxy(
                 proxy.name,
               );
+              const isDesktopRemoteProxy =
+                isTauriRuntime && proxy.name !== "LocalProxy";
+              const canToggleProxy = canDisableProxy;
 
               return (
                 <div
@@ -522,9 +538,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                         <button
                           type="button"
                           onClick={() => setProxyEnabled(proxy.id, !proxy.enabled)}
-                          disabled={!canDisableProxy}
+                          disabled={!canToggleProxy}
                           className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
-                            !canDisableProxy
+                            !canToggleProxy
                               ? "cursor-not-allowed border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.06)] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
                               : proxy.enabled
                               ? "border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))] hover:bg-[rgba(var(--color-warning),0.18)]"
@@ -532,7 +548,11 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                           }`}
                         >
                           <Route className="h-4 w-4" />
-                          {!canDisableProxy
+                          {isDesktopRemoteProxy
+                            ? proxy.enabled
+                              ? "Desativar rota opcional"
+                              : "Ativar rota opcional"
+                            : !canDisableProxy
                             ? "Sempre ativo no modo web"
                             : proxy.enabled
                               ? "Desativar rota"
