@@ -143,38 +143,32 @@ O formato é rigoroso para permitir a sincronização automática.
 ### design
 
 - B9: <https://www.b9.com.br/feed/>
-- UX Collective: <https://uxdesign.cc/feed>
 
 ### games
 
-- Adrenaline: <https://adrenaline.com.br/feed/>
-- Jogabilidade: <https://jogabilida.de/feed/>
 - Kotaku: <https://kotaku.com/rss>
+- Jogabilidade: <https://jogabilida.de/feed/>
 - PC Gamer: <https://www.pcgamer.com/feeds.xml>
-- Polygon: <https://www.polygon.com/feed/>
 
 ### politics
 
 - G1 Política: <https://g1.globo.com/rss/g1/politica/>
-- Mídia Ninja: <https://midianinja.org/feed/>
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
 
 ### tech
 
 - CNET: <http://www.cnet.com/rss/news/>
-- Diolinux: <https://diolinux.com.br/feed>
-- Tecnoblog: <https://tecnoblog.net/feed/>
-- The Decoder: <https://the-decoder.com/feed/>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - XDA: <https://www.xda-developers.com/feed/>
 
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
-- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
 - Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
+- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA> | Hide-from-All: true
+
 
 # Listas Curadas
 

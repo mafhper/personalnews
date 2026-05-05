@@ -149,6 +149,73 @@ describe("ProxyManager preference loading", () => {
     expect(codeTabs?.enabled).toBe(false);
   });
 
+  it("starts desktop first runs with only the local proxy route enabled", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    localStorage.removeItem("disabled_proxies");
+
+    ProxyManager.loadPreferences();
+
+    const configs = proxyManager.getProxyConfigs();
+    const localProxy = configs.find((config) => config.name === "LocalProxy");
+    const remoteProxies = configs.filter((config) => config.name !== "LocalProxy");
+    const persistedDisabled = JSON.parse(
+      localStorage.getItem("disabled_proxies") || "[]",
+    ) as string[];
+
+    expect(localProxy?.enabled).toBe(true);
+    expect(remoteProxies.every((config) => !config.enabled)).toBe(true);
+    expect(localStorage.getItem("desktop_proxy_defaults_applied_v1")).toBe(
+      "true",
+    );
+    expect(persistedDisabled).not.toContain("LocalProxy");
+    expect(persistedDisabled).toEqual(
+      expect.arrayContaining(remoteProxies.map((config) => config.name)),
+    );
+  });
+
+  it("applies desktop local-only defaults over older empty proxy state once", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    localStorage.setItem("disabled_proxies", "[]");
+
+    ProxyManager.loadPreferences();
+
+    const remoteProxies = proxyManager
+      .getProxyConfigs()
+      .filter((config) => config.name !== "LocalProxy");
+
+    expect(remoteProxies.every((config) => !config.enabled)).toBe(true);
+    expect(localStorage.getItem("desktop_proxy_defaults_applied_v1")).toBe(
+      "true",
+    );
+  });
+
+  it("preserves a manually re-enabled remote proxy after desktop defaults are applied", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    localStorage.removeItem("disabled_proxies");
+
+    ProxyManager.loadPreferences();
+    proxyManager.enableProxy("CodeTabs");
+    ProxyManager.loadPreferences();
+
+    const configs = proxyManager.getProxyConfigs();
+    const codeTabs = configs.find((config) => config.name === "CodeTabs");
+    const otherRemoteProxies = configs.filter(
+      (config) => config.name !== "LocalProxy" && config.name !== "CodeTabs",
+    );
+
+    expect(codeTabs?.enabled).toBe(true);
+    expect(otherRemoteProxies.every((config) => !config.enabled)).toBe(true);
+  });
+
   it("omits cloud fallback proxies in Tauri while the local route is preferred", () => {
     Object.defineProperty(window, "__TAURI__", {
       value: {},

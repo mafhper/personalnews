@@ -63,6 +63,8 @@ export interface ProxyTestResult {
 
 export class ProxyManager {
   private static readonly DISABLED_PROXIES_STORAGE_KEY = "disabled_proxies";
+  private static readonly DESKTOP_PROXY_DEFAULTS_APPLIED_KEY =
+    "desktop_proxy_defaults_applied_v1";
   private static readonly AUTO_DISABLE_HEALTH_SCORE = 0.1;
   private static readonly AUTO_DISABLE_FAILURES = 5;
   private static readonly RSS2JSON_TIMEOUT_MS = 12_000;
@@ -126,6 +128,11 @@ export class ProxyManager {
 
   static canDisableRuntimeProxy(proxyName: string): boolean {
     return proxyName === "LocalProxy" || !this.keepsRemoteProxiesEnabled();
+  }
+
+  private static shouldDefaultRemoteProxiesDisabled(): boolean {
+    const defaultMode = this.getEnvValue("VITE_BACKEND_DEFAULT_MODE") || "auto";
+    return this.isTauriRuntime() && defaultMode !== "off";
   }
 
   static setRss2jsonApiKey(key: string, origin?: string) {
@@ -824,8 +831,19 @@ export class ProxyManager {
       }
     })();
 
+    const shouldApplyDesktopDefaults =
+      ProxyManager.shouldDefaultRemoteProxiesDisabled() &&
+      localStorage.getItem(
+        ProxyManager.DESKTOP_PROXY_DEFAULTS_APPLIED_KEY,
+      ) !== "true";
+    const defaultDisabledNames =
+      shouldApplyDesktopDefaults
+        ? this.PROXY_CONFIGS.filter((proxy) => proxy.name !== "LocalProxy").map(
+            (proxy) => proxy.name,
+          )
+        : [];
     const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
-    const disabledSet = new Set(disabledNames);
+    const disabledSet = new Set([...disabledNames, ...defaultDisabledNames]);
     let ignoredPersistedRemoteDisable = false;
 
     this.PROXY_CONFIGS.forEach((proxy) => {
@@ -839,7 +857,14 @@ export class ProxyManager {
       this.proxyHealthCheck.set(proxy.name, enabled);
     });
 
-    if (isFirstRun || ignoredPersistedRemoteDisable) {
+    if (shouldApplyDesktopDefaults) {
+      localStorage.setItem(
+        ProxyManager.DESKTOP_PROXY_DEFAULTS_APPLIED_KEY,
+        "true",
+      );
+    }
+
+    if (isFirstRun || ignoredPersistedRemoteDisable || shouldApplyDesktopDefaults) {
       this.persistDisabledProxyNames();
     }
   }

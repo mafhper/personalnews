@@ -87,14 +87,9 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "B9"
   },
   {
-    "url": "https://uxdesign.cc/feed",
-    "categoryId": "design",
-    "customTitle": "UX Collective"
-  },
-  {
-    "url": "https://adrenaline.com.br/feed/",
+    "url": "https://kotaku.com/rss",
     "categoryId": "games",
-    "customTitle": "Adrenaline"
+    "customTitle": "Kotaku"
   },
   {
     "url": "https://jogabilida.de/feed/",
@@ -102,29 +97,14 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Jogabilidade"
   },
   {
-    "url": "https://kotaku.com/rss",
-    "categoryId": "games",
-    "customTitle": "Kotaku"
-  },
-  {
     "url": "https://www.pcgamer.com/feeds.xml",
     "categoryId": "games",
     "customTitle": "PC Gamer"
   },
   {
-    "url": "https://www.polygon.com/feed/",
-    "categoryId": "games",
-    "customTitle": "Polygon"
-  },
-  {
     "url": "https://g1.globo.com/rss/g1/politica/",
     "categoryId": "politics",
     "customTitle": "G1 Política"
-  },
-  {
-    "url": "https://midianinja.org/feed/",
-    "categoryId": "politics",
-    "customTitle": "Mídia Ninja"
   },
   {
     "url": "https://piaui.folha.uol.com.br/feed/",
@@ -140,21 +120,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "http://www.cnet.com/rss/news/",
     "categoryId": "tech",
     "customTitle": "CNET"
-  },
-  {
-    "url": "https://diolinux.com.br/feed",
-    "categoryId": "tech",
-    "customTitle": "Diolinux"
-  },
-  {
-    "url": "https://tecnoblog.net/feed/",
-    "categoryId": "tech",
-    "customTitle": "Tecnoblog"
-  },
-  {
-    "url": "https://the-decoder.com/feed/",
-    "categoryId": "tech",
-    "customTitle": "The Decoder"
   },
   {
     "url": "https://www.theverge.com/rss/index.xml",
@@ -173,12 +138,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "hideFromAll": true
   },
   {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
-    "categoryId": "youtube",
-    "customTitle": "Benn Jordan",
-    "hideFromAll": true
-  },
-  {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
     "categoryId": "youtube",
     "customTitle": "Corridor Crew",
@@ -188,6 +147,12 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
     "categoryId": "youtube",
     "customTitle": "Diolinux",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
+    "categoryId": "youtube",
+    "customTitle": "News Rockstar",
     "hideFromAll": true
   }
 ];
