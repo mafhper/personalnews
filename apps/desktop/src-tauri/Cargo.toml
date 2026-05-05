@@ -1,6 +1,6 @@
 [package]
 name = "personalnews"
-version = "1.9.1-2"
+version = "1.9.1-3"
 description = "PersonalNews"
 authors = ["mafhper"]
 license = "MIT"

@@ -8,6 +8,7 @@ const {
   mockSetRuntimeState,
   mockParseRssUrlDetailed,
   mockGetPreferLocalProxy,
+  mockShouldUseClientProxyFallback,
 } = vi.hoisted(() => ({
   mockDetectEnvironment: vi.fn(),
   mockIsEnabled: vi.fn(),
@@ -16,6 +17,7 @@ const {
   mockSetRuntimeState: vi.fn(),
   mockParseRssUrlDetailed: vi.fn(),
   mockGetPreferLocalProxy: vi.fn(),
+  mockShouldUseClientProxyFallback: vi.fn(),
 }));
 
 vi.mock("../services/environmentDetector", () => ({
@@ -38,6 +40,7 @@ vi.mock("../services/rssParser", () => ({
 vi.mock("../services/proxyManager", () => ({
   ProxyManager: {
     getPreferLocalProxy: mockGetPreferLocalProxy,
+    shouldUseClientProxyFallback: mockShouldUseClientProxyFallback,
   },
 }));
 
@@ -48,6 +51,7 @@ describe("feedRuntime", () => {
     vi.clearAllMocks();
     mockIsEnabled.mockReturnValue(true);
     mockGetPreferLocalProxy.mockReturnValue(true);
+    mockShouldUseClientProxyFallback.mockReturnValue(false);
   });
 
   it("uses the desktop backend first when the backend is healthy", async () => {
@@ -95,7 +99,7 @@ describe("feedRuntime", () => {
     expect(result.warning).toBeUndefined();
   });
 
-  it("falls back to client proxies and exposes a warning when the backend is unavailable", async () => {
+  it("does not fall back to cloud proxies in desktop local mode when the backend is unavailable", async () => {
     mockDetectEnvironment.mockReturnValue({
       isDevelopment: false,
       isProduction: true,
@@ -110,6 +114,35 @@ describe("feedRuntime", () => {
       available: false,
       checkedAt: Date.now(),
       error: "connect ECONNREFUSED 127.0.0.1:3001",
+    });
+
+    await expect(
+      loadFeedWithRuntime("https://example.com/rss.xml"),
+    ).rejects.toThrow("Backend local indisponivel");
+
+    expect(mockParseRssUrlDetailed).not.toHaveBeenCalled();
+    expect(mockSetRuntimeState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeMode: "desktop-local",
+        lastRoute: "LocalBackend",
+        backendAvailable: false,
+        lastError: "connect ECONNREFUSED 127.0.0.1:3001",
+      }),
+    );
+  });
+
+  it("uses client proxies when the desktop local route is not preferred", async () => {
+    mockGetPreferLocalProxy.mockReturnValue(false);
+    mockShouldUseClientProxyFallback.mockReturnValue(true);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: false,
+      isLocalhost: false,
+      isTauri: true,
+      proxyUrl: null,
+      useProductionParser: false,
+      corsMode: "public-apis",
     });
     mockParseRssUrlDetailed.mockResolvedValue({
       title: "Fallback Feed",
@@ -127,12 +160,35 @@ describe("feedRuntime", () => {
 
     const result = await loadFeedWithRuntime("https://example.com/rss.xml");
 
+    expect(mockCheckHealth).not.toHaveBeenCalled();
     expect(mockParseRssUrlDetailed).toHaveBeenCalled();
-    expect(result.source).toBe("client-fallback");
+    expect(result.source).toBe("client");
     expect(result.route.routeName).toBe("CodeTabs");
     expect(result.route.viaFallback).toBe(true);
-    expect(result.warning?.cause).toBe("backend_unavailable");
-    expect(result.warning?.action).toContain("backend local");
+  });
+
+  it("does not fall back to cloud proxies in desktop local mode when backend fetch loses reachability", async () => {
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: false,
+      isLocalhost: false,
+      isTauri: true,
+      proxyUrl: null,
+      useProductionParser: false,
+      corsMode: "public-apis",
+    });
+    mockCheckHealth.mockResolvedValue({
+      available: true,
+      checkedAt: Date.now(),
+    });
+    mockFetchFeed.mockRejectedValue(new Error("Failed to fetch"));
+
+    await expect(
+      loadFeedWithRuntime("https://example.com/rss.xml"),
+    ).rejects.toThrow("Backend local indisponivel");
+
+    expect(mockParseRssUrlDetailed).not.toHaveBeenCalled();
   });
 
   it("does not fall back to cloud proxies when the healthy backend reports a feed error", async () => {

@@ -120,6 +120,10 @@ export class ProxyManager {
     return !this.isTauriRuntime() && !this.isBackendRuntimeEnabled();
   }
 
+  static shouldUseClientProxyFallback(): boolean {
+    return !(this.isTauriRuntime() && this.preferLocalProxy);
+  }
+
   static canDisableRuntimeProxy(proxyName: string): boolean {
     return proxyName === "LocalProxy" || !this.keepsRemoteProxiesEnabled();
   }
@@ -429,12 +433,14 @@ export class ProxyManager {
     const allowLocalProxy =
       !isTauri && (ProxyManager.preferLocalProxy || isLocalhost);
     const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
+    const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
 
     // Create a copy to modify priorities dynamically
     const configsToSort = this.PROXY_CONFIGS.filter(
       (proxy) =>
         proxy.enabled &&
         proxy.includeInFallback !== false &&
+        (proxy.name === "LocalProxy" || allowClientProxyFallback) &&
         (this.isProxyHealthy(proxy.name) ||
           (keepRemoteProxiesEnabled && proxy.name !== "LocalProxy")) &&
         (proxy.name !== "LocalProxy" || allowLocalProxy),

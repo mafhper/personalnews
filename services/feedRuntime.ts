@@ -111,7 +111,7 @@ const waitForBackendWarmup = async (
   signal?: AbortSignal,
 ) => {
   let health = initialHealth;
-  const deadline = Date.now() + 4_000;
+  const deadline = Date.now() + 25_000;
 
   while (!health.available && health.initializing && Date.now() < deadline) {
     await sleep(250, signal);
@@ -120,6 +120,16 @@ const waitForBackendWarmup = async (
 
   return health;
 };
+
+const buildBackendUnavailableError = (
+  message: string,
+  initializing?: boolean,
+) =>
+  new Error(
+    initializing
+      ? `Backend local inicializando: ${message}`
+      : `Backend local indisponivel: ${message}`,
+  );
 
 export const getFeedRuntimeState = (): FeedRuntimeState => ({
   ...runtimeState,
@@ -136,6 +146,7 @@ export async function loadFeedWithRuntime(
   const env = detectEnvironment();
   const hasBackendRuntime = desktopBackendClient.isEnabled();
   const preferLocalProxy = ProxyManager.getPreferLocalProxy();
+  const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
   const { forceRefresh = false, signal, skipCache = false } = options;
 
   if (hasBackendRuntime && !preferLocalProxy) {
@@ -237,8 +248,27 @@ export async function loadFeedWithRuntime(
           `Backend unavailable: ${message}`,
           undefined,
           backendRoute,
-          "Fallback automatico para proxies em nuvem ativado.",
+          allowClientProxyFallback
+            ? "Fallback automatico para proxies em nuvem ativado."
+            : undefined,
         );
+
+        if (!allowClientProxyFallback) {
+          updateRuntimeState({
+            activeMode: "desktop-local",
+            lastRoute: backendRoute,
+            lastWarning: warning,
+            backendAvailable: false,
+          });
+          desktopBackendClient.setRuntimeState({
+            activeMode: "desktop-local",
+            lastRoute: "LocalBackend",
+            lastWarning: JSON.stringify(warning),
+            backendAvailable: false,
+            lastError: message,
+          });
+          throw buildBackendUnavailableError(message);
+        }
 
         const fallback = await parseRssUrlDetailed(url, {
           signal,
@@ -273,8 +303,9 @@ export async function loadFeedWithRuntime(
       }
     }
 
+    const healthMessage = health.error || "health check failed";
     const warning = buildFeedDiagnosticInfo(
-      `Backend unavailable: ${health.error || "health check failed"}`,
+      `Backend unavailable: ${healthMessage}`,
       undefined,
       {
         transport: "desktop-backend",
@@ -283,8 +314,28 @@ export async function loadFeedWithRuntime(
         viaFallback: false,
         checkedAt: Date.now(),
       },
-      "Fallback automatico para proxies em nuvem ativado.",
+      allowClientProxyFallback
+        ? "Fallback automatico para proxies em nuvem ativado."
+        : undefined,
     );
+
+    if (!allowClientProxyFallback) {
+      updateRuntimeState({
+        activeMode: "desktop-local",
+        lastRoute: warning.route,
+        lastWarning: warning,
+        backendAvailable: false,
+      });
+      desktopBackendClient.setRuntimeState({
+        activeMode: "desktop-local",
+        lastRoute: "LocalBackend",
+        lastWarning: JSON.stringify(warning),
+        backendAvailable: false,
+        backendInitializing: health.initializing,
+        lastError: health.initializing ? undefined : healthMessage,
+      });
+      throw buildBackendUnavailableError(healthMessage, health.initializing);
+    }
 
     const fallback = await parseRssUrlDetailed(url, {
       signal,

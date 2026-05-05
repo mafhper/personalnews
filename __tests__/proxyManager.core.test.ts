@@ -149,6 +149,32 @@ describe("ProxyManager preference loading", () => {
     expect(codeTabs?.enabled).toBe(false);
   });
 
+  it("omits cloud fallback proxies in Tauri while the local route is preferred", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    ProxyManager.setPreferLocalProxy(true);
+
+    expect(ProxyManager.shouldUseClientProxyFallback()).toBe(false);
+    expect(proxyManager.getAvailableProxies()).toHaveLength(0);
+  });
+
+  it("allows cloud fallback proxies in Tauri after the local route is disabled", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    ProxyManager.setPreferLocalProxy(false);
+
+    expect(ProxyManager.shouldUseClientProxyFallback()).toBe(true);
+    expect(
+      proxyManager
+        .getAvailableProxies()
+        .some((config) => config.name !== "LocalProxy"),
+    ).toBe(true);
+  });
+
   it("uses Tauri supervisor status when testing LocalProxy in desktop runtime", async () => {
     Object.defineProperty(window, "__TAURI_INTERNALS__", {
       value: {

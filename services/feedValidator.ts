@@ -421,6 +421,38 @@ class FeedValidatorService {
         viaFallback: false,
         checkedAt: Date.now(),
       };
+      const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
+      const finishWithLocalBackendError = (
+        message: string,
+        status: FeedValidationResult["status"] = "network_error",
+      ) => {
+        const finalError: ValidationError = {
+          type:
+            status === "timeout"
+              ? ValidationErrorType.TIMEOUT_ERROR
+              : status === "server_error"
+                ? ValidationErrorType.SERVER_ERROR
+                : ValidationErrorType.NETWORK_ERROR,
+          message,
+          suggestions: [],
+          retryable: true,
+        };
+
+        result.isValid = false;
+        result.status = status;
+        result.error = message;
+        result.finalError = finalError;
+        result.finalMethod = "backend";
+        result.route = backendRoute;
+        result.diagnostics = buildFeedDiagnosticInfo(
+          `Backend unavailable: ${message}`,
+          undefined,
+          backendRoute,
+        );
+        result.totalValidationTime = Date.now() - validationStartTime;
+        smartValidationCache.set(`validation:${url}`, result);
+        return result;
+      };
       const backendHealth = await desktopBackendClient.checkHealth(false);
 
       if (backendHealth.available) {
@@ -501,23 +533,54 @@ class FeedValidatorService {
             item?.error || "Backend unavailable during validation",
             undefined,
             backendRoute,
-            "Fallback automatico para validacao em nuvem ativado.",
+            allowClientProxyFallback
+              ? "Fallback automatico para validacao em nuvem ativado."
+              : undefined,
           );
+          if (!allowClientProxyFallback) {
+            const status =
+              item?.status === "timeout"
+                ? "timeout"
+                : item?.status === "server_error"
+                  ? "server_error"
+                  : "network_error";
+            return finishWithLocalBackendError(
+              item?.error || "Backend unavailable during validation",
+              status,
+            );
+          }
         } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
           desktopFallbackDiagnostic = buildFeedDiagnosticInfo(
-            `Backend unavailable: ${error instanceof Error ? error.message : String(error)}`,
+            `Backend unavailable: ${message}`,
             undefined,
             backendRoute,
-            "Fallback automatico para validacao em nuvem ativado.",
+            allowClientProxyFallback
+              ? "Fallback automatico para validacao em nuvem ativado."
+              : undefined,
           );
+          if (!allowClientProxyFallback) {
+            return finishWithLocalBackendError(message);
+          }
         }
       } else {
+        const message = backendHealth.error || "health check failed";
         desktopFallbackDiagnostic = buildFeedDiagnosticInfo(
-          `Backend unavailable: ${backendHealth.error || "health check failed"}`,
+          `Backend unavailable: ${message}`,
           undefined,
           backendRoute,
-          "Fallback automatico para validacao em nuvem ativado.",
+          allowClientProxyFallback
+            ? "Fallback automatico para validacao em nuvem ativado."
+            : undefined,
         );
+        if (!allowClientProxyFallback) {
+          return finishWithLocalBackendError(
+            backendHealth.initializing
+              ? `Backend local inicializando: ${message}`
+              : message,
+          );
+        }
       }
     }
 
