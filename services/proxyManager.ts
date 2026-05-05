@@ -91,9 +91,14 @@ export class ProxyManager {
   private static isTauriRuntime(): boolean {
     return (
       typeof window !== "undefined" &&
-      (!!(window as Window & { __TAURI__?: unknown }).__TAURI__ ||
-        !!(window as Window & { __TAURI_INTERNALS__?: unknown })
-          .__TAURI_INTERNALS__)
+      (Boolean((globalThis as typeof globalThis & { isTauri?: unknown }).isTauri) ||
+        Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__) ||
+        Boolean(
+          (window as Window & { __TAURI_INTERNALS__?: unknown })
+            .__TAURI_INTERNALS__,
+        ) ||
+        window.location.protocol === "tauri:" ||
+        window.location.hostname === "tauri.localhost")
     );
   }
 
@@ -847,15 +852,36 @@ export class ProxyManager {
     const startedAt = Date.now();
 
     if (proxyName === "LocalProxy" && ProxyManager.isTauriRuntime()) {
-      const health = await desktopBackendClient.checkHealth(true);
+      const desktopStatus = await desktopBackendClient.getDesktopStatus();
       const responseTime = Date.now() - startedAt;
 
-      if (!health.available) {
+      if (
+        desktopStatus?.health === "starting" ||
+        desktopStatus?.health === "restarting" ||
+        desktopStatus?.health === "not_started"
+      ) {
+        return {
+          success: true,
+          responseTime,
+          detail:
+            desktopStatus.health === "restarting"
+              ? "Backend local reiniciando. O supervisor ainda esta preparando o servico."
+              : "Backend local inicializando. O supervisor ainda esta preparando o servico.",
+          route: "backend-health",
+        };
+      }
+
+      if (desktopStatus?.health !== "ready") {
         return {
           success: false,
           responseTime,
-          error: health.error,
-          detail: "Backend local nao respondeu ao health check.",
+          error:
+            desktopStatus?.lastHealthError ||
+            desktopStatus?.lastStartError ||
+            (desktopStatus
+              ? `Supervisor reportou estado ${desktopStatus.health}.`
+              : "Status do supervisor indisponivel."),
+          detail: "Backend local indisponivel pelo supervisor.",
           route: "backend-health",
         };
       }
@@ -875,7 +901,7 @@ export class ProxyManager {
           success: true,
           responseTime,
           detail:
-            "Backend local respondeu ao health check, mas as estatisticas nao puderam ser carregadas.",
+            "Backend local esta pronto pelo supervisor, mas as estatisticas nao puderam ser carregadas.",
           error: error instanceof Error ? error.message : String(error),
           route: "backend-health",
         };

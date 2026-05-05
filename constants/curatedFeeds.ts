@@ -87,11 +87,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "B9"
   },
   {
-    "url": "https://css-tricks.com/feed/",
-    "categoryId": "design",
-    "customTitle": "CSS-Tricks"
-  },
-  {
     "url": "https://uxdesign.cc/feed",
     "categoryId": "design",
     "customTitle": "UX Collective"
@@ -277,11 +272,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
   ],
   "International Mix": [
     {
-      "url": "https://css-tricks.com/feed/",
-      "categoryId": "design",
-      "customTitle": "CSS-Tricks"
-    },
-    {
       "url": "https://uxdesign.cc/feed",
       "categoryId": "design",
       "customTitle": "UX Collective"
@@ -447,11 +437,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.b9.com.br/feed/",
       "categoryId": "design",
       "customTitle": "B9"
-    },
-    {
-      "url": "https://css-tricks.com/feed/",
-      "categoryId": "design",
-      "customTitle": "CSS-Tricks"
     },
     {
       "url": "https://uxdesign.cc/feed",

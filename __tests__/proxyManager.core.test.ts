@@ -20,6 +20,9 @@ describe("ProxyManager preference loading", () => {
     ProxyManager.setCorsproxyCIOApiKey("");
     ProxyManager.setPreferLocalProxy(false);
     delete (window as Window & { __TAURI__?: unknown }).__TAURI__;
+    delete (window as Window & { __TAURI_INTERNALS__?: unknown })
+      .__TAURI_INTERNALS__;
+    delete (globalThis as typeof globalThis & { isTauri?: unknown }).isTauri;
     setImportMetaEnv({});
   });
 
@@ -144,5 +147,38 @@ describe("ProxyManager preference loading", () => {
       .find((config) => config.name === "CodeTabs");
 
     expect(codeTabs?.enabled).toBe(false);
+  });
+
+  it("uses Tauri supervisor status when testing LocalProxy in desktop runtime", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: true,
+              pid: 1234,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "starting",
+              diagnostic: "starting",
+              uptimeMs: 500,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+
+    const result = await proxyManager.testProxy("LocalProxy");
+
+    expect(result.success).toBe(true);
+    expect(result.detail).toContain("inicializando");
+    expect(result.route).toBe("backend-health");
   });
 });
