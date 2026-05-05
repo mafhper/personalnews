@@ -376,6 +376,47 @@ describe("desktopBackendClient local discovery", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("stops waiting immediately when the supervisor reports a terminal failure", async () => {
+    let calls = 0;
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            calls += 1;
+            return {
+              sidecarSpawned: false,
+              pid: null,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: false,
+              health: "failed",
+              diagnostic: "spawn_blocked",
+              uptimeMs: null,
+              lastStartError: "failed to start backend sidecar",
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(desktopBackendClient.waitUntilReady(2_000)).resolves.toBe(
+      false,
+    );
+    expect(calls).toBe(1);
+    expect(desktopBackendClient.getRuntimeState().lastError).toBe(
+      "failed to start backend sidecar",
+    );
+  });
+
   it("waits for a desktop supervisor transition to ready", async () => {
     let calls = 0;
     Object.defineProperty(window, "__TAURI_INTERNALS__", {

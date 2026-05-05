@@ -351,7 +351,11 @@ class DesktopBackendClient {
     const deadline = Date.now() + timeoutMs;
     let health = await this.checkHealth(true).catch(() => null);
 
-    while (!health?.available && Date.now() < deadline) {
+    while (
+      !health?.available &&
+      !this.isTerminalUnavailableHealth(health) &&
+      Date.now() < deadline
+    ) {
       await this.sleep(BACKEND_READY_POLL_MS);
       health = await this.checkHealth(true).catch(() => null);
     }
@@ -359,6 +363,7 @@ class DesktopBackendClient {
     appendFrontendLog("backend_wait_until_ready_completed", {
       ready: Boolean(health?.available),
       initializing: health?.initializing,
+      terminal: this.isTerminalUnavailableHealth(health),
       timeoutMs,
       error: health?.error,
     });
@@ -405,6 +410,14 @@ class DesktopBackendClient {
 
   private isInWarmupWindow(): boolean {
     return Date.now() - this.createdAt < BACKEND_WARMUP_MS;
+  }
+
+  private isTerminalUnavailableHealth(
+    health: HealthState | null | undefined,
+  ): boolean {
+    return Boolean(
+      health && !health.available && health.initializing === false,
+    );
   }
 
   private applyDesktopStatus(status: DesktopBackendStatus) {
