@@ -326,6 +326,27 @@ class DesktopBackendClient {
     return status;
   }
 
+  async waitUntilReady(timeoutMs = 10_000): Promise<boolean> {
+    if (!this.isEnabled()) return false;
+
+    const deadline = Date.now() + timeoutMs;
+    let health = await this.checkHealth(true).catch(() => null);
+
+    while (!health?.available && Date.now() < deadline) {
+      await this.sleep(BACKEND_READY_POLL_MS);
+      health = await this.checkHealth(true).catch(() => null);
+    }
+
+    appendFrontendLog("backend_wait_until_ready_completed", {
+      ready: Boolean(health?.available),
+      initializing: health?.initializing,
+      timeoutMs,
+      error: health?.error,
+    });
+
+    return Boolean(health?.available);
+  }
+
   async restartBackend(): Promise<DesktopBackendStatus | null> {
     const invoke = getTauriInvoke();
     if (!invoke) return null;

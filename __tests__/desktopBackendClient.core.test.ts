@@ -250,4 +250,40 @@ describe("desktopBackendClient local discovery", () => {
     expect(desktopBackendClient.getBaseUrl()).toBe("http://127.0.0.1:3007");
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("waits for a desktop supervisor transition to ready", async () => {
+    let calls = 0;
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            calls += 1;
+            return {
+              sidecarSpawned: true,
+              pid: 1234,
+              baseUrl: "http://127.0.0.1:3007",
+              port: 3007,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: calls < 2 ? "starting" : "ready",
+              diagnostic: calls < 2 ? "starting" : "ready",
+              uptimeMs: calls * 100,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(desktopBackendClient.waitUntilReady(2_000)).resolves.toBe(true);
+    expect(calls).toBeGreaterThanOrEqual(2);
+  });
 });

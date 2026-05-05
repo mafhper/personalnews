@@ -17,6 +17,7 @@ import { getCachedArticles } from "../services/smartCache";
 import { useLogger } from "../services/logger";
 import { categorizeFeedError } from "../services/feedErrorCategorization";
 import { loadFeedWithRuntime } from "../services/feedRuntime";
+import { ProxyManager } from "../services/proxyManager";
 import type {
   FeedDiagnosticInfo,
   FeedFailureCause,
@@ -69,9 +70,21 @@ interface FeedResult {
 }
 
 const FEED_TIMEOUT_MS = 4000; // 4 seconds per feed (reduzido para mais velocidade inicial)
+const DESKTOP_LOCAL_FEED_TIMEOUT_MS = 30_000;
 const BATCH_SIZE = 8; // Aumentado para 8 feeds por batch
 const BATCH_DELAY_MS = 500; // Reduzido para 500ms entre batches
 const BATCH_DELAY_BACKGROUND_MS = 50; // Delay menor em abas inativas (o navegador vai limitar a 1s de qualquer forma)
+
+export const resolveFeedTimeoutMs = (): number => {
+  if (
+    ProxyManager.getPreferLocalProxy() &&
+    !ProxyManager.shouldUseClientProxyFallback()
+  ) {
+    return DESKTOP_LOCAL_FEED_TIMEOUT_MS;
+  }
+
+  return FEED_TIMEOUT_MS;
+};
 
 /**
  * Helper function to wait for batch delay with visibility awareness
@@ -275,11 +288,12 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     ): Promise<FeedResult> => {
       const timeoutController = new AbortController();
       const cachedSnapshot = skipCache ? getCachedArticles(feed.url) : null;
+      const timeoutMs = resolveFeedTimeoutMs();
 
       // Set timeout
       const timeoutId = setTimeout(
         () => timeoutController.abort(),
-        FEED_TIMEOUT_MS,
+        timeoutMs,
       );
 
       try {
@@ -383,7 +397,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           title: getFeedDisplayName(feed),
           success: false,
           error: isTimeout
-            ? `Feed timeout after ${FEED_TIMEOUT_MS}ms`
+            ? `Feed timeout after ${timeoutMs}ms`
             : errorMessage,
         };
       }
