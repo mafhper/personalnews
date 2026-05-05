@@ -63,6 +63,8 @@ export interface ProxyTestResult {
 
 export class ProxyManager {
   private static readonly DISABLED_PROXIES_STORAGE_KEY = "disabled_proxies";
+  private static readonly DESKTOP_PROXY_DEFAULTS_APPLIED_KEY =
+    "desktop_proxy_defaults_applied_v1";
   private static readonly AUTO_DISABLE_HEALTH_SCORE = 0.1;
   private static readonly AUTO_DISABLE_FAILURES = 5;
   private static readonly RSS2JSON_TIMEOUT_MS = 12_000;
@@ -91,9 +93,14 @@ export class ProxyManager {
   private static isTauriRuntime(): boolean {
     return (
       typeof window !== "undefined" &&
-      (!!(window as Window & { __TAURI__?: unknown }).__TAURI__ ||
-        !!(window as Window & { __TAURI_INTERNALS__?: unknown })
-          .__TAURI_INTERNALS__)
+      (Boolean((globalThis as typeof globalThis & { isTauri?: unknown }).isTauri) ||
+        Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__) ||
+        Boolean(
+          (window as Window & { __TAURI_INTERNALS__?: unknown })
+            .__TAURI_INTERNALS__,
+        ) ||
+        window.location.protocol === "tauri:" ||
+        window.location.hostname === "tauri.localhost")
     );
   }
 
@@ -115,8 +122,17 @@ export class ProxyManager {
     return !this.isTauriRuntime() && !this.isBackendRuntimeEnabled();
   }
 
+  static shouldUseClientProxyFallback(): boolean {
+    return !(this.isTauriRuntime() && this.preferLocalProxy);
+  }
+
   static canDisableRuntimeProxy(proxyName: string): boolean {
     return proxyName === "LocalProxy" || !this.keepsRemoteProxiesEnabled();
+  }
+
+  private static shouldDefaultRemoteProxiesDisabled(): boolean {
+    const defaultMode = this.getEnvValue("VITE_BACKEND_DEFAULT_MODE") || "auto";
+    return this.isTauriRuntime() && defaultMode !== "off";
   }
 
   static setRss2jsonApiKey(key: string, origin?: string) {
@@ -424,12 +440,14 @@ export class ProxyManager {
     const allowLocalProxy =
       !isTauri && (ProxyManager.preferLocalProxy || isLocalhost);
     const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
+    const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
 
     // Create a copy to modify priorities dynamically
     const configsToSort = this.PROXY_CONFIGS.filter(
       (proxy) =>
         proxy.enabled &&
         proxy.includeInFallback !== false &&
+        (proxy.name === "LocalProxy" || allowClientProxyFallback) &&
         (this.isProxyHealthy(proxy.name) ||
           (keepRemoteProxiesEnabled && proxy.name !== "LocalProxy")) &&
         (proxy.name !== "LocalProxy" || allowLocalProxy),
@@ -813,8 +831,19 @@ export class ProxyManager {
       }
     })();
 
+    const shouldApplyDesktopDefaults =
+      ProxyManager.shouldDefaultRemoteProxiesDisabled() &&
+      localStorage.getItem(
+        ProxyManager.DESKTOP_PROXY_DEFAULTS_APPLIED_KEY,
+      ) !== "true";
+    const defaultDisabledNames =
+      shouldApplyDesktopDefaults
+        ? this.PROXY_CONFIGS.filter((proxy) => proxy.name !== "LocalProxy").map(
+            (proxy) => proxy.name,
+          )
+        : [];
     const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
-    const disabledSet = new Set(disabledNames);
+    const disabledSet = new Set([...disabledNames, ...defaultDisabledNames]);
     let ignoredPersistedRemoteDisable = false;
 
     this.PROXY_CONFIGS.forEach((proxy) => {
@@ -828,7 +857,14 @@ export class ProxyManager {
       this.proxyHealthCheck.set(proxy.name, enabled);
     });
 
-    if (isFirstRun || ignoredPersistedRemoteDisable) {
+    if (shouldApplyDesktopDefaults) {
+      localStorage.setItem(
+        ProxyManager.DESKTOP_PROXY_DEFAULTS_APPLIED_KEY,
+        "true",
+      );
+    }
+
+    if (isFirstRun || ignoredPersistedRemoteDisable || shouldApplyDesktopDefaults) {
       this.persistDisabledProxyNames();
     }
   }
@@ -847,15 +883,36 @@ export class ProxyManager {
     const startedAt = Date.now();
 
     if (proxyName === "LocalProxy" && ProxyManager.isTauriRuntime()) {
-      const health = await desktopBackendClient.checkHealth(true);
+      const desktopStatus = await desktopBackendClient.getDesktopStatus();
       const responseTime = Date.now() - startedAt;
 
-      if (!health.available) {
+      if (
+        desktopStatus?.health === "starting" ||
+        desktopStatus?.health === "restarting" ||
+        desktopStatus?.health === "not_started"
+      ) {
+        return {
+          success: true,
+          responseTime,
+          detail:
+            desktopStatus.health === "restarting"
+              ? "Backend local reiniciando. O supervisor ainda esta preparando o servico."
+              : "Backend local inicializando. O supervisor ainda esta preparando o servico.",
+          route: "backend-health",
+        };
+      }
+
+      if (desktopStatus?.health !== "ready") {
         return {
           success: false,
           responseTime,
-          error: health.error,
-          detail: "Backend local nao respondeu ao health check.",
+          error:
+            desktopStatus?.lastHealthError ||
+            desktopStatus?.lastStartError ||
+            (desktopStatus
+              ? `Supervisor reportou estado ${desktopStatus.health}.`
+              : "Status do supervisor indisponivel."),
+          detail: "Backend local indisponivel pelo supervisor.",
           route: "backend-health",
         };
       }
@@ -875,7 +932,7 @@ export class ProxyManager {
           success: true,
           responseTime,
           detail:
-            "Backend local respondeu ao health check, mas as estatisticas nao puderam ser carregadas.",
+            "Backend local esta pronto pelo supervisor, mas as estatisticas nao puderam ser carregadas.",
           error: error instanceof Error ? error.message : String(error),
           route: "backend-health",
         };

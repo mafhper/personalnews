@@ -18,3 +18,24 @@ description = "Permite que a janela principal autentique chamadas ao backend loc
 commands.allow = [
   "get_backend_auth_token"
 ]
+
+[[permission]]
+identifier = "allow-get-backend-status"
+description = "Permite que a janela principal leia o status do supervisor do backend local"
+commands.allow = [
+  "get_backend_status"
+]
+
+[[permission]]
+identifier = "allow-append-frontend-log"
+description = "Permite que a janela principal registre diagnosticos do frontend no log local"
+commands.allow = [
+  "append_frontend_log"
+]
+
+[[permission]]
+identifier = "allow-restart-backend-sidecar"
+description = "Permite que a janela principal solicite reinicio controlado do backend local"
+commands.allow = [
+  "restart_backend_sidecar"
+]

@@ -1,9 +1,12 @@
+import { invoke as tauriInvoke } from "@tauri-apps/api/core";
+import { listen as tauriListen } from "@tauri-apps/api/event";
 import {
-  BACKEND_DEFAULT_URL,
   BACKEND_AUTH_TOKEN_HEADER,
+  BACKEND_DEFAULT_URL,
   BACKEND_DEV_AUTH_TOKEN,
   BACKEND_RUNTIME_ENABLED,
   BackendHealthSchema,
+  DesktopBackendStatusSchema,
   FeedFetchResponseSchema,
   FeedValidateResponseSchema,
   ProxyStatsResponseSchema,
@@ -11,6 +14,7 @@ import {
   SettingsPutSchema,
   type BackendHealth,
   type BackendMode,
+  type DesktopBackendStatus,
   type FeedFetchResponse,
   type FeedValidateResponse,
   type ProxyStatsResponse,
@@ -38,10 +42,24 @@ type RuntimeState = {
   lastError?: string;
 };
 
+type DesktopBackendBootstrapConfig = {
+  status?: DesktopBackendStatus;
+  baseUrl?: string;
+  bootstrappedAt?: number;
+};
+
+declare global {
+  interface Window {
+    __PERSONALNEWS_BACKEND_CONFIG__?: DesktopBackendBootstrapConfig;
+  }
+}
+
 const HEALTH_TTL_MS = 5_000;
-const BACKEND_WARMUP_MS = 30_000;
+const BACKEND_WARMUP_MS = 90_000;
 const LOCAL_BACKEND_PORT_START = 3001;
 const LOCAL_BACKEND_PORT_END = 3015;
+const BACKEND_READY_POLL_MS = 750;
+const BACKEND_READY_POLL_DEADLINE_MS = 20_000;
 
 export class BackendRequestError extends Error {
   readonly statusCode: number;
@@ -56,6 +74,29 @@ export class BackendRequestError extends Error {
   }
 }
 
+class BackendStillStartingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BackendStillStartingError";
+  }
+}
+
+class BackendSupervisorFailedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BackendSupervisorFailedError";
+  }
+}
+
+type TauriInvoke = (
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<unknown>;
+type TauriListen = (
+  event: string,
+  handler: (event: { payload: unknown }) => void,
+) => Promise<() => void>;
+
 const getConfiguredBackendUrl = () => {
   const meta = import.meta as ImportMeta & {
     env?: Record<string, string | undefined>;
@@ -69,11 +110,83 @@ const getConfiguredBackendUrl = () => {
   return normalized || null;
 };
 
+const isViteDevRuntime = () => {
+  const meta = import.meta as ImportMeta & {
+    env?: Record<string, boolean | string | undefined>;
+  };
+  const env = meta.env || {};
+  const devValue = env.DEV as unknown;
+  return devValue === true || devValue === "true" || env.MODE === "development";
+};
+
 const isTauriRuntime = () =>
   typeof window !== "undefined" &&
-  (!!(window as Window & { __TAURI__?: unknown }).__TAURI__ ||
-    !!(window as Window & { __TAURI_INTERNALS__?: unknown })
-      .__TAURI_INTERNALS__);
+  (Boolean((globalThis as typeof globalThis & { isTauri?: unknown }).isTauri) ||
+    Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__) ||
+    Boolean(
+      (window as Window & { __TAURI_INTERNALS__?: unknown })
+        .__TAURI_INTERNALS__,
+    ) ||
+    window.location.protocol === "tauri:" ||
+    window.location.hostname === "tauri.localhost");
+
+const shouldProbeTauriLocalBackend = () =>
+  isTauriRuntime() && (isViteDevRuntime() || Boolean(getConfiguredBackendUrl()));
+
+const getTauriInvoke = (): TauriInvoke | null => {
+  if (typeof window === "undefined") return null;
+  const target = window as Window & {
+    __TAURI_INTERNALS__?: { invoke?: TauriInvoke };
+    __TAURI__?: {
+      core?: { invoke?: TauriInvoke };
+      invoke?: TauriInvoke;
+    };
+  };
+  const globalInvoke =
+    target.__TAURI_INTERNALS__?.invoke ||
+    target.__TAURI__?.core?.invoke ||
+    target.__TAURI__?.invoke;
+  if (globalInvoke) return globalInvoke;
+
+  return tauriInvoke as TauriInvoke;
+};
+
+const getTauriListen = (): TauriListen | null => {
+  if (typeof window === "undefined") return null;
+  const target = window as Window & {
+    __TAURI_INTERNALS__?: { listen?: TauriListen };
+    __TAURI__?: {
+      event?: { listen?: TauriListen };
+      listen?: TauriListen;
+    };
+  };
+  const globalListen =
+    target.__TAURI_INTERNALS__?.listen ||
+    target.__TAURI__?.event?.listen ||
+    target.__TAURI__?.listen;
+  if (globalListen) return globalListen;
+
+  return tauriListen as TauriListen;
+};
+
+const stringifyLogPayload = (payload: unknown): string => {
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return String(payload);
+  }
+};
+
+const appendFrontendLog = (message: string, payload?: unknown): void => {
+  const invoke = getTauriInvoke();
+  if (!invoke) return;
+
+  void invoke("append_frontend_log", {
+    message,
+    payload:
+      typeof payload === "undefined" ? undefined : stringifyLogPayload(payload),
+  }).catch(() => undefined);
+};
 
 const isLocalBrowserRuntime = () => {
   if (typeof window === "undefined") return false;
@@ -85,18 +198,78 @@ const isLocalBrowserRuntime = () => {
   );
 };
 
+const isAbortLikeError = (error: unknown): boolean => {
+  const maybeError =
+    error && typeof error === "object"
+      ? (error as { name?: unknown; message?: unknown })
+      : null;
+  const name = typeof maybeError?.name === "string" ? maybeError.name : "";
+  const message =
+    typeof maybeError?.message === "string"
+      ? maybeError.message.toLowerCase()
+      : "";
+
+  return (
+    name === "AbortError" ||
+    name === "TimeoutError" ||
+    message.includes("aborted") ||
+    message.includes("cancelled")
+  );
+};
+
 const normalizeFetchError = (error: unknown): string => {
-  if (error instanceof Error) {
-    if (
-      error.name === "AbortError" ||
-      error.message.toLowerCase().includes("aborted")
-    ) {
-      return "health check cancelled";
-    }
-    return error.message;
+  if (isAbortLikeError(error)) {
+    return "Backend local ainda respondendo";
   }
+  if (error instanceof Error) return error.message;
   return String(error);
 };
+
+const getBootstrappedBackendConfig = (): DesktopBackendBootstrapConfig | null => {
+  if (typeof window === "undefined") return null;
+  return window.__PERSONALNEWS_BACKEND_CONFIG__ || null;
+};
+
+const parseDesktopBackendStatus = (
+  raw: unknown,
+  source: string,
+): DesktopBackendStatus | null => {
+  const parsed = DesktopBackendStatusSchema.safeParse(raw);
+  if (parsed.success) {
+    appendFrontendLog("backend_status_parse_ok", {
+      source,
+      health: parsed.data.health,
+      diagnostic: parsed.data.diagnostic,
+      baseUrl: parsed.data.baseUrl,
+      pid: parsed.data.pid,
+    });
+    return parsed.data;
+  }
+
+  if (typeof console !== "undefined") {
+    console.warn("[desktop-backend] invalid backend status payload", {
+      source,
+      raw,
+      issues: parsed.error.issues,
+    });
+  }
+  appendFrontendLog("backend_status_parse_failed", {
+    source,
+    raw,
+    issues: parsed.error.issues,
+  });
+
+  return null;
+};
+
+const buildSyntheticHealth = (status: DesktopBackendStatus): BackendHealth => ({
+  status: "ok",
+  service: "personalnews-backend",
+  version: "desktop-supervisor",
+  uptimeMs: status.uptimeMs ?? 0,
+  dbPath: status.dbPath,
+  now: new Date().toISOString(),
+});
 
 class DesktopBackendClient {
   private healthState: HealthState = {
@@ -108,13 +281,29 @@ class DesktopBackendClient {
 
   private healthCheckPromise: Promise<HealthState> | null = null;
 
-  private resolvedBaseUrl: string = BACKEND_DEFAULT_URL;
+  private resolvedBaseUrl: string | null =
+    getBootstrappedBackendConfig()?.baseUrl ||
+    getBootstrappedBackendConfig()?.status?.baseUrl ||
+    (isTauriRuntime() ? null : BACKEND_DEFAULT_URL);
 
   private runtimeState: RuntimeState = {
     activeMode: "unknown",
   };
 
   private authTokenPromise: Promise<string | null> | null = null;
+
+  private desktopStatusPromise: Promise<DesktopBackendStatus | null> | null =
+    null;
+
+  private warmupMonitorStarted = false;
+
+  private healthProbeAttempt = 0;
+
+  private backendStatusListenerStarted = false;
+
+  constructor() {
+    this.startBackendStatusListener();
+  }
 
   isEnabled(): boolean {
     return (
@@ -123,11 +312,92 @@ class DesktopBackendClient {
   }
 
   getBaseUrl(): string {
-    return this.resolvedBaseUrl || BACKEND_DEFAULT_URL;
+    return this.resolvedBaseUrl || (isTauriRuntime() ? "" : BACKEND_DEFAULT_URL);
   }
 
   getRuntimeState(): RuntimeState {
+    this.startBackendStatusListener();
     return { ...this.runtimeState };
+  }
+
+  isDesktopRuntime(): boolean {
+    return isTauriRuntime();
+  }
+
+  async getDesktopStatus(): Promise<DesktopBackendStatus | null> {
+    return this.getDesktopBackendStatus(true);
+  }
+
+  async bootstrapFromSupervisor(): Promise<DesktopBackendStatus | null> {
+    const status = await this.getDesktopBackendStatus(true);
+    if (!status) return null;
+
+    this.applyDesktopStatus(status);
+    window.__PERSONALNEWS_BACKEND_CONFIG__ = {
+      ...window.__PERSONALNEWS_BACKEND_CONFIG__,
+      status,
+      baseUrl: status.baseUrl.replace(/\/$/, ""),
+      bootstrappedAt: Date.now(),
+    };
+    if (status.health !== "ready") {
+      this.startWarmupMonitor();
+    }
+    return status;
+  }
+
+  async waitUntilReady(timeoutMs = 10_000): Promise<boolean> {
+    if (!this.isEnabled()) return false;
+
+    const deadline = Date.now() + timeoutMs;
+    let health = await this.checkHealth(true).catch(() => null);
+
+    while (
+      !health?.available &&
+      !this.isTerminalUnavailableHealth(health) &&
+      Date.now() < deadline
+    ) {
+      await this.sleep(BACKEND_READY_POLL_MS);
+      health = await this.checkHealth(true).catch(() => null);
+    }
+
+    appendFrontendLog("backend_wait_until_ready_completed", {
+      ready: Boolean(health?.available),
+      initializing: health?.initializing,
+      terminal: this.isTerminalUnavailableHealth(health),
+      timeoutMs,
+      error: health?.error,
+    });
+
+    return Boolean(health?.available);
+  }
+
+  async restartBackend(): Promise<DesktopBackendStatus | null> {
+    const invoke = getTauriInvoke();
+    if (!invoke) return null;
+
+    this.healthState = {
+      available: false,
+      checkedAt: Date.now(),
+      initializing: true,
+      error: "Backend local reiniciando",
+    };
+    this.authTokenPromise = null;
+    this.warmupMonitorStarted = false;
+    appendFrontendLog("restart_backend_sidecar_call");
+    const raw = await invoke("restart_backend_sidecar").catch((error) => {
+      appendFrontendLog("restart_backend_sidecar_failed", {
+        error: normalizeFetchError(error),
+      });
+      return null;
+    });
+    const status = parseDesktopBackendStatus(raw, "restart_backend_sidecar");
+    if (!status) return null;
+
+    if (status.baseUrl) {
+      this.resolvedBaseUrl = status.baseUrl.replace(/\/$/, "");
+    }
+    this.startWarmupMonitor();
+    return status;
   }
 
   setRuntimeState(next: Partial<RuntimeState>) {
@@ -140,6 +410,182 @@ class DesktopBackendClient {
 
   private isInWarmupWindow(): boolean {
     return Date.now() - this.createdAt < BACKEND_WARMUP_MS;
+  }
+
+  private isTerminalUnavailableHealth(
+    health: HealthState | null | undefined,
+  ): boolean {
+    return Boolean(
+      health && !health.available && health.initializing === false,
+    );
+  }
+
+  private applyDesktopStatus(status: DesktopBackendStatus) {
+    if (status.baseUrl) {
+      this.resolvedBaseUrl = status.baseUrl.replace(/\/$/, "");
+      if (typeof window !== "undefined") {
+        window.__PERSONALNEWS_BACKEND_CONFIG__ = {
+          ...window.__PERSONALNEWS_BACKEND_CONFIG__,
+          status,
+          baseUrl: this.resolvedBaseUrl,
+          bootstrappedAt:
+            window.__PERSONALNEWS_BACKEND_CONFIG__?.bootstrappedAt ||
+            Date.now(),
+        };
+      }
+    }
+
+    if (status.health === "ready") {
+      this.healthState = {
+        available: true,
+        checkedAt: Date.now(),
+        health: buildSyntheticHealth(status),
+        initializing: false,
+      };
+      this.setRuntimeState({
+        activeMode: "desktop-local",
+        backendAvailable: true,
+        backendInitializing: false,
+        lastError: undefined,
+        lastRoute: this.resolvedBaseUrl || undefined,
+      });
+      return;
+    }
+
+    const initializing =
+      status.health === "starting" || status.health === "restarting";
+    const error =
+      status.lastHealthError ||
+      status.lastStartError ||
+      (initializing ? "Backend local inicializando" : "Backend local indisponivel");
+
+    this.healthState = {
+      available: false,
+      checkedAt: Date.now(),
+      initializing,
+      error,
+    };
+    this.setRuntimeState({
+      backendAvailable: false,
+      backendInitializing: initializing,
+      lastError: initializing ? undefined : error,
+      lastRoute: this.resolvedBaseUrl || undefined,
+    });
+  }
+
+  private startBackendStatusListener(): void {
+    if (this.backendStatusListenerStarted) return;
+    const listen = getTauriListen();
+    if (!listen) return;
+
+    this.backendStatusListenerStarted = true;
+    const applyEventStatus = (event: { payload: unknown }) => {
+      appendFrontendLog("backend_status_event", event.payload);
+      const status = parseDesktopBackendStatus(event.payload, "tauri-event");
+      if (status) {
+        this.applyDesktopStatus(status);
+      }
+    };
+
+    appendFrontendLog("backend_status_listener_start", {
+      isTauriRuntime: isTauriRuntime(),
+      hasGlobalTauri:
+        typeof window !== "undefined" &&
+        Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__),
+      hasInternalTauri:
+        typeof window !== "undefined" &&
+        Boolean(
+          (window as Window & { __TAURI_INTERNALS__?: unknown })
+            .__TAURI_INTERNALS__,
+        ),
+      location:
+        typeof window !== "undefined"
+          ? `${window.location.protocol}//${window.location.host}`
+          : undefined,
+      userAgent:
+        typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+    });
+
+    void listen("backend-status-changed", applyEventStatus).catch((error) => {
+      appendFrontendLog("backend_status_listener_failed", {
+        event: "backend-status-changed",
+        error: normalizeFetchError(error),
+      });
+      this.backendStatusListenerStarted = false;
+    });
+    void listen("backend-ready", applyEventStatus).catch((error) => {
+      appendFrontendLog("backend_ready_listener_failed", {
+        error: normalizeFetchError(error),
+      });
+    });
+  }
+
+  private sleep(ms: number, signal?: AbortSignal) {
+    return new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new DOMException("Request was cancelled", "AbortError"));
+        return;
+      }
+
+      const timeoutId = window.setTimeout(resolve, ms);
+      signal?.addEventListener(
+        "abort",
+        () => {
+          window.clearTimeout(timeoutId);
+          reject(new DOMException("Request was cancelled", "AbortError"));
+        },
+        { once: true },
+      );
+    });
+  }
+
+  private async getDesktopBackendStatus(
+    force = false,
+  ): Promise<DesktopBackendStatus | null> {
+    if (!force && this.desktopStatusPromise) return this.desktopStatusPromise;
+
+    this.desktopStatusPromise = (async () => {
+      const invoke = getTauriInvoke();
+      if (!invoke) {
+        appendFrontendLog("get_backend_status_no_invoke", {
+          isTauriRuntime: isTauriRuntime(),
+          hasGlobalTauri:
+            typeof window !== "undefined" &&
+            Boolean((window as Window & { __TAURI__?: unknown }).__TAURI__),
+          hasInternalTauri:
+            typeof window !== "undefined" &&
+            Boolean(
+              (window as Window & { __TAURI_INTERNALS__?: unknown })
+                .__TAURI_INTERNALS__,
+            ),
+        });
+        return null;
+      }
+
+      appendFrontendLog("get_backend_status_call", {
+        isTauriRuntime: isTauriRuntime(),
+      });
+      const raw = await invoke("get_backend_status").catch((error) => {
+        appendFrontendLog("get_backend_status_failed", {
+          error: normalizeFetchError(error),
+        });
+        return null;
+      });
+      appendFrontendLog("get_backend_status_raw", raw);
+      if (raw === null) return null;
+
+      const status = parseDesktopBackendStatus(raw, "get_backend_status");
+      if (!status) return null;
+
+      if (status.baseUrl) {
+        this.resolvedBaseUrl = status.baseUrl.replace(/\/$/, "");
+      }
+      return status;
+    })().finally(() => {
+      this.desktopStatusPromise = null;
+    });
+
+    return this.desktopStatusPromise;
   }
 
   private getCandidateBaseUrls(): string[] {
@@ -156,7 +602,14 @@ class DesktopBackendClient {
       }
     };
 
-    pushCandidate(this.resolvedBaseUrl);
+    pushCandidate(this.resolvedBaseUrl || undefined);
+
+    const canProbeLocalBackend = shouldProbeTauriLocalBackend();
+
+    if (isTauriRuntime() && !canProbeLocalBackend) {
+      return candidates;
+    }
+
     pushCandidate(BACKEND_DEFAULT_URL);
 
     if (configuredBackendUrl) {
@@ -164,7 +617,7 @@ class DesktopBackendClient {
       return candidates;
     }
 
-    if (isLocalBrowserRuntime() || isTauriRuntime()) {
+    if (isLocalBrowserRuntime() || canProbeLocalBackend) {
       for (const host of ["127.0.0.1", "localhost"]) {
         for (
           let port = LOCAL_BACKEND_PORT_START;
@@ -181,7 +634,18 @@ class DesktopBackendClient {
 
   private async probeHealth(baseUrl: string): Promise<BackendHealth> {
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 1500);
+    const timeoutMs = Math.min(2_500, 700 + this.healthProbeAttempt * 300);
+    this.healthProbeAttempt += 1;
+    const timeoutId = window.setTimeout(
+      () =>
+        controller.abort(
+          new DOMException(
+            `Health check timed out after ${timeoutMs}ms`,
+            "TimeoutError",
+          ),
+        ),
+      timeoutMs,
+    );
 
     try {
       const response = await fetch(`${baseUrl}/health`, {
@@ -196,7 +660,9 @@ class DesktopBackendClient {
         throw new Error(`Backend health HTTP ${response.status}`);
       }
 
-      return BackendHealthSchema.parse(await response.json());
+      const health = BackendHealthSchema.parse(await response.json());
+      this.healthProbeAttempt = 0;
+      return health;
     } finally {
       window.clearTimeout(timeoutId);
     }
@@ -206,6 +672,36 @@ class DesktopBackendClient {
     baseUrl: string;
     health: BackendHealth;
   }> {
+    const canProbeTauriLocalBackend = shouldProbeTauriLocalBackend();
+    const desktopStatus = await this.getDesktopBackendStatus(true);
+    if (desktopStatus && isTauriRuntime()) {
+      this.applyDesktopStatus(desktopStatus);
+      if (
+        desktopStatus.health === "starting" ||
+        desktopStatus.health === "restarting" ||
+        (desktopStatus.health === "not_started" && !canProbeTauriLocalBackend)
+      ) {
+        throw new BackendStillStartingError("Backend local inicializando");
+      }
+      if (desktopStatus.health === "failed") {
+        throw new BackendSupervisorFailedError(
+          desktopStatus.lastHealthError ||
+            desktopStatus.lastStartError ||
+            "Backend local falhou ao iniciar",
+        );
+      }
+      if (desktopStatus.health === "ready") {
+        return {
+          baseUrl: desktopStatus.baseUrl.replace(/\/$/, ""),
+          health: buildSyntheticHealth(desktopStatus),
+        };
+      }
+    }
+
+    if (isTauriRuntime() && !canProbeTauriLocalBackend) {
+      throw new BackendStillStartingError("Backend local inicializando");
+    }
+
     const failures: string[] = [];
 
     for (const baseUrl of this.getCandidateBaseUrls()) {
@@ -243,7 +739,18 @@ class DesktopBackendClient {
       });
       return { ...this.healthState };
     } catch (error) {
-      const inWarmup = this.isInWarmupWindow();
+      if (isAbortLikeError(error) && this.healthState.available) {
+        this.healthState = {
+          ...this.healthState,
+          checkedAt: now,
+          initializing: false,
+        };
+        return { ...this.healthState };
+      }
+
+      const inWarmup =
+        !(error instanceof BackendSupervisorFailedError) &&
+        (error instanceof BackendStillStartingError || this.isInWarmupWindow());
       const message = inWarmup
         ? "Backend local inicializando"
         : normalizeFetchError(error);
@@ -261,6 +768,25 @@ class DesktopBackendClient {
       });
       return { ...this.healthState };
     }
+  }
+
+  startWarmupMonitor(): void {
+    if (!this.isEnabled() || this.warmupMonitorStarted) return;
+    this.warmupMonitorStarted = true;
+
+    const startedAt = Date.now();
+    const tick = async () => {
+      const health = await this.checkHealth(true).catch(() => null);
+      if (
+        health?.available ||
+        Date.now() - startedAt > BACKEND_READY_POLL_DEADLINE_MS
+      ) {
+        return;
+      }
+      window.setTimeout(tick, BACKEND_READY_POLL_MS);
+    };
+
+    void tick();
   }
 
   async checkHealth(force = false, signal?: AbortSignal): Promise<HealthState> {
@@ -286,6 +812,13 @@ class DesktopBackendClient {
     }
 
     if (!force && now - this.healthState.checkedAt < HEALTH_TTL_MS) {
+      if (isTauriRuntime() && !this.healthState.available) {
+        const desktopStatus = await this.getDesktopBackendStatus(true);
+        if (desktopStatus?.health === "ready") {
+          this.applyDesktopStatus(desktopStatus);
+          return { ...this.healthState };
+        }
+      }
       return { ...this.healthState };
     }
 
@@ -343,24 +876,7 @@ class DesktopBackendClient {
 
     if (!this.authTokenPromise) {
       this.authTokenPromise = (async () => {
-        const invoke =
-          (window as Window & {
-            __TAURI_INTERNALS__?: { invoke?: (command: string) => Promise<unknown> };
-            __TAURI__?: {
-              core?: { invoke?: (command: string) => Promise<unknown> };
-              invoke?: (command: string) => Promise<unknown>;
-            };
-          }).__TAURI_INTERNALS__?.invoke ||
-          (window as Window & {
-            __TAURI__?: {
-              core?: { invoke?: (command: string) => Promise<unknown> };
-              invoke?: (command: string) => Promise<unknown>;
-            };
-          }).__TAURI__?.core?.invoke ||
-          (window as Window & {
-            __TAURI__?: { invoke?: (command: string) => Promise<unknown> };
-          }).__TAURI__?.invoke;
-
+        const invoke = getTauriInvoke();
         if (!invoke) return null;
         const token = await invoke("get_backend_auth_token").catch(() => null);
         return typeof token === "string" && token.length > 0 ? token : null;

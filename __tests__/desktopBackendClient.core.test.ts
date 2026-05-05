@@ -1,8 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DesktopBackendStatusSchema } from "../shared/contracts/backend";
+
+const importMetaWithEnv = import.meta as ImportMeta & {
+  env: Record<string, boolean | string | undefined>;
+};
+const ORIGINAL_IMPORT_META_ENV = { ...importMetaWithEnv.env };
+
+const setImportMetaEnv = (
+  patch: Record<string, boolean | string | undefined>,
+) => {
+  importMetaWithEnv.env = {
+    ...ORIGINAL_IMPORT_META_ENV,
+    ...patch,
+  };
+};
 
 describe("desktopBackendClient local discovery", () => {
   beforeEach(() => {
     vi.resetModules();
+    delete (window as Window & { __TAURI__?: unknown }).__TAURI__;
+    delete (window as Window & { __TAURI_INTERNALS__?: unknown })
+      .__TAURI_INTERNALS__;
+    delete (globalThis as typeof globalThis & { isTauri?: unknown }).isTauri;
     Object.defineProperty(window, "location", {
       value: {
         ...window.location,
@@ -12,10 +31,13 @@ describe("desktopBackendClient local discovery", () => {
       },
       configurable: true,
     });
+    setImportMetaEnv({});
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    setImportMetaEnv({});
   });
 
   it("treats localhost dev as backend-capable and discovers a healthy backend port", async () => {
@@ -122,6 +144,22 @@ describe("desktopBackendClient local discovery", () => {
     Object.defineProperty(window, "__TAURI_INTERNALS__", {
       value: {
         invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: true,
+              pid: 1234,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "ready",
+              diagnostic: "ready",
+              uptimeMs: 10,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
           if (command === "get_backend_auth_token") return "desktop-token";
           return null;
         }),
@@ -167,5 +205,251 @@ describe("desktopBackendClient local discovery", () => {
       await import("../services/desktopBackendClient");
 
     await expect(desktopBackendClient.setSettings({ backendMode: "on" })).resolves.toBe("on");
+  });
+
+  it("normalizes nullable Rust supervisor fields", () => {
+    const parsed = DesktopBackendStatusSchema.parse({
+      sidecarSpawned: true,
+      pid: null,
+      baseUrl: "http://127.0.0.1:3001",
+      port: 3001,
+      dbPath: "C:\\Users\\test\\AppData\\Local\\PersonalNews\\backend\\personalnews.db",
+      tokenAvailable: true,
+      health: "starting",
+      diagnostic: "starting",
+      uptimeMs: null,
+      lastStartError: null,
+      lastHealthError: null,
+      lastExitCode: null,
+    });
+
+    expect(parsed.pid).toBeUndefined();
+    expect(parsed.uptimeMs).toBeUndefined();
+    expect(parsed.lastStartError).toBeUndefined();
+    expect(parsed.lastHealthError).toBeUndefined();
+    expect(parsed.lastExitCode).toBeUndefined();
+  });
+
+  it("uses supervisor status as the desktop source of truth", async () => {
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: true,
+              pid: 1234,
+              baseUrl: "http://127.0.0.1:3007",
+              port: 3007,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: "ready",
+              diagnostic: "ready",
+              uptimeMs: 1200,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+    const result = await desktopBackendClient.checkHealth(true);
+
+    expect(result.available).toBe(true);
+    expect(result.initializing).toBe(false);
+    expect(desktopBackendClient.getBaseUrl()).toBe("http://127.0.0.1:3007");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("probes the configured backend in Tauri dev when the supervisor is not started", async () => {
+    setImportMetaEnv({
+      DEV: true,
+      MODE: "development",
+      VITE_LOCAL_BACKEND_URL: "http://127.0.0.1:3001",
+    });
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: false,
+              pid: null,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: false,
+              health: "not_started",
+              diagnostic: "not_started",
+              uptimeMs: null,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "http://127.0.0.1:3001/health") {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+      throw new Error("connect ECONNREFUSED");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+    const result = await desktopBackendClient.checkHealth(true);
+
+    expect(result.available).toBe(true);
+    expect(result.initializing).toBe(false);
+    expect(desktopBackendClient.getBaseUrl()).toBe("http://127.0.0.1:3001");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:3001/health",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("surfaces a failed supervisor status instead of masking it as warmup", async () => {
+    setImportMetaEnv({
+      DEV: false,
+      MODE: "production",
+      VITE_LOCAL_BACKEND_URL: undefined,
+    });
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            return {
+              sidecarSpawned: false,
+              pid: null,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: false,
+              health: "failed",
+              diagnostic: "spawn_blocked",
+              uptimeMs: null,
+              lastStartError: "failed to start backend sidecar",
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+    const result = await desktopBackendClient.checkHealth(true);
+
+    expect(result.available).toBe(false);
+    expect(result.initializing).toBe(false);
+    expect(result.error).toBe("failed to start backend sidecar");
+    expect(desktopBackendClient.getRuntimeState().lastError).toBe(
+      "failed to start backend sidecar",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("stops waiting immediately when the supervisor reports a terminal failure", async () => {
+    let calls = 0;
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            calls += 1;
+            return {
+              sidecarSpawned: false,
+              pid: null,
+              baseUrl: "http://127.0.0.1:3001",
+              port: 3001,
+              dbPath: "memory",
+              tokenAvailable: false,
+              health: "failed",
+              diagnostic: "spawn_blocked",
+              uptimeMs: null,
+              lastStartError: "failed to start backend sidecar",
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(desktopBackendClient.waitUntilReady(2_000)).resolves.toBe(
+      false,
+    );
+    expect(calls).toBe(1);
+    expect(desktopBackendClient.getRuntimeState().lastError).toBe(
+      "failed to start backend sidecar",
+    );
+  });
+
+  it("waits for a desktop supervisor transition to ready", async () => {
+    let calls = 0;
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      value: {
+        invoke: vi.fn(async (command: string) => {
+          if (command === "get_backend_status") {
+            calls += 1;
+            return {
+              sidecarSpawned: true,
+              pid: 1234,
+              baseUrl: "http://127.0.0.1:3007",
+              port: 3007,
+              dbPath: "memory",
+              tokenAvailable: true,
+              health: calls < 2 ? "starting" : "ready",
+              diagnostic: calls < 2 ? "starting" : "ready",
+              uptimeMs: calls * 100,
+              lastStartError: null,
+              lastHealthError: null,
+              lastExitCode: null,
+            };
+          }
+          return null;
+        }),
+      },
+      configurable: true,
+    });
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(desktopBackendClient.waitUntilReady(2_000)).resolves.toBe(true);
+    expect(calls).toBeGreaterThanOrEqual(2);
   });
 });

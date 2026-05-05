@@ -28,6 +28,73 @@ export const BACKEND_AUTH_TOKEN_HEADER = "x-personalnews-backend-token";
 export const BACKEND_DEV_AUTH_TOKEN =
   getImportMetaEnv().VITE_LOCAL_BACKEND_TOKEN?.trim() || null;
 
+export const DesktopBackendHealthStateSchema = z.enum([
+  "not_started",
+  "starting",
+  "restarting",
+  "ready",
+  "failed",
+]);
+export type DesktopBackendHealthState = z.infer<
+  typeof DesktopBackendHealthStateSchema
+>;
+
+export const DesktopBackendDiagnosticSchema = z.enum([
+  "unknown",
+  "not_started",
+  "starting",
+  "ready",
+  "port_occupied",
+  "binary_missing",
+  "spawn_blocked",
+  "health_failed",
+  "crashed",
+]);
+export type DesktopBackendDiagnostic = z.infer<
+  typeof DesktopBackendDiagnosticSchema
+>;
+
+const nullableOptionalString = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+const nullableOptionalInt = z
+  .number()
+  .int()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+const nullableOptionalPositiveInt = z
+  .number()
+  .int()
+  .positive()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+const nullableOptionalNonNegativeNumber = z
+  .number()
+  .nonnegative()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
+
+export const DesktopBackendStatusSchema = z.object({
+  sidecarSpawned: z.boolean(),
+  pid: nullableOptionalPositiveInt,
+  baseUrl: z.string(),
+  port: z.number().int().positive(),
+  dbPath: z.string(),
+  tokenAvailable: z.boolean(),
+  health: DesktopBackendHealthStateSchema,
+  diagnostic: DesktopBackendDiagnosticSchema.default("unknown"),
+  uptimeMs: nullableOptionalNonNegativeNumber,
+  lastStartError: nullableOptionalString,
+  lastHealthError: nullableOptionalString,
+  lastExitCode: nullableOptionalInt,
+});
+export type DesktopBackendStatus = z.infer<typeof DesktopBackendStatusSchema>;
+
 export const BackendModeSchema = z.enum(["auto", "on", "off"]);
 export type BackendMode = z.infer<typeof BackendModeSchema>;
 

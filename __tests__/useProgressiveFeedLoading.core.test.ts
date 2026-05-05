@@ -1,10 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resolveFeedTimeoutMs } from "../hooks/useProgressiveFeedLoading";
 import {
   buildFeedLoadScopeKey,
   resolveFeedLoadScope,
   resolveFeedVisibilityState,
 } from "../services/feedLoadingStrategy";
 import type { FeedSource } from "../types";
+
+const {
+  mockGetPreferLocalProxy,
+  mockShouldUseClientProxyFallback,
+} = vi.hoisted(() => ({
+  mockGetPreferLocalProxy: vi.fn(),
+  mockShouldUseClientProxyFallback: vi.fn(),
+}));
+
+vi.mock("../services/proxyManager", () => ({
+  ProxyManager: {
+    getPreferLocalProxy: mockGetPreferLocalProxy,
+    shouldUseClientProxyFallback: mockShouldUseClientProxyFallback,
+  },
+}));
 
 const feeds: FeedSource[] = [
   {
@@ -25,6 +41,24 @@ const feeds: FeedSource[] = [
 ];
 
 describe("feedLoadingStrategy", () => {
+  beforeEach(() => {
+    mockGetPreferLocalProxy.mockReturnValue(false);
+    mockShouldUseClientProxyFallback.mockReturnValue(true);
+  });
+
+  describe("resolveFeedTimeoutMs", () => {
+    it("keeps the short client timeout outside desktop local-only mode", () => {
+      expect(resolveFeedTimeoutMs()).toBe(4000);
+    });
+
+    it("uses a longer timeout when desktop local backend is the only route", () => {
+      mockGetPreferLocalProxy.mockReturnValue(true);
+      mockShouldUseClientProxyFallback.mockReturnValue(false);
+
+      expect(resolveFeedTimeoutMs()).toBe(30000);
+    });
+  });
+
   describe("resolveFeedLoadScope", () => {
     it("returns every feed for all mode", () => {
       expect(resolveFeedLoadScope(feeds, { mode: "all" })).toHaveLength(3);

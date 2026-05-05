@@ -555,16 +555,34 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Permite que a janela principal registre diagnosticos do frontend no log local",
+          "type": "string",
+          "const": "allow-append-frontend-log",
+          "markdownDescription": "Permite que a janela principal registre diagnosticos do frontend no log local"
+        },
+        {
           "description": "Permite que a janela principal autentique chamadas ao backend local",
           "type": "string",
           "const": "allow-get-backend-auth-token",
           "markdownDescription": "Permite que a janela principal autentique chamadas ao backend local"
         },
         {
+          "description": "Permite que a janela principal leia o status do supervisor do backend local",
+          "type": "string",
+          "const": "allow-get-backend-status",
+          "markdownDescription": "Permite que a janela principal leia o status do supervisor do backend local"
+        },
+        {
           "description": "Permite abrir URLs externas",
           "type": "string",
           "const": "allow-open-external-url",
           "markdownDescription": "Permite abrir URLs externas"
+        },
+        {
+          "description": "Permite que a janela principal solicite reinicio controlado do backend local",
+          "type": "string",
+          "const": "allow-restart-backend-sidecar",
+          "markdownDescription": "Permite que a janela principal solicite reinicio controlado do backend local"
         },
         {
           "description": "Permite alterar o estilo da janela",

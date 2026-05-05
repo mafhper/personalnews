@@ -18,6 +18,9 @@
     "opener:default",
     "allow-set-window-style",
     "allow-open-external-url",
-    "allow-get-backend-auth-token"
+    "allow-get-backend-auth-token",
+    "allow-get-backend-status",
+    "allow-append-frontend-log",
+    "allow-restart-backend-sidecar"
   ]
 }
