@@ -81,6 +81,13 @@ class BackendStillStartingError extends Error {
   }
 }
 
+class BackendSupervisorFailedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BackendSupervisorFailedError";
+  }
+}
+
 type TauriInvoke = (
   command: string,
   args?: Record<string, unknown>,
@@ -103,6 +110,15 @@ const getConfiguredBackendUrl = () => {
   return normalized || null;
 };
 
+const isViteDevRuntime = () => {
+  const meta = import.meta as ImportMeta & {
+    env?: Record<string, boolean | string | undefined>;
+  };
+  const env = meta.env || {};
+  const devValue = env.DEV as unknown;
+  return devValue === true || devValue === "true" || env.MODE === "development";
+};
+
 const isTauriRuntime = () =>
   typeof window !== "undefined" &&
   (Boolean((globalThis as typeof globalThis & { isTauri?: unknown }).isTauri) ||
@@ -113,6 +129,9 @@ const isTauriRuntime = () =>
     ) ||
     window.location.protocol === "tauri:" ||
     window.location.hostname === "tauri.localhost");
+
+const shouldProbeTauriLocalBackend = () =>
+  isTauriRuntime() && (isViteDevRuntime() || Boolean(getConfiguredBackendUrl()));
 
 const getTauriInvoke = (): TauriInvoke | null => {
   if (typeof window === "undefined") return null;
@@ -572,7 +591,9 @@ class DesktopBackendClient {
 
     pushCandidate(this.resolvedBaseUrl || undefined);
 
-    if (isTauriRuntime()) {
+    const canProbeLocalBackend = shouldProbeTauriLocalBackend();
+
+    if (isTauriRuntime() && !canProbeLocalBackend) {
       return candidates;
     }
 
@@ -583,7 +604,7 @@ class DesktopBackendClient {
       return candidates;
     }
 
-    if (isLocalBrowserRuntime()) {
+    if (isLocalBrowserRuntime() || canProbeLocalBackend) {
       for (const host of ["127.0.0.1", "localhost"]) {
         for (
           let port = LOCAL_BACKEND_PORT_START;
@@ -638,18 +659,19 @@ class DesktopBackendClient {
     baseUrl: string;
     health: BackendHealth;
   }> {
+    const canProbeTauriLocalBackend = shouldProbeTauriLocalBackend();
     const desktopStatus = await this.getDesktopBackendStatus(true);
     if (desktopStatus && isTauriRuntime()) {
       this.applyDesktopStatus(desktopStatus);
       if (
         desktopStatus.health === "starting" ||
         desktopStatus.health === "restarting" ||
-        desktopStatus.health === "not_started"
+        (desktopStatus.health === "not_started" && !canProbeTauriLocalBackend)
       ) {
         throw new BackendStillStartingError("Backend local inicializando");
       }
       if (desktopStatus.health === "failed") {
-        throw new Error(
+        throw new BackendSupervisorFailedError(
           desktopStatus.lastHealthError ||
             desktopStatus.lastStartError ||
             "Backend local falhou ao iniciar",
@@ -663,7 +685,7 @@ class DesktopBackendClient {
       }
     }
 
-    if (isTauriRuntime()) {
+    if (isTauriRuntime() && !canProbeTauriLocalBackend) {
       throw new BackendStillStartingError("Backend local inicializando");
     }
 
@@ -714,7 +736,8 @@ class DesktopBackendClient {
       }
 
       const inWarmup =
-        error instanceof BackendStillStartingError || this.isInWarmupWindow();
+        !(error instanceof BackendSupervisorFailedError) &&
+        (error instanceof BackendStillStartingError || this.isInWarmupWindow());
       const message = inWarmup
         ? "Backend local inicializando"
         : normalizeFetchError(error);
