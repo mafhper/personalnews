@@ -46,6 +46,9 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
     'border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 text-[rgb(var(--theme-text-on-surface,var(--color-text)))]';
   const thumbnailButtonClass =
     'border border-[rgb(var(--color-border))]/24 hover:border-[rgb(var(--color-text))]/28 transition-all shadow-sm';
+  const settingsActionButtonClass = '!h-9 w-full text-xs';
+  const settingsSelectClass =
+    'h-9 flex-1 rounded-lg border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 px-3 text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))] focus:outline-none focus:border-[rgb(var(--color-accent))]';
 
   // Download Size Options
   const DOWNLOAD_SIZES = {
@@ -321,9 +324,9 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
           <button
             key={type}
             onClick={() => handleTypeChange(type as BackgroundConfig['type'])}
-            className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
+            className={`flex h-9 flex-1 items-center justify-center rounded-lg px-3 text-xs font-medium transition-all ${
               activeTab === type 
-                ? 'bg-[rgb(var(--color-accent))] text-white shadow-md' 
+                ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-md'
                 : 'text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] hover:text-[rgb(var(--theme-text-on-surface,var(--color-text)))] hover:bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/65'
             }`}
           >
@@ -409,7 +412,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                     value: generateAuraWallpaperSvg(newConfig),
                     auraSettings: newConfig
                 });
-            }} className="w-full">
+            }} className={settingsActionButtonClass}>
                 Randomize Aura
             </Button>
 
@@ -420,7 +423,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                 <select
                   value={downloadFormat}
                   onChange={(e) => setDownloadFormat(e.target.value as 'svg' | 'jpeg')}
-                  className="flex-1 rounded-md border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 px-2 py-1.5 text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))] focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                  className={settingsSelectClass}
                 >
                   <option value="svg">SVG (Vetorial)</option>
                   <option value="jpeg">JPEG (Imagem)</option>
@@ -428,7 +431,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                 <select
                   value={downloadSize}
                   onChange={(e) => setDownloadSize(e.target.value as 's' | 'm' | 'x' | 'xg')}
-                  className="flex-1 rounded-md border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 px-2 py-1.5 text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))] focus:outline-none focus:border-[rgb(var(--color-accent))]"
+                  className={settingsSelectClass}
                 >
                   <option value="s">S (1280×720)</option>
                   <option value="m">M (1920×1080)</option>
@@ -436,10 +439,10 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
                   <option value="xg">XG (3840×2160)</option>
                 </select>
               </div>
-              <Button 
-                onClick={handleDownloadAura} 
+              <Button
+                onClick={handleDownloadAura}
                 disabled={isDownloading}
-                className="w-full"
+                className={settingsActionButtonClass}
               >
                 {isDownloading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -514,7 +517,7 @@ export const BackgroundCreator: React.FC<BackgroundCreatorProps> = ({ config, on
           <div className="space-y-3">
             <label className={`block text-xs font-medium ${secondaryTextClass}`}>Carregar Imagem</label>
             <div className="flex items-center gap-3">
-              <label className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${subtleSurfaceClass}`}>
+              <label className={`inline-flex h-9 cursor-pointer items-center justify-center rounded-lg px-3 text-xs font-medium transition-colors ${subtleSurfaceClass}`}>
                 Escolher Arquivo
                 <input
                   type="file"

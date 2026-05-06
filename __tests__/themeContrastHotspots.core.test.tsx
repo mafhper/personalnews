@@ -294,6 +294,41 @@ describe("theme contrast hotspots", () => {
     expect(categoryManagerSource).not.toContain("Save Changes");
   });
 
+  it("keeps background type tabs on semantic accent surface contrast tokens", () => {
+    const backgroundCreatorSource = readFileSync(
+      resolve(process.cwd(), "components/BackgroundCreator.tsx"),
+      "utf8",
+    );
+
+    expect(backgroundCreatorSource).toContain(
+      "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] shadow-md",
+    );
+    expect(backgroundCreatorSource).toContain(
+      "flex h-9 flex-1 items-center justify-center rounded-lg px-3 text-xs font-medium transition-all",
+    );
+    expect(backgroundCreatorSource).toContain(
+      "const settingsActionButtonClass = '!h-9 w-full text-xs';",
+    );
+    expect(backgroundCreatorSource).not.toContain(
+      "bg-[rgb(var(--color-accent))] text-white shadow-md",
+    );
+  });
+
+  it("keeps settings sidebar form actions on a consistent control height", () => {
+    const settingsSidebarSource = readFileSync(
+      resolve(process.cwd(), "components/SettingsSidebar.tsx"),
+      "utf8",
+    );
+
+    expect(settingsSidebarSource).toContain(
+      "flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition-all",
+    );
+    expect(settingsSidebarSource).toContain(
+      "inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition-colors",
+    );
+    expect(settingsSidebarSource).toContain("w-full h-9 rounded-xl");
+  });
+
   it("routes sidebar theme mode changes through presets with semantic tokens", () => {
     render(
       <SettingsSidebar
@@ -331,9 +366,8 @@ describe("theme contrast hotspots", () => {
 
     fireEvent.click(screen.getByText("Aparência").closest("button")!);
     fireEvent.click(
-      screen.getByRole("button", { name: "Usar cor-semente Esmeralda" }),
+      screen.getByRole("button", { name: "Aplicar cor-semente Esmeralda" }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
 
     expect(setCurrentThemeMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -419,13 +453,35 @@ describe("theme contrast hotspots", () => {
 
     fireEvent.click(screen.getByText("Aparência").closest("button")!);
 
-    expect(screen.getByTestId("seed-preview-claro")).toBeInTheDocument();
-    expect(screen.getByTestId("seed-preview-escuro")).toBeInTheDocument();
-    expect(screen.getAllByTestId("seed-preview-filled-cta")).toHaveLength(2);
-    expect(screen.getAllByTestId("seed-preview-outline-button")).toHaveLength(2);
-    expect(screen.getAllByTestId("seed-preview-active-pagination")).toHaveLength(2);
-    expect(screen.getAllByTestId("seed-preview-chip")).toHaveLength(2);
-    expect(screen.getAllByTestId("seed-preview-elevated-card")).toHaveLength(2);
+    expect(
+      screen.getByRole("button", { name: "Aplicar cor-semente Azul" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Aplicar cor-semente Esmeralda" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("AA validado")).toBeInTheDocument();
+    expect(screen.getAllByText("Azul").length).toBeGreaterThan(0);
+  });
+
+  it("syncs the custom seed swatch with the selected preset color", () => {
+    render(
+      <SettingsSidebar
+        isOpen={true}
+        onClose={vi.fn()}
+        timeFormat="24h"
+        setTimeFormat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Aplicar cor-semente Âmbar" }),
+    );
+
+    expect(screen.getByLabelText("Cor-semente personalizada")).toHaveValue(
+      "#d97706",
+    );
+    expect(screen.getAllByText("Âmbar").length).toBeGreaterThan(0);
   });
 
   it("maps proxy settings CTA styles to semantic accent tokens", () => {
