@@ -1,5 +1,5 @@
-import React, { Suspense, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Activity, Library, Settings2 } from "lucide-react";
 import type { FeedSource, Article } from "../types";
 import { parseOpml } from "../services/rssParser";
 import { FeedCategoryManager } from "./FeedCategoryManager";
@@ -27,23 +27,11 @@ import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { useLanguage } from "../hooks/useLanguage";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
+import { FeedAddTab } from "./FeedManager/FeedAddTab";
 import { FeedListTab } from "./FeedManager/FeedListTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
 import { FeedAnalytics } from "./FeedAnalytics";
-import type { ProxySettingsProps } from "./ProxySettings";
-
-type ProxySettingsModule = {
-  default?: React.ComponentType<ProxySettingsProps>;
-  ProxySettings?: React.ComponentType<ProxySettingsProps>;
-};
-
-const ProxySettingsFallback: React.FC<ProxySettingsProps> = () => null;
-
-const ProxySettings = React.lazy<React.ComponentType<ProxySettingsProps>>(() =>
-  import("./ProxySettings").then((mod: ProxySettingsModule) => ({
-    default: mod.default ?? mod.ProxySettings ?? ProxySettingsFallback,
-  })),
-);
+import { Modal } from "./Modal";
 
 interface FeedManagerProps {
   currentFeeds: FeedSource[];
@@ -53,11 +41,11 @@ interface FeedManagerProps {
   onRefreshFeeds?: () => void;
 }
 
-type FeedManagerTab = "feeds" | "categories" | "operations" | "diagnostics";
+type FeedManagerTab = "feeds" | "operations" | "diagnostics";
+type CollectionView = "feeds" | "categories" | "add";
 
 const normalizePersistedTab = (value?: string): FeedManagerTab => {
   if (value === "diagnostics") return "diagnostics";
-  if (value === "categories") return "categories";
   if (
     value === "operations" ||
     value === "statistics" ||
@@ -72,7 +60,7 @@ const shouldOpenDiagnostics = (
   section?: string,
   openProxySettings?: boolean,
 ): boolean => {
-  if (openProxySettings) return false;
+  if (openProxySettings) return true;
   if (
     section === "diagnostics" ||
     section === "proxy-health" ||
@@ -103,28 +91,23 @@ const EditFeedDialog: React.FC<{
   onClose,
   onSubmit,
 }) => {
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      title={title}
+      initialFocus="input"
+      zIndexClass="z-[9999]"
+      bodyClassName="p-0"
     >
       <form
-        aria-modal="true"
-        className="w-full max-w-lg overflow-hidden rounded-xl border border-[rgba(var(--color-border),0.18)] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] text-[rgb(var(--theme-manager-text,var(--color-text)))] shadow-2xl"
-        role="dialog"
+        className="flex flex-col"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
         }}
       >
-        <div className="border-b border-[rgba(var(--color-border),0.18)] px-5 py-4">
-          <h3 className="text-base font-bold">{title}</h3>
-        </div>
         <div className="px-5 py-5">
           <input
             autoFocus
@@ -150,10 +133,73 @@ const EditFeedDialog: React.FC<{
           </button>
         </div>
       </form>
-    </div>,
-    document.body,
+    </Modal>
   );
 };
+
+const FeedManagerStat: React.FC<{
+  label: string;
+  value: number;
+  tone?: "neutral" | "success" | "danger";
+}> = ({ label, value, tone = "neutral" }) => {
+  const toneClass =
+    tone === "success"
+      ? "text-[rgb(var(--color-success))]"
+      : tone === "danger"
+        ? "text-[rgb(var(--color-error))]"
+        : "text-[rgb(var(--theme-text-readable))]";
+
+  return (
+    <div className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
+        {label}
+      </div>
+      <div className={`mt-1 text-lg font-black ${toneClass}`}>{value}</div>
+    </div>
+  );
+};
+
+const CollectionModeButton: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}> = ({ active, onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`rounded-full px-4 py-2 text-sm font-black transition ${
+      active
+        ? "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))] ring-1 ring-[rgba(var(--color-accent),0.28)]"
+        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))]"
+    }`}
+  >
+    {children}
+  </button>
+);
+
+const ManagerAreaHeader: React.FC<{
+  eyebrow: string;
+  title: string;
+  description: string;
+  actions?: React.ReactNode;
+}> = ({ eyebrow, title, description, actions }) => (
+  <div className="bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.08)] sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+          {eyebrow}
+        </p>
+        <h3 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
+          {title}
+        </h3>
+        <p className="text-xs text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+          {description}
+        </p>
+      </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+    </div>
+  </div>
+);
 
 export const FeedManager: React.FC<FeedManagerProps> = ({
   currentFeeds,
@@ -170,6 +216,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     useNotificationReplacements();
 
   const [activeTab, setActiveTab] = useState<FeedManagerTab>("feeds");
+  const [collectionView, setCollectionView] = useState<CollectionView>("feeds");
   const [diagnosticsFocus, setDiagnosticsFocus] = useState<string | null>(null);
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedTitle, setNewFeedTitle] = useState("");
@@ -190,7 +237,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedListType, setSelectedListType] = useState<string>("");
-  const [showProxySettings, setShowProxySettings] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<{
     show: boolean;
     result: DuplicateDetectionResult;
@@ -233,8 +279,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           ? "diagnostics"
           : nextTab,
       );
-      if (parsed.section) setDiagnosticsFocus(parsed.section);
-      if (parsed.openProxySettings) setShowProxySettings(true);
+      if (parsed.openProxySettings) {
+        setDiagnosticsFocus("proxy-health");
+      } else if (parsed.section) {
+        setDiagnosticsFocus(parsed.section);
+      }
     } catch {
       // Ignore malformed state.
     } finally {
@@ -610,27 +659,34 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const tabs: Array<{
     id: FeedManagerTab;
     label: string;
+    description: string;
+    icon: React.ReactNode;
     badge?: number;
   }> = [
     {
       id: "feeds",
-      label: "Feeds",
-      badge: currentFeeds.length,
-    },
-    {
-      id: "categories",
-      label: t("feeds.tab.categories"),
+      label: "Coleção",
+      description: "Feeds, adicionar e categorias",
+      icon: <Library className="h-4 w-4" />,
     },
     {
       id: "operations",
       label: "Operações",
+      description: "Importação, manutenção e risco",
+      icon: <Settings2 className="h-4 w-4" />,
+    },
+    {
+      id: "diagnostics",
+      label: "Diagnóstico",
+      description: "Saúde de feeds, proxies e backend",
+      icon: <Activity className="h-4 w-4" />,
       badge: invalidCount > 0 ? invalidCount : undefined,
     },
   ];
 
   return (
     <div
-      className="relative flex h-full w-full flex-col overflow-hidden bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-manager-text,var(--color-text)))]"
+      className="relative flex min-h-full w-full flex-col overflow-visible bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-manager-text,var(--color-text)))] lg:h-full lg:overflow-hidden"
       style={
         {
           "--theme-surface-readable": "var(--theme-manager-surface)",
@@ -647,209 +703,232 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         } as React.CSSProperties
       }
     >
-      <header className="px-4 py-4 sm:px-6 sm:py-5">
-        <div className="mx-auto flex max-w-[1480px] flex-col gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-[rgb(var(--theme-text-readable))] sm:text-2xl">
-                {t("feeds.title")}
-              </h2>
-              <p className="text-xs font-medium text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
-                Gerencie sua biblioteca de conteúdo e infraestrutura
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40">Total de Feeds</span>
-                <span className="text-sm font-bold text-[rgb(var(--theme-text-readable))]">
-                  {currentFeeds.length}
-                </span>
+      <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:flex-row">
+        <aside className="bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] shadow-[0_18px_44px_rgba(0,0,0,0.12)] lg:w-[292px]">
+          <div className="flex h-full flex-col gap-5 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+                  Feed Manager
+                </p>
+                <h2 className="mt-1 text-xl font-bold tracking-tight text-[rgb(var(--theme-text-readable))]">
+                  {t("feeds.title")}
+                </h2>
+                <p className="mt-1 text-xs leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+                  Gerencie colecao, entrada, organizacao e infraestrutura em areas separadas.
+                </p>
               </div>
-              <div className="h-8 w-px bg-[rgba(var(--color-border),0.1)]" />
               <button
                 onClick={closeModal}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] shadow-md transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-90"
-                aria-label="Close"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] shadow-md transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-90"
+                aria-label="Fechar"
+                type="button"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-          </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            {tabs.map((tab) => {
-              const isActive =
-                tab.id === "operations"
-                  ? activeTab === "operations" || activeTab === "diagnostics"
-                  : activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    if (tab.id !== "diagnostics") setDiagnosticsFocus(null);
-                  }}
-                  className={`group relative overflow-hidden rounded-[24px] px-5 py-4 text-left transition-all duration-300 ${
-                    isActive
-                      ? "bg-[rgb(var(--theme-manager-surface))] shadow-[0_20px_48px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.03)] ring-1 ring-[rgba(var(--color-accent),0.3)]"
-                      : "bg-[rgb(var(--theme-manager-bg))] opacity-70 hover:bg-[rgb(var(--theme-manager-control))] hover:opacity-100 hover:shadow-lg"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div
-                      className={`text-sm font-bold tracking-wide transition-colors duration-300 ${
+            <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
+              <FeedManagerStat label="Total" value={currentFeeds.length} />
+              <FeedManagerStat label="Validos" value={validCount} tone="success" />
+              <FeedManagerStat label="Erros" value={invalidCount} tone="danger" />
+            </div>
+
+            <nav className="grid grid-cols-3 gap-2 lg:flex lg:flex-col" aria-label="Areas do gerenciador de feeds">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      if (tab.id !== "diagnostics") setDiagnosticsFocus(null);
+                      if (tab.id === "feeds") setCollectionView("feeds");
+                    }}
+                    className={`group relative flex min-w-0 flex-col items-start gap-2 rounded-[22px] p-3 text-left transition-all sm:flex-row sm:gap-3 lg:min-w-0 ${
+                      isActive
+                        ? "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))] shadow-[0_18px_46px_rgba(0,0,0,0.2)] ring-1 ring-[rgba(var(--color-accent),0.28)]"
+                        : "text-[rgb(var(--theme-text-secondary-readable))] opacity-75 hover:bg-[rgb(var(--theme-manager-control))] hover:opacity-100"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl transition sm:mt-0.5 ${
                         isActive
-                          ? "text-[rgb(var(--color-accent))]"
-                          : "text-[rgb(var(--theme-text-readable))]"
+                          ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
+                          : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))]"
                       }`}
                     >
-                      {tab.label}
-                    </div>
-                    {typeof tab.badge !== "undefined" && (
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-black shadow-sm transition-all duration-300 ${
-                          isActive
-                            ? "bg-[rgba(var(--color-accent),0.15)] text-[rgb(var(--color-accent))]"
-                            : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-secondary-readable))] opacity-60"
-                        }`}
-                      >
-                        {tab.badge}
+                      {tab.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="truncate text-sm font-black">{tab.label}</span>
+                        {typeof tab.badge !== "undefined" && (
+                          <span className="rounded-full bg-[rgba(var(--color-accent),0.14)] px-2 py-0.5 text-[10px] font-black text-[rgb(var(--color-accent))]">
+                            {tab.badge}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </div>
-
-                  {/* Bottom Indicator Line */}
-                  <div
-                    className={`absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-[rgb(var(--color-accent))] transition-all duration-500 ${
-                      isActive ? "w-12 opacity-100 shadow-[0_0_8px_rgb(var(--color-accent))]" : "w-0 opacity-0"
-                    }`}
-                  />
-
-                  {/* Subtle active glow */}
-                  {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-b from-[rgba(var(--color-accent),0.03)] to-transparent pointer-events-none" />
-                  )}
-                </button>
-              );
-            })}
+                      <span className="mt-0.5 block text-xs leading-snug opacity-75">
+                        {tab.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
-        </div>
-      </header>
+        </aside>
 
-      <div className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
         {activeTab === "feeds" && (
-          <FeedListTab
-            feeds={currentFeeds}
-            validations={feedValidations}
-            categories={categories}
-            onRemove={handleRemoveFeed}
-            onRetry={validateSingleFeed}
-            onEdit={handleEditFeed}
-            onEditTitle={handleEditFeedTitle}
-            onShowError={handleShowError}
-            onMoveCategory={moveFeedToCategory}
-            onToggleHideFromAll={handleToggleHideFromAll}
-            onRefreshAll={onRefreshFeeds}
-            onConfirmRefreshAll={handleConfirmRefreshAll}
-            newFeedUrl={newFeedUrl}
-            setNewFeedUrl={setNewFeedUrl}
-            newFeedTitle={newFeedTitle}
-            setNewFeedTitle={setNewFeedTitle}
-            newFeedCategory={newFeedCategory}
-            setNewFeedCategory={setNewFeedCategory}
-            processingUrl={processingUrl}
-            onSubmit={handleAddFeed}
-          />
-        )}
+          <div className="flex flex-col lg:h-full lg:overflow-hidden">
+            <ManagerAreaHeader
+              eyebrow="Colecao"
+              title="Gestao da colecao"
+              description="Fontes, categorias e organizacao do feed."
+              actions={
+                <>
+                  <CollectionModeButton
+                    active={collectionView === "feeds"}
+                    onClick={() => setCollectionView("feeds")}
+                  >
+                    Feeds
+                  </CollectionModeButton>
+                  <CollectionModeButton
+                    active={collectionView === "categories"}
+                    onClick={() => setCollectionView("categories")}
+                  >
+                    Categorias
+                  </CollectionModeButton>
+                  <button
+                    type="button"
+                    onClick={() => setCollectionView("add")}
+                    className={`rounded-full px-4 py-2 text-sm font-black transition ${
+                      collectionView === "add"
+                        ? "bg-[rgb(var(--color-accentSurface))] text-slate-950 shadow-[0_14px_34px_rgba(0,0,0,0.2)]"
+                        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))]"
+                    }`}
+                  >
+                    + Adicionar
+                  </button>
+                </>
+              }
+            />
 
-        {activeTab === "categories" && (
-          <div className="h-full overflow-y-auto p-4 sm:p-6 custom-scrollbar">
-            <div className="mx-auto w-full max-w-[1480px]">
+            <div className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
+              {collectionView === "feeds" && (
+                <FeedListTab
+                  feeds={currentFeeds}
+                  validations={feedValidations}
+                  categories={categories}
+                  onRemove={handleRemoveFeed}
+                  onRetry={validateSingleFeed}
+                  onEdit={handleEditFeed}
+                  onEditTitle={handleEditFeedTitle}
+                  onShowError={handleShowError}
+                  onMoveCategory={moveFeedToCategory}
+                  onToggleHideFromAll={handleToggleHideFromAll}
+                  onRefreshAll={onRefreshFeeds}
+                  onConfirmRefreshAll={handleConfirmRefreshAll}
+                  articles={articles}
+                />
+              )}
+
+              {collectionView === "add" && (
+                <FeedAddTab
+                  categories={categories}
+                  newFeedUrl={newFeedUrl}
+                  setNewFeedUrl={setNewFeedUrl}
+                  newFeedTitle={newFeedTitle}
+                  setNewFeedTitle={setNewFeedTitle}
+                  newFeedCategory={newFeedCategory}
+                  setNewFeedCategory={setNewFeedCategory}
+                  processingUrl={processingUrl}
+                  onSubmit={handleAddFeed}
+                  onImportOPML={() => fileInputRef.current?.click()}
+                  onShowImportModal={() => setShowImportModal(true)}
+                  feedCount={currentFeeds.length}
+                />
+              )}
+
+              {collectionView === "categories" && (
+                <div className="overflow-visible p-4 sm:p-6 lg:h-full lg:overflow-y-auto custom-scrollbar">
+                  <div className="mx-auto w-full max-w-[1480px]">
               <FeedCategoryManager
                 feeds={currentFeeds}
                 setFeeds={setFeeds}
-                onClose={() => setActiveTab("feeds")}
+                onClose={() => setCollectionView("feeds")}
               />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {activeTab === "operations" && (
-          <FeedToolsTab
-            onExportOPML={handleExportOPML}
-            onImportOPML={() => fileInputRef.current?.click()}
-            onShowImportModal={() => setShowImportModal(true)}
-            onResetDefaults={handleResetToDefaults}
-            onCleanupErrors={() => setShowCleanupModal(true)}
-            onDeleteAll={handleDeleteAll}
-            onOpenDiagnostics={() => navigateToDiagnostics("feed-status")}
-            onShowProxySettings={() => setShowProxySettings(true)}
-            feedCount={currentFeeds.length}
-            validCount={validCount}
-            invalidCount={invalidCount}
-          />
-        )}
-
-        {activeTab === "diagnostics" && (
-          <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
-            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6">
-              
-              {/* Segmented Control Sub-navigation */}
-              <div className="flex justify-center">
-                <div className="inline-flex items-center rounded-[20px] bg-[rgb(var(--theme-manager-control))] p-1.5 shadow-lg ring-1 ring-[rgba(var(--color-border),0.08)]">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("operations")}
-                    className="flex items-center gap-2 rounded-[14px] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[rgb(var(--theme-text-secondary-readable))] transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-text-readable))]"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Painel
-                  </button>
-                  
-                  <div className="mx-1 h-4 w-px bg-[rgba(var(--color-border),0.15)]" />
-                  
-                  <div className="flex items-center gap-2 rounded-[14px] bg-[rgb(var(--theme-manager-surface))] px-5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[rgb(var(--color-accent))] shadow-sm ring-1 ring-[rgba(var(--color-accent),0.2)]">
-                    Diagnóstico
-                  </div>
-
-                  <div className="mx-1 h-4 w-px bg-[rgba(var(--color-border),0.15)]" />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowProxySettings(true)}
-                    className="rounded-[14px] px-5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[rgb(var(--theme-text-secondary-readable))] transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-text-readable))]"
-                  >
-                    Proxies
-                  </button>
-                </div>
-              </div>
-
-              <FeedAnalytics
-                feeds={currentFeeds}
-                articles={articles}
-                feedValidations={feedValidations}
-                focusSection={diagnosticsFocus || undefined}
-                onFocusConsumed={() => setDiagnosticsFocus(null)}
+          <div className="flex flex-col lg:h-full lg:overflow-hidden">
+            <ManagerAreaHeader
+              eyebrow="Operacoes"
+              title="Manutencao e intercambio"
+              description="Importacao, exportacao e manutencao."
+              actions={
+                <>
+                  <CollectionModeButton active={false} onClick={handleExportOPML}>
+                    Exportar OPML
+                  </CollectionModeButton>
+                  <CollectionModeButton active={false} onClick={() => fileInputRef.current?.click()}>
+                    Importar OPML
+                  </CollectionModeButton>
+                </>
+              }
+            />
+            <div className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
+              <FeedToolsTab
+                onExportOPML={handleExportOPML}
+                onImportOPML={() => fileInputRef.current?.click()}
+                onShowImportModal={() => setShowImportModal(true)}
+                onResetDefaults={handleResetToDefaults}
+                onCleanupErrors={() => setShowCleanupModal(true)}
+                onDeleteAll={handleDeleteAll}
+                feedCount={currentFeeds.length}
+                validCount={validCount}
+                invalidCount={invalidCount}
               />
             </div>
           </div>
         )}
+
+        {activeTab === "diagnostics" && (
+          <div className="flex flex-col lg:h-full lg:overflow-hidden">
+            <ManagerAreaHeader
+              eyebrow="Diagnostico"
+              title="Saude, impacto e infraestrutura"
+              description="Feeds, relatorios e rotas de conexao."
+              actions={
+                <CollectionModeButton active={false} onClick={() => void validateAllFeeds()}>
+                  Revalidar feeds
+                </CollectionModeButton>
+              }
+            />
+            <div className="flex-1 overflow-visible custom-scrollbar p-4 sm:p-6 lg:min-h-0 lg:overflow-y-auto">
+              <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6">
+                <FeedAnalytics
+                  feeds={currentFeeds}
+                  articles={articles}
+                  feedValidations={feedValidations}
+                  focusSection={diagnosticsFocus || undefined}
+                  onFocusConsumed={() => setDiagnosticsFocus(null)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        </main>
       </div>
 
       <input
@@ -928,117 +1007,89 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         }
       />
 
-      {showImportModal &&
-        createPortal(
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/95 p-6 text-[rgb(var(--theme-text-readable))]">
-              <h3 className="mb-4 text-xl font-bold text-[rgb(var(--theme-text-readable))]">
-                Importar listas curadas
-              </h3>
-              <select
-                value={selectedListType}
-                onChange={(e) => setSelectedListType(e.target.value)}
-                className="mb-4 w-full rounded border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/70 p-2 text-[rgb(var(--theme-text-readable))]"
-              >
-                {Object.keys(DEFAULT_CURATED_LISTS).map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => void handleImportCurated("merge")}
-                  className="flex-1 rounded border border-[rgba(var(--color-accent),0.32)] bg-[rgb(var(--color-accentSurface))] py-2 text-[rgb(var(--color-onAccent))]"
-                >
-                  Mesclar
-                </button>
-                <button
-                  onClick={() => void handleImportCurated("replace")}
-                  className="flex-1 rounded border border-rose-500/30 bg-rose-600/15 py-2 text-rose-300"
-                >
-                  Substituir tudo
-                </button>
-              </div>
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="mt-2 w-full py-2 text-[rgb(var(--color-textSecondary))]"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )}
+      <Modal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        size="md"
+        title="Importar listas curadas"
+        description="Escolha uma lista pronta e decida se ela deve ser mesclada ou substituir sua coleção."
+        tone="selection"
+        zIndexClass="z-[9999]"
+        footer={
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              onClick={() => setShowImportModal(false)}
+              className="rounded-lg border border-[rgba(var(--color-border),0.24)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+              type="button"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => void handleImportCurated("merge")}
+              className="rounded-lg border border-[rgba(var(--color-accent),0.32)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
+              type="button"
+            >
+              Mesclar
+            </button>
+            <button
+              onClick={() => void handleImportCurated("replace")}
+              className="rounded-lg border border-rose-500/30 bg-rose-600/15 px-4 py-2 text-sm font-bold text-rose-300 transition hover:bg-rose-600/20"
+              type="button"
+            >
+              Substituir tudo
+            </button>
+          </div>
+        }
+      >
+        <label className="block">
+          <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+            Lista
+          </span>
+          <select
+            value={selectedListType}
+            onChange={(e) => setSelectedListType(e.target.value)}
+            className="w-full rounded-lg border border-[rgba(var(--color-border),0.24)] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))] outline-none transition focus:border-[rgb(var(--color-accentSurface))] focus:ring-2 focus:ring-[rgba(var(--color-accent),0.22)]"
+          >
+            {Object.keys(DEFAULT_CURATED_LISTS).map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </label>
+      </Modal>
 
-      {showProxySettings &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[rgba(var(--color-border),0.15)] p-5">
-                <h3 className="font-semibold text-[rgb(var(--theme-text-readable))]">
-                  Proxies
-                </h3>
-                <button
-                  onClick={() => setShowProxySettings(false)}
-                  className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--theme-text-readable))]"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="overflow-y-auto p-6">
-                <Suspense
-                  fallback={
-                    <div className="text-sm text-[rgb(var(--color-textSecondary))]">
-                      Carregando configurações...
-                    </div>
-                  }
-                >
-                  <ProxySettings detailed />
-                </Suspense>
-              </div>
+      <Modal
+        isOpen={showErrorModal && !!selectedErrorFeed}
+        onClose={() => setShowErrorModal(false)}
+        size="2xl"
+        title="Detalhes do erro"
+        description="Veja o erro registrado para este feed e acesse o diagnóstico completo se precisar investigar a causa."
+        tone="warning"
+        zIndexClass="z-[9999]"
+        footer={
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => navigateToDiagnostics("feed-status")}
+              className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-onAccent))]"
+            >
+              Abrir diagnóstico completo
+            </button>
+          </div>
+        }
+      >
+        {selectedErrorFeed && (
+          <div className="space-y-4">
+            <p className="font-mono text-sm text-red-400">
+              {selectedErrorFeed.validation.error}
+            </p>
+            <div className="rounded-lg bg-[rgb(var(--color-background))]/40 p-4 font-mono text-sm break-all text-[rgb(var(--color-textSecondary))]">
+              {selectedErrorFeed.url}
             </div>
-          </div>,
-          document.body,
+          </div>
         )}
-
-      {showErrorModal &&
-        selectedErrorFeed &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--theme-surface-readable))]/95 text-[rgb(var(--theme-text-readable))] shadow-2xl">
-              <div className="flex justify-between border-b border-[rgba(var(--color-border),0.15)] p-6">
-                <h3 className="font-bold text-[rgb(var(--theme-text-readable))]">
-                  Detalhes do erro
-                </h3>
-                <button
-                  onClick={() => setShowErrorModal(false)}
-                  className="text-[rgb(var(--color-textSecondary))]"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="overflow-y-auto p-6">
-                <p className="mb-4 font-mono text-red-400">
-                  {selectedErrorFeed.validation.error}
-                </p>
-                <div className="rounded bg-[rgb(var(--color-background))]/40 p-4 font-mono text-sm break-all text-[rgb(var(--color-textSecondary))]">
-                  {selectedErrorFeed.url}
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => navigateToDiagnostics("feed-status")}
-                    className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-onAccent))]"
-                  >
-                    Abrir diagnóstico completo
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      </Modal>
     </div>
   );
 };

@@ -485,7 +485,7 @@ const AppContent: React.FC = () => {
 
   const openFeedManagerFocus = useCallback(
     (payload: {
-      tab?: "operations" | "feeds" | "categories";
+      tab?: "diagnostics" | "operations" | "feeds" | "categories";
       section?: string;
       openProxySettings?: boolean;
     }) => {
@@ -508,14 +508,14 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const handleOpenDiagnostics = () => {
       openFeedManagerFocus({
-        tab: "operations",
+        tab: "diagnostics",
         section: "feed-status",
       });
     };
 
     const handleOpenProxySettings = () => {
       openFeedManagerFocus({
-        tab: "operations",
+        tab: "diagnostics",
         openProxySettings: true,
       });
     };
@@ -930,13 +930,13 @@ const AppContent: React.FC = () => {
               onRetryErrors={retryFailedFeeds}
               onOpenDiagnostics={() =>
                 openFeedManagerFocus({
-                  tab: "operations",
+                  tab: "diagnostics",
                   section: "feed-status",
                 })
               }
               onOpenProxySettings={() =>
                 openFeedManagerFocus({
-                  tab: "operations",
+                  tab: "diagnostics",
                   openProxySettings: true,
                 })
               }
@@ -1066,7 +1066,7 @@ const AppContent: React.FC = () => {
                           <button
                             onClick={() =>
                               openFeedManagerFocus({
-                                tab: "operations",
+                                tab: "diagnostics",
                                 section: "feed-status",
                               })
                             }
@@ -1077,7 +1077,7 @@ const AppContent: React.FC = () => {
                           <button
                             onClick={() =>
                               openFeedManagerFocus({
-                                tab: "operations",
+                                tab: "diagnostics",
                                 openProxySettings: true,
                               })
                             }
@@ -1117,7 +1117,7 @@ const AppContent: React.FC = () => {
                           <button
                             onClick={() =>
                               openFeedManagerFocus({
-                                tab: "operations",
+                                tab: "diagnostics",
                                 section: "feed-status",
                               })
                             }
@@ -1128,7 +1128,7 @@ const AppContent: React.FC = () => {
                           <button
                             onClick={() =>
                               openFeedManagerFocus({
-                                tab: "operations",
+                                tab: "diagnostics",
                                 openProxySettings: true,
                               })
                             }
