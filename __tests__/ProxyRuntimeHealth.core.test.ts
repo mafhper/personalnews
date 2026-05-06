@@ -46,7 +46,7 @@ describe("ProxyManager runtime health behavior", () => {
     setImportMetaEnv({});
   });
 
-  it("keeps remote proxies enabled on first desktop run", () => {
+  it("starts desktop first runs with remote proxies disabled", () => {
     Object.defineProperty(window, "__TAURI__", {
       value: {},
       configurable: true,
@@ -59,7 +59,10 @@ describe("ProxyManager runtime health behavior", () => {
       .filter((config) => config.name !== "LocalProxy");
 
     expect(remoteConfigs.length).toBeGreaterThan(0);
-    expect(remoteConfigs.every((config) => config.enabled)).toBe(true);
+    expect(remoteConfigs.every((config) => !config.enabled)).toBe(true);
+    expect(localStorage.getItem("desktop_proxy_defaults_applied_v1")).toBe(
+      "true",
+    );
   });
 
   it("auto-disables only remote proxies after sustained critical health", async () => {
