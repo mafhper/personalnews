@@ -8,7 +8,6 @@ import {
   EyeOff,
   Info,
   Trash2,
-  ChevronRight
 } from "lucide-react";
 import type { FeedSource, FeedCategory } from "../types";
 import type { FeedValidationResult } from "../services/feedValidator";
@@ -32,6 +31,7 @@ const getStatusMeta = (validation?: FeedValidationResult) => {
     return {
       label: "Pendente",
       tone: "text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] opacity-60",
+      dot: "bg-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] opacity-45",
     };
   }
 
@@ -39,12 +39,14 @@ const getStatusMeta = (validation?: FeedValidationResult) => {
     return {
       label: "Válido",
       tone: "text-[rgb(var(--color-success))]",
+      dot: "bg-[rgb(var(--color-success))]",
     };
   }
 
   return {
     label: "Atenção",
     tone: "text-[rgb(var(--color-error))]",
+    dot: "bg-[rgb(var(--color-error))]",
   };
 };
 
@@ -66,13 +68,13 @@ export const FeedItem: React.FC<FeedItemProps> = ({
   const hasError = validation && !validation.isValid;
 
   return (
-    <div className="group relative rounded-[20px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-surface-elevated,var(--color-surface))))] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
-      <div className="flex items-center justify-between gap-4">
+    <div className="group relative rounded-[20px] bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-surface-elevated,var(--color-surface))))] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] focus-within:bg-[rgb(var(--theme-manager-soft,var(--theme-surface-elevated,var(--color-surface))))]">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className={`h-2 w-2 shrink-0 rounded-full ${status.tone.split(" ")[0].replace("text-", "bg-")}`} />
+          <div className={`h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.03)] ${status.dot}`} />
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h4 className="truncate text-sm font-bold text-[rgb(var(--theme-text-readable))]">
                 {title}
               </h4>
@@ -89,12 +91,13 @@ export const FeedItem: React.FC<FeedItemProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden min-w-[120px] xl:block">
+        <div className="flex flex-wrap items-center justify-end gap-2 lg:flex-nowrap">
+          <div className="min-w-[150px] flex-1 sm:flex-none">
             <select
               value={feed.categoryId || ""}
               onChange={(e) => onMoveCategory(e.target.value)}
-              className="w-full bg-transparent text-[11px] font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] outline-none cursor-pointer hover:text-[rgb(var(--theme-text-readable))]"
+              aria-label={`Categoria de ${title}`}
+              className="h-8 w-full rounded-full bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 text-[11px] font-semibold text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] outline-none transition hover:text-[rgb(var(--theme-text-readable))] focus:ring-1 focus:ring-[rgba(var(--color-accent),0.35)]"
             >
               <option value="">Sem categoria</option>
               {categories.map((cat) => (
@@ -105,7 +108,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({
             </select>
           </div>
 
-          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex items-center gap-1 rounded-full bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <IconButton
               onClick={() => onRetry(feed.url)}
               title="Revalidar"
@@ -177,10 +180,6 @@ export const FeedItem: React.FC<FeedItemProps> = ({
               )}
             </div>
           </div>
-
-          <div className="text-[rgb(var(--theme-text-secondary-readable))] opacity-20 transition-opacity group-hover:opacity-0">
-            <ChevronRight className="h-4 w-4" />
-          </div>
         </div>
       </div>
     </div>
@@ -198,6 +197,7 @@ const IconButton: React.FC<{
     type="button"
     onClick={onClick}
     title={title}
+    aria-label={title}
     className={`flex h-8 w-8 items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95 ${
       active
         ? "bg-[rgba(var(--color-accent),0.15)] text-[rgb(var(--color-accent))]"

@@ -9,7 +9,7 @@ import {
 } from "../services/feedDiagnostics";
 import { type FeedValidationResult } from "../services/feedValidator";
 import { HealthReportExporter } from "./HealthReportExporter";
-import { ProxyHealthSummary } from "./ProxyHealthSummary";
+import { ProxySettings } from "./ProxySettings";
 
 interface FeedAnalyticsProps {
   feeds: FeedSource[];
@@ -41,9 +41,9 @@ type AffectedFeedRow = {
 };
 
 const SURFACE_CLASS =
-  "rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
+  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.025)]";
 const INFO_SURFACE_CLASS =
-  "rounded-[24px] border border-[rgb(var(--color-border))]/10 bg-[rgb(var(--theme-manager-bg,var(--color-background)))] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.025)]";
+  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)]";
 const MANAGER_CONTROL_CLASS =
   "rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]";
 const MANAGER_SURFACE_CARD_CLASS =
@@ -72,7 +72,22 @@ const safeHostname = (value?: string) => {
   }
 };
 
-const formatStatusLabel = (status: string) => status.replace(/_/g, " ");
+const statusLabels: Record<string, string> = {
+  valid: "válido",
+  invalid: "inválido",
+  timeout: "tempo esgotado",
+  network_error: "rede",
+  parse_error: "conteúdo inválido",
+  cors_error: "CORS",
+  not_found: "não encontrado",
+  server_error: "servidor",
+  discovery_required: "revisar URL",
+  checking: "verificando",
+  unchecked: "pendente",
+};
+
+const formatStatusLabel = (status: string) =>
+  statusLabels[status] || status.replace(/_/g, " ");
 
 const formatDateTime = (timestamp?: number) => {
   if (!timestamp) return "—";
@@ -100,7 +115,7 @@ const impactTone = (impact: AffectedFeedRow["impact"]) => {
 
 const causeLabels: Record<AffectedFeedRow["cause"], string> = {
   backend_unavailable: "Backend local indisponível",
-  proxy_exhausted: "Fallback em nuvem esgotado",
+  proxy_exhausted: "Proxies indisponíveis",
   rate_limited: "Limite de requisições",
   upstream_error: "Servidor do feed com erro",
   parse_error: "Conteúdo inválido para feed",
@@ -124,7 +139,7 @@ const formatRuntimeWarningDetail = (
     );
   }
 
-  if (!runtime.lastWarning) return "Fallback em nuvem ativo após falha na rota local.";
+  if (!runtime.lastWarning) return "Proxy em nuvem ativo após falha na rota local.";
 
   try {
     const parsed = JSON.parse(runtime.lastWarning) as {
@@ -362,12 +377,20 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       }
     }
 
+    if (uncheckedRows.length > 0) {
+      return {
+        label: `${uncheckedRows.length} feeds pendentes`,
+        detail: "Valide os feeds para atualizar a coleção.",
+        action: `Revalidar ${uncheckedRows.length} feeds pendentes.`,
+      };
+    }
+
     return {
-      label: "Sem falha dominante",
-      detail: "Nenhum grupo de erro domina a coleção neste momento.",
-      action: "Revalidar se precisar atualizar o status.",
+      label: "Tudo certo",
+      detail: "",
+      action: "",
     };
-  }, [invalidRows, snapshot]);
+  }, [invalidRows, snapshot, uncheckedRows.length]);
 
   const actionItems = useMemo(() => {
     const items = new Set<string>();
@@ -391,10 +414,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       items.add(`Revalidar ${uncheckedRows.length} feeds pendentes.`);
     }
 
-    if (items.size === 0) {
-      items.add("Nenhuma ação urgente.");
-    }
-
     return Array.from(items).slice(0, 3);
   }, [diagnosis.action, invalidRows, snapshot, uncheckedRows.length]);
 
@@ -414,6 +433,16 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       })),
     [affectedRows],
   );
+
+  const infraStatusLabel = snapshot.summary.fallbackActive
+    ? "Proxy em nuvem"
+    : snapshot.backend.enabled && snapshot.backend.available
+      ? "Backend local ativo"
+      : snapshot.runtime.backendInitializing
+        ? "Inicializando"
+        : snapshot.backend.enabled
+          ? "Backend indisponível"
+          : "Modo web";
 
   const [openSections, setOpenSections] = useState<
     Record<AnalyticsAccordionSection, boolean>
@@ -467,32 +496,13 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   }, [focusSection, onFocusConsumed]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <section id="diagnostics-overview" className={INFO_SURFACE_CLASS}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h3 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
               Diagnóstico
             </h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadge
-                label={
-                  snapshot.summary.fallbackActive
-                    ? "Fallback ativo"
-                    : snapshot.backend.enabled
-                      ? "Backend local ativo"
-                      : "Modo web"
-                }
-              />
-              <StatusBadge
-                label={`${invalidRows.length} com erro`}
-                tone="danger"
-              />
-              <StatusBadge
-                label={`${uncheckedRows.length} pendentes`}
-                tone="warning"
-              />
-            </div>
           </div>
 
           <button
@@ -504,7 +514,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           </button>
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-4">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Feeds" value={feeds.length} />
           <StatCard label="Com erro" value={invalidRows.length} tone="danger" />
           <StatCard
@@ -516,157 +526,219 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         </div>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <AccordionSection
-          sectionId="diagnosis"
-          title="Status da Coleção"
-          isOpen={openSections.diagnosis}
-          onToggle={() => toggleSection("diagnosis")}
-          icon={
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(var(--color-warning),0.1)] text-[rgb(var(--color-warning))]">
-              <AlertCircle className="h-4 w-4" />
-            </div>
-          }
-        >
-          <div className="rounded-2xl bg-[rgb(var(--theme-manager-control))] p-5 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-50">Problema Dominante</h4>
-            <p className="mt-3 text-lg font-bold text-[rgb(var(--theme-text-readable))]">
-              {diagnosis.label}
-            </p>
-            <p className="mt-2 text-sm text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
-              {diagnosis.detail}
-            </p>
-          </div>
-        </AccordionSection>
+      {hasAttentionItems && (
+        <section id="feed-health" className={SURFACE_CLASS}>
+          <SectionTitle
+            eyebrow="Saúde dos feeds"
+            title={diagnosis.label}
+            icon={<AlertCircle className="h-5 w-5" />}
+          />
 
-        <AccordionSection
-          sectionId="actions"
-          title="Próximos Passos"
-          isOpen={openSections.actions}
-          onToggle={() => toggleSection("actions")}
-          icon={
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(var(--color-success),0.1)] text-[rgb(var(--color-success))]">
-              <CheckCircle2 className="h-4 w-4" />
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <div className="rounded-[20px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+              <p className="text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
+                {diagnosis.detail}
+              </p>
             </div>
-          }
-        >
-          <div className="space-y-2.5">
-            {actionItems.map((item, idx) => (
-              <div
-                key={item}
-                className="flex items-center gap-3 rounded-xl bg-[rgb(var(--theme-manager-control))] px-4 py-3 text-sm font-semibold text-[rgb(var(--theme-text-readable))] shadow-sm"
-              >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.1)] text-[10px] text-[rgb(var(--color-accent))]">
-                  {idx + 1}
-                </span>
-                {item}
+
+            <div className="rounded-[20px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-[rgb(var(--color-success))]" />
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-58">
+                  Ações
+                </p>
               </div>
-            ))}
-          </div>
-        </AccordionSection>
-      </div>
-
-      <AccordionSection
-        sectionId="feed-status"
-        sectionClassName={SURFACE_CLASS}
-        title="Feeds e Impacto"
-        isOpen={openSections.affected}
-        onToggle={() => toggleSection("affected")}
-        icon={
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(var(--color-accent),0.1)] text-[rgb(var(--color-accent))]">
-            <Layers3 className="h-4 w-4" />
-          </div>
-        }
-        actions={
-          affectedRows.length > 8 && openSections.affected ? (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setShowAllRows((current) => !current);
-              }}
-              className="text-xs font-bold text-[rgb(var(--color-accent))] hover:underline"
-            >
-              {showAllRows ? "Mostrar menos" : `Ver todos (+${affectedRows.length - 8})`}
-            </button>
-          ) : null
-        }
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full border-separate border-spacing-y-1.5">
-            <thead>
-              <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
-                <th className="px-4 py-2">Feed</th>
-                <th className="px-4 py-2">Infra / Rota</th>
-                <th className="px-4 py-2">Status / Erro</th>
-                <th className="px-4 py-2 text-right">Impacto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleRows.map((row) => (
-                <tr
-                  key={row.url}
-                  className="group rounded-xl bg-[rgb(var(--theme-manager-control))] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
-                >
-                  <td className="rounded-l-xl px-4 py-3">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-[rgb(var(--theme-text-readable))] truncate max-w-[180px]">
-                        {row.title}
-                      </span>
-                      <span className="text-[10px] font-mono text-[rgb(var(--theme-text-secondary-readable))] opacity-50 truncate max-w-[180px]">
-                        {row.host}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col">
-                      <span className="text-[11px] font-bold text-[rgb(var(--theme-text-readable))]">
-                        {row.route}
-                      </span>
-                      <span className="text-[10px] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
-                        {formatDateTime(row.lastChecked)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(
-                          row.status,
-                        )}`}
-                      >
-                        {formatStatusLabel(row.status)}
-                      </span>
-                      <span className="max-w-[14rem] truncate text-xs text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
-                        {row.error}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="rounded-r-xl px-4 py-3 text-right">
-                    <div
-                      className={`text-xs font-bold uppercase tracking-widest ${impactTone(row.impact)}`}
-                    >
-                      {row.impact}
-                    </div>
-                    <div className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
-                      {row.articleCount} arts.
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {!showAllRows && affectedRows.length > 8 && (
-            <div
-              onClick={() => setShowAllRows(true)}
-              className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[rgba(var(--color-border),0.15)] py-2 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40 hover:opacity-100 transition-opacity"
-            >
-              Expandir Tabela de Impacto
+              <div className="mt-3 space-y-2">
+                {actionItems.map((item, idx) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 rounded-[16px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.12)] text-[10px] text-[rgb(var(--color-accent))]">
+                      {idx + 1}
+                    </span>
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
+
+          <AccordionSection
+            sectionId="feed-status"
+            sectionClassName="mt-5 rounded-[22px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]"
+            title="Feeds afetados"
+            isOpen={openSections.affected}
+            onToggle={() => toggleSection("affected")}
+            icon={
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(var(--color-accent),0.1)] text-[rgb(var(--color-accent))]">
+                <Layers3 className="h-4 w-4" />
+              </div>
+            }
+            actions={
+              affectedRows.length > 8 && openSections.affected ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowAllRows((current) => !current);
+                  }}
+                  className="text-xs font-bold text-[rgb(var(--color-accent))] hover:underline"
+                >
+                  {showAllRows ? "Mostrar menos" : `Ver todos (+${affectedRows.length - 8})`}
+                </button>
+              ) : null
+            }
+          >
+            <div>
+              <div className="space-y-2 md:hidden">
+                {visibleRows.map((row) => (
+                  <div
+                    key={row.url}
+                    className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[rgb(var(--theme-text-readable))]">
+                          {row.title}
+                        </p>
+                        <p className="mt-0.5 truncate text-[11px] font-mono text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+                          {row.host}
+                        </p>
+                      </div>
+                      <div
+                        className={`shrink-0 text-xs font-bold uppercase tracking-widest ${impactTone(row.impact)}`}
+                      >
+                        {row.impact}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-[14px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
+                          Rota
+                        </p>
+                        <p className="mt-1 font-semibold text-[rgb(var(--theme-text-readable))]">
+                          {row.route}
+                        </p>
+                      </div>
+                      <div className="rounded-[14px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
+                          Status
+                        </p>
+                        <p className="mt-1 font-semibold text-[rgb(var(--theme-text-readable))]">
+                          {formatStatusLabel(row.status)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mt-3 text-xs leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+                      {row.error}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full border-separate border-spacing-y-1.5">
+                <thead>
+                  <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
+                    <th className="px-4 py-2">Feed</th>
+                    <th className="px-4 py-2">Rota</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2 text-right">Impacto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleRows.map((row) => (
+                    <tr
+                      key={row.url}
+                      className="group rounded-xl bg-[rgb(var(--theme-manager-control))] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
+                    >
+                      <td className="rounded-l-xl px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-[rgb(var(--theme-text-readable))] truncate max-w-[180px]">
+                            {row.title}
+                          </span>
+                          <span className="text-[10px] font-mono text-[rgb(var(--theme-text-secondary-readable))] opacity-50 truncate max-w-[180px]">
+                            {row.host}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-[rgb(var(--theme-text-readable))]">
+                            {row.route}
+                          </span>
+                          <span className="text-[10px] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
+                            {formatDateTime(row.lastChecked)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(
+                              row.status,
+                            )}`}
+                          >
+                            {formatStatusLabel(row.status)}
+                          </span>
+                          <span className="max-w-[14rem] truncate text-xs text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+                            {row.error}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="rounded-r-xl px-4 py-3 text-right">
+                        <div
+                          className={`text-xs font-bold uppercase tracking-widest ${impactTone(row.impact)}`}
+                        >
+                          {row.impact}
+                        </div>
+                        <div className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
+                          {row.articleCount} arts.
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                </table>
+              </div>
+
+              {!showAllRows && affectedRows.length > 8 && (
+                <div
+                  onClick={() => setShowAllRows(true)}
+                  className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[rgba(var(--color-border),0.15)] py-2 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40 hover:opacity-100 transition-opacity"
+                >
+                  Expandir lista
+                </div>
+              )}
+            </div>
+          </AccordionSection>
+        </section>
+      )}
+
+      <section id="proxy-health" className={SURFACE_CLASS}>
+        <SectionTitle
+          eyebrow="Infraestrutura"
+          title="Backend, proxies e rotas"
+          icon={<Layers3 className="h-5 w-5" />}
+        />
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Estado" value={infraStatusLabel} />
+          <StatCard label="Sucesso" value={`${snapshot.summary.successRate}%`} />
+          <StatCard
+            label="Rotas saudáveis"
+            value={`${snapshot.summary.healthyRoutes}/${Math.max(1, snapshot.summary.totalRoutes)}`}
+          />
+          <StatCard label="Requisições" value={snapshot.summary.totalRequests} />
         </div>
-      </AccordionSection>
+
+        <div id="proxy-settings" className="mt-5">
+          <ProxySettings detailed embedded snapshot={snapshot} onRefresh={refresh} />
+        </div>
+      </section>
 
       <AccordionSection
         title="Detalhes"
@@ -674,75 +746,18 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         onToggle={() => toggleSection("details")}
       >
         <div className="space-y-4">
-          <section id="proxy-health" className={MANAGER_SURFACE_CARD_CLASS}>
-            <div className="mb-4 flex items-center gap-2">
-              <Layers3 className="h-5 w-5 text-[rgb(var(--color-primary))]" />
-              <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                Proxies
-              </h5>
+          <section id="feed-reports" className={MANAGER_SURFACE_CARD_CLASS}>
+            <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
+              Exportar relatório
+            </h5>
+            <div className="mt-4">
+              <HealthReportExporter
+                feeds={exportFeeds}
+                feedValidations={feedValidations}
+                snapshot={snapshot}
+              />
             </div>
-            <ProxyHealthSummary snapshot={snapshot} />
           </section>
-
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-            <section id="feed-reports" className={MANAGER_SURFACE_CARD_CLASS}>
-              <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                Exportar relatório
-              </h5>
-              <div className="mt-4">
-                <HealthReportExporter
-                  feeds={exportFeeds}
-                  feedValidations={feedValidations}
-                  snapshot={snapshot}
-                />
-              </div>
-            </section>
-
-            <section className={MANAGER_SURFACE_CARD_CLASS}>
-              <h5 className="text-sm font-semibold text-[rgb(var(--theme-text-readable))]">
-                Atividade
-              </h5>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <MiniStat
-                  label="Associados"
-                  value={activityStats.matchedArticles}
-                />
-                <MiniStat
-                  label="Sem vínculo"
-                  value={activityStats.unmatchedArticles}
-                />
-              </div>
-
-              {activityStats.topicTrends.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {activityStats.topicTrends.map(([topic, count]) => (
-                    <span
-                      key={topic}
-                      className="rounded-full border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
-                    >
-                      #{topic} ({count})
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-4 space-y-2">
-                {activityStats.quietFeeds.slice(0, 4).map((feed) => (
-                  <div
-                    key={feed.feedKey}
-                    className="flex items-center justify-between gap-3 text-sm"
-                  >
-                    <span className="truncate text-[rgb(var(--theme-text-readable))]">
-                      {feed.label}
-                    </span>
-                    <span className="text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                      0 artigos
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
         </div>
       </AccordionSection>
     </div>
@@ -796,26 +811,35 @@ const AccordionSection: React.FC<{
   </section>
 );
 
-const StatusBadge: React.FC<{
-  label: string;
-  tone?: "default" | "warning" | "danger";
-}> = ({ label, tone = "default" }) => (
-  <span
-    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-      tone === "danger"
-        ? "bg-[rgba(var(--color-error),0.1)] text-[rgb(var(--color-error))]"
-        : tone === "warning"
-          ? "bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]"
-          : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
-    }`}
-  >
-    {label}
-  </span>
+const SectionTitle: React.FC<{
+  eyebrow: string;
+  title: string;
+  description?: string;
+  icon: React.ReactNode;
+}> = ({ eyebrow, title, description, icon }) => (
+  <div className="flex items-start gap-3">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--color-primary))]">
+      {icon}
+    </div>
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-58">
+        {eyebrow}
+      </p>
+      <h4 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
+        {title}
+      </h4>
+      {description && (
+        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+          {description}
+        </p>
+      )}
+    </div>
+  </div>
 );
 
 const StatCard: React.FC<{
   label: string;
-  value: number;
+  value: React.ReactNode;
   tone?: "default" | "warning" | "danger";
 }> = ({ label, value, tone = "default" }) => (
   <div
@@ -831,20 +855,6 @@ const StatCard: React.FC<{
       {label}
     </p>
     <p className="mt-2 text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
-      {value}
-    </p>
-  </div>
-);
-
-const MiniStat: React.FC<{
-  label: string;
-  value: number;
-}> = ({ label, value }) => (
-  <div className="rounded-[16px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4">
-    <p className="text-[11px] uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-      {label}
-    </p>
-    <p className="mt-2 text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
       {value}
     </p>
   </div>

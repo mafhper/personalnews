@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
-import { SearchBar, SearchFilters } from "./SearchBar";
+import type { SearchFilters } from "./SearchBar";
 import { Article, FeedCategory, FeedSource } from "../types";
 import Logo from "./Logo";
 import { HeaderIcons } from "./icons";
@@ -285,6 +285,54 @@ const Header: React.FC<HeaderProps> = (props) => {
   const activeCategories = props.categories.filter(
     category => category.isPinned || (props.categorizedFeeds[category.id] || []).length > 0
   );
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const drawerAdminShortcuts = [
+    {
+      label: "Gerenciar feeds",
+      description: "Coleção, categorias e saúde",
+      onClick: handleManageFeedsActionClick,
+    },
+    {
+      label: "Adicionar fontes",
+      description: "RSS, descoberta e OPML",
+      onClick: handleManageFeedsActionClick,
+    },
+    {
+      label: "Importar e exportar",
+      description: "OPML e manutenção",
+      onClick: handleManageFeedsActionClick,
+    },
+    {
+      label: "Diagnóstico",
+      description: "Feeds, backend e proxies",
+      onClick: handleManageFeedsActionClick,
+    },
+  ];
+
+  const drawerSettingsShortcuts = [
+    {
+      label: "Aparência",
+      description: "Tema e cores",
+      onClick: props.onOpenSettings,
+    },
+    {
+      label: "Layout do feed",
+      description: "Visual das notícias",
+      onClick: props.onOpenSettings,
+    },
+    {
+      label: "Leitura",
+      description: "Fonte, densidade e tempo",
+      onClick: props.onOpenSettings,
+    },
+    {
+      label: "Sistema",
+      description: "Preferências gerais",
+      onClick: props.onOpenSettings,
+    },
+  ];
 
   const getFeedLabel = (feed: FeedSource) => {
     if (feed.customTitle) return feed.customTitle;
@@ -759,9 +807,12 @@ const Header: React.FC<HeaderProps> = (props) => {
                       return (
                         <button
                           key={category.id}
-                          onClick={() => props.onNavigation(category.id)}
+                          onClick={() => {
+                            props.onNavigation(category.id);
+                            setMobileExpandedCategory(category.id);
+                          }}
                           aria-current={isActive ? 'page' : undefined}
-                          className={`rounded-full ${headerStyleVariant === 'minimal' ? '' : 'border'} ${mobileCategoryClasses.base} ${
+                          className={`rounded-full ${mobileCategoryClasses.base} ${
                             isActive ? mobileCategoryClasses.active : mobileCategoryClasses.idle
                           }`}
                         >
@@ -785,53 +836,69 @@ const Header: React.FC<HeaderProps> = (props) => {
             </div>
 
             {mobileCategoriesOpen && (
-              <div className="mt-2 px-3 pb-3 space-y-2 animate-in fade-in slide-in-from-top-2">
-                {activeCategories.map((category) => {
-                  const feeds = props.categorizedFeeds[category.id] || [];
-                  const isExpanded = mobileExpandedCategory === category.id;
-                  return (
-                    <div key={category.id} className="feed-header-panel rounded-2xl p-3">
-                      <button
-                        onClick={() =>
-                          setMobileExpandedCategory((prev) =>
-                            prev === category.id ? null : category.id
-                          )
-                        }
-                        className="feed-header-title w-full min-h-11 py-2 flex items-center justify-between text-sm"
-                      >
-                        <span className="font-semibold">{category.name}</span>
-                        <span className="feed-header-muted text-xs">{feeds.length}</span>
-                        <HeaderIcons.ChevronDown
-                          size="xs"
-                          className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                        />
-                      </button>
-                      {isExpanded && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {feeds.length > 0 ? (
-                            feeds.map((feed) => (
-                              <button
-                                key={feed.url}
-                                onClick={() => {
-                                  props.onNavigation(category.id, feed.url);
-                                  setMobileCategoriesOpen(false);
-                                }}
-                                className="feed-header-chip text-[10px] px-2.5 py-1 rounded-full transition-all"
-                                title={feed.customTitle || feed.url}
-                              >
-                                {getFeedLabel(feed)}
-                              </button>
-                            ))
-                          ) : (
-                            <span className="feed-header-muted text-xs">
-                              Sem feeds nesta categoria
-                            </span>
-                          )}
+              <div className="feed-category-sheet fixed left-2 right-2 top-[3.75rem] z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="custom-scrollbar max-h-[min(62vh,30rem)] overflow-y-auto px-2 py-2">
+                  {activeCategories.map((category) => {
+                    const feeds = props.categorizedFeeds[category.id] || [];
+                    const isExpanded = mobileExpandedCategory === category.id;
+                    const isActive = props.selectedCategory === category.id;
+                    return (
+                      <div key={category.id} className="feed-category-sheet__group">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              props.onNavigation(category.id);
+                              setMobileExpandedCategory(category.id);
+                            }}
+                            className={`feed-category-sheet__row min-w-0 flex-1 ${isActive ? "feed-category-sheet__row--active" : ""}`}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            <span className="min-w-0 truncate">{category.name}</span>
+                            <span className="feed-category-sheet__count">{feeds.length}</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              setMobileExpandedCategory((prev) =>
+                                prev === category.id ? null : category.id
+                              )
+                            }
+                            className="feed-category-sheet__toggle"
+                            aria-label={isExpanded ? `Recolher ${category.name}` : `Expandir ${category.name}`}
+                            aria-expanded={isExpanded}
+                          >
+                            <HeaderIcons.ChevronDown
+                              size="xs"
+                              className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        {isExpanded && (
+                          <div className="feed-category-sheet__feeds">
+                            {feeds.length > 0 ? (
+                              feeds.map((feed) => (
+                                <button
+                                  key={feed.url}
+                                  onClick={() => {
+                                    props.onNavigation(category.id, feed.url);
+                                    setMobileCategoriesOpen(false);
+                                  }}
+                                  className="feed-category-sheet__feed"
+                                  title={feed.customTitle || feed.url}
+                                >
+                                  {getFeedLabel(feed)}
+                                </button>
+                              ))
+                            ) : (
+                              <span className="feed-category-sheet__empty">
+                                Sem feeds nesta categoria
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -850,11 +917,43 @@ const Header: React.FC<HeaderProps> = (props) => {
 
         {/* Drawer Content */}
         <div
-          className="feed-header-drawer absolute top-0 right-0 bottom-0 w-[80%] max-w-sm translate-x-0 border-l border-[rgb(var(--color-border))]/35 shadow-2xl transform transition-transform duration-300"
+          className="feed-header-drawer absolute top-0 right-0 bottom-0 w-[82%] max-w-sm translate-x-0 shadow-2xl transform transition-transform duration-300"
         >
           <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between border-b border-[rgb(var(--color-border))]/35 p-4">
-              <h2 className="feed-header-title text-lg font-bold">{t('header.menu')}</h2>
+            <div className="feed-header-drawer__top flex items-center justify-between p-4">
+              <div className="feed-header-drawer-brand min-w-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleLogoClick?.();
+                    closeMobileMenu();
+                  }}
+                  className="bg-transparent p-0"
+                  aria-label="Ir para a apresentação do Personal News"
+                >
+                  <Logo
+                    size={headerConfig.logoSize || "md"}
+                    customSrc={headerConfig.logoUrl}
+                    useThemeColor={headerConfig.useThemeColor}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleTitleClick?.();
+                    closeMobileMenu();
+                  }}
+                  className="min-w-0 bg-transparent p-0 text-left"
+                  aria-label={`Recarregar ${resolvedBrandTitle}`}
+                >
+                  <span className="feed-header-title block truncate text-base font-bold">
+                    {resolvedBrandTitle}
+                  </span>
+                  <span className="feed-header-muted block truncate text-[11px] font-semibold">
+                    Feed pessoal
+                  </span>
+                </button>
+              </div>
               <button onClick={() => setMobileMenuOpen(false)} className="feed-header-control">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -862,24 +961,13 @@ const Header: React.FC<HeaderProps> = (props) => {
               </button>
             </div>
 
-            <div className="p-4 space-y-6 overflow-y-auto flex-1">
-              {/* Search */}
-              <div className="relative">
-                <SearchBar
-                  articles={props.articles}
-                  onSearch={props.onSearch}
-                  onResultsChange={props.onSearchResultsChange}
-                  placeholder={t('search.placeholder')}
-                  className="w-full"
-                />
-              </div>
-
+            <div className="custom-scrollbar p-4 space-y-5 overflow-y-auto flex-1">
               {/* Actions Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => {
                     handleManageFeedsActionClick();
-                    setMobileMenuOpen(false);
+                    closeMobileMenu();
                   }}
                   className="feed-header-drawer-card feed-header-drawer-card--primary relative"
                   aria-label={feedIssuesLabel}
@@ -891,29 +979,71 @@ const Header: React.FC<HeaderProps> = (props) => {
                       aria-hidden="true"
                     />
                   )}
-                  <span className="mt-2 text-xs">{t('feeds.tab.feeds')}</span>
+                  <span className="mt-2 text-xs">Gerenciar</span>
                 </button>
                 <button
-                  onClick={() => { props.onOpenFavorites(); setMobileMenuOpen(false); }}
+                  onClick={() => { props.onOpenFavorites(); closeMobileMenu(); }}
                   className="feed-header-drawer-card"
                 >
                   <HeaderIcons.Favorites showBackground={false} size="md" />
                   <span className="mt-2 text-xs">{t('header.favorites')}</span>
                 </button>
                 <button
-                  onClick={() => { props.onOpenSettings(); setMobileMenuOpen(false); }}
+                  onClick={() => { props.onOpenSettings(); closeMobileMenu(); }}
                   className="feed-header-drawer-card"
                 >
                   <HeaderIcons.Settings showBackground={false} size="md" />
                   <span className="mt-2 text-xs">{t('settings.title')}</span>
                 </button>
                 <button
-                  onClick={() => { props.onRefreshClick(); setMobileMenuOpen(false); }}
+                  onClick={() => { props.onRefreshClick(); closeMobileMenu(); }}
                   className="feed-header-drawer-card"
                 >
                   <HeaderIcons.Refresh showBackground={false} size="md" />
                   <span className="mt-2 text-xs">{t('action.refresh')}</span>
                 </button>
+              </div>
+
+              <div className="feed-header-drawer-shortcuts space-y-4">
+                <section>
+                  <h3 className="feed-header-drawer-section-title">Feeds</h3>
+                  <div className="grid gap-2">
+                    {drawerAdminShortcuts.map((shortcut) => (
+                      <button
+                        key={shortcut.label}
+                        type="button"
+                        onClick={() => {
+                          shortcut.onClick();
+                          closeMobileMenu();
+                        }}
+                        className="feed-header-drawer-link"
+                      >
+                        <span>{shortcut.label}</span>
+                        <small>{shortcut.description}</small>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="feed-header-drawer-section-title">Configurações</h3>
+                  <div className="grid gap-2">
+                    {drawerSettingsShortcuts.map((shortcut) => (
+                      <button
+                        key={shortcut.label}
+                        type="button"
+                        onClick={() => {
+                          shortcut.onClick();
+                          closeMobileMenu();
+                        }}
+                        className="feed-header-drawer-link"
+                      >
+                        <span>{shortcut.label}</span>
+                        <small>{shortcut.description}</small>
+                      </button>
+                    ))}
+                  </div>
+                </section>
               </div>
             </div>
           </div>

@@ -109,20 +109,20 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
     value: FeedCategory["layoutMode"] | "";
     label: string;
   }[] = [
-    { value: "", label: "Default (Use Global Setting)" },
+    { value: "", label: "Padrao global" },
     { value: "bento", label: "Bento" },
     { value: "brutalist", label: "Brutalist" },
-    { value: "compact", label: "Compact" },
+    { value: "compact", label: "Compacto" },
     { value: "cyberpunk", label: "Cyberpunk" },
-    { value: "focus", label: "Focus" },
-    { value: "gallery", label: "Gallery" },
-    { value: "immersive", label: "Immersive" },
-    { value: "list", label: "List" },
+    { value: "focus", label: "Foco" },
+    { value: "gallery", label: "Galeria" },
+    { value: "immersive", label: "Imersivo" },
+    { value: "list", label: "Lista" },
     { value: "magazine", label: "Magazine" },
     { value: "masonry", label: "Masonry" },
-    { value: "minimal", label: "Minimal" },
-    { value: "modern", label: "Modern" },
-    { value: "newspaper", label: "Newspaper" },
+    { value: "minimal", label: "Minimalista" },
+    { value: "modern", label: "Moderno" },
+    { value: "newspaper", label: "Jornal" },
     { value: "pocketfeeds", label: "PocketFeeds" },
     { value: "split", label: "Split" },
     { value: "terminal", label: "Terminal" },
@@ -368,14 +368,14 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           const content = await file.text();
           const success = importCategories(content);
           if (success) {
-            await alertSuccess("Categories imported successfully!");
+            await alertSuccess("Categorias importadas com sucesso!");
           } else {
             await alertError(
-              "Failed to import categories. Please check the file format.",
+              "Falha ao importar categorias. Verifique o formato do arquivo.",
             );
           }
         } catch (error) {
-          await alertError("Failed to read the file.");
+          await alertError("Falha ao ler o arquivo.");
           logger.error(
             "Failed to read categories import file",
             error as Error,
@@ -410,7 +410,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         const opmlFeeds = parseOpml(content);
 
         if (opmlFeeds.length === 0) {
-          await alertError("No feeds found in this OPML file.");
+          await alertError("Nenhum feed encontrado neste arquivo OPML.");
           return;
         }
 
@@ -435,14 +435,14 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           setFeeds((prev) => [...prev, ...newFeeds]);
           const categoryName = targetCategoryId
             ? categories.find((c) => c.id === targetCategoryId)?.name ||
-              "selected category"
-            : "Uncategorized";
+              "categoria selecionada"
+            : "Sem categoria";
           await alertSuccess(
-            `${newFeeds.length} feeds imported successfully to ${categoryName}!`,
+            `${newFeeds.length} feeds importados para ${categoryName}.`,
           );
         } else {
           await alertSuccess(
-            "All feeds from this file are already in your collection.",
+            "Todos os feeds deste arquivo ja estao na sua colecao.",
           );
         }
 
@@ -455,7 +455,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
         });
       } catch (error) {
         await alertError(
-          "Failed to parse OPML file. Please check the file format.",
+          "Falha ao processar o arquivo OPML. Verifique o formato do arquivo.",
         );
         logger.error("Failed to import OPML feeds", error as Error, {
           additionalData: {
@@ -485,7 +485,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   const handleResetToDefaults = useCallback(async () => {
     if (
       await confirmDanger(
-        "Are you sure you want to reset to default categories? This will remove all custom categories and reset feed assignments.",
+        "Tem certeza que deseja restaurar as categorias padrao? Isso removera categorias personalizadas e redefinira as associacoes dos feeds.",
       )
     ) {
       resetToDefaults();
@@ -593,7 +593,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           <div className="flex flex-wrap gap-2 lg:max-w-[52%] lg:justify-end">
             <button
               onClick={() => setShowNewCategoryForm(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--color-accent))] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--theme-text-readable))] transition-all hover:bg-[rgb(var(--color-accent))]/92"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--color-accent))] px-4 py-2.5 text-sm font-black text-slate-950 shadow-[0_14px_32px_rgba(0,0,0,0.22)] transition-all hover:brightness-110"
             >
               <svg
                 className="h-5 w-5"
@@ -691,7 +691,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               </svg>
             </span>
             <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
-              Create New Category
+              Nova categoria
             </h3>
           </div>
           <form onSubmit={handleCreateCategory} className="space-y-6">
@@ -700,7 +700,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="category-name"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Category Name
+                Nome da categoria
               </label>
               <input
                 id="category-name"
@@ -712,7 +712,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                     name: e.target.value,
                   }))
                 }
-                placeholder="Enter category name"
+                placeholder="Ex: Tecnologia"
                 className="w-full bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-readable))] rounded-lg px-4 py-3 border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all"
                 required
               />
@@ -722,7 +722,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="category-color"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Color Tag
+                Cor de destaque
               </label>
               <div className="flex items-center space-x-4">
                 <input
@@ -753,7 +753,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="category-layout"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Default Layout
+                Layout padrao
               </label>
               <select
                 id="category-layout"
@@ -799,7 +799,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="category-description"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Description (optional)
+                Descricao (opcional)
               </label>
               <textarea
                 id="category-description"
@@ -812,22 +812,22 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 }
                 className="w-full bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-readable))] rounded-lg px-4 py-3 border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all resize-none"
                 rows={3}
-                placeholder="Enter a description for this category..."
+                placeholder="Descreva quando esta categoria deve ser usada..."
               />
             </div>
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-[rgb(var(--theme-text-readable))] font-medium px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20"
+                className="bg-[rgb(var(--color-accent))] text-slate-950 font-black px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20 hover:brightness-110"
               >
-                Create Category
+                Criar categoria
               </button>
               <button
                 type="button"
                 onClick={() => setShowNewCategoryForm(false)}
                 className="bg-[rgba(var(--color-border),0.4)] hover:bg-gray-600 text-[rgb(var(--theme-text-readable))] font-medium px-6 py-2.5 rounded-lg transition-all"
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -854,7 +854,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
               </svg>
             </span>
             <h3 className="text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
-              Edit Category
+              Editar categoria
             </h3>
           </div>
           <form onSubmit={handleSaveEditCategory} className="space-y-6">
@@ -863,7 +863,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="edit-category-name"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Category Name
+                Nome da categoria
               </label>
               <input
                 id="edit-category-name"
@@ -885,7 +885,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="edit-category-color"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Color Tag
+                Cor de destaque
               </label>
               <div className="flex items-center space-x-4">
                 <input
@@ -916,7 +916,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="edit-category-layout"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Default Layout
+                Layout padrao
               </label>
               <select
                 id="edit-category-layout"
@@ -962,7 +962,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 htmlFor="edit-category-description"
                 className="block text-sm font-medium text-[rgb(var(--color-textSecondary))] mb-2"
               >
-                Description (optional)
+                Descricao (opcional)
               </label>
               <textarea
                 id="edit-category-description"
@@ -975,22 +975,22 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                 }
                 className="w-full bg-[rgba(var(--color-text),0.05)] text-[rgb(var(--theme-text-readable))] rounded-lg px-4 py-3 border border-[rgba(var(--color-border),0.15)] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))] focus:border-transparent transition-all resize-none"
                 rows={3}
-                placeholder="Enter a description for this category..."
+                placeholder="Descreva quando esta categoria deve ser usada..."
               />
             </div>
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                className="bg-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-accent))]/90 text-[rgb(var(--theme-text-readable))] font-medium px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20"
+                className="bg-[rgb(var(--color-accent))] text-slate-950 font-black px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-[rgb(var(--color-accent))]/20 hover:brightness-110"
               >
-                Save Changes
+                Salvar alteracoes
               </button>
               <button
                 type="button"
                 onClick={handleCancelEditCategory}
                 className="bg-[rgba(var(--color-border),0.4)] hover:bg-gray-600 text-[rgb(var(--theme-text-readable))] font-medium px-6 py-2.5 rounded-lg transition-all"
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -1273,7 +1273,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={saveFeedEdit}
-                            className="text-xs bg-[rgb(var(--color-accent))] text-[rgb(var(--theme-text-readable))] px-2 py-1 rounded hover:opacity-90"
+                            className="text-xs bg-[rgb(var(--color-accent))] text-[rgb(var(--color-onAccent))] px-2 py-1 rounded hover:opacity-90"
                           >
                             Salvar
                           </button>
@@ -1485,7 +1485,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={saveFeedEdit}
-                          className="text-xs bg-[rgb(var(--color-accent))] text-[rgb(var(--theme-text-readable))] px-2 py-1 rounded hover:opacity-90"
+                          className="text-xs bg-[rgb(var(--color-accent))] text-[rgb(var(--color-onAccent))] px-2 py-1 rounded hover:opacity-90"
                         >
                           Salvar
                         </button>

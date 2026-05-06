@@ -70,7 +70,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
           {subFeatured.map((article, idx) => (
             <div
               key={idx}
-              className="flex-1 relative rounded-xl overflow-hidden group cursor-pointer"
+              className="min-h-[170px] sm:min-h-[210px] lg:min-h-0 flex-1 relative rounded-xl overflow-hidden group cursor-pointer"
             >
               <button
                 type="button"

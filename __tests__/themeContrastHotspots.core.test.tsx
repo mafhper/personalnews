@@ -4,7 +4,6 @@ import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { FeedAddTab } from "../components/FeedManager/FeedAddTab";
-import { FeedListTab } from "../components/FeedManager/FeedListTab";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { SkipLinks } from "../components/SkipLinks";
 import { createThemeSeedPair } from "../services/themeUtils";
@@ -244,41 +243,10 @@ describe("theme contrast hotspots", () => {
     );
   });
 
-  it("uses semantic CTA tokens in feed add actions", () => {
-    render(
-      <FeedAddTab
-        newFeedUrl=""
-        setNewFeedUrl={vi.fn()}
-        newFeedCategory=""
-        setNewFeedCategory={vi.fn()}
-        processingUrl={null}
-        categories={[{ id: "general", name: "General", color: "0 0 0", order: 0 }]}
-        onSubmit={(event) => event.preventDefault()}
-        discoveryProgress={new Map()}
-      />,
-    );
-
-    const submitButton = screen.getByRole("button", { name: /Adicionar/i });
-
-    expect(submitButton.className).toContain(
-      "bg-[rgb(var(--color-accentSurface))]",
-    );
-    expect(submitButton.className).toContain(
-      "text-[rgb(var(--color-onAccent))]",
-    );
-  });
-
   it("uses semantic CTA tokens in feed manager add flow", () => {
     render(
-      <FeedListTab
-        feeds={[]}
-        validations={new Map()}
+      <FeedAddTab
         categories={[{ id: "general", name: "General", color: "0 0 0", order: 0 }]}
-        onRemove={vi.fn()}
-        onRetry={vi.fn()}
-        onEdit={vi.fn()}
-        onShowError={vi.fn()}
-        onMoveCategory={vi.fn()}
         newFeedUrl=""
         setNewFeedUrl={vi.fn()}
         newFeedTitle=""
@@ -287,10 +255,13 @@ describe("theme contrast hotspots", () => {
         setNewFeedCategory={vi.fn()}
         processingUrl={null}
         onSubmit={(event) => event.preventDefault()}
+        onImportOPML={vi.fn()}
+        onShowImportModal={vi.fn()}
+        feedCount={0}
       />,
     );
 
-    const newFeedButton = screen.getByRole("button", { name: /Novo Feed/i });
+    const newFeedButton = screen.getByRole("button", { name: /Abrir listas/i });
     expect(newFeedButton.className).toContain(
       "bg-[rgb(var(--color-accentSurface))]",
     );
@@ -298,15 +269,29 @@ describe("theme contrast hotspots", () => {
       "text-[rgb(var(--color-onAccent))]",
     );
 
-    fireEvent.click(newFeedButton);
-
-    const saveFeedButton = screen.getByRole("button", { name: /Salvar Feed/i });
+    const saveFeedButton = screen.getByRole("button", { name: /^Adicionar$/i });
     expect(saveFeedButton.className).toContain(
       "bg-[rgb(var(--color-accentSurface))]",
     );
     expect(saveFeedButton.className).toContain(
       "text-[rgb(var(--color-onAccent))]",
     );
+  });
+
+  it("keeps category manager accent CTAs on explicit high-contrast foreground tokens", () => {
+    const categoryManagerSource = readFileSync(
+      resolve(process.cwd(), "components/FeedCategoryManager.tsx"),
+      "utf8",
+    );
+
+    expect(categoryManagerSource).toContain(
+      "bg-[rgb(var(--color-accent))] px-4 py-2.5 text-sm font-black text-slate-950",
+    );
+    expect(categoryManagerSource).toContain(
+      "bg-[rgb(var(--color-accent))] text-slate-950 font-black px-6 py-2.5",
+    );
+    expect(categoryManagerSource).not.toContain("Create New Category");
+    expect(categoryManagerSource).not.toContain("Save Changes");
   });
 
   it("routes sidebar theme mode changes through presets with semantic tokens", () => {
@@ -458,15 +443,16 @@ describe("theme contrast hotspots", () => {
     expect(cssSource).toContain("color: var(--primary-foreground);");
   });
 
-  it("keeps feed tools actions on semantic accent surface tokens", () => {
+  it("keeps feed tools separated from diagnostics and risk actions high contrast", () => {
     const toolsSource = readFileSync(
       resolve(process.cwd(), "components/FeedManager/FeedToolsTab.tsx"),
       "utf8",
     );
 
-    expect(toolsSource).toContain(
-      "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]",
-    );
-    expect(toolsSource).toContain("hover:brightness-110");
+    expect(toolsSource).toContain("Bancada");
+    expect(toolsSource).toContain("Fluxos principais");
+    expect(toolsSource).toContain("Zona de risco");
+    expect(toolsSource).toContain("bg-red-500 px-4 py-3 text-sm font-black text-white");
+    expect(toolsSource).not.toContain("useProxyDashboard");
   });
 });

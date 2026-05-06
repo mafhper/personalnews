@@ -48,7 +48,7 @@ const HeaderIcon: React.FC<HeaderIconProps & { children: React.ReactNode }> = ({
   if (!showBackground) {
     return (
       <div
-        className={`${iconSizes[size]} text-white ${className} ${baseClasses}`}
+        className={`${iconSizes[size]} text-current ${className} ${baseClasses}`}
         onClick={onClick}
         title={title}
       >

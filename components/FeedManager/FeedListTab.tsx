@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { useLanguage } from "../../hooks/useLanguage";
 import { FeedItem } from "../FeedItem";
-import type { FeedSource, FeedCategory } from "../../types";
+import type { Article, FeedSource, FeedCategory } from "../../types";
 import type { FeedValidationResult } from "../../services/feedValidator";
 import { getFeedSortKey } from "../../utils/feedDisplay";
 
@@ -19,24 +18,37 @@ interface FeedListTabProps {
   onToggleHideFromAll?: (url: string) => void;
   onRefreshAll?: () => void;
   onConfirmRefreshAll?: () => void | Promise<void>;
-  newFeedUrl?: string;
-  setNewFeedUrl?: (url: string) => void;
-  newFeedTitle?: string;
-  setNewFeedTitle?: (title: string) => void;
-  newFeedCategory?: string;
-  setNewFeedCategory?: (id: string) => void;
-  processingUrl?: string | null;
-  onSubmit?: (e: React.FormEvent) => void;
+  articles?: Article[];
 }
 
-const SURFACE_CLASS =
-  "rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
-
 const INFO_SURFACE_CLASS =
-  "rounded-[24px] border border-[rgb(var(--color-border))]/10 bg-[rgb(var(--theme-manager-bg,var(--color-background)))] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.025)]";
+  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)]";
 
 const CONTROL_CLASS =
   "w-full rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-sm text-[rgb(var(--theme-control-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] outline-none transition-all placeholder:text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] focus:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] focus:ring-1 focus:ring-[rgba(var(--color-accent),0.35)]";
+
+const normalizeLabel = (value?: string) =>
+  (value || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+const normalizeUrlKey = (value?: string) => {
+  if (!value) return "";
+  try {
+    const parsed = new URL(value);
+    parsed.hash = "";
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return value.trim().replace(/\/$/, "");
+  }
+};
+
+const safeHostname = (value?: string) => {
+  if (!value) return "";
+  try {
+    return new URL(value).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+};
 
 export const FeedListTab: React.FC<FeedListTabProps> = ({
   feeds,
@@ -51,19 +63,10 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   onToggleHideFromAll,
   onRefreshAll,
   onConfirmRefreshAll,
-  newFeedUrl,
-  setNewFeedUrl,
-  newFeedTitle,
-  setNewFeedTitle,
-  newFeedCategory,
-  setNewFeedCategory,
-  processingUrl,
-  onSubmit,
+  articles = [],
 }) => {
-  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showAddForm, setShowAddForm] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     issues: false,
     pending: false,
@@ -113,36 +116,96 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
     (feed) => !validations.has(feed.url),
   );
 
-  const totalFeeds = feeds.length;
-  const validCount = feeds.filter(
-    (feed) => validations.get(feed.url)?.isValid,
-  ).length;
-  const invalidCount = feeds.filter((feed) => {
-    const validation = validations.get(feed.url);
-    return validation && !validation.isValid;
-  }).length;
-  const pendingCount = feeds.filter(
-    (feed) => !validations.has(feed.url),
-  ).length;
+  const activityStats = useMemo(() => {
+    const countByFeed = new Map<string, number>();
+    const labelByFeed = new Map<string, string>();
+    const sourceTitleIndex = new Map<string, Set<string>>();
+    const hostIndex = new Map<string, Set<string>>();
 
-  const toolbarStats = [
-    { label: "Total", value: totalFeeds, tone: "neutral" as const },
-    {
-      label: t("analytics.valid") || "Válidos",
-      value: validCount,
-      tone: "success" as const,
-    },
-    {
-      label: t("analytics.issues") || "Com erro",
-      value: invalidCount,
-      tone: "danger" as const,
-    },
-    {
-      label: t("analytics.pending") || "Pendentes",
-      value: pendingCount,
-      tone: "warning" as const,
-    },
-  ];
+    feeds.forEach((feed) => {
+      const feedKey = normalizeUrlKey(feed.url);
+      const validation = validations.get(feed.url);
+      const displayLabel = feed.customTitle || validation?.title || feed.url;
+
+      countByFeed.set(feedKey, 0);
+      labelByFeed.set(feedKey, displayLabel);
+
+      [feed.customTitle, validation?.title, safeHostname(feed.url)]
+        .map((label) => normalizeLabel(label))
+        .filter(Boolean)
+        .forEach((label) => {
+          const next = sourceTitleIndex.get(label) || new Set<string>();
+          next.add(feedKey);
+          sourceTitleIndex.set(label, next);
+        });
+
+      const host = safeHostname(feed.url);
+      const next = hostIndex.get(host) || new Set<string>();
+      next.add(feedKey);
+      hostIndex.set(host, next);
+    });
+
+    let unmatchedArticles = 0;
+
+    const resolveFeedForArticle = (article: Article) => {
+      const directFeedKey = normalizeUrlKey(article.feedUrl);
+      if (directFeedKey && countByFeed.has(directFeedKey)) return directFeedKey;
+
+      const sourceLabel = normalizeLabel(article.sourceTitle);
+      const titleMatches = sourceTitleIndex.get(sourceLabel);
+      if (titleMatches?.size === 1) return Array.from(titleMatches)[0];
+
+      const hostMatches = hostIndex.get(
+        safeHostname(article.feedUrl || article.link),
+      );
+      if (hostMatches?.size === 1) return Array.from(hostMatches)[0];
+
+      return null;
+    };
+
+    articles.forEach((article) => {
+      const feedKey = resolveFeedForArticle(article);
+      if (!feedKey) {
+        unmatchedArticles += 1;
+        return;
+      }
+      countByFeed.set(feedKey, (countByFeed.get(feedKey) || 0) + 1);
+    });
+
+    const sortedFeeds = Array.from(countByFeed.entries())
+      .map(([feedKey, count]) => ({
+        feedKey,
+        count,
+        label: labelByFeed.get(feedKey) || feedKey,
+      }))
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.label.localeCompare(b.label, "pt-BR");
+      });
+
+    const topicCounts = new Map<string, number>();
+    articles.forEach((article) => {
+      article.categories?.forEach((category) => {
+        const normalized = category.trim().toLowerCase();
+        if (
+          normalized.length > 2 &&
+          !["uncategorized", "general", "news"].includes(normalized)
+        ) {
+          topicCounts.set(normalized, (topicCounts.get(normalized) || 0) + 1);
+        }
+      });
+    });
+
+    return {
+      matchedArticles: articles.length - unmatchedArticles,
+      unmatchedArticles,
+      mostActive: sortedFeeds.filter((item) => item.count > 0).slice(0, 4),
+      quietFeeds: sortedFeeds.filter((item) => item.count === 0).slice(0, 4),
+      topicTrends: Array.from(topicCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6),
+    };
+  }, [articles, feeds, validations]);
 
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
@@ -152,55 +215,8 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
     <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
       <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
         <section className="flex flex-col gap-4">
-          {/* Unified Management Bar */}
           <section className={INFO_SURFACE_CLASS}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap items-center gap-3">
-                {toolbarStats.map((stat) => (
-                  <MetricTile
-                    key={stat.label}
-                    label={stat.label}
-                    value={stat.value}
-                    tone={stat.tone}
-                  />
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {typeof onSubmit === "function" && (
-                  <button
-                    onClick={() => setShowAddForm(!showAddForm)}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold shadow-lg transition-all ${
-                      showAddForm
-                        ? "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))]"
-                        : "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] hover:scale-105 active:scale-95"
-                    }`}
-                  >
-                    {showAddForm ? "Fechar" : "Novo Feed"}
-                    {!showAddForm && <span>+</span>}
-                  </button>
-                )}
-                
-                {onRefreshAll && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onConfirmRefreshAll) {
-                        void onConfirmRefreshAll();
-                        return;
-                      }
-                      onRefreshAll();
-                    }}
-                    title="Revalidar coleção"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))] shadow-md transition-all hover:bg-[rgb(var(--theme-manager-soft))] active:scale-90"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_13rem]">
                 <div className="relative">
                   <svg
@@ -236,90 +252,90 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                   <option value="unchecked">Pendentes</option>
                 </select>
               </div>
+
+              {onRefreshAll && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onConfirmRefreshAll) {
+                      void onConfirmRefreshAll();
+                      return;
+                    }
+                    onRefreshAll();
+                  }}
+                  title="Revalidar coleção"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))] shadow-md transition-all hover:bg-[rgb(var(--theme-manager-soft))] active:scale-90"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </section>
 
-          {/* Collapsible Add Feed Form */}
-          {showAddForm && onSubmit && setNewFeedUrl && setNewFeedTitle && setNewFeedCategory && (
-            <section className={`${SURFACE_CLASS} animate-in slide-in-from-top-4 duration-300`}>
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-[rgb(var(--theme-text-readable))]">
-                  Configurar Novo Feed
-                </h3>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  onSubmit(e);
-                  setShowAddForm(false);
-                }}
-                className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]"
-              >
-                <label className="block">
-                  <span className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))]">
-                    URL do Feed RSS
-                  </span>
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://exemplo.com/rss"
-                    value={newFeedUrl || ""}
-                    onChange={(e) => setNewFeedUrl(e.target.value)}
-                    disabled={processingUrl !== null}
-                    className={CONTROL_CLASS}
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))]">
-                    Nome de Exibição (Opcional)
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Ex: Meu Blog Favorito"
-                    value={newFeedTitle || ""}
-                    onChange={(e) => setNewFeedTitle(e.target.value)}
-                    disabled={processingUrl !== null}
-                    className={CONTROL_CLASS}
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))]">
-                    Categoria
-                  </span>
-                  <select
-                    value={newFeedCategory || ""}
-                    onChange={(e) => setNewFeedCategory(e.target.value)}
-                    disabled={processingUrl !== null}
-                    className={CONTROL_CLASS}
-                  >
-                    <option value="">Sem categoria</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="lg:col-span-3 flex justify-end gap-3 mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddForm(false)}
-                    className="rounded-full px-6 py-2.5 text-sm font-bold text-[rgb(var(--theme-text-secondary-readable))] hover:bg-[rgb(var(--theme-manager-soft))]"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={processingUrl !== null}
-                    className="inline-flex items-center justify-center rounded-full bg-[rgb(var(--color-accentSurface))] px-8 py-2.5 text-sm font-bold text-[rgb(var(--color-onAccent))] shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50"
-                  >
-                    {processingUrl ? "Validando..." : "Salvar Feed"}
-                  </button>
+          {articles.length > 0 && (
+            <section className={INFO_SURFACE_CLASS}>
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)]">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
+                    Atividade
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <ActivityTile
+                      label="Associados"
+                      value={activityStats.matchedArticles}
+                    />
+                    <ActivityTile
+                      label="Sem vínculo"
+                      value={activityStats.unmatchedArticles}
+                    />
+                  </div>
                 </div>
-              </form>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {activityStats.topicTrends.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
+                        Assuntos
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {activityStats.topicTrends.map(([topic, count]) => (
+                          <span
+                            key={topic}
+                            className="rounded-full bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1 text-xs font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]"
+                          >
+                            #{topic} ({count})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(activityStats.mostActive.length > 0 ||
+                    activityStats.quietFeeds.length > 0) && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
+                        Fontes
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        {activityStats.mostActive.slice(0, 2).map((feed) => (
+                          <ActivityRow
+                            key={feed.feedKey}
+                            label={feed.label}
+                            value={`${feed.count} artigos`}
+                          />
+                        ))}
+                        {activityStats.quietFeeds.slice(0, 2).map((feed) => (
+                          <ActivityRow
+                            key={feed.feedKey}
+                            label={feed.label}
+                            value="0 artigos"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </section>
           )}
         </section>
@@ -436,31 +452,33 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   );
 };
 
-const MetricTile: React.FC<{
+const ActivityTile: React.FC<{
   label: string;
   value: number;
-  tone: "neutral" | "success" | "warning" | "danger";
-}> = ({ label, value, tone }) => {
-  const toneClass =
-    tone === "success"
-      ? "text-[rgb(var(--color-success))] bg-[rgba(var(--color-success),0.1)]"
-      : tone === "warning"
-        ? "text-[rgb(var(--color-warning))] bg-[rgba(var(--color-warning),0.1)]"
-        : tone === "danger"
-          ? "text-[rgb(var(--color-error))] bg-[rgba(var(--color-error),0.1)]"
-          : "text-[rgb(var(--theme-manager-text,var(--theme-text-readable)))] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))]";
-
-  return (
-    <div
-      className={`rounded-[18px] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] ${toneClass}`}
-    >
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-80">
-        {label}
-      </div>
-      <div className="mt-1 text-lg font-semibold">{value}</div>
+}> = ({ label, value }) => (
+  <div className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+      {label}
     </div>
-  );
-};
+    <div className="mt-1 text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
+      {value}
+    </div>
+  </div>
+);
+
+const ActivityRow: React.FC<{
+  label: string;
+  value: string;
+}> = ({ label, value }) => (
+  <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-2 text-sm">
+    <span className="truncate font-semibold text-[rgb(var(--theme-text-readable))]">
+      {label}
+    </span>
+    <span className="shrink-0 text-xs font-semibold text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+      {value}
+    </span>
+  </div>
+);
 
 const FeedGroup: React.FC<{
   title: string;
@@ -471,13 +489,13 @@ const FeedGroup: React.FC<{
   onToggle: () => void;
 }> = ({ title, count, children, tone, expanded, onToggle }) => {
   const toneStyles = {
-    success: "border-[rgba(var(--color-success),0.2)] bg-[rgba(var(--color-success),0.02)]",
-    warning: "border-[rgba(var(--color-warning),0.2)] bg-[rgba(var(--color-warning),0.02)]",
-    danger: "border-[rgba(var(--color-error),0.2)] bg-[rgba(var(--color-error),0.02)]"
+    success: "bg-[rgba(var(--color-success),0.035)]",
+    warning: "bg-[rgba(var(--color-warning),0.045)]",
+    danger: "bg-[rgba(var(--color-error),0.045)]"
   };
 
   return (
-    <section className={`rounded-[28px] border p-5 transition-all ${toneStyles[tone]}`}>
+    <section className={`rounded-[26px] p-5 shadow-[0_14px_36px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.025)] transition-all ${toneStyles[tone]}`}>
       <div className="mb-4 flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
           <h3 className="text-base font-bold text-[rgb(var(--theme-text-readable))]">

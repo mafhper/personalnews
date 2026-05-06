@@ -8,10 +8,14 @@ import {
 
 interface ProxyHealthSummaryProps {
   snapshot?: ProxyDashboardSnapshot;
+  embedded?: boolean;
+  showOverview?: boolean;
 }
 
 const SURFACE_CLASS =
   "rounded-[24px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const EMBEDDED_SURFACE_CLASS =
+  "rounded-[18px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]";
 
 const statusStyles: Record<
   ProxyDashboardRoute["status"],
@@ -49,78 +53,83 @@ const formatRelativeDate = (timestamp?: number) => {
 
 export const ProxyHealthSummary: React.FC<ProxyHealthSummaryProps> = ({
   snapshot,
+  embedded = false,
+  showOverview = true,
 }) => {
   const dashboard = useProxyDashboard({ enabled: !snapshot });
   const data = snapshot ?? dashboard.snapshot;
+  const surfaceClass = embedded ? EMBEDDED_SURFACE_CLASS : SURFACE_CLASS;
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className={SURFACE_CLASS}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                Estado atual
-              </p>
-              <p className="mt-2 text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
-                {data.summary.fallbackActive
-                  ? "Fallback em nuvem ativo"
-                  : data.backend.enabled && data.backend.available
-                    ? "Backend local ativo"
-                    : data.runtime.backendInitializing
-                      ? "Backend local inicializando"
-                    : data.backend.enabled
-                      ? "Backend local indisponível"
-                      : "Modo web"}
-              </p>
+      {showOverview && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className={surfaceClass}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                  Estado atual
+                </p>
+                <p className="mt-2 text-lg font-semibold text-[rgb(var(--theme-text-readable))]">
+                  {data.summary.fallbackActive
+                    ? "Fallback em nuvem ativo"
+                    : data.backend.enabled && data.backend.available
+                      ? "Backend local ativo"
+                      : data.runtime.backendInitializing
+                        ? "Backend local inicializando"
+                        : data.backend.enabled
+                          ? "Backend local indisponível"
+                          : "Modo web"}
+                </p>
+              </div>
+              <Activity className="h-6 w-6 text-[rgb(var(--color-primary))]" />
             </div>
-            <Activity className="h-6 w-6 text-[rgb(var(--color-primary))]" />
+          </div>
+
+          <div className={surfaceClass}>
+            <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              Taxa de sucesso
+            </p>
+            <p className="mt-2 text-3xl font-bold text-[rgb(var(--theme-text-readable))]">
+              {data.summary.successRate}%
+            </p>
+            <p className="mt-2 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              {data.summary.totalSuccesses}/
+              {Math.max(1, data.summary.totalRequests)} respostas bem-sucedidas
+            </p>
+          </div>
+
+          <div className={surfaceClass}>
+            <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              Rotas saudáveis
+            </p>
+            <p className="mt-2 text-3xl font-bold text-[rgb(var(--theme-text-readable))]">
+              {data.summary.healthyRoutes}/{Math.max(1, data.summary.totalRoutes)}
+            </p>
+            <p className="mt-2 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              Backend local e proxies em uma única leitura
+            </p>
+          </div>
+
+          <div className={surfaceClass}>
+            <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              Requisições
+            </p>
+            <p className="mt-2 text-3xl font-bold text-[rgb(var(--theme-text-readable))]">
+              {data.summary.totalRequests}
+            </p>
+            <p className="mt-2 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+              {data.summary.totalFailures} falhas registradas nesta sessão
+            </p>
           </div>
         </div>
-
-        <div className={SURFACE_CLASS}>
-          <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-            Taxa de sucesso
-          </p>
-          <p className="mt-2 text-3xl font-bold text-[rgb(var(--theme-text-readable))]">
-            {data.summary.successRate}%
-          </p>
-          <p className="mt-2 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-            {data.summary.totalSuccesses}/
-            {Math.max(1, data.summary.totalRequests)} respostas bem-sucedidas
-          </p>
-        </div>
-
-        <div className={SURFACE_CLASS}>
-          <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-            Rotas saudáveis
-          </p>
-          <p className="mt-2 text-3xl font-bold text-[rgb(var(--theme-text-readable))]">
-            {data.summary.healthyRoutes}/{Math.max(1, data.summary.totalRoutes)}
-          </p>
-          <p className="mt-2 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-            Backend local e proxies em uma única leitura
-          </p>
-        </div>
-
-        <div className={SURFACE_CLASS}>
-          <p className="text-xs uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-            Requisições
-          </p>
-          <p className="mt-2 text-3xl font-bold text-[rgb(var(--theme-text-readable))]">
-            {data.summary.totalRequests}
-          </p>
-          <p className="mt-2 text-xs text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-            {data.summary.totalFailures} falhas registradas nesta sessão
-          </p>
-        </div>
-      </div>
+      )}
 
       <div className="grid gap-3 xl:grid-cols-2">
         {data.routes.map((route) => {
           const status = statusStyles[route.status];
           return (
-            <div key={route.id} className={SURFACE_CLASS}>
+            <div key={route.id} className={surfaceClass}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">

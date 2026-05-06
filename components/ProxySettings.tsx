@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -8,19 +8,28 @@ import {
   RefreshCw,
   Route,
 } from "lucide-react";
-import { PROXY_CONFIGS, getRecommendedProxyOrder } from "../config/proxyConfig";
+import { PROXY_CONFIGS } from "../config/proxyConfig";
 import { useProxyConfig } from "../hooks/useProxyConfig";
-import { useProxyDashboard } from "../hooks/useProxyDashboard";
+import {
+  useProxyDashboard,
+  type ProxyDashboardRoute,
+  type ProxyDashboardSnapshot,
+} from "../hooks/useProxyDashboard";
 import { ProxyManager, type ProxyTestResult } from "../services/proxyManager";
 
 export interface ProxySettingsProps {
   detailed?: boolean;
   apiKeysOnly?: boolean;
   compact?: boolean;
+  embedded?: boolean;
+  snapshot?: ProxyDashboardSnapshot;
+  onRefresh?: () => void | Promise<void>;
 }
 
 const PANEL_CLASS =
   "rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_24px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const EMBEDDED_PANEL_CLASS =
+  "rounded-[18px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]";
 const MANAGER_TEXT_CLASS =
   "text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]";
 const MANAGER_TEXT_SECONDARY_CLASS =
@@ -29,10 +38,10 @@ const MANAGER_CHIP_CLASS =
   "rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-1.5 text-xs font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]";
 const MANAGER_CARD_CLASS =
   "rounded-[20px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-4 shadow-[0_16px_34px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.03)]";
-const MANAGER_LIST_CARD_CLASS =
-  "rounded-[18px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] px-4 py-3 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[0_14px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.03)]";
 const MANAGER_EXPANDABLE_CLASS =
   "rounded-[20px] border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] shadow-[0_18px_36px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.03)]";
+const MANAGER_EXPANDABLE_DISABLED_CLASS =
+  "rounded-[20px] border border-[rgb(var(--color-border))]/10 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] opacity-60 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]";
 const MANAGER_RESULT_CLASS =
   "mt-3 rounded-[16px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]";
 
@@ -52,6 +61,14 @@ const statusBadgeClass = (score: number) => {
     return "border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]";
   }
   return "border-[rgba(var(--color-error),0.22)] bg-[rgba(var(--color-error),0.12)] text-[rgb(var(--color-error))]";
+};
+
+const routeStatusLabel: Record<ProxyDashboardRoute["status"], string> = {
+  healthy: "saudável",
+  degraded: "atenção",
+  offline: "fora do ar",
+  idle: "sem uso",
+  disabled: "desativado",
 };
 
 const routeLabels: Record<ProxyTestResult["route"], string> = {
@@ -109,10 +126,18 @@ const getRuntimeRouteForProxy = (
   );
 };
 
+const formatMetric = (value: number | null | undefined, suffix = "") => {
+  if (value === null || value === undefined || value <= 0) return "—";
+  return `${Math.round(value)}${suffix}`;
+};
+
 export const ProxySettings: React.FC<ProxySettingsProps> = ({
   detailed = true,
   apiKeysOnly = false,
   compact = false,
+  embedded = false,
+  snapshot: providedSnapshot,
+  onRefresh,
 }) => {
   const {
     apiKeys,
@@ -124,8 +149,12 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
     getAllProxiesStatus,
     testProxy,
   } = useProxyConfig();
-  const { snapshot, refresh } = useProxyDashboard();
-  const [expandedProxy, setExpandedProxy] = useState<string | null>(null);
+  const dashboard = useProxyDashboard({ enabled: !providedSnapshot });
+  const snapshot = providedSnapshot ?? dashboard.snapshot;
+  const refresh = onRefresh ?? dashboard.refresh;
+  const [expandedProxy, setExpandedProxy] = useState<string | null>(
+    "local-proxy",
+  );
   const [testingProxy, setTestingProxy] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<
     Record<string, ProxyTestResult>
@@ -133,8 +162,32 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
 
   const displayedProxies = useMemo(() => {
     const all = getAllProxiesStatus();
-    return apiKeysOnly ? all.filter((proxy) => proxy.hasApiKey) : all;
-  }, [apiKeysOnly, getAllProxiesStatus]);
+    const filtered = apiKeysOnly ? all.filter((proxy) => proxy.hasApiKey) : all;
+
+    return filtered
+      .map((proxy) => ({
+        proxy,
+        runtimeRoute: getRuntimeRouteForProxy(
+          proxy.id,
+          proxy.name,
+          snapshot.routes,
+        ),
+      }))
+      .sort((a, b) => {
+        const disabledA = !a.proxy.enabled || a.runtimeRoute?.status === "disabled";
+        const disabledB = !b.proxy.enabled || b.runtimeRoute?.status === "disabled";
+        if (disabledA !== disabledB) return disabledA ? 1 : -1;
+
+        const scoreA = a.runtimeRoute?.healthScore ?? a.proxy.health.score;
+        const scoreB = b.runtimeRoute?.healthScore ?? b.proxy.health.score;
+        if (scoreA !== scoreB) return scoreA - scoreB;
+
+        if (a.proxy.id === "local-proxy") return -1;
+        if (b.proxy.id === "local-proxy") return 1;
+        return a.proxy.name.localeCompare(b.proxy.name);
+      })
+      .map((item) => item.proxy);
+  }, [apiKeysOnly, getAllProxiesStatus, snapshot.routes]);
 
   const isLocalBackendRuntime = snapshot.backend.enabled;
   const isTauriRuntime =
@@ -143,7 +196,29 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
       !!(window as Window & { __TAURI_INTERNALS__?: unknown })
         .__TAURI_INTERNALS__);
   const localRuntimeLabel = isTauriRuntime ? "desktop" : "modo local";
-  const displayedProxyIds = displayedProxies.map((proxy) => proxy.id);
+  const panelClass = embedded ? EMBEDDED_PANEL_CLASS : PANEL_CLASS;
+
+  useEffect(() => {
+    if (!detailed) return;
+
+    const currentProxy = displayedProxies.find(
+      (proxy) => proxy.id === expandedProxy,
+    );
+    if (currentProxy?.enabled) return;
+
+    const firstActionable =
+      displayedProxies.find((proxy) => {
+        const route = getRuntimeRouteForProxy(proxy.id, proxy.name, snapshot.routes);
+        return (
+          proxy.enabled &&
+          (route?.status === "offline" ||
+            route?.status === "degraded" ||
+            route?.consecutiveFailures)
+        );
+      }) || displayedProxies.find((proxy) => proxy.enabled);
+
+    setExpandedProxy(firstActionable?.id || displayedProxies[0]?.id || null);
+  }, [detailed, displayedProxies, expandedProxy, snapshot.routes]);
 
   const handleTestProxy = async (proxyId: string) => {
     setTestingProxy(proxyId);
@@ -161,7 +236,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
 
   if (isLoading && !snapshot.routes.length) {
     return (
-      <div className={PANEL_CLASS}>
+      <div className={panelClass}>
         <p className={`text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
           Carregando configuração e saúde dos proxies...
         </p>
@@ -171,7 +246,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
 
   if (compact) {
     return (
-      <div className={PANEL_CLASS}>
+      <div className={panelClass}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
@@ -196,25 +271,33 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
   }
 
   return (
-    <div className="space-y-5">
-      <section className={PANEL_CLASS}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <h2 className={`text-xl font-semibold ${MANAGER_TEXT_CLASS}`}>
-              Configuração de rotas e proxies
-            </h2>
+    <div className={embedded ? "" : "space-y-5"}>
+      {!embedded && (
+        <section className={panelClass}>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <h2 className={`text-xl font-semibold ${MANAGER_TEXT_CLASS}`}>
+                Controle de rotas e proxies
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className={MANAGER_CHIP_CLASS}>
+                {snapshot.summary.totalRoutes} rotas monitoradas
+              </span>
+              <span className={MANAGER_CHIP_CLASS}>
+                {snapshot.summary.successRate}% de sucesso
+              </span>
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className="rounded-full border border-[rgba(var(--color-primary),0.22)] bg-[rgba(var(--color-primary),0.1)] px-3 py-1.5 text-xs font-semibold text-[rgb(var(--color-primary))] transition hover:bg-[rgba(var(--color-primary),0.16)]"
+              >
+                Atualizar rotas
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <span className={MANAGER_CHIP_CLASS}>
-              {snapshot.summary.totalRoutes} rotas monitoradas
-            </span>
-            <span className={MANAGER_CHIP_CLASS}>
-              {snapshot.summary.successRate}% de sucesso
-            </span>
-          </div>
-        </div>
 
-        <div className="mt-5 grid gap-3 xl:grid-cols-2">
+          <div className="mt-5 grid gap-3 xl:grid-cols-2">
           <div className={MANAGER_CARD_CLASS}>
             <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
               Rota ativa
@@ -254,42 +337,16 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
           </div>
         </div>
       </section>
-
-      {detailed && (
-        <section className={PANEL_CLASS}>
-          <div className="flex items-center gap-2">
-            <Route className="h-5 w-5 text-[rgb(var(--color-primary))]" />
-            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
-              Ordem de fallback recomendada
-            </h3>
-          </div>
-          <ol className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {getRecommendedProxyOrder({
-              rss2json: !!apiKeys.rss2json,
-              corsproxy: !!apiKeys["corsproxy-io"],
-            })
-              .filter((proxyId) => displayedProxyIds.includes(proxyId))
-              .map((proxyId, index) => (
-                <li
-                  key={proxyId}
-                  className={MANAGER_LIST_CARD_CLASS}
-                >
-                  <span className={`mr-2 ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-                    {index + 1}.
-                  </span>
-                  {PROXY_CONFIGS[proxyId].name}
-                </li>
-              ))}
-          </ol>
-        </section>
       )}
 
       {detailed && (
-        <section className={PANEL_CLASS}>
-          <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
-            Rotas, saúde e credenciais
-          </h3>
-          <div className="mt-4 space-y-3">
+        <section className={embedded ? "" : panelClass}>
+          {!embedded && (
+            <h3 className={`text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
+              Rotas
+            </h3>
+          )}
+          <div className={embedded ? "space-y-3" : "mt-4 space-y-3"}>
             {displayedProxies.map((proxy) => {
               const isExpanded = expandedProxy === proxy.id;
               const result = testResults[proxy.id];
@@ -303,11 +360,22 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               const canDisableProxy = ProxyManager.canDisableRuntimeProxy(
                 proxy.name,
               );
+              const isDisabled =
+                !proxy.enabled || runtimeRoute?.status === "disabled";
+              const healthScore =
+                runtimeRoute?.healthScore ?? proxy.health.score;
+              const statusLabel =
+                routeStatusLabel[runtimeRoute?.status || "idle"] ||
+                (isDisabled ? "desativado" : "sem uso");
 
               return (
                 <div
                   key={proxy.id}
-                  className={MANAGER_EXPANDABLE_CLASS}
+                  className={
+                    isDisabled
+                      ? MANAGER_EXPANDABLE_DISABLED_CLASS
+                      : MANAGER_EXPANDABLE_CLASS
+                  }
                 >
                   <button
                     type="button"
@@ -316,9 +384,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                         current === proxy.id ? null : proxy.id,
                       )
                     }
-                    className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+                    className="flex w-full flex-col gap-4 px-4 py-4 text-left md:flex-row md:items-center md:justify-between"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
                           {proxy.name}
@@ -329,7 +397,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                           )}`}
                         >
                           saúde{" "}
-                          {runtimeRoute?.healthScore ?? proxy.health.score}%
+                          {healthScore}%
                         </span>
                         {proxy.hasApiKey && (
                           <span
@@ -353,11 +421,34 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                           proxyConfig.description}
                       </p>
                     </div>
-                    {isExpanded ? (
+
+                    <div className="grid w-full grid-cols-2 gap-3 text-left sm:grid-cols-4 md:w-[31rem]">
+                      <RouteMetric label="Status" value={statusLabel} />
+                      <RouteMetric
+                        label="Sucesso"
+                        value={
+                          runtimeRoute?.successRate === null
+                            ? "—"
+                            : `${runtimeRoute?.successRate ?? 0}%`
+                        }
+                      />
+                      <RouteMetric
+                        label="Latência"
+                        value={formatMetric(runtimeRoute?.avgResponseTime, "ms")}
+                      />
+                      <RouteMetric
+                        label="Último uso"
+                        value={formatDate(runtimeRoute?.lastUsedAt)}
+                      />
+                    </div>
+
+                    <span className="shrink-0 self-end md:self-center">
+                      {isExpanded ? (
                         <ChevronDown className={`h-4 w-4 ${MANAGER_TEXT_SECONDARY_CLASS}`} />
                       ) : (
                         <ChevronRight className={`h-4 w-4 ${MANAGER_TEXT_SECONDARY_CLASS}`} />
                       )}
+                    </span>
                   </button>
 
                   {isExpanded && (
@@ -373,28 +464,28 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                         </div>
                         <div>
                           <p className={`text-[11px] uppercase tracking-[0.14em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-                            Último uso
+                            Requisições
                           </p>
                           <p className={`mt-1 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
-                            {formatDate(runtimeRoute?.lastUsedAt)}
+                            {runtimeRoute?.totalRequests || 0}
                           </p>
                         </div>
                         <div>
                           <p className={`text-[11px] uppercase tracking-[0.14em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-                            Sessão
+                            Falhas seguidas
                           </p>
                           <p className={`mt-1 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
-                            {runtimeRoute?.totalRequests || 0} requisições
+                            {runtimeRoute?.consecutiveFailures || 0}
                           </p>
                         </div>
                         <div>
                           <p className={`text-[11px] uppercase tracking-[0.14em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
-                            Latência média
+                            Transporte
                           </p>
                           <p className={`mt-1 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
-                            {runtimeRoute?.avgResponseTime
-                              ? `${Math.round(runtimeRoute.avgResponseTime)}ms`
-                              : "—"}
+                            {runtimeRoute?.transport === "desktop-backend"
+                              ? "desktop"
+                              : "cloud"}
                           </p>
                         </div>
                       </div>
@@ -549,3 +640,17 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
 };
 
 export default ProxySettings;
+
+const RouteMetric: React.FC<{
+  label: string;
+  value: React.ReactNode;
+}> = ({ label, value }) => (
+  <div className="min-w-0 rounded-[14px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
+    <p className="truncate text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] opacity-62">
+      {label}
+    </p>
+    <p className="mt-1 truncate text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]">
+      {value}
+    </p>
+  </div>
+);
