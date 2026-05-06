@@ -293,11 +293,11 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   const fieldLabelClass =
     "block text-xs mb-2 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]";
   const surfaceInputClass =
-    "w-full h-9 rounded-lg border border-[rgb(var(--color-border))]/35 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 px-3 text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]/30";
+    "w-full h-9 rounded-xl border-0 bg-[rgb(var(--color-surfaceElevated))]/70 px-3 text-xs text-[rgb(var(--color-text))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.08)] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]/25";
   const mutedButtonClass =
-    "bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/82 text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] border border-[rgb(var(--color-border))]/28 hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/96";
+    "border-0 bg-[rgb(var(--color-surfaceElevated))]/60 text-[rgb(var(--color-textSecondary))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.06)] hover:bg-[rgb(var(--color-accent))]/10 hover:text-[rgb(var(--color-text))]";
   const surfaceButtonClass =
-    "bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/88 text-[rgb(var(--theme-text-on-surface,var(--color-text)))] border border-[rgb(var(--color-border))]/35 hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]";
+    "border-0 bg-[rgb(var(--color-surfaceElevated))]/70 text-[rgb(var(--color-text))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.08)] hover:bg-[rgb(var(--color-accent))]/10";
   const resetCardBaseClass =
     "w-full rounded-2xl border px-4 py-3 text-left transition-all shadow-[0_12px_32px_rgba(15,23,42,0.1)] hover:translate-y-[-1px]";
 
@@ -307,16 +307,16 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-40 animate-in fade-in bg-black/70 backdrop-blur-sm duration-200"
         onClick={onClose}
       />
 
       {/* Sidebar */}
-      <div className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-l border-white/8 bg-[rgb(var(--color-background))]/92 shadow-[0_30px_90px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in slide-in-from-right duration-300">
+      <div className="feed-header-drawer fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col animate-in slide-in-from-right duration-300">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4 backdrop-blur-xl">
-          <h2 className="text-lg font-bold text-[rgb(var(--color-text))] flex items-center gap-2">
+        <div className="feed-header-drawer__top flex items-center justify-between p-4">
+          <h2 className="feed-header-drawer-brand text-lg font-bold">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -325,7 +325,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-[rgb(var(--color-textSecondary))] transition-colors hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/55 hover:text-[rgb(var(--color-text))]"
+            className="feed-header-control"
+            aria-label="Fechar configurações"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -334,7 +335,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto space-y-4 p-4">
+        <div className="custom-scrollbar flex-1 space-y-4 overflow-y-auto p-4">
 
           {/* Appearance Section */}
           <AccordionSection
@@ -381,7 +382,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 </p>
               </div>
 
-              <div className="space-y-3 rounded-2xl border border-[rgb(var(--color-border))]/24 bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/55 p-3">
+              <div className="rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/52 p-3 shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07)]">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <label className={fieldLabelClass}>Cor-semente</label>
@@ -755,12 +756,12 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children }) => (
-  <div className="overflow-hidden rounded-[22px] border border-[rgb(var(--color-border))]/18 bg-[linear-gradient(180deg,rgba(var(--theme-surface-elevated,var(--color-surface)),0.96),rgba(var(--theme-surface-readable,var(--color-surface)),0.9))] shadow-[0_14px_36px_rgba(15,23,42,0.1)]">
+  <div className="overflow-hidden rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/58 shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07),0_12px_26px_rgba(0,0,0,0.12)]">
     <button
       onClick={onToggle}
-      className="flex w-full items-center justify-between bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/74 p-3 transition-colors hover:bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/92"
+      className="flex w-full items-center justify-between p-3 transition-colors hover:bg-[rgb(var(--color-accent))]/10"
     >
-      <span className="flex items-center gap-2 text-sm font-medium text-[rgb(var(--color-text))]">
+      <span className="flex items-center gap-2 text-sm font-extrabold text-[rgb(var(--color-text))]">
         {title}
       </span>
       <div className="flex items-center gap-2">
@@ -776,7 +777,7 @@ const AccordionSection: React.FC<{
       </div>
     </button>
     {isOpen && (
-      <div className="animate-in slide-in-from-top-2 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/72 p-4 duration-200">
+      <div className="animate-in slide-in-from-top-2 bg-[rgb(var(--color-surface))]/18 p-4 duration-200">
         {children}
       </div>
     )}
