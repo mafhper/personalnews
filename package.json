@@ -153,7 +153,7 @@
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
-    "@tauri-apps/api": "2.10.1",
+    "@tauri-apps/api": "2.11.0",
     "@types/dompurify": "^3.2.0",
     "@xmldom/xmldom": "^0.9.10",
     "baseline-browser-mapping": "^2.10.17",
