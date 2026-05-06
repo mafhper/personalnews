@@ -3,15 +3,8 @@ import { Modal } from "./Modal";
 import { LazyImage } from "./LazyImage";
 import { useFavorites, favoriteToArticle, FavoriteArticle } from "../hooks/useFavorites";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
-import { Card } from "./ui/Card";
-import { Button } from "./ui/Button";
-import { Input } from "./ui/Input";
-import { Select } from "./ui/Select";
-import { Badge } from "./ui/Badge";
-import { IconButton } from "./ui/IconButton";
 import { ActionIcons, StatusIcons } from "./icons";
 import { sanitizeArticleDescription } from "../utils/sanitization";
-// import type { Article } from '../types';
 
 interface FavoritesModalProps {
   isOpen: boolean;
@@ -33,11 +26,11 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
   } = useFavorites();
 
   // Hook para notificações integradas
-  const { alertSuccess } = useNotificationReplacements();
+  const { alertSuccess, alertError } = useNotificationReplacements();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [selectedSource, setSelectedSource] = useState<string>("");
+  const [selectedSource, setSelectedSource] = useState<string>("All");
   const [sortBy, setSortBy] = useState<"recent" | "title" | "source">("recent");
   const [showConfirmClear, setShowConfirmClear] = useState(false);
 
@@ -135,10 +128,10 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
         const content = e.target?.result as string;
         const success = importFavorites(content);
         if (success) {
-          await alertSuccess("Favorites imported successfully!");
+          await alertSuccess("Favoritos importados.");
         } else {
-          await alertSuccess(
-            "Failed to import favorites. Please check the file format."
+          await alertError(
+            "Não foi possível importar os favoritos."
           );
         }
       };
@@ -147,7 +140,7 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
       // Reset the input
       event.target.value = "";
     },
-    [importFavorites, alertSuccess]
+    [importFavorites, alertSuccess, alertError]
   );
 
   const handleRemoveFavorite = useCallback(
@@ -167,46 +160,72 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
     const date = new Date(dateString);
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
     let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " years ago";
+    if (interval >= 1) return `há ${Math.floor(interval)} ano${Math.floor(interval) === 1 ? "" : "s"}`;
     interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " months ago";
+    if (interval >= 1) return `há ${Math.floor(interval)} mês${Math.floor(interval) === 1 ? "" : "es"}`;
     interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " days ago";
+    if (interval >= 1) return `há ${Math.floor(interval)} dia${Math.floor(interval) === 1 ? "" : "s"}`;
     interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " hours ago";
+    if (interval >= 1) return `há ${Math.floor(interval)} hora${Math.floor(interval) === 1 ? "" : "s"}`;
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " minutes ago";
-    return Math.floor(seconds) + " seconds ago";
+    if (interval >= 1) return `há ${Math.floor(interval)} minuto${Math.floor(interval) === 1 ? "" : "s"}`;
+    return "agora";
   };
 
+  const controlClass =
+    "h-10 rounded-xl border-0 bg-[rgb(var(--color-surfaceElevated))]/70 px-3 text-sm text-[rgb(var(--color-text))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.08)] outline-none transition focus:ring-2 focus:ring-[rgb(var(--color-accent))]/25";
+  const actionClass =
+    "inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[rgb(var(--color-surfaceElevated))]/70 px-3 text-sm font-bold text-[rgb(var(--color-text))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.08)] transition hover:bg-[rgb(var(--color-accent))]/10 disabled:cursor-not-allowed disabled:opacity-45";
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <Card
-        className="max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-        elevation="lg"
-      >
-        {/* Header */}
-        <div className="border-b border-gray-700 p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div className="flex items-center space-x-3">
-              <StatusIcons.Success className="w-6 h-6 text-red-500" />
-              <h2 className="text-2xl font-bold text-white">My Favorites</h2>
-              <Badge variant="primary">{favorites.length} articles</Badge>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="6xl"
+      title="Favoritos"
+      description={`${favorites.length} artigo${favorites.length === 1 ? "" : "s"} salvo${favorites.length === 1 ? "" : "s"}`}
+      tone="selection"
+      bodyClassName="p-0"
+      contentClassName="w-[min(96vw,76rem)]"
+    >
+      <div className="relative flex max-h-[calc(90vh-7rem)] flex-col overflow-hidden bg-[linear-gradient(180deg,rgb(var(--color-accent)/0.06),rgb(var(--color-background)/0))]">
+        <div className="border-b border-[rgb(var(--color-text))]/10 p-4 sm:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/62 px-4 py-3 shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07)]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--color-textSecondary))]">
+                  Salvos
+                </p>
+                <p className="mt-1 text-2xl font-black text-[rgb(var(--color-text))]">
+                  {favorites.length}
+                </p>
+              </div>
+              <div className="rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/52 px-4 py-3 shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07)]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--color-textSecondary))]">
+                  Fontes
+                </p>
+                <p className="mt-1 text-2xl font-black text-[rgb(var(--color-text))]">
+                  {Math.max(availableSources.length - 1, 0)}
+                </p>
+              </div>
+              <div className="rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/52 px-4 py-3 shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07)]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--color-textSecondary))]">
+                  Visíveis
+                </p>
+                <p className="mt-1 text-2xl font-black text-[rgb(var(--color-text))]">
+                  {filteredFavorites.length}
+                </p>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                onClick={handleExport}
-                variant="secondary"
-                size="sm"
-                icon={<ActionIcons.Export />}
-              >
-                Export
-              </Button>
-              <label className="cursor-pointer">
-                <span className="inline-flex items-center justify-center rounded-lg border font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-primary))] focus:ring-offset-2 bg-[rgb(var(--color-surface))] hover:bg-[rgb(var(--color-surface))]/80 text-[rgb(var(--color-text))] border-[rgb(var(--color-border))] h-8 px-3 text-sm gap-1.5">
-                  <ActionIcons.Import />
-                  Import
-                </span>
+
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={handleExport} className={actionClass}>
+                <ActionIcons.Export />
+                Exportar
+              </button>
+              <label className={actionClass}>
+                <ActionIcons.Import />
+                Importar
                 <input
                   type="file"
                   accept=".json"
@@ -214,185 +233,176 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
                   className="hidden"
                 />
               </label>
-              <Button
+              <button
+                type="button"
                 onClick={() => setShowConfirmClear(true)}
-                variant="danger"
-                size="sm"
-                icon={<ActionIcons.Delete />}
+                className={`${actionClass} bg-[rgb(var(--color-error))]/16 text-[rgb(var(--color-error))] hover:bg-[rgb(var(--color-error))]/22`}
                 disabled={favorites.length === 0}
               >
-                Clear All
-              </Button>
+                <ActionIcons.Delete />
+                Limpar
+              </button>
             </div>
           </div>
 
-          {/* Filters and Search */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Input
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <label className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-textSecondary))]">
+                <ActionIcons.Search />
+              </span>
+              <input
                 type="text"
-                placeholder="Search favorites..."
+                placeholder="Buscar favoritos"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className={`${controlClass} w-full pl-10`}
               />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[rgb(var(--color-textSecondary))]">
-                <ActionIcons.Search />
-              </div>
-            </div>
+            </label>
 
-            {/* Category Filter */}
-            <Select
+            <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              options={availableCategories.map((category) => ({
-                value: category,
-                label: category,
-              }))}
-            />
+              className={controlClass}
+            >
+              {availableCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category === "All" ? "Todas as categorias" : category}
+                </option>
+              ))}
+            </select>
 
-            {/* Source Filter */}
-            <Select
+            <select
               value={selectedSource}
               onChange={(e) => setSelectedSource(e.target.value)}
-              options={availableSources.map((source) => ({
-                value: source,
-                label: source,
-              }))}
-            />
+              className={controlClass}
+            >
+              {availableSources.map((source) => (
+                <option key={source} value={source}>
+                  {source === "All" ? "Todas as fontes" : source}
+                </option>
+              ))}
+            </select>
 
-            {/* Sort */}
-            <Select
+            <select
               value={sortBy}
               onChange={(e) =>
                 setSortBy(e.target.value as "recent" | "title" | "source")
               }
-              options={[
-                { value: "recent", label: "Most Recent" },
-                { value: "title", label: "Title A-Z" },
-                { value: "source", label: "Source A-Z" },
-              ]}
-            />
+              className={controlClass}
+            >
+              <option value="recent">Mais recentes</option>
+              <option value="title">Título A-Z</option>
+              <option value="source">Fonte A-Z</option>
+            </select>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="custom-scrollbar flex-1 overflow-y-auto p-4 sm:p-5">
           {filteredFavorites.length === 0 ? (
-            <div className="text-center py-16">
-              <StatusIcons.Success className="w-16 h-16 mx-auto text-gray-600 mb-6 text-red-500" />
-              <h3 className="text-xl font-semibold text-[rgb(var(--color-textSecondary))] mb-3">
+            <div className="flex min-h-[18rem] flex-col items-center justify-center rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/48 p-8 text-center shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07)]">
+              <StatusIcons.Success className="mb-5 h-12 w-12 text-[rgb(var(--color-accent))]" />
+              <h3 className="text-lg font-black text-[rgb(var(--color-text))]">
                 {favorites.length === 0
-                  ? "No favorites yet"
-                  : "No matching favorites"}
+                  ? "Nenhum favorito ainda"
+                  : "Nenhum favorito encontrado"}
               </h3>
-              <p className="text-[rgb(var(--color-textSecondary))] max-w-md mx-auto">
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-[rgb(var(--color-textSecondary))]">
                 {favorites.length === 0
-                  ? "Start favoriting articles to see them here. Click the heart icon on any article to add it to your favorites."
-                  : "Try adjusting your search terms or filters to find what you're looking for."}
+                  ? "Os artigos salvos ficam reunidos aqui."
+                  : "Ajuste a busca ou os filtros para ver outros artigos salvos."}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-3">
               {filteredFavorites.map((favorite) => (
-                <Card
+                <article
                   key={favorite.id}
-                  className="hover:border-gray-600 transition-all duration-200 hover:shadow-lg"
-                  elevation="sm"
+                  className="group rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/58 p-3 shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07),0_10px_24px_rgba(0,0,0,0.1)] transition hover:bg-[rgb(var(--color-surfaceElevated))]/78 hover:shadow-[inset_0_0_0_1px_rgb(var(--color-accent)/0.2),0_14px_28px_rgba(0,0,0,0.14)]"
                 >
-                  <div className="flex items-start space-x-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                     <LazyImage
                       src={
                         favorite.imageUrl ||
-                        `https://picsum.photos/seed/${favorite.link}/80/80`
+                        `https://picsum.photos/seed/${favorite.link}/160/120`
                       }
-                      alt={`Thumbnail for ${favorite.title}`}
-                      className="w-20 h-20 object-cover rounded-lg flex-shrink-0 shadow-sm"
+                      alt={`Imagem de ${favorite.title}`}
+                      className="h-36 w-full flex-shrink-0 rounded-xl object-cover shadow-sm sm:h-24 sm:w-32"
                     />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex gap-3">
+                        <div className="min-w-0 flex-1">
                           <a
                             href={favorite.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-white font-semibold hover:text-blue-400 transition-colors line-clamp-2 text-lg leading-tight"
+                            className="line-clamp-2 text-base font-black leading-tight text-[rgb(var(--color-text))] transition group-hover:text-[rgb(var(--color-accent))]"
                           >
                             {favorite.title}
                           </a>
-                          <div className="flex flex-wrap items-center gap-3 mt-3 text-sm min-w-0">
-                            <Badge variant="secondary" className="text-xs truncate max-w-[150px] sm:max-w-[200px]">
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))]">
+                            <span className="max-w-[14rem] truncate rounded-full bg-[rgb(var(--color-accent))]/10 px-2.5 py-1 font-bold text-[rgb(var(--color-text))]">
                               {favorite.author || favorite.sourceTitle}
-                            </Badge>
-                            <span className="text-[rgb(var(--color-textSecondary))]">
-                              {timeSince(favorite.pubDate)}
                             </span>
-                            <span className="text-[rgb(var(--color-textSecondary))]">
-                              Favorited {timeSince(favorite.favoritedAt)}
-                            </span>
+                            <span>{timeSince(favorite.pubDate)}</span>
+                            <span>Salvo {timeSince(favorite.favoritedAt)}</span>
                           </div>
-                          {favorite.description && (
-                            <p className="text-[rgb(var(--color-textSecondary))] text-sm mt-3 line-clamp-2 leading-relaxed">
-                              {sanitizeArticleDescription(favorite.description)}
-                            </p>
-                          )}
                         </div>
-                        <IconButton
+                        <button
+                          type="button"
                           onClick={() => handleRemoveFavorite(favorite)}
-                          variant="ghost"
-                          size="sm"
-                          icon={
-                            <StatusIcons.Success className="text-red-400" />
-                          }
-                          className="ml-4 text-red-400 hover:text-red-300 hover:bg-red-900/20 flex-shrink-0"
-                          title="Remove from favorites"
-                        />
+                          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--color-error))]/10 text-[rgb(var(--color-error))] transition hover:bg-[rgb(var(--color-error))]/20"
+                          title="Remover dos favoritos"
+                          aria-label="Remover dos favoritos"
+                        >
+                          <StatusIcons.Success className="h-4 w-4" />
+                        </button>
                       </div>
+                      {favorite.description && (
+                        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[rgb(var(--color-textSecondary))]">
+                          {sanitizeArticleDescription(favorite.description)}
+                        </p>
+                      )}
                     </div>
                   </div>
-                </Card>
+                </article>
               ))}
             </div>
           )}
         </div>
 
-        {/* Confirm Clear Dialog */}
         {showConfirmClear && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-            <Card className="max-w-md w-full mx-4" elevation="lg">
-              <div className="flex items-center mb-4">
-                <StatusIcons.Warning className="w-6 h-6 text-yellow-500 mr-3" />
-                <h3 className="text-lg font-semibold text-white">
-                  Clear All Favorites?
-                </h3>
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/62 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-[1.05rem] bg-[rgb(var(--color-surface))] p-5 text-[rgb(var(--color-text))] shadow-[0_24px_60px_rgba(0,0,0,0.34),inset_0_0_0_1px_rgb(var(--color-text)/0.08)]">
+              <div className="mb-4 flex items-center gap-3">
+                <StatusIcons.Warning className="h-6 w-6 text-[rgb(var(--color-warning))]" />
+                <h3 className="text-lg font-black">Limpar favoritos?</h3>
               </div>
-              <p className="text-[rgb(var(--color-textSecondary))] mb-6 leading-relaxed">
-                This will permanently remove all{" "}
-                <strong>{favorites.length}</strong> favorites. This action
-                cannot be undone.
+              <p className="mb-6 leading-relaxed text-[rgb(var(--color-textSecondary))]">
+                Isso remove permanentemente <strong>{favorites.length}</strong>{" "}
+                artigo{favorites.length === 1 ? "" : "s"} salvo
+                {favorites.length === 1 ? "" : "s"}.
               </p>
-              <div className="flex gap-3">
-                <Button
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
                   onClick={handleClearAll}
-                  variant="danger"
-                  className="flex-1"
-                  icon={<ActionIcons.Delete />}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[rgb(var(--color-error))] px-4 text-sm font-black text-white transition hover:brightness-110"
                 >
-                  Clear All
-                </Button>
-                <Button
+                  <ActionIcons.Delete />
+                  Limpar
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowConfirmClear(false)}
-                  variant="secondary"
-                  className="flex-1"
+                  className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-[rgb(var(--color-surfaceElevated))]/70 px-4 text-sm font-black text-[rgb(var(--color-text))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.08)] transition hover:bg-[rgb(var(--color-accent))]/10"
                 >
-                  Cancel
-                </Button>
+                  Cancelar
+                </button>
               </div>
-            </Card>
+            </div>
           </div>
         )}
-      </Card>
+      </div>
     </Modal>
   );
 };
