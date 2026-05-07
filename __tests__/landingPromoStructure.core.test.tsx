@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, act } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LandingPage } from "../components/landing/LandingPage";
 
@@ -7,43 +7,61 @@ vi.mock("../hooks/useLanguage", () => ({
   useLanguage: () => ({ language: "pt-BR" }),
 }));
 
-const mockFetch = vi.fn();
+const scrollIntoViewMock = vi.fn();
+const scrollToMock = vi.fn();
 
 describe("LandingPage promo structure", () => {
   beforeEach(() => {
     window.location.hash = "#home";
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => [
-        {
-          sha: "abc123",
-          html_url: "https://github.com/mafhper/personalnews/commit/abc123",
-          commit: {
-            message: "Refine promo shell",
-            author: {
-              name: "mafhper",
-              date: "2026-03-12T18:00:00Z",
-            },
-          },
-        },
-      ],
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    window.localStorage.removeItem("appearance-background");
+    scrollIntoViewMock.mockClear();
+    scrollToMock.mockClear();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+    window.scrollTo = scrollToMock;
   });
 
-  it("shows the feed CTA in both hero and header on home", async () => {
+  it("renders the promo as one continuous editorial landing", () => {
     render(<LandingPage onOpenFeed={vi.fn()} />);
-    await act(async () => {
-      await Promise.resolve();
-    });
 
-    expect(screen.getByTestId("promo-page-home")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /abrir feed/i })).toHaveLength(2);
+    expect(screen.getByTestId("promo-section-home")).toBeInTheDocument();
+    expect(screen.getByTestId("promo-section-experience")).toBeInTheDocument();
+    expect(screen.getByTestId("promo-section-project")).toBeInTheDocument();
+    expect(screen.getByTestId("promo-section-faq")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Notícias no seu ritmo.",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the feed CTA functional in both hero and header", () => {
+    const onOpenFeed = vi.fn();
+    render(<LandingPage onOpenFeed={onOpenFeed} />);
+
+    const feedButtons = screen.getAllByRole("button", { name: /abrir feed/i });
+    expect(feedButtons).toHaveLength(2);
+
+    fireEvent.click(feedButtons[0]);
+    fireEvent.click(feedButtons[1]);
+
+    expect(onOpenFeed).toHaveBeenCalledTimes(2);
     expect(screen.getAllByText("Personal News").length).toBeGreaterThan(0);
     expect(document.body.textContent).not.toContain("PersonalNews");
   });
 
-  it("switches promo pages with landing hashes while preserving landing view", async () => {
+  it("uses the liquid WebGL hero backdrop with a product screenshot signal", () => {
+    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
+    const liquidBackdrop = container.querySelector(".promo-liquid-mesh");
+    const liquidCanvas = container.querySelector(".promo-liquid-mesh__canvas");
+    const heroImage = container.querySelector(".promo-product-frame img");
+
+    expect(liquidBackdrop).toBeInTheDocument();
+    expect(liquidCanvas).toBeInTheDocument();
+    expect(liquidCanvas?.getAttribute("aria-hidden")).toBeNull();
+    expect(heroImage?.getAttribute("src")).toContain("assets/screen.png");
+  });
+
+  it("navigates hashes to sections without unmounting the landing", async () => {
     render(<LandingPage onOpenFeed={vi.fn()} />);
 
     await act(async () => {
@@ -51,55 +69,25 @@ describe("LandingPage promo structure", () => {
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
 
-    expect(screen.getByTestId("promo-page-project")).toBeInTheDocument();
-    expect(screen.getByText("Desenvolvimento visível, sem esconder o que mudou.")).toBeInTheDocument();
+    expect(screen.getByTestId("promo-section-home")).toBeInTheDocument();
+    expect(screen.getByTestId("promo-section-project")).toBeInTheDocument();
+    expect(scrollToMock).toHaveBeenCalled();
   });
 
-  it("keeps project sections in the expected order", async () => {
+  it("updates the hash when header navigation is used", () => {
     render(<LandingPage onOpenFeed={vi.fn()} />);
 
-    await act(async () => {
-      window.location.hash = "#project";
-      window.dispatchEvent(new HashChangeEvent("hashchange"));
-    });
+    fireEvent.click(screen.getAllByRole("link", { name: "Experiência" })[0]);
 
-    const stackHeading = screen.getByText(
-      "React, Vite e Bun sustentam uma base leve.",
-    );
-    const commitsHeading = screen.getByText(
-      "Desenvolvimento visível, sem esconder o que mudou.",
-    );
-    const aboutHeading = screen.getByText(
-      "mafhper desenvolve o Personal News.",
-    );
-
-    expect(
-      stackHeading.compareDocumentPosition(commitsHeading) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      commitsHeading.compareDocumentPosition(aboutHeading) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(window.location.hash).toBe("#experience");
+    expect(screen.getByTestId("promo-section-experience")).toBeInTheDocument();
   });
 
-  it("renders the faq page with controlled accordion items", async () => {
+  it("renders the faq with native accessible disclosure items", () => {
     render(<LandingPage onOpenFeed={vi.fn()} />);
 
-    await act(async () => {
-      window.location.hash = "#faq";
-      window.dispatchEvent(new HashChangeEvent("hashchange"));
-    });
-
-    expect(screen.getByTestId("promo-page-faq")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Tire suas dúvidas antes de começar.",
-      ),
-    ).toBeInTheDocument();
-
-    const triggerButtons = screen.getAllByRole("button", { name: /\?$/i });
-    expect(triggerButtons.length).toBeGreaterThan(0);
-    expect(triggerButtons[0].getAttribute("aria-expanded")).toBe("false");
+    const firstQuestion = screen.getByText("Qual versão devo testar primeiro?");
+    expect(firstQuestion.tagName.toLowerCase()).toBe("summary");
+    expect(firstQuestion.closest("details")).toBeInTheDocument();
   });
 });

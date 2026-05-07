@@ -1,6 +1,8 @@
 import type { Language } from "../types";
 import {
   APP_BRAND_NAME,
+  DEVELOPER_GITHUB_URL,
+  DEVELOPER_HANDLE,
   MARK_LEE_URL,
   PERSONAL_NEWS_RELEASES_URL,
   PERSONAL_NEWS_REPO_URL,
@@ -25,51 +27,57 @@ export const PROMO_PAGE_ORDER: PromoPageId[] = [
   "faq",
 ];
 
-type PromoTag = {
-  id: string;
-  label: string;
-};
-
 type PromoLink = {
   href: string;
   label: string;
 };
 
-type FooterColumn = {
-  id: string;
-  title: string;
-  links: PromoLink[];
+type PromoNav = {
+  brandLabel: string;
+  pages: Record<PromoPageId, string>;
+  openFeed: string;
+  repo: string;
 };
 
-type VersionCard = {
+type PromoStat = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+type PromoFeature = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  tag: string;
+};
+
+type PromoMode = {
+  id: string;
+  label: string;
+  title: string;
+  description: string;
+};
+
+type PromoWorkflowStep = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+type PromoVersion = {
   id: string;
   label: string;
   title: string;
   description: string;
   href: string;
   linkLabel: string;
-  icon: "repo" | "web" | "desktop";
+  featured?: boolean;
+  platformLinks?: PromoLink[];
 };
 
-type ExperienceFamily = {
-  id: string;
-  label: string;
-  title: string;
-  description: string;
-  variant: "editorial" | "grid" | "minimal" | "immersive" | "split" | "compact" | "split-list";
-};
-
-type ExperiencePoint = {
-  id: string;
-  label: string;
-};
-
-type StackToken = {
-  id: string;
-  label: string;
-};
-
-type ProjectHighlight = {
+type PromoProject = {
   id: string;
   title: string;
   description: string;
@@ -82,88 +90,67 @@ type FaqItem = {
   answer: string;
 };
 
-type FaqGroup = {
+type FooterColumn = {
   id: string;
   title: string;
-  items: FaqItem[];
+  links: PromoLink[];
 };
 
 type PromoContent = {
-  nav: {
-    brandLabel: string;
-    pages: Record<PromoPageId, string>;
-    openFeed: string;
-    repo: string;
-  };
-  home: {
+  nav: PromoNav;
+  hero: {
     eyebrow: string;
     title: string;
     lead: string;
-    subtitle: string;
-    tags: PromoTag[];
-    ctaLabel: string;
+    primaryCta: string;
+    secondaryCta: string;
     imageAlt: string;
-    purposeEyebrow: string;
-    purposeTitle: string;
-    purposeBody: string;
-    purposeSupport: string;
-    availabilityEyebrow: string;
-    availabilityTitle: string;
-    availabilityBody: string;
-    versions: VersionCard[];
+    stats: PromoStat[];
   };
-  experience: {
+  proof: {
     eyebrow: string;
     title: string;
-    subtitle: string;
-    families: ExperienceFamily[];
-    familiesCta: string;
-    familiesCtaLabel: string;
-    familiesOthers: string;
-    tuningEyebrow: string;
-    tuningTitle: string;
-    tuningBody: string;
-    tuningPoints: ExperiencePoint[];
-    onboardingEyebrow: string;
-    onboardingTitle: string;
-    onboardingBody: string;
-    onboardingSupport: string;
+    body: string;
+    features: PromoFeature[];
+  };
+  readingModes: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    layoutTags: string[];
+    modes: PromoMode[];
+    ctaLabel: string;
+  };
+  workflow: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    steps: PromoWorkflowStep[];
+    stackLabel: string;
+    stack: string[];
+  };
+  versions: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    items: PromoVersion[];
   };
   project: {
     eyebrow: string;
     title: string;
-    subtitle: string;
-    technologyEyebrow: string;
-    technologyTitle: string;
-    technologyBody: string;
-    stackTokens: StackToken[];
-    qualityEyebrow: string;
-    qualityTitle: string;
-    qualityBody: string;
-    qualityPoints: ExperiencePoint[];
-    commitsEyebrow: string;
-    commitsTitle: string;
-    commitsBody: string;
-    commitsSyncing: string;
-    commitsFallback: string;
-    commitsLive: string;
-    commitLinkLabel: string;
-    projectsEyebrow: string;
+    body: string;
+    authorName: string;
+    authorMeta: string;
+    authorLinkLabel: string;
     projectsTitle: string;
-    projectsBody: string;
-    projects: ProjectHighlight[];
-    aboutEyebrow: string;
-    aboutTitle: string;
-    aboutBody: string;
-    aboutSupport: string;
-    aboutMeta: string;
-    aboutLinkLabel: string;
+    allProjectsLabel: string;
+    projects: PromoProject[];
   };
   faq: {
     eyebrow: string;
     title: string;
-    subtitle: string;
-    groups: FaqGroup[];
+    body: string;
+    items: FaqItem[];
   };
   footer: {
     blurb: string;
@@ -184,284 +171,266 @@ const ptBR: PromoContent = {
     openFeed: "Abrir feed",
     repo: "GitHub",
   },
-  home: {
-    eyebrow: "Leitura focada e ambiente controlado",
-    title: "Seu feed, suas regras. Uma leitura sem distrações.",
-    lead: "Organize fontes, ajuste o layout e o tema, e leia apenas o que importa.",
-    subtitle:
-      "Disponível como app local, versão web ou aplicativo desktop completo.",
-    tags: [
-      { id: "open-source", label: "Open source" },
-      { id: "wcag", label: "Contraste premium" },
-      { id: "responsive", label: "Adapta do celular ao desktop" },
-    ],
-    ctaLabel: "Abrir feed",
+  hero: {
+    eyebrow: "Sem anúncios. Sem rastreadores. Só suas fontes.",
+    title: "Notícias no seu ritmo.",
+    lead:
+      "Organize suas fontes e leia em uma página rápida, bonita e sem distrações.",
+    primaryCta: "Abrir feed",
+    secondaryCta: "Ver experiência",
     imageAlt:
-      "Interface do Personal News mostrando cards de artigos organizados em um layout visual moderno e limpo.",
-    purposeEyebrow: "Propósito",
-    purposeTitle: "Cure suas fontes, refine a tipografia e encontre seu ritmo.",
-    purposeBody:
-      "O feed de notícias tradicional é barulhento. O Personal News transforma a sua leitura diária em uma página clara, organizada e visualmente calma.",
-    purposeSupport:
-      "A hierarquia é mantida mesmo quando o volume de notícias cresce.",
-    availabilityEyebrow: "Disponibilidade",
-    availabilityTitle: "Uma versão para cada necessidade sua.",
-    availabilityBody:
-      "Uma base flexível: explore pela web, edite pelo repositório ou instale o app desktop para a experiência mais imersiva e completa.",
-    versions: [
+      "Interface do Personal News com cards de notícias em um layout editorial escuro.",
+    stats: [
+      { id: "rss", value: "RSS", label: "fontes escolhidas por você" },
+      { id: "layouts", value: "Layouts", label: "para cada ritmo de leitura" },
+      { id: "stack", value: "Sem conta", label: "controle desde o começo" },
+    ],
+  },
+  proof: {
+    eyebrow: "Fontes suas, leitura limpa",
+    title: "Um leitor pessoal para a sua rotina.",
+    body:
+      "O Personal News ajuda você a acompanhar muita coisa sem transformar tudo em excesso.",
+    features: [
       {
-        id: "repo",
-        label: "Local pelo repositório",
-        title: "Bom para testar e ajustar.",
+        id: "curation",
+        eyebrow: "01 / Curadoria",
+        title: "Escolha suas fontes.",
         description:
-          "Ideal para configurar fontes e validar mudanças.",
-        href: PERSONAL_NEWS_REPO_URL,
-        linkLabel: "Abrir repositório",
-        icon: "repo",
+          "Monte uma coleção com os sites que importam e deixe o resto de fora.",
+        tag: "fontes próprias",
       },
       {
-        id: "web",
-        label: "Online no GitHub Pages",
-        title: "Rápido para abrir no navegador.",
+        id: "density",
+        eyebrow: "02 / Ritmo",
+        title: "Mude o jeito de ler.",
         description:
-          "Útil para acessar e mostrar o projeto.",
-        href: PERSONAL_NEWS_WEB_URL,
-        linkLabel: "Abrir versão online",
-        icon: "web",
+          "Destaque, grade, lista ou compacto: cada layout muda a cadência da página.",
+        tag: "layouts vivos",
       },
       {
-        id: "desktop",
-        label: "Aplicativo desktop",
-        title: "A versão mais completa para uso diário.",
+        id: "routine",
+        eyebrow: "03 / Rotina",
+        title: "Abra e comece.",
         description:
-          "É onde a experiência fica mais estável para leitura e uso contínuo.",
-        href: PERSONAL_NEWS_RELEASES_URL,
-        linkLabel: "Ver releases",
-        icon: "desktop",
+          "Uma homepage leve para consultar todos os dias, sem cadastro e sem cerimônia.",
+        tag: "uso diário",
       },
     ],
   },
-  experience: {
-    eyebrow: "Experiência visual",
-    title: "Layouts flexíveis desenhados para não cansar a vista.",
-    subtitle:
-      "A interface adapta-se à densidade da sua leitura. Escolha o layout que dita o ritmo.",
-    families: [
+  readingModes: {
+    eyebrow: "Experiência",
+    title: "Leia do jeito que o dia pede.",
+    body:
+      "Às vezes você quer manchetes grandes. Às vezes, só uma lista limpa. A interface acompanha esse momento.",
+    layoutTags: [
+      "Editorial",
+      "Galeria",
+      "Minimal",
+      "Bento",
+      "Jornal",
+      "Timeline",
+      "Foco",
+    ],
+    modes: [
       {
         id: "editorial",
         label: "Editorial",
-        title: "Destaque e peso visual para a notícia principal.",
+        title: "Dê peso ao que importa.",
         description:
-          "Ideal para acompanhar poucas fontes com atenção aos grandes temas.",
-        variant: "editorial",
+          "A notícia principal ganha espaço, hierarquia e contexto para abrir a leitura.",
       },
       {
         id: "gallery",
-        label: "Gallery",
-        title: "Equilíbrio entre múltiplos artigos no mesmo campo de visão.",
+        label: "Galeria",
+        title: "Mais contexto de uma vez.",
         description:
-          "Um grid harmonioso, sem abrir mão do respiro entre os cards.",
-        variant: "grid",
+          "Bom para comparar fontes e assuntos sem perder o respiro.",
       },
       {
         id: "minimal",
         label: "Minimal",
-        title: "Foque puramente no texto e na fonte da notícia.",
+        title: "Só o essencial.",
         description:
-          "Sem imagens. Uma lista text-first extremamente rápida.",
-        variant: "minimal",
-      },
-      {
-        id: "split",
-        label: "Split",
-        title: "Coluna principal e lista lateral sempre visíveis.",
-        description:
-          "Um destaque à esquerda e uma fila de artigos à direita, para leitura densa com hierarquia.",
-        variant: "split",
-      },
-      {
-        id: "compact",
-        label: "Compact",
-        title: "Densidade máxima sem perder legibilidade.",
-        description:
-          "Cards enxutos em grade densa, para quem acompanha muitas fontes ao mesmo tempo.",
-        variant: "compact",
+          "Títulos, fontes e velocidade quando você quer varrer o feed.",
       },
     ],
-    familiesCta: "E ainda tem mais. Abra o app para explorar o Imersivo, o Split-List e outros.",
-    familiesCtaLabel: "Abrir feed e testar layouts",
-    familiesOthers: "Outros disponíveis no app: Imagem, Split-List, Article-View.",
-    tuningEyebrow: "Harmonia visual",
-    tuningTitle: "Controle absoluto sobre tipografia e densidade.",
-    tuningBody:
-      "Tema, espaçamento e o comportamento do cabeçalho andam juntos para compor um ambiente premium de leitura.",
-    tuningPoints: [
-      { id: "contrast", label: "Temas claro e escuro finamente ajustados para conforto ocular." },
-      { id: "header", label: "Cabeçalho minimalista que se recolhe ao focar na leitura." },
-      { id: "meta", label: "Uma régua visual estrita alinhando tags, fontes e datas." },
-      { id: "screens", label: "Responsividade fluida desde pequenos celulares até ultra-wides." },
+    ctaLabel: "Testar layouts no feed",
+  },
+  workflow: {
+    eyebrow: "Seu espaço",
+    title: "Feito para ficar sob seu controle.",
+    body:
+      "A experiência é simples na superfície e transparente por baixo: aberta, local e fácil de adaptar.",
+    steps: [
+      {
+        id: "collect",
+        title: "Escolha",
+        description: "Adicione as fontes que você realmente quer acompanhar.",
+      },
+      {
+        id: "shape",
+        title: "Organize",
+        description: "Separe por temas, ajuste o visual e encontre seu ritmo.",
+      },
+      {
+        id: "read",
+        title: "Leia",
+        description: "Abra a página e vá direto ao que importa.",
+      },
+      {
+        id: "keep",
+        title: "Leve junto",
+        description: "Use na web, rode localmente ou instale no desktop.",
+      },
     ],
-    onboardingEyebrow: "Cuidado e transparência",
-    onboardingTitle: "Audite seus feeds antes de dar o primeiro passo.",
-    onboardingBody:
-      "Nenhuma surpresa na importação. O fluxo de onboarding apresenta cada fonte listada.",
-    onboardingSupport:
-      "Assim a importação fica previsível.",
+    stackLabel: "Open source",
+    stack: ["React + TypeScript", "Vite", "Bun", "Tauri", "Quality Core"],
+  },
+  versions: {
+    eyebrow: "Versões",
+    title: "Comece fácil. Fique com a versão definitiva.",
+    body:
+      "A web é o caminho mais rápido para testar. O desktop é a experiência principal para usar todos os dias.",
+    items: [
+      {
+        id: "web",
+        label: "Web",
+        title: "Abrir no navegador.",
+        description:
+          "A forma mais rápida de sentir a experiência.",
+        href: PERSONAL_NEWS_WEB_URL,
+        linkLabel: "Abrir versão web",
+      },
+      {
+        id: "desktop",
+        label: "Desktop",
+        title: "Instalar a versão definitiva.",
+        description:
+          "Para transformar o feed em uma ferramenta diária, mais estável e completa.",
+        href: PERSONAL_NEWS_RELEASES_URL,
+        linkLabel: "Ver todos os releases",
+        featured: true,
+        platformLinks: [
+          {
+            label: "Windows",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_x64-setup.exe",
+          },
+          {
+            label: "macOS",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_aarch64.dmg",
+          },
+          {
+            label: "Linux",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_amd64.deb",
+          },
+        ],
+      },
+      {
+        id: "repo",
+        label: "Repositório",
+        title: "Rodar e adaptar localmente.",
+        description:
+          "Para ajustar fontes, temas e comportamento com calma.",
+        href: PERSONAL_NEWS_REPO_URL,
+        linkLabel: "Ver código",
+      },
+    ],
   },
   project: {
-    eyebrow: "Projeto open source",
-    title: "Um projeto aberto para testar leitura com critério.",
-    subtitle:
-      "Tecnologia, qualidade, commits e autoria em um só lugar.",
-    technologyEyebrow: "Tecnologia",
-    technologyTitle: "React, Vite e Bun sustentam uma base leve.",
-    technologyBody:
-      "A base ajuda a testar feeds, temas e leitura sem perder estabilidade.",
-    stackTokens: [
-      { id: "react", label: "React + TypeScript" },
-      { id: "vite", label: "Vite" },
-      { id: "bun", label: "Bun" },
-      { id: "quality", label: "Quality Core" },
-    ],
-    qualityEyebrow: "Qualidade esperada",
-    qualityTitle: "Qualidade esperada, sem improviso.",
-    qualityBody:
-      "Cada mudança passa por contraste, tipografia, grid e comportamento.",
-    qualityPoints: [
-      { id: "type", label: "Tipografia com hierarquia clara." },
-      { id: "layout", label: "Grid estável do hero à paginação." },
-      { id: "states", label: "Estados previsíveis e fallbacks claros." },
-      { id: "wcag", label: "Contraste revisto em claro e escuro." },
-    ],
-    commitsEyebrow: "Últimos commits",
-    commitsTitle: "Desenvolvimento visível, sem esconder o que mudou.",
-    commitsBody: "O histórico recente mostra a evolução real do projeto.",
-    commitsSyncing: "Sincronizando com o GitHub.",
-    commitsFallback: "Mostrando um recorte recente quando o GitHub atrasa.",
-    commitsLive: "Atualizado diretamente do GitHub.",
-    commitLinkLabel: "Ver no GitHub",
-    projectsEyebrow: "Meus projetos",
-    projectsTitle: "Outros projetos que desenvolvo",
-    projectsBody:
-      "O Personal News faz parte de um conjunto de projetos autorais onde busco alinhar interface e utilidade.",
+    eyebrow: "Projeto aberto",
+    title: "Feito para uso real. Aberto para evoluir.",
+    body:
+      "Personal News nasceu como ferramenta pessoal e segue aberto para quem quer ler, adaptar ou aprender com o projeto.",
+    authorName: DEVELOPER_HANDLE,
+    authorMeta: "GitHub, portfólio e projetos autorais",
+    authorLinkLabel: "Visitar GitHub",
+    projectsTitle: "Projetos relacionados",
+    allProjectsLabel: "Ver todos os projetos no GitHub",
     projects: [
       {
         id: "mark-lee",
         title: "Mark-Lee",
         description:
-          "Um editor desktop para escrita focada, com ritmo visual calmo e mais espaço para o texto.",
+          "Editor desktop para escrita focada, com uma cadência visual mais calma.",
         href: MARK_LEE_URL,
-        linkLabel: "Conhecer o Mark-Lee",
+        linkLabel: "Conhecer Mark-Lee",
       },
       {
         id: "spread",
         title: "Spread",
         description:
-          "Um estúdio visual para transformar links e metadata em composições mais autorais e compartilháveis.",
+          "Estúdio visual para transformar links e metadados em composições compartilháveis.",
         href: SPREAD_PROJECTS_URL,
-        linkLabel: "Ver o Spread",
+        linkLabel: "Ver Spread",
+      },
+      {
+        id: "imaginizim",
+        title: "Imaginizim",
+        description:
+          "Compressor de imagens para reduzir peso sem complicar o fluxo de publicação.",
+        href: "https://github.com/mafhper/imaginizim",
+        linkLabel: "Ver Imaginizim",
       },
     ],
-    aboutEyebrow: "Sobre mim",
-    aboutTitle: "mafhper desenvolve o Personal News.",
-    aboutBody:
-      "Sou um profissional multidisciplinar com experiência em desenvolvimento web, análise de dados e sistemas embarcados. Meu foco é construir soluções tecnológicas eficientes, bem estruturadas e open-source.",
-    aboutSupport:
-      "Acredito numa web livre, rápida e acessível. O Personal News compartilha dessa filosofia junto com outras ferramentas visuais que desenvolvo.",
-    aboutMeta: "GitHub, portfolios e projetos",
-    aboutLinkLabel: "Visitar meu perfil no GitHub",
   },
   faq: {
-    eyebrow: "Perguntas frequentes",
-    title: "Tire suas dúvidas antes de começar.",
-    subtitle:
-      "O essencial sobre versões, ajustes e uso do dia a dia.",
-    groups: [
+    eyebrow: "FAQ",
+    title: "O essencial antes de abrir o feed.",
+    body:
+      "Respostas curtas, sem rodeio.",
+    items: [
       {
-        id: "getting-started",
-        title: "Para começar",
-        items: [
-          {
-            question: "Qual a melhor versão para começar?",
-            answer:
-              "Se quer apenas conhecer, abra a versão online pelo navegador. Para uso regular, o app desktop oferece mais estabilidade. Se quer controle total sobre fontes e temas, clone o repositório e rode localmente.",
-          },
-          {
-            question: "Preciso instalar algo para usar?",
-            answer:
-              "Na versão web, não. Na versão local, basta clonar o repositório, instalar dependências e rodar o servidor. O app desktop tem instaladores prontos na aba de releases do GitHub.",
-          },
-          {
-            question: "Posso importar meus feeds de outro leitor?",
-            answer:
-              "Sim. O onboarding mostra cada lista com seus respectivos sites antes de confirmar a importação, para que você revise antes de adicionar.",
-          },
-        ],
+        question: "Qual versão devo testar primeiro?",
+        answer:
+          "Comece pela versão web. Se gostar da ideia, experimente o desktop ou rode o projeto localmente.",
       },
       {
-        id: "customization",
-        title: "Personalização",
-        items: [
-          {
-            question: "O que dá para personalizar?",
-            answer:
-              "Layout do feed, tema claro ou escuro, densidade de cards, categorias, cabeçalho e comportamento geral da interface. Tudo fica salvo localmente.",
-          },
-          {
-            question: "Quantos layouts o feed oferece?",
-            answer:
-              "Quatro famílias de layout: Editorial (com destaque principal), Gallery (grid equilibrado), Minimal (título e fonte sem ornamento) e Imagem (cards visuais com contraste preservado).",
-          },
-        ],
+        question: "Preciso criar conta?",
+        answer:
+          "Não. Você pode experimentar o projeto sem cadastro.",
       },
       {
-        id: "network",
-        title: "Feeds e rede",
-        items: [
-          {
-            question: "Por que alguns feeds demoram ou falham?",
-            answer:
-              "Fontes externas nem sempre respondem bem. Algumas bloqueiam requisições diretas do navegador (CORS), outras mudam a estrutura do RSS ou saem do ar temporariamente. O proxy pode ajudar nesses casos.",
-          },
-          {
-            question: "A versão web funciona igual ao app desktop?",
-            answer:
-              "Quase sempre, mas não necessariamente. A versão web depende das regras do navegador e da disponibilidade das fontes. O app desktop tende a ser mais estável e completo para uso contínuo.",
-          },
-        ],
+        question: "Posso importar meus feeds?",
+        answer:
+          "Sim. Você revisa as fontes antes de confirmar a importação.",
+      },
+      {
+        question: "A versão web funciona igual ao desktop?",
+        answer:
+          "Não exatamente. A web é ótima para conhecer; o desktop é melhor para uso contínuo.",
       },
     ],
   },
   footer: {
     blurb:
-      "Projeto open source para leitura pessoal e experimentação editorial.",
-    copyright: `\u00A9 2026 \u00B7 ${APP_BRAND_NAME} \u00B7 MIT License`,
+      "Projeto open source para leitura pessoal, curadoria de fontes e experimentação editorial.",
+    copyright: `© 2026 · ${APP_BRAND_NAME} · MIT License`,
     columns: [
       {
         id: "product",
         title: "Produto",
         links: [
-          { href: "#home", label: "Início" },
+          { href: "#home", label: "Inicio" },
           { href: "#experience", label: "Experiência" },
           { href: "#project", label: "Projeto" },
           { href: "#faq", label: "FAQ" },
         ],
       },
       {
-        id: "community",
-        title: "Comunidade",
+        id: "code",
+        title: "Código",
         links: [
           { href: PERSONAL_NEWS_REPO_URL, label: "GitHub" },
+          { href: PERSONAL_NEWS_RELEASES_URL, label: "Releases" },
           { href: `${PERSONAL_NEWS_REPO_URL}/issues`, label: "Issues" },
-          { href: `${PERSONAL_NEWS_REPO_URL}/blob/main/CONTRIBUTING.md`, label: "Contribuir" },
         ],
       },
       {
-        id: "access",
-        title: "Acesso",
+        id: "author",
+        title: "Autor",
         links: [
-          { href: PERSONAL_NEWS_WEB_URL, label: "Versão web" },
-          { href: PERSONAL_NEWS_RELEASES_URL, label: "Desktop" },
+          { href: DEVELOPER_GITHUB_URL, label: "Perfil GitHub" },
           { href: PERSONAL_SITE_PROJECTS_URL, label: "Mais projetos" },
         ],
       },
@@ -481,173 +450,188 @@ const enUS: PromoContent = {
     openFeed: "Open feed",
     repo: "GitHub",
   },
-  home: {
-    eyebrow: "Focused reading, controlled environment",
-    title: "Your feed, your rules. A distraction-free reading space.",
-    lead: "Organize sources, adjust layouts, switch themes, and read only what matters.",
-    subtitle:
-      "Available as a local app, web version, or a full desktop application.",
-    tags: [
-      { id: "open-source", label: "Open source" },
-      { id: "wcag", label: "Premium contrast" },
-      { id: "responsive", label: "Scales from mobile to wide screens" },
-    ],
-    ctaLabel: "Open feed",
+  hero: {
+    eyebrow: "No ads. No trackers. Just your sources.",
+    title: "News at your pace.",
+    lead:
+      "Collect your favorite sources and read them in a fast, calm, distraction-free page.",
+    primaryCta: "Open feed",
+    secondaryCta: "See experience",
     imageAlt:
-      "Personal News interface showing news cards organized in a clean, modern visual layout.",
-    purposeEyebrow: "Purpose",
-    purposeTitle: "Curate your sources, refine the typography, and find your pace.",
-    purposeBody:
-      "Traditional news feeds are noisy. Personal News transforms your daily reading into a clear, organized, and visually calm experience.",
-    purposeSupport:
-      "Visual hierarchy is strictly maintained, even when content volume grows.",
-    availabilityEyebrow: "Availability",
-    availabilityTitle: "A version tailored to your current need.",
-    availabilityBody:
-      "A flexible foundation: explore the web app, tweak the repository code, or install the desktop app for the most immersive experience.",
-    versions: [
+      "Personal News interface with news cards arranged in a dark editorial layout.",
+    stats: [
+      { id: "rss", value: "RSS", label: "sources chosen by you" },
+      { id: "layouts", value: "Layouts", label: "for each reading rhythm" },
+      { id: "stack", value: "No account", label: "control from the start" },
+    ],
+  },
+  proof: {
+    eyebrow: "Your sources, clean reading",
+    title: "A personal reader for your routine.",
+    body:
+      "Personal News helps you follow a lot without making everything feel like too much.",
+    features: [
       {
-        id: "repo",
-        label: "Local from the repository",
-        title: "Best for testing and tuning.",
+        id: "curation",
+        eyebrow: "01 / Curation",
+        title: "Choose your sources.",
         description:
-          "Useful when you want control over sources and changes.",
-        href: PERSONAL_NEWS_REPO_URL,
-        linkLabel: "Open repository",
-        icon: "repo",
+          "Build a collection from the sites you care about and leave the rest out.",
+        tag: "your sources",
       },
       {
-        id: "web",
-        label: "Online on GitHub Pages",
-        title: "Quick to open in the browser.",
+        id: "density",
+        eyebrow: "02 / Rhythm",
+        title: "Change the way you read.",
         description:
-          "Useful to access and share the project.",
-        href: PERSONAL_NEWS_WEB_URL,
-        linkLabel: "Open web version",
-        icon: "web",
+          "Editorial, grid, list, or compact: each layout changes the page cadence.",
+        tag: "living layouts",
       },
       {
-        id: "desktop",
-        label: "Desktop app",
-        title: "The most complete version for everyday use.",
+        id: "routine",
+        eyebrow: "03 / Routine",
+        title: "Open and start.",
         description:
-          "This is the primary destination for the product experience and long-term routine.",
-        href: PERSONAL_NEWS_RELEASES_URL,
-        linkLabel: "See releases",
-        icon: "desktop",
+          "A lightweight homepage for daily checks, with no account and no ceremony.",
+        tag: "daily use",
       },
     ],
   },
-  experience: {
-    eyebrow: "Visual Experience",
-    title: "Flexible layouts designed for reading comfort.",
-    subtitle:
-      "The interface adapts to your reading density. Choose the layout that sets the rhythm.",
-    families: [
+  readingModes: {
+    eyebrow: "Experience",
+    title: "Read the way the day asks.",
+    body:
+      "Some days need big headlines. Some days need a clean list. The interface follows the moment.",
+    layoutTags: [
+      "Editorial",
+      "Gallery",
+      "Minimal",
+      "Bento",
+      "Newspaper",
+      "Timeline",
+      "Focus",
+    ],
+    modes: [
       {
         id: "editorial",
         label: "Editorial",
-        title: "Emphasis and visual weight for top stories.",
+        title: "Give weight to what matters.",
         description:
-          "Perfect for following a few sources and highlighting major themes.",
-        variant: "editorial",
+          "The lead story gets space, hierarchy, and context to open the reading session.",
       },
       {
         id: "gallery",
         label: "Gallery",
-        title: "Balanced display for multiple articles.",
+        title: "More context at once.",
         description:
-          "A harmonious grid that retains breathing room between cards.",
-        variant: "grid",
+          "Compare sources and topics without losing breathing room.",
       },
       {
         id: "minimal",
         label: "Minimal",
-        title: "Focus purely on typography and source headers.",
+        title: "Only the essentials.",
         description:
-          "Imageless. An extremely fast text-first list.",
-        variant: "minimal",
-      },
-      {
-        id: "split",
-        label: "Split",
-        title: "Main column and sidebar always visible.",
-        description:
-          "A featured story on the left, a queue of articles on the right — dense reading with clear hierarchy.",
-        variant: "split",
-      },
-      {
-        id: "compact",
-        label: "Compact",
-        title: "Maximum density without sacrificing legibility.",
-        description:
-          "Tight cards in a dense grid, built for readers who follow many sources at once.",
-        variant: "compact",
+          "Titles, sources, and speed when you want to scan the feed.",
       },
     ],
-    familiesCta: "There's even more. Open the app to explore Immersive, Split-List, and others.",
-    familiesCtaLabel: "Open feed and try layouts",
-    familiesOthers: "Also available in-app: Image-led, Split-List, Article-View.",
-    tuningEyebrow: "Visual harmony",
-    tuningTitle: "Absolute control over typography and density.",
-    tuningBody:
-      "Theme, spacing, and header behavior work in unison to provide a premium reading environment.",
-    tuningPoints: [
-      { id: "contrast", label: "Light and dark themes actively tuned for eye comfort." },
-      { id: "header", label: "A minimalist header that recedes when you concentrate." },
-      { id: "meta", label: "A strict visual spine aligning tags, sources, and dates." },
-      { id: "screens", label: "Fluid responsiveness serving mobile devices to ultra-wide displays." },
+    ctaLabel: "Try layouts in the feed",
+  },
+  workflow: {
+    eyebrow: "Your space",
+    title: "Made to stay under your control.",
+    body:
+      "Simple on the surface, transparent underneath: open, local, and easy to adapt.",
+    steps: [
+      {
+        id: "collect",
+        title: "Choose",
+        description: "Add the sources you actually want to follow.",
+      },
+      {
+        id: "shape",
+        title: "Organize",
+        description: "Separate topics, tune the look, and find your pace.",
+      },
+      {
+        id: "read",
+        title: "Read",
+        description: "Open the page and go straight to what matters.",
+      },
+      {
+        id: "keep",
+        title: "Keep it",
+        description: "Use it on the web, run it locally, or install desktop.",
+      },
     ],
-    onboardingEyebrow: "Care & Transparency",
-    onboardingTitle: "Audit your feeds before taking the first step.",
-    onboardingBody:
-      "No surprises during import. The onboarding flow presents every listed source.",
-    onboardingSupport:
-      "That makes each import easier to review.",
+    stackLabel: "Open source",
+    stack: ["React + TypeScript", "Vite", "Bun", "Tauri", "Quality Core"],
+  },
+  versions: {
+    eyebrow: "Versions",
+    title: "Start easily. Stay with the definitive version.",
+    body:
+      "The web version is the fastest way to try it. Desktop is the main experience for daily use.",
+    items: [
+      {
+        id: "web",
+        label: "Web",
+        title: "Open in the browser.",
+        description:
+          "The fastest way to feel the experience.",
+        href: PERSONAL_NEWS_WEB_URL,
+        linkLabel: "Open web version",
+      },
+      {
+        id: "desktop",
+        label: "Desktop",
+        title: "Install the definitive version.",
+        description:
+          "For turning the feed into a steadier, more complete daily tool.",
+        href: PERSONAL_NEWS_RELEASES_URL,
+        linkLabel: "See all releases",
+        featured: true,
+        platformLinks: [
+          {
+            label: "Windows",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_x64-setup.exe",
+          },
+          {
+            label: "macOS",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_aarch64.dmg",
+          },
+          {
+            label: "Linux",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_amd64.deb",
+          },
+        ],
+      },
+      {
+        id: "repo",
+        label: "Repository",
+        title: "Run and adapt locally.",
+        description:
+          "For tuning sources, themes, and behavior at your own pace.",
+        href: PERSONAL_NEWS_REPO_URL,
+        linkLabel: "See code",
+      },
+    ],
   },
   project: {
-    eyebrow: "Open source project",
-    title: "An open project for testing reading with care.",
-    subtitle:
-      "Technology, quality, commits, and authorship in one place.",
-    technologyEyebrow: "Technology",
-    technologyTitle: "React, Vite, and Bun support a lighter foundation.",
-    technologyBody:
-      "The foundation helps test feeds, themes, and reading without losing stability.",
-    stackTokens: [
-      { id: "react", label: "React + TypeScript" },
-      { id: "vite", label: "Vite" },
-      { id: "bun", label: "Bun" },
-      { id: "quality", label: "Quality Core" },
-    ],
-    qualityEyebrow: "Expected quality",
-    qualityTitle: "Expected quality, without improvisation.",
-    qualityBody:
-      "Each change is reviewed through contrast, typography, grid, and behavior.",
-    qualityPoints: [
-      { id: "type", label: "Typography with clear hierarchy." },
-      { id: "layout", label: "Stable grid from hero to pagination." },
-      { id: "states", label: "Predictable states and clear fallbacks." },
-      { id: "wcag", label: "Contrast reviewed in light and dark themes." },
-    ],
-    commitsEyebrow: "Latest commits",
-    commitsTitle: "Recent work stays visible.",
-    commitsBody:
-      "The latest history helps connect the page to the real state of the repository instead of pretending the product is static.",
-    commitsSyncing: "Syncing with GitHub.",
-    commitsFallback: "Showing a recent snapshot when GitHub does not answer in time.",
-    commitsLive: "Updated directly from GitHub.",
-    commitLinkLabel: "Open on GitHub",
-    projectsEyebrow: "My projects",
-    projectsTitle: "Other projects I develop",
-    projectsBody:
-      "Personal News is part of a series of personal projects where I explore the intersection of design and utility.",
+    eyebrow: "Open project",
+    title: "Built for real use. Open to evolve.",
+    body:
+      "Personal News started as a personal tool and stays open for people who want to read, adapt, or learn from it.",
+    authorName: DEVELOPER_HANDLE,
+    authorMeta: "GitHub, portfolio, and authored projects",
+    authorLinkLabel: "Visit GitHub",
+    projectsTitle: "Related projects",
+    allProjectsLabel: "See all projects on GitHub",
     projects: [
       {
         id: "mark-lee",
         title: "Mark-Lee",
         description:
-          "A desktop markdown editor built for focused writing and calmer visual rhythm.",
+          "A desktop editor for focused writing, with a calmer visual cadence.",
         href: MARK_LEE_URL,
         linkLabel: "See Mark-Lee",
       },
@@ -655,85 +639,51 @@ const enUS: PromoContent = {
         id: "spread",
         title: "Spread",
         description:
-          "A visual studio for turning links and metadata into more authored and shareable outputs.",
+          "A visual studio for turning links and metadata into shareable compositions.",
         href: SPREAD_PROJECTS_URL,
         linkLabel: "See Spread",
       },
+      {
+        id: "imaginizim",
+        title: "Imaginizim",
+        description:
+          "An image compressor for reducing file weight without complicating publishing.",
+        href: "https://github.com/mafhper/imaginizim",
+        linkLabel: "See Imaginizim",
+      },
     ],
-    aboutEyebrow: "About me",
-    aboutTitle: "I am mafhper, and I developed Personal News.",
-    aboutBody:
-      "I use this project to test feeds, themes, performance, and reading patterns in public.",
-    aboutSupport:
-      "It sits beside my other open source work.",
-    aboutMeta: "GitHub, personal site, and published projects",
-    aboutLinkLabel: "Visit GitHub profile",
   },
   faq: {
-    eyebrow: "Frequently asked questions",
-    title: "Get answers before you start.",
-    subtitle:
-      "The essentials about versions, setup, and daily use.",
-    groups: [
+    eyebrow: "FAQ",
+    title: "The essentials before opening the feed.",
+    body: "Short answers, no detours.",
+    items: [
       {
-        id: "getting-started",
-        title: "Getting started",
-        items: [
-          {
-            question: "Which version should I try first?",
-            answer:
-              "If you just want to explore, open the web version in your browser. For regular use, the desktop app is more stable. If you want full control over sources and themes, clone the repository and run it locally.",
-          },
-          {
-            question: "Do I need to install anything?",
-            answer:
-              "Not for the web version. For local use, clone the repository, install dependencies, and start the dev server. The desktop app has ready-made installers in the GitHub releases tab.",
-          },
-          {
-            question: "Can I import feeds from another reader?",
-            answer:
-              "Yes. The onboarding flow previews each list with its sites before you confirm, so you can review everything before importing.",
-          },
-        ],
+        question: "Which version should I try first?",
+        answer:
+          "Start with the web version. If the idea clicks, try desktop or run the project locally.",
       },
       {
-        id: "customization",
-        title: "Customization",
-        items: [
-          {
-            question: "What can I customize?",
-            answer:
-              "Feed layout, light or dark theme, card density, categories, header behavior, and overall appearance. Everything is saved locally.",
-          },
-          {
-            question: "How many feed layouts are available?",
-            answer:
-              "Four layout families: Editorial (strong highlight), Gallery (balanced grid), Minimal (title and source, no decoration), and Image-led (visual cards with preserved contrast).",
-          },
-        ],
+        question: "Do I need an account?",
+        answer:
+          "No. You can try the project without creating an account.",
       },
       {
-        id: "network",
-        title: "Feeds and network",
-        items: [
-          {
-            question: "Why do some feeds load slowly or fail?",
-            answer:
-              "External sources do not always respond well. Some block direct browser requests (CORS), others change their RSS structure or go offline temporarily. The proxy can help in these cases.",
-          },
-          {
-            question: "Does the web version work like the desktop app?",
-            answer:
-              "Almost always, but not necessarily. The web version depends on browser rules and source availability. The desktop app tends to be more stable and complete for ongoing use.",
-          },
-        ],
+        question: "Can I import my feeds?",
+        answer:
+          "Yes. You review sources before confirming the import.",
+      },
+      {
+        question: "Does the web version work like desktop?",
+        answer:
+          "Not exactly. The web version is great for exploring; desktop is better for daily use.",
       },
     ],
   },
   footer: {
     blurb:
-      "Open source project for personal reading, visual experimentation, and a calmer editorial experience.",
-    copyright: `\u00A9 2026 \u00B7 ${APP_BRAND_NAME} \u00B7 MIT License`,
+      "Open source project for personal reading, source curation, and editorial experimentation.",
+    copyright: `© 2026 · ${APP_BRAND_NAME} · MIT License`,
     columns: [
       {
         id: "product",
@@ -746,20 +696,19 @@ const enUS: PromoContent = {
         ],
       },
       {
-        id: "community",
-        title: "Community",
+        id: "code",
+        title: "Code",
         links: [
           { href: PERSONAL_NEWS_REPO_URL, label: "GitHub" },
+          { href: PERSONAL_NEWS_RELEASES_URL, label: "Releases" },
           { href: `${PERSONAL_NEWS_REPO_URL}/issues`, label: "Issues" },
-          { href: `${PERSONAL_NEWS_REPO_URL}/blob/main/CONTRIBUTING.md`, label: "Contribute" },
         ],
       },
       {
-        id: "access",
-        title: "Access",
+        id: "author",
+        title: "Author",
         links: [
-          { href: PERSONAL_NEWS_WEB_URL, label: "Web version" },
-          { href: PERSONAL_NEWS_RELEASES_URL, label: "Desktop" },
+          { href: DEVELOPER_GITHUB_URL, label: "GitHub profile" },
           { href: PERSONAL_SITE_PROJECTS_URL, label: "More projects" },
         ],
       },

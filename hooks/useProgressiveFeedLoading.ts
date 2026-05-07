@@ -434,6 +434,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
    */
   const loadFeedsProgressively = useCallback(
     async (request: FeedLoadRequest = {}) => {
+      ProxyManager.loadPreferences();
+
       const currentFeeds = feedsRef.current;
       const scopedFeeds = resolveFeedLoadScope(currentFeeds, request);
       const mode = resolveScopeMode(request);
