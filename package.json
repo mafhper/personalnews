@@ -145,7 +145,7 @@
     "jsdom": "^29.0.2",
     "lighthouse": "^13.3.0",
     "playwright": "^1.59.1",
-    "postcss": "^8.5.12",
+    "postcss": "^8.5.14",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.58.1",
