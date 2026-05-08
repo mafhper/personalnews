@@ -418,7 +418,7 @@ const ptBR: PromoContent = {
         id: "product",
         title: "Produto",
         links: [
-          { href: "#home", label: "Inicio" },
+          { href: "#home", label: "Início" },
           { href: "#experience", label: "Experiência" },
           { href: "#project", label: "Projeto" },
           { href: "#faq", label: "FAQ" },
@@ -506,7 +506,7 @@ const enUS: PromoContent = {
   },
   readingModes: {
     eyebrow: "Experience",
-    title: "Read the way the day asks.",
+    title: "Read the way the day feels.",
     body:
       "Some days need big headlines. Some days need a clean list. The interface follows the moment.",
     layoutTags: [
@@ -582,7 +582,7 @@ const enUS: PromoContent = {
   },
   versions: {
     eyebrow: "Versions",
-    title: "Start easily. Stay with the definitive version.",
+    title: "Start fast. Keep it on desktop.",
     body:
       "The web version is the fastest way to try it. Desktop is the main experience for daily use.",
     items: [
@@ -598,7 +598,7 @@ const enUS: PromoContent = {
       {
         id: "desktop",
         label: "Desktop",
-        title: "Install the definitive version.",
+        title: "Install the desktop app.",
         description:
           "For turning the feed into a steadier, more complete daily tool.",
         href: PERSONAL_NEWS_RELEASES_URL,
@@ -867,9 +867,9 @@ const es: PromoContent = {
   },
   versions: {
     eyebrow: "Versiones",
-    title: "Empieza fácil. Quédate con la versión definitiva.",
+    title: "Empieza rápido. Úsalo a diario en desktop.",
     body:
-      "La web es el camino más rápido para probar. Desktop es la experiencia principal para uso diario.",
+      "La web es el camino más rápido para probar. La app de escritorio es la experiencia principal para uso diario.",
     items: [
       {
         id: "web",
@@ -882,7 +882,7 @@ const es: PromoContent = {
       {
         id: "desktop",
         label: "Desktop",
-        title: "Instalar la versión definitiva.",
+        title: "Instalar la app de escritorio.",
         description:
           "Para convertir el feed en una herramienta diaria más estable y completa.",
         href: PERSONAL_NEWS_RELEASES_URL,
