@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId, useMemo } from 'react';
 import { WallpaperConfig } from '../types';
 
 interface AuraWallpaperRendererProps {
@@ -10,6 +10,13 @@ interface AuraWallpaperRendererProps {
 
 const AuraWallpaperRenderer = forwardRef<SVGSVGElement, AuraWallpaperRendererProps>(({ config, className, style, lowQuality = false }, ref) => {
   const { width, height, shapes, baseColor, noise, noiseScale } = config;
+  const rawInstanceId = useId();
+  const filterIdPrefix = useMemo(
+    () => `aura-${rawInstanceId.replace(/[^a-zA-Z0-9_-]/g, '')}`,
+    [rawInstanceId],
+  );
+  const noiseFilterId = `${filterIdPrefix}-noise`;
+  const getBlurFilterId = (shapeId: string) => `${filterIdPrefix}-blur-${shapeId}`;
 
   return (
     <svg
@@ -26,7 +33,7 @@ const AuraWallpaperRenderer = forwardRef<SVGSVGElement, AuraWallpaperRendererPro
       <defs>
         {/* Noise Filter - Only render if not lowQuality */}
         {!lowQuality && (
-          <filter id="noiseFilter">
+          <filter id={noiseFilterId}>
             <feTurbulence
               type="fractalNoise"
               baseFrequency={noiseScale / 1000}
@@ -42,7 +49,7 @@ const AuraWallpaperRenderer = forwardRef<SVGSVGElement, AuraWallpaperRendererPro
 
         {/* Shape Blur Filter */}
         {shapes.map((shape) => (
-           <filter key={`blur-${shape.id}`} id={`blur-${shape.id}`} x="-100%" y="-100%" width="300%" height="300%">
+           <filter key={`blur-${shape.id}`} id={getBlurFilterId(shape.id)} x="-100%" y="-100%" width="300%" height="300%">
              <feGaussianBlur stdDeviation={lowQuality ? shape.blur / 2 : shape.blur} result="coloredBlur" />
            </filter>
         ))}
@@ -61,7 +68,7 @@ const AuraWallpaperRenderer = forwardRef<SVGSVGElement, AuraWallpaperRendererPro
             r={`${shape.size / 2}%`}
             fill={shape.color}
             opacity={shape.opacity}
-            filter={`url(#blur-${shape.id})`}
+            filter={`url(#${getBlurFilterId(shape.id)})`}
             style={{ mixBlendMode: shape.blendMode }}
           />
         ))}
@@ -72,7 +79,7 @@ const AuraWallpaperRenderer = forwardRef<SVGSVGElement, AuraWallpaperRendererPro
         <rect
           width="100%"
           height="100%"
-          filter="url(#noiseFilter)"
+          filter={`url(#${noiseFilterId})`}
           opacity={1}
           style={{ mixBlendMode: 'overlay' }}
         />

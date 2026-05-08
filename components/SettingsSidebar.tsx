@@ -647,7 +647,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                   className={surfaceInputClass}
                 >
                   <option value="pt-BR">Português (BR)</option>
-                  <option value="en">English</option>
+                  <option value="en-US">English</option>
                   <option value="es">Español</option>
                 </select>
               </div>

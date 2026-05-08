@@ -335,13 +335,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Load ProxyManager preferences (API key, etc)
-  React.useEffect(() => {
-    import("./services/proxyManager").then(({ ProxyManager }) => {
-      ProxyManager.loadPreferences();
-    });
-  }, []);
-
   return (
     <LanguageProvider>
       <NotificationProvider>
