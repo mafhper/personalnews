@@ -29,7 +29,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Tecnologia",
     "id": "tech",
     "color": "#3B82F6",
-    "layoutMode": "list",
+    "layoutMode": "magazine",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
@@ -62,7 +62,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Política",
     "id": "politics",
     "color": "#EF4444",
-    "layoutMode": "newspaper",
+    "layoutMode": "magazine",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Cobertura política nacional e internacional."

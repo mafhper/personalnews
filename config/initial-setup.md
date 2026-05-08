@@ -83,7 +83,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Tecnologia;
 - ID: tech;
 - Cor: #3B82F6;
-- Layout: list;
+- Layout: magazine;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
@@ -119,7 +119,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Política;
 - ID: politics;
 - Cor: #EF4444;
-- Layout: newspaper;
+- Layout: magazine;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Cobertura política nacional e internacional.;

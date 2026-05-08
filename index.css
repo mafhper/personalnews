@@ -3721,9 +3721,9 @@ html {
   position: relative;
   min-height: calc(100vh - 72px);
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.76fr);
   align-items: center;
-  gap: 64px;
+  gap: 52px;
   padding-block: 80px 112px;
 }
 
@@ -3737,10 +3737,9 @@ html {
 .promo-hero__visual {
   position: relative;
   z-index: 1;
-  width: clamp(620px, 56vw, 820px);
-  max-width: 138%;
-  justify-self: start;
-  transform: translateX(clamp(-56px, -3vw, -40px));
+  width: clamp(360px, 34vw, 520px);
+  max-width: 100%;
+  justify-self: end;
 }
 
 .promo-eyebrow,
@@ -3825,7 +3824,7 @@ html {
   position: relative;
   width: 100%;
   margin: 0;
-  aspect-ratio: 256 / 141;
+  aspect-ratio: 1264 / 1410;
   overflow: hidden;
   border: 1px solid var(--promo-border);
   border-radius: var(--promo-radius-card);
@@ -4762,7 +4761,7 @@ html {
 
   .promo-product-frame {
     width: 100%;
-    aspect-ratio: 256 / 141;
+    aspect-ratio: 1264 / 1410;
   }
 
   .promo-proof-card,
