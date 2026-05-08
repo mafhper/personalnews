@@ -22,7 +22,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Layout Global - Define como os artigos são organizados na grade
 
-- Layout Global: bento;
+- Layout Global: magazine;
   Opções:
 - `list`: Lista limpa estilo portal
 - `masonry`: Cards com alturas variáveis
