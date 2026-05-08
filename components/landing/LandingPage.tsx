@@ -13,6 +13,7 @@ import {
   PROMO_PAGE_ORDER,
   type PromoPageId,
 } from "../../config/promoContent";
+import type { Language } from "../../types";
 
 interface LandingPageProps {
   onOpenFeed: () => void;
@@ -31,6 +32,47 @@ const PROMO_HASH_TO_PAGE = Object.entries(PROMO_PAGE_HASHES).reduce(
   },
   {} as Record<string, PromoPageId>,
 );
+
+const PROMO_UI_TEXT: Record<
+  Language,
+  {
+    navLabel: string;
+    heroStatsLabel: string;
+    layoutsLabel: string;
+    openSourceSummary: string;
+    repositoryLabel: string;
+    downloadsLabel: string;
+    githubListNote: string;
+  }
+> = {
+  "pt-BR": {
+    navLabel: "Navegação promocional",
+    heroStatsLabel: "Resumo do Personal News",
+    layoutsLabel: "Layouts disponíveis",
+    openSourceSummary: "Código aberto para ler, adaptar e acompanhar.",
+    repositoryLabel: "Ver repositório",
+    downloadsLabel: "Downloads por sistema",
+    githubListNote: "A lista ativa mora no perfil do GitHub.",
+  },
+  "en-US": {
+    navLabel: "Promo navigation",
+    heroStatsLabel: "Personal News facts",
+    layoutsLabel: "Available layouts",
+    openSourceSummary: "Open code to read, adapt, and follow.",
+    repositoryLabel: "View repository",
+    downloadsLabel: "Downloads by platform",
+    githubListNote: "The active list lives on the GitHub profile.",
+  },
+  es: {
+    navLabel: "Navegación promocional",
+    heroStatsLabel: "Resumen de Personal News",
+    layoutsLabel: "Layouts disponibles",
+    openSourceSummary: "Código abierto para leer, adaptar y seguir.",
+    repositoryLabel: "Ver repositorio",
+    downloadsLabel: "Descargas por sistema",
+    githubListNote: "La lista activa vive en el perfil de GitHub.",
+  },
+};
 
 const getActiveSectionFromHash = (): PromoPageId => {
   if (typeof window === "undefined") return "home";
@@ -211,6 +253,7 @@ const LandingPage = ({
 }: LandingPageProps) => {
   const { language } = useLanguage();
   const content = React.useMemo(() => getPromoContent(language), [language]);
+  const uiText = PROMO_UI_TEXT[language];
   const [activeSection, setActiveSection] = React.useState<PromoPageId>(
     getActiveSectionFromHash,
   );
@@ -343,7 +386,7 @@ const LandingPage = ({
 
           <nav
             className="promo-nav"
-            aria-label={language === "pt-BR" ? "Navegação promocional" : "Promo navigation"}
+            aria-label={uiText.navLabel}
           >
             {PROMO_PAGE_ORDER.map((section) => (
               <a
@@ -417,7 +460,7 @@ const LandingPage = ({
             </div>
             <dl
               className="promo-hero__stats"
-              aria-label={language === "pt-BR" ? "Resumo do Personal News" : "Personal News facts"}
+              aria-label={uiText.heroStatsLabel}
             >
               {content.hero.stats.map((stat) => (
                 <div key={stat.id}>
@@ -469,11 +512,7 @@ const LandingPage = ({
             />
             <div
               className="promo-layout-tags"
-              aria-label={
-                language === "pt-BR"
-                  ? "Layouts disponíveis"
-                  : "Available layouts"
-              }
+              aria-label={uiText.layoutsLabel}
             >
               {content.readingModes.layoutTags.map((tag) => (
                 <span key={tag}>{tag}</span>
@@ -522,11 +561,7 @@ const LandingPage = ({
             <div className="promo-stack-strip" aria-label={content.workflow.stackLabel}>
               <div>
                 <span>{content.workflow.stackLabel}</span>
-                <strong>
-                  {language === "pt-BR"
-                    ? "Código aberto para ler, adaptar e acompanhar."
-                    : "Open code to read, adapt, and follow."}
-                </strong>
+                <strong>{uiText.openSourceSummary}</strong>
               </div>
               <div className="promo-stack-strip__meta">
                 <ul>
@@ -539,7 +574,7 @@ const LandingPage = ({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {language === "pt-BR" ? "Ver repositório" : "View repository"}
+                  {uiText.repositoryLabel}
                   <ExternalIcon />
                 </a>
               </div>
@@ -564,11 +599,7 @@ const LandingPage = ({
                   {featuredVersion.platformLinks && (
                     <div
                       className="promo-version-card__platforms"
-                      aria-label={
-                        language === "pt-BR"
-                          ? "Downloads por sistema"
-                          : "Downloads by platform"
-                      }
+                      aria-label={uiText.downloadsLabel}
                     >
                       {featuredVersion.platformLinks.map((link) => (
                         <a
@@ -677,11 +708,7 @@ const LandingPage = ({
               >
                 <div>
                   <strong>{content.project.allProjectsLabel}</strong>
-                  <p>
-                    {language === "pt-BR"
-                      ? "A lista ativa mora no perfil do GitHub."
-                      : "The active list lives on the GitHub profile."}
-                  </p>
+                  <p>{uiText.githubListNote}</p>
                 </div>
                 <span>
                   GitHub

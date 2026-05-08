@@ -2,9 +2,14 @@ import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LandingPage } from "../components/landing/LandingPage";
+import type { Language } from "../types";
+
+const languageState = vi.hoisted(() => ({
+  current: "pt-BR" as Language,
+}));
 
 vi.mock("../hooks/useLanguage", () => ({
-  useLanguage: () => ({ language: "pt-BR" }),
+  useLanguage: () => ({ language: languageState.current }),
 }));
 
 const scrollIntoViewMock = vi.fn();
@@ -12,6 +17,7 @@ const scrollToMock = vi.fn();
 
 describe("LandingPage promo structure", () => {
   beforeEach(() => {
+    languageState.current = "pt-BR";
     window.location.hash = "#home";
     window.localStorage.removeItem("appearance-background");
     scrollIntoViewMock.mockClear();
@@ -61,6 +67,25 @@ describe("LandingPage promo structure", () => {
     expect(heroImage?.getAttribute("src")).toContain(
       "assets/promo/screens/magazine_02.webp",
     );
+  });
+
+  it("keeps support labels localized in Spanish", () => {
+    languageState.current = "es";
+
+    render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    expect(
+      screen.getByRole("navigation", { name: "Navegación promocional" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Resumen de Personal News"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Layouts disponibles")).toBeInTheDocument();
+    expect(
+      screen.getByText("Código abierto para leer, adaptar y seguir."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Ver repositorio")).toBeInTheDocument();
+    expect(screen.getByLabelText("Descargas por sistema")).toBeInTheDocument();
   });
 
   it("navigates hashes to sections without unmounting the landing", async () => {
