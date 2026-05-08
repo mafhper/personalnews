@@ -140,12 +140,12 @@ const promoScreenAsset = (fileName: string) =>
   `${import.meta.env.BASE_URL}assets/promo/screens/${fileName}`;
 
 const HERO_SCREENSHOTS = [
-  promoScreenAsset("magazine_02.webp"),
-  promoScreenAsset("magazine_01.webp"),
-  promoScreenAsset("editorial_02.webp"),
-  promoScreenAsset("brutalist_01.webp"),
-  promoScreenAsset("focus_01.webp"),
-  promoScreenAsset("list_01.webp"),
+  promoScreenAsset("hero-narrow-01.webp"),
+  promoScreenAsset("hero-narrow-02.webp"),
+  promoScreenAsset("hero-narrow-03.webp"),
+  promoScreenAsset("hero-narrow-04.webp"),
+  promoScreenAsset("hero-narrow-05.webp"),
+  promoScreenAsset("hero-narrow-06.webp"),
 ];
 
 const LAYOUT_SCREENSHOTS: Record<string, string> = {
