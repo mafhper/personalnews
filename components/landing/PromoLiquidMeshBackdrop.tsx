@@ -260,7 +260,11 @@ const createProgram = (gl: WebGLRenderingContext): LiquidMeshProgram => {
   };
 };
 
-export const PromoLiquidMeshBackdrop = () => {
+export const PromoLiquidMeshBackdrop = ({
+  className = "",
+}: {
+  className?: string;
+}) => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -415,7 +419,11 @@ export const PromoLiquidMeshBackdrop = () => {
   }, []);
 
   return (
-    <div ref={rootRef} className="promo-liquid-mesh" aria-hidden="true">
+    <div
+      ref={rootRef}
+      className={["promo-liquid-mesh", className].filter(Boolean).join(" ")}
+      aria-hidden="true"
+    >
       <div className="promo-liquid-mesh__fallback" />
       <canvas ref={canvasRef} className="promo-liquid-mesh__canvas" />
     </div>

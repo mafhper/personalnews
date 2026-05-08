@@ -199,6 +199,7 @@ const ProductFrame = ({
 }) => {
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [exitingIndex, setExitingIndex] = React.useState<number | null>(null);
+  const [transitionStep, setTransitionStep] = React.useState(0);
 
   React.useEffect(() => {
     if (images.length <= 1 || typeof window === "undefined") return;
@@ -210,14 +211,15 @@ const ProductFrame = ({
     const intervalId = window.setInterval(() => {
       setActiveIndex((current) => {
         setExitingIndex(current);
+        setTransitionStep((step) => step + 1);
         return (current + 1) % images.length;
       });
 
       window.clearTimeout(exitTimeoutId);
       exitTimeoutId = window.setTimeout(() => {
         setExitingIndex(null);
-      }, 1200);
-    }, 6500);
+      }, 1850);
+    }, 7600);
 
     return () => {
       window.clearInterval(intervalId);
@@ -242,6 +244,13 @@ const ProductFrame = ({
           loading={index === 0 ? "eager" : "lazy"}
         />
       ))}
+      {transitionStep > 0 ? (
+        <span
+          key={transitionStep}
+          className="promo-product-frame__transition"
+          aria-hidden="true"
+        />
+      ) : null}
     </figure>
   );
 };
@@ -741,6 +750,7 @@ const LandingPage = ({
       </main>
 
       <footer ref={footerRef} className="promo-footer">
+        <PromoLiquidMeshBackdrop className="promo-liquid-mesh--footer" />
         <div className="promo-shell promo-footer__inner">
           <div className="promo-footer__brand">
             <Logo size="sm" />
