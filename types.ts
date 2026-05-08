@@ -283,7 +283,7 @@ export interface AppearanceSettings {
   background: BackgroundConfig;
 }
 
-export type Language = "pt-BR" | "en-US" | "es" | "fr" | "it" | "zh" | "ja";
+export type Language = "pt-BR" | "en-US" | "es";
 
 export interface NotificationOptions {
   type?: "success" | "error" | "warning" | "info";

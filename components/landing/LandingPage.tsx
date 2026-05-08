@@ -94,6 +94,25 @@ const ExternalIcon = ({ className = "" }: IconProps) => (
   </svg>
 );
 
+const promoScreenAsset = (fileName: string) =>
+  `${import.meta.env.BASE_URL}assets/promo/screens/${fileName}`;
+
+const HERO_SCREENSHOTS = [
+  promoScreenAsset("magazine_02.webp"),
+  promoScreenAsset("magazine_01.webp"),
+  promoScreenAsset("editorial_02.webp"),
+  promoScreenAsset("brutalist_01.webp"),
+  promoScreenAsset("focus_01.webp"),
+  promoScreenAsset("list_01.webp"),
+];
+
+const LAYOUT_SCREENSHOTS: Record<string, string> = {
+  magazine: promoScreenAsset("magazine_01.webp"),
+  editorial: promoScreenAsset("editorial_02.webp"),
+  gallery: promoScreenAsset("galeria_02.webp"),
+  brutalist: promoScreenAsset("brutalist_01.webp"),
+};
+
 const SectionIntro = ({
   eyebrow,
   title,
@@ -129,6 +148,62 @@ const LayoutPreview = ({
   </figure>
 );
 
+const ProductFrame = ({
+  images,
+  alt,
+}: {
+  images: string[];
+  alt: string;
+}) => {
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  const [exitingIndex, setExitingIndex] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (images.length <= 1 || typeof window === "undefined") return;
+
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (reduceMotion?.matches) return;
+
+    let exitTimeoutId = 0;
+    const intervalId = window.setInterval(() => {
+      setActiveIndex((current) => {
+        setExitingIndex(current);
+        return (current + 1) % images.length;
+      });
+
+      window.clearTimeout(exitTimeoutId);
+      exitTimeoutId = window.setTimeout(() => {
+        setExitingIndex(null);
+      }, 1200);
+    }, 6500);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(exitTimeoutId);
+    };
+  }, [images.length]);
+
+  return (
+    <figure className="promo-product-frame promo-product-frame--rotating">
+      {images.map((image, index) => (
+        <img
+          key={image}
+          src={image}
+          alt={index === activeIndex ? alt : ""}
+          aria-hidden={index === activeIndex ? undefined : true}
+          className={[
+            index === activeIndex ? "is-active" : "",
+            index === exitingIndex ? "is-exiting" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          loading={index === 0 ? "eager" : "lazy"}
+        />
+      ))}
+    </figure>
+  );
+};
+
 const LandingPage = ({
   onOpenFeed,
   onFooterVisible,
@@ -142,7 +217,6 @@ const LandingPage = ({
   const footerRef = React.useRef<HTMLElement | null>(null);
   const footerTriggeredRef = React.useRef(false);
   const homeReadyTriggeredRef = React.useRef(false);
-  const promoScreen = `${import.meta.env.BASE_URL}assets/screen.png`;
   const featuredVersion = content.versions.items.find(
     (version) => version.featured,
   );
@@ -355,9 +429,7 @@ const LandingPage = ({
           </div>
 
           <div className="promo-hero__visual">
-            <figure className="promo-product-frame">
-              <img src={promoScreen} alt={content.hero.imageAlt} loading="eager" />
-            </figure>
+            <ProductFrame images={HERO_SCREENSHOTS} alt={content.hero.imageAlt} />
           </div>
         </section>
 
@@ -410,7 +482,10 @@ const LandingPage = ({
             <div className="promo-reading__grid">
               {content.readingModes.modes.map((mode) => (
                 <article key={mode.id} className="promo-mode-card">
-                  <LayoutPreview variant={mode.id} imageSrc={promoScreen} />
+                  <LayoutPreview
+                    variant={mode.id}
+                    imageSrc={LAYOUT_SCREENSHOTS[mode.id] ?? HERO_SCREENSHOTS[0]}
+                  />
                   <span>{mode.label}</span>
                   <h3>{mode.title}</h3>
                   <p>{mode.description}</p>

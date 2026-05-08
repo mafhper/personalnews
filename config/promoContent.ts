@@ -224,15 +224,22 @@ const ptBR: PromoContent = {
     body:
       "Às vezes você quer manchetes grandes. Às vezes, só uma lista limpa. A interface acompanha esse momento.",
     layoutTags: [
+      "Magazine",
       "Editorial",
       "Galeria",
+      "Brutalist",
       "Minimal",
       "Bento",
-      "Jornal",
-      "Timeline",
       "Foco",
     ],
     modes: [
+      {
+        id: "magazine",
+        label: "Magazine",
+        title: "Uma capa para abrir o dia.",
+        description:
+          "Manchete forte, módulos visuais e ritmo de revista para descobrir o que importa.",
+      },
       {
         id: "editorial",
         label: "Editorial",
@@ -248,11 +255,11 @@ const ptBR: PromoContent = {
           "Bom para comparar fontes e assuntos sem perder o respiro.",
       },
       {
-        id: "minimal",
-        label: "Minimal",
-        title: "Só o essencial.",
+        id: "brutalist",
+        label: "Brutalist",
+        title: "Contraste sem delicadeza.",
         description:
-          "Títulos, fontes e velocidade quando você quer varrer o feed.",
+          "Blocos densos e leitura direta quando você quer uma interface mais afirmativa.",
       },
     ],
     ctaLabel: "Testar layouts no feed",
@@ -503,15 +510,22 @@ const enUS: PromoContent = {
     body:
       "Some days need big headlines. Some days need a clean list. The interface follows the moment.",
     layoutTags: [
+      "Magazine",
       "Editorial",
       "Gallery",
+      "Brutalist",
       "Minimal",
       "Bento",
-      "Newspaper",
-      "Timeline",
       "Focus",
     ],
     modes: [
+      {
+        id: "magazine",
+        label: "Magazine",
+        title: "A cover to open the day.",
+        description:
+          "A strong lead, visual modules, and magazine rhythm for finding what matters.",
+      },
       {
         id: "editorial",
         label: "Editorial",
@@ -527,11 +541,11 @@ const enUS: PromoContent = {
           "Compare sources and topics without losing breathing room.",
       },
       {
-        id: "minimal",
-        label: "Minimal",
-        title: "Only the essentials.",
+        id: "brutalist",
+        label: "Brutalist",
+        title: "Contrast without delicacy.",
         description:
-          "Titles, sources, and speed when you want to scan the feed.",
+          "Dense blocks and direct reading when you want a more assertive interface.",
       },
     ],
     ctaLabel: "Try layouts in the feed",
@@ -716,7 +730,291 @@ const enUS: PromoContent = {
   },
 };
 
+const es: PromoContent = {
+  nav: {
+    brandLabel: APP_BRAND_NAME,
+    pages: {
+      home: "Inicio",
+      experience: "Experiencia",
+      project: "Proyecto",
+      faq: "FAQ",
+    },
+    openFeed: "Abrir feed",
+    repo: "GitHub",
+  },
+  hero: {
+    eyebrow: "Sin anuncios. Sin rastreadores. Solo tus fuentes.",
+    title: "Noticias a tu ritmo.",
+    lead:
+      "Organiza tus fuentes y lee en una página rápida, clara y sin distracciones.",
+    primaryCta: "Abrir feed",
+    secondaryCta: "Ver experiencia",
+    imageAlt:
+      "Interfaz de Personal News con tarjetas de noticias en un layout editorial oscuro.",
+    stats: [
+      { id: "rss", value: "RSS", label: "fuentes elegidas por ti" },
+      { id: "layouts", value: "Layouts", label: "para cada ritmo de lectura" },
+      { id: "stack", value: "Sin cuenta", label: "control desde el comienzo" },
+    ],
+  },
+  proof: {
+    eyebrow: "Tus fuentes, lectura limpia",
+    title: "Un lector personal para tu rutina.",
+    body:
+      "Personal News te ayuda a seguir muchas fuentes sin convertir todo en exceso.",
+    features: [
+      {
+        id: "curation",
+        eyebrow: "01 / Curaduría",
+        title: "Elige tus fuentes.",
+        description:
+          "Crea una colección con los sitios que te importan y deja el resto fuera.",
+        tag: "fuentes propias",
+      },
+      {
+        id: "density",
+        eyebrow: "02 / Ritmo",
+        title: "Cambia la forma de leer.",
+        description:
+          "Editorial, grilla, lista o compacto: cada layout cambia la cadencia de la página.",
+        tag: "layouts vivos",
+      },
+      {
+        id: "routine",
+        eyebrow: "03 / Rutina",
+        title: "Abre y empieza.",
+        description:
+          "Una homepage ligera para consultar todos los días, sin cuenta y sin ceremonia.",
+        tag: "uso diario",
+      },
+    ],
+  },
+  readingModes: {
+    eyebrow: "Experiencia",
+    title: "Lee como el día lo pida.",
+    body:
+      "A veces quieres titulares grandes. A veces, solo una lista limpia. La interfaz acompaña ese momento.",
+    layoutTags: [
+      "Magazine",
+      "Editorial",
+      "Galería",
+      "Brutalist",
+      "Minimal",
+      "Bento",
+      "Foco",
+    ],
+    modes: [
+      {
+        id: "magazine",
+        label: "Magazine",
+        title: "Una portada para empezar el día.",
+        description:
+          "Titular fuerte, módulos visuales y ritmo de revista para encontrar lo importante.",
+      },
+      {
+        id: "editorial",
+        label: "Editorial",
+        title: "Da peso a lo que importa.",
+        description:
+          "La noticia principal gana espacio, jerarquía y contexto para abrir la lectura.",
+      },
+      {
+        id: "gallery",
+        label: "Galería",
+        title: "Más contexto de una vez.",
+        description:
+          "Bueno para comparar fuentes y temas sin perder respiro.",
+      },
+      {
+        id: "brutalist",
+        label: "Brutalist",
+        title: "Contraste sin delicadeza.",
+        description:
+          "Bloques densos y lectura directa cuando quieres una interfaz más afirmativa.",
+      },
+    ],
+    ctaLabel: "Probar layouts en el feed",
+  },
+  workflow: {
+    eyebrow: "Tu espacio",
+    title: "Hecho para permanecer bajo tu control.",
+    body:
+      "La experiencia es simple en la superficie y transparente por debajo: abierta, local y fácil de adaptar.",
+    steps: [
+      {
+        id: "collect",
+        title: "Elige",
+        description: "Agrega las fuentes que realmente quieres seguir.",
+      },
+      {
+        id: "shape",
+        title: "Organiza",
+        description: "Separa por temas, ajusta el visual y encuentra tu ritmo.",
+      },
+      {
+        id: "read",
+        title: "Lee",
+        description: "Abre la página y ve directo a lo que importa.",
+      },
+      {
+        id: "keep",
+        title: "Llévalo contigo",
+        description: "Úsalo en la web, ejecútalo localmente o instala el desktop.",
+      },
+    ],
+    stackLabel: "Open source",
+    stack: ["React + TypeScript", "Vite", "Bun", "Tauri", "Quality Core"],
+  },
+  versions: {
+    eyebrow: "Versiones",
+    title: "Empieza fácil. Quédate con la versión definitiva.",
+    body:
+      "La web es el camino más rápido para probar. Desktop es la experiencia principal para uso diario.",
+    items: [
+      {
+        id: "web",
+        label: "Web",
+        title: "Abrir en el navegador.",
+        description: "La forma más rápida de sentir la experiencia.",
+        href: PERSONAL_NEWS_WEB_URL,
+        linkLabel: "Abrir versión web",
+      },
+      {
+        id: "desktop",
+        label: "Desktop",
+        title: "Instalar la versión definitiva.",
+        description:
+          "Para convertir el feed en una herramienta diaria más estable y completa.",
+        href: PERSONAL_NEWS_RELEASES_URL,
+        linkLabel: "Ver todos los releases",
+        featured: true,
+        platformLinks: [
+          {
+            label: "Windows",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_x64-setup.exe",
+          },
+          {
+            label: "macOS",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_aarch64.dmg",
+          },
+          {
+            label: "Linux",
+            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_amd64.deb",
+          },
+        ],
+      },
+      {
+        id: "repo",
+        label: "Repositorio",
+        title: "Ejecutar y adaptar localmente.",
+        description:
+          "Para ajustar fuentes, temas y comportamiento con calma.",
+        href: PERSONAL_NEWS_REPO_URL,
+        linkLabel: "Ver código",
+      },
+    ],
+  },
+  project: {
+    eyebrow: "Proyecto abierto",
+    title: "Hecho para uso real. Abierto para evolucionar.",
+    body:
+      "Personal News nació como herramienta personal y sigue abierto para quien quiera leer, adaptar o aprender con el proyecto.",
+    authorName: DEVELOPER_HANDLE,
+    authorMeta: "GitHub, portafolio y proyectos propios",
+    authorLinkLabel: "Visitar GitHub",
+    projectsTitle: "Proyectos relacionados",
+    allProjectsLabel: "Ver todos los proyectos en GitHub",
+    projects: [
+      {
+        id: "mark-lee",
+        title: "Mark-Lee",
+        description:
+          "Editor desktop para escritura enfocada, con una cadencia visual más calma.",
+        href: MARK_LEE_URL,
+        linkLabel: "Conocer Mark-Lee",
+      },
+      {
+        id: "spread",
+        title: "Spread",
+        description:
+          "Estudio visual para transformar enlaces y metadatos en composiciones compartibles.",
+        href: SPREAD_PROJECTS_URL,
+        linkLabel: "Ver Spread",
+      },
+      {
+        id: "imaginizim",
+        title: "Imaginizim",
+        description:
+          "Compresor de imágenes para reducir peso sin complicar el flujo de publicación.",
+        href: "https://github.com/mafhper/imaginizim",
+        linkLabel: "Ver Imaginizim",
+      },
+    ],
+  },
+  faq: {
+    eyebrow: "FAQ",
+    title: "Lo esencial antes de abrir el feed.",
+    body: "Respuestas cortas, sin rodeos.",
+    items: [
+      {
+        question: "¿Qué versión debería probar primero?",
+        answer:
+          "Empieza por la versión web. Si te gusta la idea, prueba desktop o ejecuta el proyecto localmente.",
+      },
+      {
+        question: "¿Necesito crear una cuenta?",
+        answer: "No. Puedes probar el proyecto sin registrarte.",
+      },
+      {
+        question: "¿Puedo importar mis feeds?",
+        answer:
+          "Sí. Revisas las fuentes antes de confirmar la importación.",
+      },
+      {
+        question: "¿La versión web funciona igual que desktop?",
+        answer:
+          "No exactamente. La web es excelente para conocer el proyecto; desktop es mejor para uso continuo.",
+      },
+    ],
+  },
+  footer: {
+    blurb:
+      "Proyecto open source para lectura personal, curaduría de fuentes y experimentación editorial.",
+    copyright: `© 2026 · ${APP_BRAND_NAME} · MIT License`,
+    columns: [
+      {
+        id: "product",
+        title: "Producto",
+        links: [
+          { href: "#home", label: "Inicio" },
+          { href: "#experience", label: "Experiencia" },
+          { href: "#project", label: "Proyecto" },
+          { href: "#faq", label: "FAQ" },
+        ],
+      },
+      {
+        id: "code",
+        title: "Código",
+        links: [
+          { href: PERSONAL_NEWS_REPO_URL, label: "GitHub" },
+          { href: PERSONAL_NEWS_RELEASES_URL, label: "Releases" },
+          { href: `${PERSONAL_NEWS_REPO_URL}/issues`, label: "Issues" },
+        ],
+      },
+      {
+        id: "author",
+        title: "Autor",
+        links: [
+          { href: DEVELOPER_GITHUB_URL, label: "Perfil GitHub" },
+          { href: PERSONAL_SITE_PROJECTS_URL, label: "Más proyectos" },
+        ],
+      },
+    ],
+  },
+};
+
 export const getPromoContent = (language: Language): PromoContent => {
   if (language === "pt-BR") return ptBR;
+  if (language === "es") return es;
   return enUS;
 };

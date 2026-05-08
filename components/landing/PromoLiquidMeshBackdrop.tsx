@@ -24,14 +24,14 @@ type LiquidMeshProgram = {
 };
 
 const LIQUID_MESH_PRESET = {
-  speed: 0.16,
-  warp: 0.54,
-  ripple: 0.28,
-  chrome: 0.42,
-  contrast: 0.5,
-  grain: 0.025,
-  resolution: 1.35,
-  pointer: true,
+  speed: 0.08,
+  warp: 0.34,
+  ripple: 0.14,
+  chrome: 0.18,
+  contrast: 0.24,
+  grain: 0.016,
+  resolution: 1.18,
+  pointer: false,
   colorA: "#03080e",
   colorB: "#059669",
   colorC: "#f97316",
@@ -102,16 +102,16 @@ const FRAGMENT_SHADER_SOURCE = `
 
   float surface(vec2 p) {
     vec2 q = p;
-    q.x += sin((p.y + uTime * 0.22) * 2.7) * 0.18 * uWarp;
-    q.y += cos((p.x - uTime * 0.18) * 3.2) * 0.15 * uWarp;
+    q.x += sin((p.y + uTime * 0.12) * 1.3) * 0.11 * uWarp;
+    q.y += cos((p.x - uTime * 0.1) * 1.8) * 0.08 * uWarp;
 
     float ribbons =
-      sin(q.x * 2.7 + uTime * 0.9) +
-      cos(q.y * 3.1 - uTime * 0.64) +
-      sin((q.x + q.y) * 4.2 + uTime * 0.36);
+      sin(q.x * 1.4 + uTime * 0.42) +
+      cos(q.y * 1.15 - uTime * 0.32) +
+      sin((q.x * 0.9 + q.y * 0.35) * 2.1 + uTime * 0.2);
 
-    float liquid = fbm(q * (1.9 + uRipple * 1.3) + uTime * 0.17);
-    return ribbons * 0.22 + liquid * 0.78;
+    float liquid = fbm(q * (1.05 + uRipple * 0.65) + uTime * 0.08);
+    return ribbons * 0.16 + liquid * 0.58 + q.y * 0.22;
   }
 
   void main() {
@@ -127,7 +127,7 @@ const FRAGMENT_SHADER_SOURCE = `
     float e = 1.5 / min(uResolution.x, uResolution.y);
     float hx = surface(p + vec2(e, 0.0));
     float hy = surface(p + vec2(0.0, e));
-    vec3 normal = normalize(vec3((h - hx) * 25.0, (h - hy) * 25.0, 1.0));
+    vec3 normal = normalize(vec3((h - hx) * 12.0, (h - hy) * 12.0, 1.0));
 
     vec3 lightA = normalize(vec3(-0.4, 0.28, 0.86));
     vec3 lightB = normalize(vec3(0.62, -0.35, 0.7));
@@ -136,26 +136,30 @@ const FRAGMENT_SHADER_SOURCE = `
 
     float bands = smoothstep(0.14, 0.94, h);
     float edge = pow(1.0 - max(dot(normal, view), 0.0), 2.2);
-    float specA = pow(max(dot(reflected, lightA), 0.0), 18.0 + uChrome * 72.0);
-    float specB = pow(max(dot(reflected, lightB), 0.0), 10.0 + uChrome * 42.0);
-    float sheen = smoothstep(0.22, 0.96, sin((p.x - p.y) * 7.0 + h * 5.4));
+    float specA = pow(max(dot(reflected, lightA), 0.0), 28.0 + uChrome * 84.0);
+    float specB = pow(max(dot(reflected, lightB), 0.0), 18.0 + uChrome * 56.0);
+    float horizon = smoothstep(-0.34, 0.18, p.y);
+    float sky = smoothstep(0.02, 0.72, p.y);
+    float ground = smoothstep(0.62, -0.34, p.y);
+    float sheen = smoothstep(0.42, 0.98, sin((p.x * 1.2 - p.y * 0.42) * 3.1 + h * 1.8));
 
-    float seedRibbon = smoothstep(0.34, 0.98, sin((p.x + p.y * 0.7) * 4.4 + h * 3.2 + uTime * 0.2));
-    float ember = smoothstep(0.56, 1.0, sin((p.x - p.y * 1.4) * 5.1 - h * 3.8 + uTime * 0.34));
-    float violetBlue = smoothstep(0.48, 1.0, cos((p.x * 0.7 + p.y) * 3.6 + h * 2.4 - uTime * 0.18));
+    float seedRibbon = smoothstep(0.56, 0.98, sin((p.x * 1.6 + p.y * 0.4) * 2.2 + h * 1.4 + uTime * 0.12));
+    float ember = smoothstep(0.72, 1.0, sin((p.x * 1.1 - p.y * 0.65) * 2.5 - h * 1.2 + uTime * 0.16));
+    float violetBlue = smoothstep(0.58, 1.0, cos((p.x * 0.55 + p.y * 0.45) * 1.9 + h * 1.2 - uTime * 0.09));
 
-    vec3 seedMix = mix(uColorB, uColorE, violetBlue * 0.48);
-    seedMix = mix(seedMix, uColorD, seedRibbon * 0.2);
+    vec3 seedMix = mix(uColorB, uColorE, violetBlue * 0.32);
+    seedMix = mix(seedMix, uColorD, seedRibbon * 0.12);
 
-    vec3 base = mix(uColorA, seedMix, bands * 0.82);
-    base = mix(base, uColorC, sheen * 0.34 + ember * 0.16);
-    base += (specA * seedMix + specB * uColorC) * (0.16 + uChrome * 0.56);
-    base += edge * uChrome * 0.18;
-    base += pointerField * mix(uColorB, uColorC, 0.38) * 0.08;
+    vec3 distant = mix(uColorA, seedMix, bands * 0.48);
+    distant = mix(distant, uColorC, (sheen * 0.12 + ember * 0.2) * horizon);
+    vec3 base = mix(distant * 0.62, distant, sky * 0.48 + ground * 0.28);
+    base += (specA * seedMix + specB * uColorC) * (0.04 + uChrome * 0.16) * horizon;
+    base += edge * uChrome * 0.06;
+    base += pointerField * mix(uColorB, uColorC, 0.38) * 0.025;
 
-    float vignette = smoothstep(1.2, 0.28, length(p));
-    vec3 color = base * (0.48 + vignette * 0.64);
-    color = (color - 0.5) * (1.0 + uContrast * 0.78) + 0.5;
+    float vignette = smoothstep(1.34, 0.24, length(p * vec2(0.78, 1.08)));
+    vec3 color = base * (0.36 + vignette * 0.72);
+    color = (color - 0.5) * (1.0 + uContrast * 0.38) + 0.5;
 
     float grain = (hash(gl_FragCoord.xy + uTime * 60.0) - 0.5) * uGrain;
     color += grain;

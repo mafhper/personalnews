@@ -58,7 +58,9 @@ describe("LandingPage promo structure", () => {
     expect(liquidBackdrop).toBeInTheDocument();
     expect(liquidCanvas).toBeInTheDocument();
     expect(liquidCanvas?.getAttribute("aria-hidden")).toBeNull();
-    expect(heroImage?.getAttribute("src")).toContain("assets/screen.png");
+    expect(heroImage?.getAttribute("src")).toContain(
+      "assets/promo/screens/magazine_02.webp",
+    );
   });
 
   it("navigates hashes to sections without unmounting the landing", async () => {
