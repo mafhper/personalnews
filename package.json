@@ -165,7 +165,7 @@
     "lucide-react": "^1.7.0",
     "marked": "^18.0.2",
     "npm-run-all2": "^8.0.4",
-    "react": "^19.2.5",
+    "react": "^19.2.6",
     "react-dom": "^19.2.5",
     "react-i18next": "^16.6.6",
     "react-virtuoso": "^4.18.4",
