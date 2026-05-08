@@ -26,6 +26,7 @@
     "build:dashboard": "node quality-core/scripts/build-dashboard.cjs",
     "build": "bun run build:app && bun run build:dashboard",
     "preview": "bun vite preview",
+    "format:check": "node scripts/check-format.mjs",
     "test:drift": "node quality-core/scripts/check-test-classification.cjs",
     "test": "bun run test:drift && bun vitest run --environment jsdom --config quality-core/config/vitest.config.core.ts",
     "test:core": "bun run test",
