@@ -417,7 +417,7 @@ const LandingPage = ({
 
           <div className="promo-header__actions">
             <a
-              href={DEVELOPER_GITHUB_URL}
+              href={PERSONAL_NEWS_REPO_URL}
               target="_blank"
               rel="noreferrer"
               className="promo-header__repo"

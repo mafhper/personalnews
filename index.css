@@ -3968,17 +3968,18 @@ html {
 }
 
 .promo-product-frame:hover {
-  border-color: rgba(155, 216, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
   box-shadow:
-    0 34px 94px rgba(0, 0, 0, 0.54),
-    0 18px 44px rgba(22, 120, 212, 0.16),
-    0 10px 28px rgba(155, 216, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  transform: translateY(-2px);
+    0 38px 110px rgba(0, 0, 0, 0.6),
+    0 22px 54px rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(255, 255, 255, 0.06),
+    0 0 40px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  transform: translateY(-4px) scale(1.015);
 }
 
 .promo-product-frame:not(.promo-product-frame--rotating):hover img {
-  transform: scale(1.015);
+  transform: scale(1.025);
 }
 
 .promo-proof {
