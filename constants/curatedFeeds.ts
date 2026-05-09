@@ -7,7 +7,7 @@ import { FeedSource, FeedCategory } from "../types";
 
 export const INITIAL_APP_CONFIG = {
   "theme": "dark",
-  "layout": "bento",
+  "layout": "magazine",
   "timeFormat": "24h",
   "header": "sticky",
   "weatherCity": "São Paulo"

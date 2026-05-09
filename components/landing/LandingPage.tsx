@@ -218,8 +218,8 @@ const ProductFrame = ({
       window.clearTimeout(exitTimeoutId);
       exitTimeoutId = window.setTimeout(() => {
         setExitingIndex(null);
-      }, 1850);
-    }, 7600);
+      }, 2500);
+    }, 8400);
 
     return () => {
       window.clearInterval(intervalId);
@@ -750,7 +750,6 @@ const LandingPage = ({
       </main>
 
       <footer ref={footerRef} className="promo-footer">
-        <PromoLiquidMeshBackdrop className="promo-liquid-mesh--footer" />
         <div className="promo-shell promo-footer__inner">
           <div className="promo-footer__brand">
             <Logo size="sm" />
