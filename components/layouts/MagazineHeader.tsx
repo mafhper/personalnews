@@ -239,8 +239,8 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
             )}
 
             {/* Divider for List */}
-            <div className="flex items-center gap-4 mb-6">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
+            <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <h2 className="shrink-0 text-xs sm:text-sm font-bold uppercase tracking-[0.2em] sm:tracking-widest text-[rgb(var(--color-textSecondary))]">
                     Últimas leituras
                 </h2>
                 <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
