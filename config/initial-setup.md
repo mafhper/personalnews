@@ -148,17 +148,14 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Kotaku: <https://kotaku.com/rss>
 - Jogabilidade: <https://jogabilida.de/feed/>
-- PC Gamer: <https://www.pcgamer.com/feeds.xml>
 
 ### politics
 
-- G1 Política: <https://g1.globo.com/rss/g1/politica/>
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
 
 ### tech
 
-- CNET: <http://www.cnet.com/rss/news/>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - XDA: <https://www.xda-developers.com/feed/>
 
@@ -166,8 +163,6 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
-- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
-- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA> | Hide-from-All: true
 
 
 # Listas Curadas
@@ -191,6 +186,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
+- ICL Notícias: <https://iclnoticias.com.br/feed/>
 
 ### tech
 
@@ -276,6 +272,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - Mídia Ninja: <https://midianinja.org/feed/>
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
+- ICL Notícias: <https://iclnoticias.com.br/feed/>
 
 ### tech
 

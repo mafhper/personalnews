@@ -20,9 +20,9 @@ import { ArticleItem } from "./ArticleItem";
 import { ArticleItemLight } from "./ArticleItemLight";
 import { MagazineItem } from "./layouts/MagazineItem";
 import { MagazineHeader } from "./layouts/MagazineHeader";
-const MagazineReaderModal = lazy(() =>
-  import("./MagazineReaderModal").then((m) => ({
-    default: m.MagazineReaderModal,
+const ArticleReaderModal = lazy(() =>
+  import("./ArticleReaderModal").then((m) => ({
+    default: m.ArticleReaderModal,
   })),
 );
 import { useLogger } from "../services/logger";
@@ -297,7 +297,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
         </div>
         {readingArticle && (
           <Suspense fallback={null}>
-            <MagazineReaderModal
+            <ArticleReaderModal
               article={readingArticle}
               onClose={() => setReadingArticle(null)}
               onNext={handleNextArticle}
@@ -327,7 +327,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
       {readingArticle && (
         <Suspense fallback={null}>
-          <MagazineReaderModal
+          <ArticleReaderModal
             article={readingArticle}
             onClose={() => setReadingArticle(null)}
             onNext={handleNextArticle}

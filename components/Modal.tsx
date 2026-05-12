@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useFocusManagement } from '../hooks/useFocusManagement';
+import { useDocumentScrollLock } from '../hooks/useDocumentScrollLock';
 
 interface ModalProps {
     isOpen: boolean;
@@ -77,15 +78,7 @@ export const Modal: React.FC<ModalProps> = ({
         onClose();
     };
 
-    // Lock body scroll when modal is open
-    React.useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        }
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, [isOpen]);
+    useDocumentScrollLock(isOpen);
 
     if (!isOpen) {
         return null;
