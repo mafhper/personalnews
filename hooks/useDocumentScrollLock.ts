@@ -21,15 +21,20 @@ export const useDocumentScrollLock = (locked: boolean) => {
       previousHtmlOverscrollBehavior = html.style.overscrollBehavior;
       previousBodyOverscrollBehavior = body.style.overscrollBehavior;
 
-      const scrollbarWidth = window.innerWidth - html.clientWidth;
+      const gutterStable =
+        getComputedStyle(html).scrollbarGutter === "stable" ||
+        getComputedStyle(body).scrollbarGutter === "stable";
 
       html.style.overflow = "hidden";
       body.style.overflow = "hidden";
       html.style.overscrollBehavior = "none";
       body.style.overscrollBehavior = "none";
 
-      if (scrollbarWidth > 0) {
-        body.style.paddingRight = `${scrollbarWidth}px`;
+      if (!gutterStable) {
+        const scrollbarWidth = window.innerWidth - html.clientWidth;
+        if (scrollbarWidth > 0) {
+          body.style.paddingRight = `${scrollbarWidth}px`;
+        }
       }
     }
 
