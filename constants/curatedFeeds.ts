@@ -97,16 +97,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Jogabilidade"
   },
   {
-    "url": "https://www.pcgamer.com/feeds.xml",
-    "categoryId": "games",
-    "customTitle": "PC Gamer"
-  },
-  {
-    "url": "https://g1.globo.com/rss/g1/politica/",
-    "categoryId": "politics",
-    "customTitle": "G1 Política"
-  },
-  {
     "url": "https://piaui.folha.uol.com.br/feed/",
     "categoryId": "politics",
     "customTitle": "Piauí"
@@ -115,11 +105,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://theintercept.com/brasil/feed/",
     "categoryId": "politics",
     "customTitle": "The Intercept Brasil"
-  },
-  {
-    "url": "http://www.cnet.com/rss/news/",
-    "categoryId": "tech",
-    "customTitle": "CNET"
   },
   {
     "url": "https://www.theverge.com/rss/index.xml",
@@ -141,18 +126,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
     "categoryId": "youtube",
     "customTitle": "Corridor Crew",
-    "hideFromAll": true
-  },
-  {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
-    "categoryId": "youtube",
-    "customTitle": "Diolinux",
-    "hideFromAll": true
-  },
-  {
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
-    "categoryId": "youtube",
-    "customTitle": "News Rockstar",
     "hideFromAll": true
   }
 ];
@@ -188,6 +161,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://theintercept.com/brasil/feed/",
       "categoryId": "politics",
       "customTitle": "The Intercept Brasil"
+    },
+    {
+      "url": "https://iclnoticias.com.br/feed/",
+      "categoryId": "politics",
+      "customTitle": "ICL Notícias"
     },
     {
       "url": "https://diolinux.com.br/feed",
@@ -462,6 +440,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://theintercept.com/brasil/feed/",
       "categoryId": "politics",
       "customTitle": "The Intercept Brasil"
+    },
+    {
+      "url": "https://iclnoticias.com.br/feed/",
+      "categoryId": "politics",
+      "customTitle": "ICL Notícias"
     },
     {
       "url": "https://9to5google.com/feed/",

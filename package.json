@@ -1,6 +1,6 @@
 {
   "name": "personal-news",
-  "version": "1.10.3",
+  "version": "1.10.4",
   "private": true,
   "type": "module",
   "description": "A fast, modern personal news aggregator that serves as your browser homepage. Built with React, TypeScript, and optimized with Bun.",
@@ -25,6 +25,8 @@
     "build:app": "npm run promo:changelog && bun run config:sync && bunx tsc --noEmit && bun vite build",
     "build:dashboard": "node quality-core/scripts/build-dashboard.cjs",
     "build": "bun run build:app && bun run build:dashboard",
+    "install:dashboard": "cd quality-core/dashboard && bun install",
+    "install:all": "bun install && bun run install:dashboard",
     "preview": "bun vite preview",
     "format:check": "node scripts/check-format.mjs",
     "test:drift": "node quality-core/scripts/check-test-classification.cjs",

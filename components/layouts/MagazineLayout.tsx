@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Article } from "../../types";
-import { MagazineReaderModal } from "../MagazineReaderModal";
+import { ArticleReaderModal } from "../ArticleReaderModal";
 import { useAppearance } from "../../hooks/useAppearance";
 import { useLanguage } from "../../hooks/useLanguage";
 import { ArticleImage } from "../ArticleImage";
@@ -390,7 +390,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
       {/* Reader Modal */}
       {readingArticle && (
-        <MagazineReaderModal
+        <ArticleReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
           onNext={handleNextArticle}

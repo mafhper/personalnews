@@ -4,6 +4,7 @@ import { getVideoEmbedDetails } from "../utils/videoEmbed";
 import { useLanguage } from "../hooks/useLanguage";
 import { useModal } from "../hooks/useModal";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useDocumentScrollLock } from "../hooks/useDocumentScrollLock";
 import { openExternalLink } from "../utils/openExternalLink";
 import { sanitizeUrl } from "../utils/sanitization";
 import { detectEnvironment } from "../services/environmentDetector";
@@ -60,6 +61,8 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     !!videoDetails?.mayRequireExternalFallback &&
     videoDetails.provider === "youtube" &&
     isTauri;
+
+  useDocumentScrollLock(true);
 
   // Persistent reader preferences
   const [preferences, setPreferences] = useLocalStorage<ReaderPreferences>(

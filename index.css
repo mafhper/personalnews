@@ -2209,47 +2209,148 @@ Layout Framework (Restored Base Classes)
   }
 }
 
-/* Custom Scrollbar */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color:
-    rgba(var(--color-accent), 0.78)
-    rgba(var(--theme-manager-bg, var(--color-background)), 0.42);
+/* Custom Scrollbar — theme aware */
+:root {
+  --scrollbar-size: 8px;
+  --scrollbar-radius: 999px;
+  --scrollbar-track: transparent;
+
+  /* Firefox: fallback sólido e discreto */
+  --scrollbar-thumb-firefox: rgb(var(--color-border) / 0.55);
+
+  /* Chromium / Edge / Tauri WebView */
+  /* Base neutra: accent só como brilho no topo, dissolve em cinza contextual */
+  --scrollbar-thumb-muted: rgb(var(--color-border) / 0.36);
+  --scrollbar-thumb-muted-end: rgb(var(--color-border) / 0.22);
+
+  --scrollbar-thumb:
+    linear-gradient(
+      180deg,
+      rgb(var(--color-accent) / 0.30) 0%,
+      rgb(var(--color-accent) / 0.18) 18%,
+      var(--scrollbar-thumb-muted) 48%,
+      var(--scrollbar-thumb-muted-end) 100%
+    );
+
+  --scrollbar-thumb-hover:
+    linear-gradient(
+      180deg,
+      rgb(var(--color-accent) / 0.42) 0%,
+      rgb(var(--color-accent) / 0.24) 22%,
+      rgb(var(--color-border) / 0.44) 56%,
+      rgb(var(--color-border) / 0.28) 100%
+    );
+
+  --scrollbar-thumb-active:
+    linear-gradient(
+      180deg,
+      rgb(var(--color-accent) / 0.54) 0%,
+      rgb(var(--color-accent) / 0.30) 24%,
+      rgb(var(--color-border) / 0.52) 62%,
+      rgb(var(--color-border) / 0.34) 100%
+    );
 }
 
+/* Evita micro-pulo horizontal quando scroll aparece/desaparece */
+html {
+  scrollbar-gutter: stable;
+}
+
+/*
+  Firefox only.
+  scrollbar-color e scrollbar-width também são suportados no
+  Chromium moderno e sobrescrevem ::-webkit-scrollbar-*.
+  Por isso devem ser isolados aqui para não matar o gradiente.
+*/
+@supports (-moz-appearance: none) {
+  html,
+  body,
+  #root,
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb-firefox) var(--scrollbar-track);
+  }
+}
+
+/* Chromium / Edge / Tauri WebView */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar,
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
 
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+#root::-webkit-scrollbar-track,
 .custom-scrollbar::-webkit-scrollbar-track {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--color-accent), 0.16),
-      rgba(var(--theme-manager-bg, var(--color-background)), 0.52)
-    );
-  border-radius: 999px;
+  background: var(--scrollbar-track);
 }
 
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+#root::-webkit-scrollbar-thumb,
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--color-accent), 0.9),
-      rgba(var(--theme-manager-text, var(--color-text)), 0.34)
-    );
-  border: 2px solid rgba(var(--theme-manager-bg, var(--color-background)), 0.72);
-  border-radius: 999px;
+  border-radius: var(--scrollbar-radius);
+  background-image: var(--scrollbar-thumb);
+  background-color: rgb(var(--color-border) / 0.36);
 }
 
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+#root::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--color-accent), 1),
-      rgba(var(--theme-manager-text, var(--color-text)), 0.48)
-    );
+  background-image: var(--scrollbar-thumb-hover);
+  background-color: rgb(var(--color-border) / 0.44);
+}
+
+html::-webkit-scrollbar-thumb:active,
+body::-webkit-scrollbar-thumb:active,
+#root::-webkit-scrollbar-thumb:active,
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background-image: var(--scrollbar-thumb-active);
+  background-color: rgb(var(--color-border) / 0.52);
+}
+
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner,
+#root::-webkit-scrollbar-corner,
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Acessibilidade: alto contraste */
+@media (prefers-contrast: high) {
+  :root {
+    --scrollbar-thumb-firefox: rgb(var(--color-accent) / 0.82);
+    --scrollbar-thumb-muted: rgb(var(--color-border) / 0.58);
+    --scrollbar-thumb-muted-end: rgb(var(--color-border) / 0.42);
+    --scrollbar-thumb:
+      linear-gradient(
+        180deg,
+        rgb(var(--color-accent) / 0.90) 0%,
+        rgb(var(--color-accent) / 0.74) 22%,
+        var(--scrollbar-thumb-muted) 56%,
+        var(--scrollbar-thumb-muted-end) 100%
+      );
+    --scrollbar-thumb-hover:
+      linear-gradient(
+        180deg,
+        rgb(var(--color-accent) / 0.95) 0%,
+        rgb(var(--color-accent) / 0.82) 26%,
+        rgb(var(--color-border) / 0.66) 62%,
+        rgb(var(--color-border) / 0.48) 100%
+      );
+    --scrollbar-thumb-active:
+      linear-gradient(
+        180deg,
+        rgb(var(--color-accent) / 1) 0%,
+        rgb(var(--color-accent) / 0.88) 28%,
+        rgb(var(--color-border) / 0.74) 68%,
+        rgb(var(--color-border) / 0.56) 100%
+      );
+  }
 }
 
 /* Utilities to hide scrollbars */
