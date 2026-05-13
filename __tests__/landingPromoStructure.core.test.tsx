@@ -62,6 +62,8 @@ describe("LandingPage promo structure", () => {
     const heroImage = container.querySelector(".promo-product-frame img");
 
     expect(liquidBackdrop).toBeInTheDocument();
+    expect(liquidBackdrop).toHaveAttribute("data-cycle-backdrop", "day-night");
+    expect(liquidBackdrop?.className).toContain("promo-day-cycle-backdrop");
     expect(liquidCanvas).toBeInTheDocument();
     expect(liquidCanvas?.getAttribute("aria-hidden")).toBeNull();
     expect(heroImage?.getAttribute("src")).toContain(

@@ -3452,6 +3452,8 @@ html {
 
 .promo-root {
   --promo-bg-hero: #000000;
+  --promo-page-bg-rgb: 10 10 10;
+  --promo-sky-wash-rgb: 10 10 10;
   --promo-bg-ink: #07111d;
   --promo-bg-section: #0a0a0a;
   --promo-bg-alt: #111111;
@@ -3470,6 +3472,7 @@ html {
   --promo-version-featured: #151515;
   --promo-version-featured-hover: #0f0f0f;
   --promo-accent: #d97657;
+  --promo-accent-rgb: 217 118 87;
   --promo-accent-bg: rgba(217, 118, 87, 0.15);
   --promo-accent-border: rgba(217, 118, 87, 0.8);
   --promo-accent-tint: rgba(217, 118, 87, 0.08);
@@ -3491,7 +3494,7 @@ html {
     rgba(217, 118, 87, 0.08) 0 0 0 1px inset;
   --promo-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 
-  background: var(--promo-bg-hero);
+  background: rgb(var(--promo-page-bg-rgb));
   color: var(--promo-text-primary);
   font-family: var(--promo-font-body);
   min-height: 100vh;
@@ -3749,7 +3752,7 @@ html {
 .promo-main {
   position: relative;
   overflow: hidden;
-  background: #0a0a0a;
+  background: rgb(var(--promo-page-bg-rgb));
 }
 
 .promo-liquid-mesh {
@@ -3757,11 +3760,32 @@ html {
   top: 0;
   right: 0;
   left: 0;
-  height: min(1240px, 100vh);
+  height: clamp(560px, 88svh, 920px);
   pointer-events: none;
   overflow: hidden;
-  background: #0a2a52;
+  background: rgb(var(--promo-page-bg-rgb));
   isolation: isolate;
+}
+
+.promo-day-cycle-backdrop {
+  -webkit-mask-image:
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 1) 0%,
+      rgb(0 0 0 / 1) 54%,
+      rgb(0 0 0 / 0.86) 68%,
+      rgb(0 0 0 / 0.42) 84%,
+      rgb(0 0 0 / 0) 100%
+    );
+  mask-image:
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 1) 0%,
+      rgb(0 0 0 / 1) 54%,
+      rgb(0 0 0 / 0.86) 68%,
+      rgb(0 0 0 / 0.42) 84%,
+      rgb(0 0 0 / 0) 100%
+    );
 }
 
 .promo-liquid-mesh__fallback,
@@ -3774,10 +3798,18 @@ html {
 
 .promo-liquid-mesh__fallback {
   background:
-    radial-gradient(ellipse at 58% 34%, rgba(155, 216, 255, 0.22), transparent 38%),
-    radial-gradient(ellipse at 32% 62%, rgba(248, 251, 255, 0.16), transparent 42%),
-    radial-gradient(ellipse at 72% 56%, rgba(22, 120, 212, 0.18), transparent 40%),
-    linear-gradient(180deg, #1678d4 0%, #4da3e8 45%, #0a2a52 100%);
+    radial-gradient(ellipse at 20% 18%, rgb(245 200 120 / 0.34), transparent 25rem),
+    radial-gradient(ellipse at 68% 20%, rgb(255 241 118 / 0.18), transparent 22rem),
+    radial-gradient(ellipse at 74% 40%, rgb(106 27 154 / 0.16), transparent 26rem),
+    linear-gradient(
+      180deg,
+      #0a2463 0%,
+      #1678d4 28%,
+      #e3f2fd 45%,
+      #ff6f00 62%,
+      #0b0b2a 82%,
+      rgb(var(--promo-page-bg-rgb)) 100%
+    );
   filter: saturate(1.04);
 }
 
@@ -3795,18 +3827,46 @@ html {
 
 .promo-liquid-mesh::before {
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.34) 42%, rgba(0, 0, 0, 0.08) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.82) 100%),
-    radial-gradient(ellipse at 64% 28%, transparent, rgba(0, 0, 0, 0.18) 88%);
+    linear-gradient(90deg, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.36) 42%, rgba(0, 0, 0, 0.08) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.04) 50%, rgba(0, 0, 0, 0.44) 100%),
+    radial-gradient(ellipse at 64% 28%, transparent, rgba(0, 0, 0, 0.16) 88%);
   z-index: 1;
 }
 
 .promo-liquid-mesh::after {
   background:
-    radial-gradient(ellipse at 30% 50%, rgba(0, 0, 0, 0.14), transparent 48%),
-    linear-gradient(180deg, transparent 56%, rgba(10, 10, 10, 0.92) 88%, #0a0a0a 100%);
+    radial-gradient(ellipse at 30% 50%, rgba(0, 0, 0, 0.12), transparent 48%),
+    linear-gradient(
+      180deg,
+      rgb(var(--promo-sky-wash-rgb) / 0) 44%,
+      rgb(var(--promo-sky-wash-rgb) / 0.34) 68%,
+      rgb(var(--promo-page-bg-rgb) / 0.92) 90%,
+      rgb(var(--promo-page-bg-rgb)) 100%
+    );
   opacity: 1;
   z-index: 2;
+}
+
+@supports not ((mask-image: linear-gradient(#000, transparent)) or (-webkit-mask-image: linear-gradient(#000, transparent))) {
+  .promo-day-cycle-backdrop {
+    opacity: 0.96;
+  }
+
+  .promo-day-cycle-backdrop::after {
+    background:
+      linear-gradient(
+        180deg,
+        transparent 38%,
+        rgb(var(--promo-page-bg-rgb) / 0.72) 72%,
+        rgb(var(--promo-page-bg-rgb)) 100%
+      );
+  }
+}
+
+@media (max-width: 768px) {
+  .promo-liquid-mesh {
+    height: clamp(620px, 96svh, 860px);
+  }
 }
 
 .promo-section {
