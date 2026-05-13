@@ -60,6 +60,8 @@ const FORCED_CYCLE_PHASES: Record<string, number> = {
   night: 0.62,
   "deep-night": 0.8,
   dawn: 0.94,
+  "loop-end": 0.99,
+  "loop-start": 0,
 };
 
 const CLOCK_CYCLE_SEGMENTS = [
@@ -153,10 +155,9 @@ const FRAGMENT_SHADER_SOURCE = `
       return phaseWindow(x, start, end, feather);
     }
 
-    return max(
-      phaseWindow(x, start, 1.0, feather),
-      phaseWindow(x, 0.0, end, feather)
-    );
+    float enter = smoothstep(start, min(start + feather, 1.0), x);
+    float exit = 1.0 - smoothstep(max(end - feather, 0.0), end, x);
+    return saturate(max(enter, exit));
   }
 
   float starLayer(vec2 uv, float t) {
