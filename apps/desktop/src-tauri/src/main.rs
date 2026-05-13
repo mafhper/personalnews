@@ -21,6 +21,11 @@ use tauri_plugin_shell::{
 const BACKEND_HOST: &str = "127.0.0.1";
 const BACKEND_READY_EVENT: &str = "backend-ready";
 const BACKEND_STATUS_CHANGED_EVENT: &str = "backend-status-changed";
+const RESTART_WINDOW: Duration = Duration::from_secs(60 * 60);
+const RESTART_COOLDOWN: Duration = Duration::from_secs(30);
+const MAX_RESTARTS_PER_WINDOW: usize = 5;
+const MAX_FRONTEND_LOG_MESSAGE_BYTES: usize = 120;
+const MAX_FRONTEND_LOG_PAYLOAD_BYTES: usize = 2_048;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,6 +68,7 @@ struct BackendSidecarState {
     child: Mutex<Option<CommandChild>>,
     auth_token: Mutex<Option<String>>,
     status: Mutex<DesktopBackendStatus>,
+    restart_attempts: Mutex<Vec<Instant>>,
 }
 
 fn start_backend_sidecar(app: &AppHandle) -> Result<(), String> {
@@ -455,11 +461,13 @@ fn frontend_log_path(app: &AppHandle) -> Option<PathBuf> {
 
 fn log_frontend_event(app: &AppHandle, message: &str, payload: Option<&str>) {
     if let Some(path) = frontend_log_path(app) {
-        let safe_payload = payload.unwrap_or("").replace('\n', "\\n");
+        let safe_message = sanitize_log_field(message, MAX_FRONTEND_LOG_MESSAGE_BYTES);
+        let safe_payload =
+            sanitize_log_field(payload.unwrap_or(""), MAX_FRONTEND_LOG_PAYLOAD_BYTES);
         let line = format!(
             "{} message={} payload={}\n",
             timestamp_like_now(),
-            message,
+            safe_message,
             safe_payload
         );
         let _ = fs::OpenOptions::new()
@@ -468,6 +476,24 @@ fn log_frontend_event(app: &AppHandle, message: &str, payload: Option<&str>) {
             .open(path)
             .and_then(|mut file| file.write_all(line.as_bytes()));
     }
+}
+
+fn sanitize_log_field(value: &str, max_bytes: usize) -> String {
+    let mut output = String::with_capacity(value.len().min(max_bytes));
+    for ch in value.chars() {
+        if output.len() >= max_bytes {
+            output.push_str("...");
+            break;
+        }
+        match ch {
+            '\n' => output.push_str("\\n"),
+            '\r' => output.push_str("\\r"),
+            '\t' => output.push_str("\\t"),
+            c if c.is_control() => output.push('?'),
+            c => output.push(c),
+        }
+    }
+    output
 }
 
 fn timestamp_like_now() -> String {
@@ -554,7 +580,7 @@ fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
         .map_err(|e| format!("invalid url: {e}"))?;
 
     let scheme = parsed.scheme();
-    if scheme != "http" && scheme != "https" && scheme != "mailto" && scheme != "tel" {
+    if scheme != "http" && scheme != "https" && scheme != "mailto" {
         return Err("unsupported external url scheme".to_string());
     }
 
@@ -567,6 +593,7 @@ fn open_external_url(app: AppHandle, url: String) -> Result<(), String> {
 #[tauri::command]
 fn get_backend_auth_token(app: AppHandle) -> Result<Option<String>, String> {
     let state = app.state::<BackendSidecarState>();
+    log_desktop_event(&app, "event=backend_auth_token_requested");
     let guard = state
         .auth_token
         .lock()
@@ -608,10 +635,35 @@ fn append_frontend_log(
 #[tauri::command]
 fn restart_backend_sidecar(app: AppHandle) -> Result<DesktopBackendStatus, String> {
     log_desktop_event(&app, "event=restart_requested");
+    enforce_restart_rate_limit(&app)?;
     stop_backend_sidecar(&app);
     thread::sleep(Duration::from_millis(500));
     start_backend_sidecar(&app)?;
     Ok(get_backend_status_snapshot(&app))
+}
+
+fn enforce_restart_rate_limit(app: &AppHandle) -> Result<(), String> {
+    let state = app.state::<BackendSidecarState>();
+    let now = Instant::now();
+    let mut attempts = state
+        .restart_attempts
+        .lock()
+        .map_err(|_| "failed to lock restart limiter".to_string())?;
+
+    attempts.retain(|attempt| now.duration_since(*attempt) < RESTART_WINDOW);
+
+    if let Some(last_attempt) = attempts.last() {
+        if now.duration_since(*last_attempt) < RESTART_COOLDOWN {
+            return Err("please wait before restarting the backend again".to_string());
+        }
+    }
+
+    if attempts.len() >= MAX_RESTARTS_PER_WINDOW {
+        return Err("too many backend restart attempts; try again later".to_string());
+    }
+
+    attempts.push(now);
+    Ok(())
 }
 
 fn main() {

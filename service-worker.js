@@ -1,7 +1,8 @@
-const STATIC_CACHE_NAME = "static-cache-v2";
-const DYNAMIC_CACHE_NAME = "dynamic-cache-v2";
-const IMAGE_CACHE_NAME = "image-cache-v1";
-const API_CACHE_NAME = "api-cache-v1";
+const SANITIZER_CACHE_POLICY_VERSION = "feed-sanitizer-v1";
+const STATIC_CACHE_NAME = `static-cache-v3-${SANITIZER_CACHE_POLICY_VERSION}`;
+const DYNAMIC_CACHE_NAME = `dynamic-cache-v3-${SANITIZER_CACHE_POLICY_VERSION}`;
+const IMAGE_CACHE_NAME = `image-cache-v2-${SANITIZER_CACHE_POLICY_VERSION}`;
+const API_CACHE_NAME = `api-cache-v2-${SANITIZER_CACHE_POLICY_VERSION}`;
 
 // All the files that make up the "app shell"
 const STATIC_ASSETS = [
@@ -49,13 +50,18 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  const currentCaches = new Set([
+    STATIC_CACHE_NAME,
+    DYNAMIC_CACHE_NAME,
+    IMAGE_CACHE_NAME,
+    API_CACHE_NAME,
+  ]);
+
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter(
-            (key) => key !== STATIC_CACHE_NAME && key !== DYNAMIC_CACHE_NAME
-          )
+          .filter((key) => !currentCaches.has(key))
           .map((key) => caches.delete(key))
       );
     })
@@ -65,6 +71,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  if (request.method !== "GET") {
+    return;
+  }
+
   const url = new URL(request.url);
 
   // Use a stale-while-revalidate strategy for APIs and dynamic modules.
@@ -75,8 +85,9 @@ self.addEventListener("fetch", (event) => {
     url.hostname === "esm.sh" ||
     url.hostname === "fonts.gstatic.com"
   ) {
+    const cacheName = url.hostname === "api.rss2json.com" ? API_CACHE_NAME : DYNAMIC_CACHE_NAME;
     event.respondWith(
-      caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
+      caches.open(cacheName).then((cache) => {
         return cache.match(request).then((cachedResponse) => {
           const fetchPromise = fetch(request)
             .then((networkResponse) => {
@@ -85,7 +96,7 @@ self.addEventListener("fetch", (event) => {
                 // Check security headers
                 const contentType = networkResponse.headers.get('content-type') || '';
                 const xContentTypeOptions = networkResponse.headers.get('x-content-type-options');
-                
+
                 // Validate content type
                 const allowedTypes = [
                   'application/json',
@@ -97,22 +108,22 @@ self.addEventListener("fetch", (event) => {
                   'application/font',
                   'font/',
                 ];
-                
-                const isValidType = allowedTypes.some(type => 
+
+                const isValidType = allowedTypes.some(type =>
                   contentType.toLowerCase().includes(type)
                 );
-                
+
                 // Reject suspicious content types
                 const suspiciousTypes = [
                   'application/javascript',
                   'text/javascript',
                   'application/x-executable',
                 ];
-                
-                const isSuspicious = suspiciousTypes.some(type => 
+
+                const isSuspicious = suspiciousTypes.some(type =>
                   contentType.toLowerCase().includes(type)
                 );
-                
+
                 // Only cache if content type is valid and not suspicious
                 if (isValidType && !isSuspicious) {
                   // Additional validation: check content length
@@ -125,7 +136,7 @@ self.addEventListener("fetch", (event) => {
                       return networkResponse; // Return but don't cache
                     }
                   }
-                  
+
                   cache.put(request, networkResponse.clone());
                 } else {
                   console.warn('Invalid or suspicious content type, not caching:', contentType, request.url);
@@ -169,11 +180,11 @@ self.addEventListener("fetch", (event) => {
                 'font/',
                 'application/font',
               ];
-              
-              const isValidStaticType = allowedStaticTypes.some(type => 
+
+              const isValidStaticType = allowedStaticTypes.some(type =>
                 contentType.toLowerCase().includes(type)
               );
-              
+
               if (isValidStaticType) {
                 cache.put(request, fetchResponse.clone());
               } else {

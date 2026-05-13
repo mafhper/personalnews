@@ -15,7 +15,7 @@
 import type { Article } from "../types";
 import { getLogger } from "./logger";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
-import { parseSecureRssXml } from "./secureXmlParser";
+import { parseSecureOpmlXml, parseSecureRssXml } from "./secureXmlParser";
 import { proxyManager, type ProxyAttempt } from "./proxyManager";
 import { getAlternativeUrls } from "./feedUrlMapper";
 import { type FeedRouteInfo } from "./feedDiagnostics";
@@ -556,11 +556,11 @@ export function parseXmlResponse(
       const publishedElements = item.getElementsByTagName("published");
       const updatedElements = item.getElementsByTagName("updated");
       const dcDateElements = item.getElementsByTagName("dc:date") || item.getElementsByTagName("date");
-      
+
       const dateElement =
-        pubDateElements[0] || 
-        publishedElements[0] || 
-        updatedElements[0] || 
+        pubDateElements[0] ||
+        publishedElements[0] ||
+        updatedElements[0] ||
         dcDateElements[0];
 
       if (dateElement?.textContent) {
@@ -1380,12 +1380,19 @@ export interface OpmlFeed {
   category?: string;
 }
 
+const MAX_OPML_FEEDS = 500;
+const MAX_OPML_DEPTH = 5;
+
 export function parseOpml(fileContent: string): OpmlFeed[] {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(fileContent, "text/xml");
+  const xmlDoc = parseSecureOpmlXml(fileContent);
   const feeds: OpmlFeed[] = [];
 
-  const processOutline = (outline: Element, parentCategory?: string) => {
+  const processOutline = (
+    outline: Element,
+    parentCategory?: string,
+    depth = 0,
+  ) => {
+    if (depth > MAX_OPML_DEPTH || feeds.length >= MAX_OPML_FEEDS) return;
     const xmlUrl = outline.getAttribute("xmlUrl");
     const text = outline.getAttribute("text") || outline.getAttribute("title");
 
@@ -1399,9 +1406,10 @@ export function parseOpml(fileContent: string): OpmlFeed[] {
       const categoryName = text || parentCategory;
 
       for (let i = 0; i < outline.children.length; i++) {
+        if (feeds.length >= MAX_OPML_FEEDS) break;
         const child = outline.children[i];
         if (child.tagName.toLowerCase() === "outline") {
-          processOutline(child, categoryName);
+          processOutline(child, categoryName, depth + 1);
         }
       }
     }

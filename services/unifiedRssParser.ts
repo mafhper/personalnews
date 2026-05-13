@@ -1,6 +1,6 @@
 /**
  * Unified RSS Parser
- * 
+ *
  * Automatically detects environment and uses the appropriate parsing strategy:
  * - Development: Local proxy with fallback to production APIs
  * - Production/GitHub Pages: Production APIs with multiple fallbacks
@@ -11,15 +11,16 @@ import type { Article } from "../types";
 import { getLogger } from "./logger";
 import { perfDebugger } from "./performanceUtils";
 import { getCachedArticles } from "./smartCache";
-import { 
-  detectEnvironment, 
-  getRssParserConfig, 
+import {
+  detectEnvironment,
+  getRssParserConfig,
   checkLocalProxyAvailability
 } from "./environmentDetector";
 
 // Import both parsers
 import { parseRssUrl as parseRssUrlDev } from "./rssParser";
 import { parseRssUrl as parseRssUrlProd } from "./productionRssParser";
+import { parseSecureOpmlXml } from "./secureXmlParser";
 
 const logger = getLogger();
 
@@ -36,11 +37,11 @@ export async function parseRssUrl(
     forceProduction?: boolean;
   } = {}
 ): Promise<{ title: string; articles: Article[] }> {
-  
+
   const env = detectEnvironment();
   const config = getRssParserConfig();
   const { forceProduction = false } = options;
-  
+
   // Merge options with environment config
   const finalOptions = {
     timeout: options.timeout || config.timeout,
@@ -75,9 +76,9 @@ export async function parseRssUrl(
           cachedCount: cachedArticles.length,
         },
       });
-      
+
       perfDebugger.log(`Using ${cachedArticles.length} cached articles for feed: ${url}`);
-      
+
       return {
         title: cachedArticles[0].sourceTitle || "Cached Feed",
         articles: cachedArticles,
@@ -87,7 +88,7 @@ export async function parseRssUrl(
 
   // Determine parsing strategy
   let useProductionParser = env.useProductionParser || forceProduction;
-  
+
   // In development or Tauri, check if local proxy is available
   if ((env.isDevelopment || env.isTauri) && !forceProduction) {
     try {
@@ -110,7 +111,7 @@ export async function parseRssUrl(
       useProductionParser = true;
       logger.warn(`Proxy check failed, using production parser`, {
         component: "unifiedRssParser",
-        additionalData: { 
+        additionalData: {
           feedUrl: url,
           error: error instanceof Error ? error.message : String(error),
         },
@@ -121,7 +122,7 @@ export async function parseRssUrl(
   // Parse using appropriate strategy
   try {
     let result: { title: string; articles: Article[] };
-    
+
     if (useProductionParser) {
       perfDebugger.log(`Using production RSS parser for: ${url}`);
       result = await parseRssUrlProd(url, finalOptions);
@@ -141,10 +142,10 @@ export async function parseRssUrl(
     });
 
     return result;
-    
+
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     logger.error(`RSS parsing failed with ${useProductionParser ? 'production' : 'development'} parser`, error as Error, {
       component: "unifiedRssParser",
       additionalData: {
@@ -160,11 +161,11 @@ export async function parseRssUrl(
         component: "unifiedRssParser",
         additionalData: { feedUrl: url },
       });
-      
+
       try {
         perfDebugger.log(`Fallback: Using production RSS parser for: ${url}`);
         const fallbackResult = await parseRssUrlProd(url, finalOptions);
-        
+
         logger.info(`Fallback parsing successful`, {
           component: "unifiedRssParser",
           additionalData: {
@@ -172,18 +173,18 @@ export async function parseRssUrl(
             articlesCount: fallbackResult.articles.length,
           },
         });
-        
+
         return fallbackResult;
       } catch (fallbackError) {
         const fallbackErrorMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
         logger.error(`Fallback parsing also failed`, fallbackError as Error, {
           component: "unifiedRssParser",
-          additionalData: { 
+          additionalData: {
             feedUrl: url,
             fallbackError: fallbackErrorMessage
           },
         });
-        
+
         // Throw original error
         throw error;
       }
@@ -208,16 +209,16 @@ export async function parseMultipleRssUrls(
     onProgress?: (completed: number, total: number) => void;
   } = {}
 ): Promise<Array<{ url: string; result?: { title: string; articles: Article[] }; error?: string }>> {
-  
+
   const config = getRssParserConfig();
   const { onProgress } = options;
-  
+
   const results: Array<{ url: string; result?: { title: string; articles: Article[] }; error?: string }> = [];
-  
+
   // Process in batches to avoid overwhelming APIs
   const batchSize = config.batchSize;
   const batchDelay = config.batchDelay;
-  
+
   logger.info(`Starting batch RSS parsing`, {
     component: "unifiedRssParser",
     additionalData: {
@@ -229,7 +230,7 @@ export async function parseMultipleRssUrls(
 
   for (let i = 0; i < urls.length; i += batchSize) {
     const batch = urls.slice(i, i + batchSize);
-    
+
     logger.debug(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(urls.length / batchSize)}`, {
       component: "unifiedRssParser",
       additionalData: {
@@ -257,15 +258,15 @@ export async function parseMultipleRssUrls(
     });
 
     const batchResults = await Promise.allSettled(batchPromises);
-    
+
     // Process batch results
     batchResults.forEach((promiseResult, index) => {
       if (promiseResult.status === 'fulfilled') {
         results.push(promiseResult.value);
       } else {
         const url = batch[index];
-        results.push({ 
-          url, 
+        results.push({
+          url,
           error: promiseResult.reason instanceof Error ? promiseResult.reason.message : String(promiseResult.reason)
         });
       }
@@ -303,13 +304,13 @@ export async function parseMultipleRssUrls(
  * Export OPML parsing (unchanged)
  */
 export function parseOpml(fileContent: string): string[] {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(fileContent, "text/xml");
+  const xmlDoc = parseSecureOpmlXml(fileContent);
 
   const outlines = xmlDoc.getElementsByTagName("outline");
   const urls: string[] = [];
+  const maxUrls = 500;
 
-  for (let i = 0; i < outlines.length; i++) {
+  for (let i = 0; i < outlines.length && urls.length < maxUrls; i++) {
     const outline = outlines[i];
     const xmlUrl = outline.getAttribute("xmlUrl");
     if (xmlUrl) {

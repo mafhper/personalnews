@@ -2,13 +2,31 @@ import DOMPurify from 'dompurify';
 
 /**
  * Utilitários de sanitização para prevenir vazamento de HTML e XSS
- * 
+ *
  * Este módulo fornece funções para sanitizar conteúdo HTML que pode vir
  * de feeds RSS externos, prevenindo ataques XSS e vazamento de tags HTML.
  */
 
 // Configure DOMPurify
 const purify = DOMPurify(typeof window !== 'undefined' ? window : undefined);
+
+const SAFE_FEED_HTML_TAGS = [
+  'p', 'br', 'b', 'i', 'em', 'strong', 'u', 'a', 'img',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'ul', 'ol', 'li', 'blockquote', 'code', 'pre',
+  'span', 'div', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
+  'figure', 'figcaption', 'picture', 'source',
+];
+const SAFE_FEED_HTML_ATTR = [
+  'href', 'src', 'srcset', 'alt', 'title', 'class', 'target', 'rel',
+  'width', 'height', 'loading', 'decoding',
+];
+const FORBIDDEN_FEED_HTML_TAGS = [
+  'script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button',
+  'svg', 'math',
+];
+const FORBIDDEN_FEED_HTML_ATTR = ['style'];
+const MAX_RENDER_HTML_LENGTH = 512 * 1024;
 
 // Add hooks for target="_blank" on links
 if (typeof purify.addHook === 'function') {
@@ -20,10 +38,68 @@ if (typeof purify.addHook === 'function') {
   });
 }
 
+function escapeHtml(text: string): string {
+  if (typeof document !== 'undefined') {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+  }
+
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizePlainTextForHtml(text: string): string {
+  return text
+    .split(/\n\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p class="mb-4">${escapeHtml(paragraph).replace(/\n/g, '<br />')}</p>`)
+    .join("");
+}
+
+function removeUnsafeImageDataUris(html: string): string {
+  return html.replace(
+    /\s(src|srcset)\s*=\s*(["'])\s*data:(?:image\/svg\+xml|text\/html|application\/javascript|text\/javascript)[^"']*\2/gi,
+    "",
+  );
+}
+
+function containsAllowedHtmlTag(content: string): boolean {
+  return SAFE_FEED_HTML_TAGS.some((tag) =>
+    new RegExp(`<${tag}(?:\\s|>|/)`, 'i').test(content),
+  );
+}
+
+export function sanitizeFeedHtmlForRender(content: string | null | undefined): string {
+  if (!content) return "";
+
+  const boundedContent =
+    content.length > MAX_RENDER_HTML_LENGTH
+      ? content.slice(0, MAX_RENDER_HTML_LENGTH)
+      : content;
+  const html = containsAllowedHtmlTag(boundedContent)
+    ? boundedContent
+    : normalizePlainTextForHtml(boundedContent);
+
+  return purify.sanitize(removeUnsafeImageDataUris(html), {
+    USE_PROFILES: { html: true },
+    ALLOWED_TAGS: SAFE_FEED_HTML_TAGS,
+    ALLOWED_ATTR: SAFE_FEED_HTML_ATTR,
+    FORBID_TAGS: FORBIDDEN_FEED_HTML_TAGS,
+    FORBID_ATTR: FORBIDDEN_FEED_HTML_ATTR,
+    ALLOW_DATA_ATTR: false,
+  });
+}
+
 /**
  * Sanitiza conteúdo HTML permitindo tags seguras para exibição (imagens, formatação)
  * mas removendo scripts e iframes perigosos.
- * 
+ *
  * @param content - Conteúdo HTML bruto
  * @returns HTML sanitizado e seguro
  */
@@ -31,18 +107,18 @@ export function sanitizeWithDomPurify(content: string | null | undefined): strin
   if (!content) return "";
 
   return purify.sanitize(content, {
-    ALLOWED_TAGS: [
-      'p', 'br', 'b', 'i', 'em', 'strong', 'u', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'td', 'th'
-    ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel', 'width', 'height'],
-    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+    USE_PROFILES: { html: true },
+    ALLOWED_TAGS: SAFE_FEED_HTML_TAGS,
+    ALLOWED_ATTR: SAFE_FEED_HTML_ATTR,
+    FORBID_TAGS: FORBIDDEN_FEED_HTML_TAGS,
+    FORBID_ATTR: FORBIDDEN_FEED_HTML_ATTR,
+    ALLOW_DATA_ATTR: false,
   });
 }
 
 /**
  * Sanitiza texto removendo todas as tags HTML e decodificando entidades HTML
- * 
+ *
  * @param text - Texto que pode conter HTML
  * @returns Texto limpo sem tags HTML
  */
@@ -121,7 +197,7 @@ export function sanitizeHtmlContent(text: string | null | undefined): string {
 
 /**
  * Sanitiza descrições de artigos com limite de tamanho
- * 
+ *
  * @param description - Descrição que pode conter HTML
  * @param maxLength - Tamanho máximo da descrição (padrão: 300)
  * @returns Descrição sanitizada e truncada
@@ -149,7 +225,7 @@ export function sanitizeArticleDescription(description: string | null | undefine
 
 /**
  * Sanitiza títulos de feeds e artigos
- * 
+ *
  * @param title - Título que pode conter HTML
  * @returns Título sanitizado
  */
@@ -159,7 +235,7 @@ export function sanitizeTitle(title: string | null | undefined): string {
 
 /**
  * Sanitiza URLs removendo javascript: e outros protocolos perigosos
- * 
+ *
  * @param url - URL que pode ser maliciosa
  * @returns URL sanitizada ou string vazia se for perigosa
  */
@@ -200,13 +276,13 @@ export function sanitizeUrl(url: string | null | undefined): string {
     // Bloqueia localhost e IPs privados em produção (exceto em desenvolvimento)
     const hostname = urlObj.hostname.toLowerCase();
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.16.');
-    
+
     // Em produção, bloquear localhost pode quebrar funcionalidades, então apenas logamos
     if (isLocalhost && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
       console.warn('Blocked localhost URL in production:', cleanUrl);
       return "";
     }
-    
+
     return cleanUrl;
   } catch {
     // Se não é uma URL válida, retorna vazio
@@ -216,7 +292,7 @@ export function sanitizeUrl(url: string | null | undefined): string {
 
 /**
  * Verifica se o texto contém HTML (incluindo entidades codificadas)
- * 
+ *
  * @param text - Texto a ser verificado
  * @returns true se contém HTML, false caso contrário
  */
@@ -259,16 +335,16 @@ export function containsHtml(text: string | null | undefined): boolean {
 /**
  * Sanitiza e simplifica o título da fonte (site)
  * remove sub-títulos longos e texto desnecessário
- * 
+ *
  * @param sourceTitle - Título da fonte/site
  * @param url - URL opcional para conferência
  * @returns Título simplificado
  */
 export function sanitizeSourceTitle(sourceTitle: string | null | undefined, url?: string): string {
   if (!sourceTitle) return "";
-  
+
   let cleanTitle = sanitizeTitle(sourceTitle).trim();
-  
+
   // Mapa de nomes conhecidos baseado em domínio (prioridade máxima)
   const knownSiteNames: Record<string, string> = {
     'adafruit.com': 'Adafruit',
@@ -304,18 +380,18 @@ export function sanitizeSourceTitle(sourceTitle: string | null | undefined, url?
     'archdaily.com': 'ArchDaily',
     'youtube.com': 'YouTube',
   };
-  
+
   // Tenta resolver pelo domínio primeiro
   if (url) {
     try {
       const urlObj = new URL(url);
       const hostname = urlObj.hostname.replace(/^www\./i, '').toLowerCase();
-      
+
       // Verifica nome exato no mapa
       if (knownSiteNames[hostname]) {
         return knownSiteNames[hostname];
       }
-      
+
       // Verifica sub-domínios (blog.example.com -> example.com)
       const hostParts = hostname.split('.');
       if (hostParts.length > 2) {
@@ -328,19 +404,19 @@ export function sanitizeSourceTitle(sourceTitle: string | null | undefined, url?
       // Ignora erro de URL inválida
     }
   }
-  
+
   // Separadores agressivos: captura Unicode dashes, pipes, bullets, colons, underscores e barras
-  // Regex: 
+  // Regex:
   // 1: traços Unicode, pipes, bullets isolados por zero ou mais espaços
   // 2: traço hifen, dois-pontos, underline ou barra cercados obrigatoriamente por pelo menos um espaço
   // 3: duplos colons, sublinhados seguidos, traços seguidos (ex: --, __, ::) mesmo sem espaço
   const separatorRegex = /\s*[\u2013\u2014\u2015\u2012|\u2022\u25CF]\s*|\s+[-:_/]+\s+|\s*::\s*|\s*--+\s*|\s*__+\s*/;
-  
+
   const parts = cleanTitle.split(separatorRegex);
   if (parts.length > 1 && parts[0].trim().length >= 2) {
     cleanTitle = parts[0].trim();
   }
-  
+
   // Remove sufixos comuns que não agregam valor no chip
   cleanTitle = cleanTitle
     .replace(/\s+(Blog|RSS|Feed|News|Home|Online|Official)$/i, '')
@@ -358,17 +434,17 @@ export function sanitizeSourceTitle(sourceTitle: string | null | undefined, url?
       const urlObj = new URL(url);
       const hostname = urlObj.hostname.replace(/^www\./i, '').toLowerCase();
       const hostParts = hostname.split('.');
-      
-      const mainName = hostParts.length > 2 && hostParts[hostParts.length - 3] !== 'www' 
-          ? hostParts[hostParts.length - 3] 
+
+      const mainName = hostParts.length > 2 && hostParts[hostParts.length - 3] !== 'www'
+          ? hostParts[hostParts.length - 3]
           : hostParts[hostParts.length - 2] || hostParts[0];
-          
+
       const capitalizedMainName = mainName.charAt(0).toUpperCase() + mainName.slice(1);
 
-      // Lógica de fallback se o título for URL, muito curto, genérico, 
+      // Lógica de fallback se o título for URL, muito curto, genérico,
       // ou se bater quase que identicamente com a URL (ex: title="uxdesign" vs. url="uxdesign.cc")
       const similarityCheck = cleanTitle.toLowerCase().replace(/\s+/g, '') === mainName.toLowerCase();
-      
+
       if (similarityCheck || cleanTitle.length < 2 || cleanTitle.toLowerCase().includes('http') || cleanTitle.toLowerCase() === 'untitled feed') {
          cleanTitle = capitalizedMainName;
       }
@@ -395,7 +471,7 @@ export function sanitizeSourceTitle(sourceTitle: string | null | undefined, url?
 
 /**
  * Sanitiza conteúdo de feeds RSS completo
- * 
+ *
  * @param feedContent - Objeto com propriedades que podem conter HTML
  * @returns Objeto com propriedades sanitizadas
  */

@@ -10,6 +10,7 @@
 
 import type { FeedSource, FeedCategory } from "../types";
 import { feedDuplicateDetector } from "./feedDuplicateDetector";
+import { parseSecureOpmlXml } from "./secureXmlParser";
 
 export interface OPMLExportOptions {
   title?: string;
@@ -368,15 +369,14 @@ export class OPMLExportService {
         result.warnings.push("No outline elements found");
       }
 
-      // Validate XML structure using DOMParser if available
-      if (typeof DOMParser !== "undefined") {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(opmlContent, "text/xml");
-        const parseError = doc.querySelector("parsererror");
-
-        if (parseError) {
-          result.errors.push(`XML parsing error: ${parseError.textContent}`);
-        }
+      try {
+        parseSecureOpmlXml(opmlContent);
+      } catch (error) {
+        result.errors.push(
+          `XML parsing error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        );
       }
 
       result.isValid = result.errors.length === 0;

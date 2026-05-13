@@ -5,8 +5,12 @@ import {
   preflightResponse,
   validateBackendRequest,
 } from "../apps/backend/src/httpSecurity";
-import { SecurityValidationError } from "../apps/backend/src/security";
+import {
+  SecurityValidationError,
+  validateTargetFeedUrl,
+} from "../apps/backend/src/security";
 import { BACKEND_AUTH_TOKEN_HEADER } from "../shared/contracts/backend";
+import { allowConsoleWarn } from "../src/test-console";
 
 describe("backend security controls", () => {
   afterEach(() => {
@@ -16,6 +20,7 @@ describe("backend security controls", () => {
   });
 
   it("sanitizes backend feed HTML before returning article content", async () => {
+    allowConsoleWarn(/Unexpected feed Content-Type/, 1);
     const feed = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -71,6 +76,52 @@ describe("backend security controls", () => {
     ).rejects.toThrow("private redirect blocked");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks direct localhost and metadata feed targets", async () => {
+    await expect(validateTargetFeedUrl("http://127.0.0.1:8080/rss.xml")).rejects.toThrow(
+      "Local/private hosts are blocked",
+    );
+    await expect(validateTargetFeedUrl("http://169.254.169.254/latest/meta-data")).rejects.toThrow(
+      "Private IPv4 ranges are blocked",
+    );
+    await expect(validateTargetFeedUrl("file:///tmp/feed.xml")).rejects.toThrow(
+      "Only http/https URLs are allowed",
+    );
+  });
+
+  it("warns but still parses feeds with unexpected content type", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const feed = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>PoC</title>
+    <item>
+      <title>Item</title>
+      <link>https://example.com/article</link>
+      <description>hello</description>
+    </item>
+  </channel>
+</rss>`;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(feed, {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+      ),
+    );
+
+    const result = await fetchAndParseFeed("https://feeds.example/rss.xml", {
+      validateUrl: async () => undefined,
+    });
+
+    expect(result.articles).toHaveLength(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Unexpected feed Content-Type"),
+    );
   });
 
   it("rejects untrusted browser origins and reflects only trusted CORS origins", () => {
