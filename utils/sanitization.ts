@@ -27,6 +27,7 @@ const FORBIDDEN_FEED_HTML_TAGS = [
 ];
 const FORBIDDEN_FEED_HTML_ATTR = ['style'];
 const MAX_RENDER_HTML_LENGTH = 512 * 1024;
+const HTML_LIKE_TAG_PATTERN = /<\/?[a-z][a-z0-9:-]*(?:\s+[^<>]*)?>/i;
 
 // Add hooks for target="_blank" on links
 if (typeof purify.addHook === 'function') {
@@ -69,10 +70,8 @@ function removeUnsafeImageDataUris(html: string): string {
   );
 }
 
-function containsAllowedHtmlTag(content: string): boolean {
-  return SAFE_FEED_HTML_TAGS.some((tag) =>
-    new RegExp(`<${tag}(?:\\s|>|/)`, 'i').test(content),
-  );
+function containsHtmlMarkup(content: string): boolean {
+  return HTML_LIKE_TAG_PATTERN.test(content);
 }
 
 export function sanitizeFeedHtmlForRender(content: string | null | undefined): string {
@@ -82,7 +81,7 @@ export function sanitizeFeedHtmlForRender(content: string | null | undefined): s
     content.length > MAX_RENDER_HTML_LENGTH
       ? content.slice(0, MAX_RENDER_HTML_LENGTH)
       : content;
-  const html = containsAllowedHtmlTag(boundedContent)
+  const html = containsHtmlMarkup(boundedContent)
     ? boundedContent
     : normalizePlainTextForHtml(boundedContent);
 

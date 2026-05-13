@@ -58,19 +58,16 @@ describe("Security Fixes for RSS Parser", () => {
       expect(() => parseSecureRssXml(maliciousXML)).not.toThrow();
     });
 
-    it("should reject XML with javascript: URLs", () => {
-      allowConsoleError(/Secure XML parsing error/, 1);
+    it("should allow javascript: text so legitimate security feeds still parse", () => {
       const maliciousXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
     <title>Test Feed</title>
-    <link>javascript:alert('xss')</link>
+    <description>Security post mentioning javascript:alert('xss')</description>
   </channel>
 </rss>`;
 
-      expect(() => parseSecureRssXml(maliciousXML)).toThrow(
-        "malicious XML content"
-      );
+      expect(() => parseSecureRssXml(maliciousXML)).not.toThrow();
     });
 
     it("should allow XML with event handlers (to be sanitized later)", () => {

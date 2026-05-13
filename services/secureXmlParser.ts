@@ -21,8 +21,6 @@ const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
     // Only block truly dangerous patterns for XML structure attacks
     /<!ENTITY[^>]*SYSTEM/i, // External system entity references (dangerous)
     /<!ENTITY[^>]*PUBLIC/i, // External public entity references (dangerous)
-    /javascript:/gi, // JavaScript URLs - still good to block in raw text if possible
-    /vbscript:/gi, // VBScript URLs
     // Relaxed: Allow script/iframe tags in raw content as they are common in RSS <content:encoded>
     // These will be sanitized by DOMPurify after parsing.
     // /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,

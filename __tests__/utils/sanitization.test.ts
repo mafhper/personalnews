@@ -47,10 +47,16 @@ describe('sanitization', () => {
   });
 
   it('escapes plain text before converting it to paragraphs', () => {
-    const out = sanitizeFeedHtmlForRender('First line\n\n<script>alert(1)</script>');
+    const out = sanitizeFeedHtmlForRender('First line\n\nSecond < not a tag');
 
     expect(out).toContain('<p class="mb-4">First line</p>');
-    expect(out).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
-    expect(out).not.toContain('<script>');
+    expect(out).toContain('<p class="mb-4">Second &lt; not a tag</p>');
+  });
+
+  it('treats unknown HTML wrappers as HTML before sanitizing', () => {
+    const out = sanitizeFeedHtmlForRender('<section><article>Story body</article></section>');
+
+    expect(out).toContain('Story body');
+    expect(out).not.toContain('&lt;section');
   });
 });
