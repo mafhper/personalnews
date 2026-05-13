@@ -1,6 +1,6 @@
 /**
  * Production RSS Parser for GitHub Pages
- * 
+ *
  * This parser works with static hosting by using:
  * 1. RSS2JSON API as primary method
  * 2. Multiple CORS proxies as fallback
@@ -13,6 +13,7 @@ import { getLogger } from "./logger";
 import { perfDebugger } from "./performanceUtils";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
 import { sanitizeHtmlContent, sanitizeArticleDescription, sanitizeSourceTitle } from "../utils/sanitization";
+import { parseSecureRssXml } from "./secureXmlParser";
 
 // Import image extraction utilities from rssParser
 // These functions are shared between parsers
@@ -514,9 +515,7 @@ async function parseRssWithProxy(feedUrl: string, proxyUrl: string): Promise<Art
  * Production XML parser with relaxed validation
  */
 function parseRssXmlProduction(xmlContent: string, feedUrl: string): Article[] {
-  // Use native DOMParser with minimal validation
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlContent, "application/xml");
+  const xmlDoc = parseSecureRssXml(xmlContent);
 
   // Check for parsing errors
   const parseErrors = xmlDoc.getElementsByTagName("parsererror");

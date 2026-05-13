@@ -6,6 +6,13 @@ import { validateTargetFeedUrl } from "./security";
 const USER_AGENT = "PersonalNewsBackend/1.0 (+https://github.com/mafhper/personalnews)";
 const MAX_XML_SIZE_BYTES = 10 * 1024 * 1024;
 const UPSTREAM_FETCH_TIMEOUT_MS = 12_000;
+const EXPECTED_FEED_CONTENT_TYPES = [
+  "application/rss+xml",
+  "application/atom+xml",
+  "application/xml",
+  "text/xml",
+  "application/rdf+xml",
+];
 const IMAGE_PLACEHOLDER_PATTERNS = [
   /\/blank\.(gif|png|jpg|jpeg|webp)/i,
   /\/spacer\.(gif|png|jpg|jpeg|webp)/i,
@@ -438,6 +445,18 @@ function parseXml(body: string): Document {
   return doc;
 }
 
+function warnUnexpectedFeedContentType(response: Response, url: string): void {
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  if (!contentType) return;
+
+  const expected = EXPECTED_FEED_CONTENT_TYPES.some((type) =>
+    contentType.includes(type),
+  );
+  if (!expected) {
+    console.warn(`Unexpected feed Content-Type: ${contentType} for ${url}`);
+  }
+}
+
 async function fetchWithValidatedRedirects(
   url: string,
   signal: AbortSignal,
@@ -498,6 +517,7 @@ export async function fetchAndParseFeed(
     );
   }
 
+  warnUnexpectedFeedContentType(response, url);
   const body = await response.text();
   if (!body || body.trim().length < 30) {
     throw new BackendHttpError(422, "Upstream feed returned an empty payload");

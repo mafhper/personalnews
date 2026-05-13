@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { Article } from "../types";
 import { getVideoEmbedDetails } from "../utils/videoEmbed";
 import { useLanguage } from "../hooks/useLanguage";
@@ -6,7 +6,7 @@ import { useModal } from "../hooks/useModal";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useDocumentScrollLock } from "../hooks/useDocumentScrollLock";
 import { openExternalLink } from "../utils/openExternalLink";
-import { sanitizeUrl } from "../utils/sanitization";
+import { sanitizeFeedHtmlForRender, sanitizeUrl } from "../utils/sanitization";
 import { detectEnvironment } from "../services/environmentDetector";
 
 interface ArticleReaderModalProps {
@@ -222,28 +222,11 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     return () => window.clearTimeout(timeoutId);
   }, [article.link, playerLoaded, shouldMonitorDesktopVideo]);
 
-  // Process content to improve formatting and handle plain text
-  const processContent = (html: string | null | undefined): string => {
-    if (!html) return "";
-
-    // Check if it's HTML
-    const hasHtmlTags = /<[a-z][\s\S]*>/i.test(html);
-
-    if (!hasHtmlTags) {
-      // Convert plain text to HTML paragraphs
-      return html
-        .split(/\n\n+/)
-        .map((p) => `<p class="mb-4">${p.trim()}</p>`)
-        .join("")
-        .replace(/\n/g, "<br />");
-    }
-
-    return html;
-  };
-
-  const contentHtml = fullContent
-    ? processContent(fullContent)
-    : processContent(article.content || article.description);
+  const rawContent = fullContent || article.content || article.description;
+  const contentHtml = useMemo(
+    () => sanitizeFeedHtmlForRender(rawContent),
+    [rawContent],
+  );
   const hasContentHtml = contentHtml.trim().length > 0;
   const isVideoCompactDesktop = Boolean(
     videoEmbed && !isFocusMode && !hasContentHtml && !fetchNotice,

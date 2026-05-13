@@ -96,4 +96,32 @@ describe("ArticleReaderModal", () => {
       );
     });
   });
+
+  it("sanitizes article HTML before injecting it into the modal", async () => {
+    const article: Article = {
+      title: "Hostile story",
+      link: "https://example.com/news/story",
+      pubDate: new Date("2026-04-29T10:00:00.000Z"),
+      sourceTitle: "Example",
+      content:
+        '<p onclick="alert(1)">Safe text</p><img src="data:image/svg+xml;base64,PHN2Zz4=" onerror="alert(1)"><a href="javascript:alert(1)">bad</a>',
+    };
+
+    const { container } = render(
+      <ArticleReaderModal
+        article={article}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+        onPrev={vi.fn()}
+        hasNext={false}
+        hasPrev={false}
+      />,
+    );
+
+    expect(await screen.findByText("Safe text")).toBeInTheDocument();
+    expect(container.innerHTML).not.toContain("onclick");
+    expect(container.innerHTML).not.toContain("onerror");
+    expect(container.innerHTML).not.toContain("javascript:");
+    expect(container.innerHTML).not.toContain("data:image/svg+xml");
+  });
 });

@@ -9,6 +9,7 @@
  */
 
 import { proxyManager } from "./proxyManager";
+import { parseSecureRssXml } from "./secureXmlParser";
 
 export interface DiscoveredFeed {
   url: string;
@@ -76,6 +77,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
 
   private readonly REQUEST_TIMEOUT = 10000; // 10 seconds
   private readonly MAX_CONCURRENT_REQUESTS = 5;
+  private readonly MAX_DISCOVERED_FEEDS = 50;
 
   /**
    * Main discovery method that attempts multiple strategies to find RSS feeds
@@ -151,7 +153,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       // Remove duplicates and sort by confidence
       result.discoveredFeeds = this.deduplicateAndSortFeeds(
         result.discoveredFeeds
-      );
+      ).slice(0, this.MAX_DISCOVERED_FEEDS);
 
       // Generate suggestions based on results
       result.suggestions = this.generateDiscoverySuggestions(result);
@@ -300,21 +302,12 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
     type: "rss" | "atom" | "rdf";
   }> {
     try {
-      const parser = new DOMParser();
-      let doc = parser.parseFromString(feedContent, "text/xml");
-
-      // Check for parsing errors and try to recover
-      const parseError = doc.querySelector("parsererror");
-      if (parseError) {
-        // Try to clean up common XML issues and parse again
+      let doc: Document;
+      try {
+        doc = parseSecureRssXml(feedContent);
+      } catch {
         const cleanedContent = this.cleanupMalformedXML(feedContent);
-        doc = parser.parseFromString(cleanedContent, "text/xml");
-
-        // If still has errors, throw
-        const secondParseError = doc.querySelector("parsererror");
-        if (secondParseError) {
-          throw new Error("Invalid XML content");
-        }
+        doc = parseSecureRssXml(cleanedContent);
       }
 
       // Determine feed type and extract metadata
@@ -385,7 +378,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
       // Try direct fetch first (might work for some CORS-enabled sites)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
-      
+
       try {
         const response = await fetch(url, {
             method: "GET",
@@ -422,7 +415,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
        // Try direct fetch first
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
-      
+
       try {
         const response = await fetch(url, {
             method: "GET",
@@ -822,7 +815,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
     try {
         let feedUrl: string | null = null;
         let discoveryMethod: DiscoveredFeed["discoveryMethod"] = "content-scan";
-        
+
         // Case 1: Channel ID (youtube.com/channel/UC...)
         const channelMatch = url.match(/\/channel\/(UC[\w-]+)/);
         if (channelMatch) {
@@ -845,15 +838,15 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
         if (!feedUrl && (url.includes("/watch") || url.includes("youtu.be"))) {
             try {
                 const content = await this.fetchWebsiteContent(url);
-                
+
                 // 1. Try meta itemprop="channelId"
                 const channelIdMatch = content.match(/itemprop=["']channelId["']\s+content=["'](UC[\w-]+)["']/i) ||
                                        content.match(/content=["'](UC[\w-]+)["']\s+itemprop=["']channelId["']/i);
-                
+
                 if (channelIdMatch && channelIdMatch[1]) {
                     feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelIdMatch[1]}`;
                 }
-                
+
                 // 2. Try JSON config "channelId":"UC..."
                 if (!feedUrl) {
                     const jsonChannelMatch = content.match(/"channelId"\s*:\s*"(UC[\w-]+)"/);
@@ -863,7 +856,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
                 }
 
                 // 3. If we found a handle link instead (e.g. /@Username), we might need to fetch that page
-                // But usually video pages have the channelId directly. 
+                // But usually video pages have the channelId directly.
             } catch (err) {
                 console.warn("Failed to fetch YouTube video page for discovery:", err);
             }
@@ -874,7 +867,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
         if (!feedUrl && (url.includes("/@") || url.includes("/c/") || (url.includes("youtube.com") && !url.includes("/watch")))) {
              try {
                  const content = await this.fetchWebsiteContent(url);
-                 
+
                  // 1. Try to find the RSS link directly (User suggestion)
                  // Look for: <link rel="alternate" type="application/rss+xml" title="RSS" href="...">
                  // We use a flexible regex to capture the href
@@ -885,12 +878,12 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
                      feedUrl = rssLinkMatch[1];
                      discoveryMethod = "link-tag";
                  }
-                 
+
                  // 2. Fallback: Find channelId meta tag and construct URL
                  if (!feedUrl) {
                      const channelIdMatch = content.match(/itemprop=["']channelId["']\s+content=["'](UC[\w-]+)["']/i) ||
                                             content.match(/content=["'](UC[\w-]+)["']\s+itemprop=["']channelId["']/i);
-                     
+
                      if (channelIdMatch && channelIdMatch[1]) {
                          feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelIdMatch[1]}`;
                      }
@@ -903,11 +896,11 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
                         if (jsonMatch && jsonMatch[1]) {
                             const data = JSON.parse(jsonMatch[1]);
                             // Try to find channelId in common locations
-                            const channelId = 
+                            const channelId =
                                 data?.metadata?.channelMetadataRenderer?.externalId ||
                                 data?.header?.c4TabbedHeaderRenderer?.channelId ||
                                 data?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.endpoint?.browseEndpoint?.browseId;
-                            
+
                             if (channelId && channelId.startsWith('UC')) {
                                 feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
                             }
@@ -925,7 +918,7 @@ class FeedDiscoveryServiceImpl implements FeedDiscoveryService {
             // Verify if it works
             const content = await this.fetchFeedContent(feedUrl);
             const metadata = await this.extractFeedMetadata(content);
-            
+
             return {
                 url: feedUrl,
                 title: metadata.title || "YouTube Feed",

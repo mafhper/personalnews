@@ -8,7 +8,7 @@
  * Uses native browser DOMParser with comprehensive security validations.
  */
 
-interface SecurityConfig {
+export interface SecurityConfig {
   maxXmlSize: number;
   allowedRootElements: string[];
   blockedPatterns: RegExp[];
@@ -21,13 +21,11 @@ const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
     // Only block truly dangerous patterns for XML structure attacks
     /<!ENTITY[^>]*SYSTEM/i, // External system entity references (dangerous)
     /<!ENTITY[^>]*PUBLIC/i, // External public entity references (dangerous)
-    /javascript:/gi, // JavaScript URLs - still good to block in raw text if possible
-    /vbscript:/gi, // VBScript URLs
     // Relaxed: Allow script/iframe tags in raw content as they are common in RSS <content:encoded>
     // These will be sanitized by DOMPurify after parsing.
-    // /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, 
+    // /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
     // /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
-    // /on\w+\s*=\s*["'][^"']*["']/gi, 
+    // /on\w+\s*=\s*["'][^"']*["']/gi,
   ],
 };
 
@@ -95,7 +93,7 @@ function sanitizeTextContent(text: string | null): string {
   if (!text) return "";
 
   let cleanText = text;
-  
+
   // Primeiro, decodifica entidades HTML para detectar tags codificadas
   cleanText = cleanText
     .replace(/&lt;/g, "<")
@@ -103,7 +101,7 @@ function sanitizeTextContent(text: string | null): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'");
-  
+
   // Agora remove conteúdo perigoso e tags HTML
   cleanText = cleanText
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove scripts
@@ -114,13 +112,13 @@ function sanitizeTextContent(text: string | null): string {
     .replace(/data:text\/html/gi, "") // Remove data URLs with HTML
     .replace(/expression\s*\(/gi, "") // Remove CSS expressions
     .replace(/<[^>]*>/g, ""); // Remove all HTML tags
-  
+
   // Por último, decodifica entidades restantes e limpa
   cleanText = cleanText
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .trim();
-    
+
   return cleanText;
 }
 
@@ -188,7 +186,6 @@ export function parseSecureXml(
 
     return doc;
   } catch (error) {
-    console.error("Secure XML parsing error:", error);
     const wrappedError = new Error(
       `Failed to parse XML securely: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -209,6 +206,15 @@ export function parseSecureRssXml(xmlString: string): Document {
   };
 
   return parseSecureXml(xmlString, rssConfig);
+}
+
+export function parseSecureOpmlXml(xmlString: string): Document {
+  const opmlConfig: SecurityConfig = {
+    ...DEFAULT_SECURITY_CONFIG,
+    allowedRootElements: ["opml"],
+  };
+
+  return parseSecureXml(xmlString, opmlConfig);
 }
 
 /**

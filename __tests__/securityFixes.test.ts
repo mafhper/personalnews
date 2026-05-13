@@ -6,7 +6,14 @@
  * - CVE-2021-21366: xmldom allows multiple root nodes in a DOM
  */
 
-import { parseSecureRssXml, secureXmlUtils } from "../services/secureXmlParser";
+import {
+  parseSecureOpmlXml,
+  parseSecureRssXml,
+  secureXmlUtils,
+} from "../services/secureXmlParser";
+import { parseOpml as parseDetailedOpml } from "../services/rssParser";
+import { parseOpml as parseUnifiedOpml } from "../services/unifiedRssParser";
+import { OPMLExportService } from "../services/opmlExportService";
 import { allowConsoleError } from "../src/test-console";
 
 describe("Security Fixes for RSS Parser", () => {
@@ -51,19 +58,16 @@ describe("Security Fixes for RSS Parser", () => {
       expect(() => parseSecureRssXml(maliciousXML)).not.toThrow();
     });
 
-    it("should reject XML with javascript: URLs", () => {
-      allowConsoleError(/Secure XML parsing error/, 1);
+    it("should allow javascript: text so legitimate security feeds still parse", () => {
       const maliciousXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
     <title>Test Feed</title>
-    <link>javascript:alert('xss')</link>
+    <description>Security post mentioning javascript:alert('xss')</description>
   </channel>
 </rss>`;
 
-      expect(() => parseSecureRssXml(maliciousXML)).toThrow(
-        "malicious XML content"
-      );
+      expect(() => parseSecureRssXml(maliciousXML)).not.toThrow();
     });
 
     it("should allow XML with event handlers (to be sanitized later)", () => {
@@ -253,6 +257,49 @@ describe("Security Fixes for RSS Parser", () => {
 </rdf:RDF>`;
 
       expect(() => parseSecureRssXml(rdfXML)).not.toThrow();
+    });
+  });
+
+  describe("OPML Security", () => {
+    it("should reject OPML external entities", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
+      const opml = `<?xml version="1.0"?>
+<!DOCTYPE opml [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<opml version="2.0"><body><outline text="x" xmlUrl="https://example.com/rss.xml"/></body></opml>`;
+
+      expect(() => parseSecureOpmlXml(opml)).toThrow("malicious XML content");
+    });
+
+    it("should parse valid OPML through both import helpers", () => {
+      const opml = `<?xml version="1.0"?>
+<opml version="2.0">
+  <body>
+    <outline text="Tech">
+      <outline text="Example" xmlUrl="https://example.com/rss.xml"/>
+    </outline>
+  </body>
+</opml>`;
+
+      expect(parseDetailedOpml(opml)).toEqual([
+        {
+          url: "https://example.com/rss.xml",
+          title: "Example",
+          category: "Tech",
+        },
+      ]);
+      expect(parseUnifiedOpml(opml)).toEqual(["https://example.com/rss.xml"]);
+    });
+
+    it("should reject malicious OPML during export validation", () => {
+      allowConsoleError(/Secure XML parsing error/, 1);
+      const opml = `<?xml version="1.0"?>
+<!DOCTYPE opml [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<opml version="2.0"><head><title>x</title></head><body><outline text="x" xmlUrl="https://example.com/rss.xml"/></body></opml>`;
+
+      const result = OPMLExportService.validateOPML(opml);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors.join("\n")).toContain("XML parsing error");
     });
   });
 });
