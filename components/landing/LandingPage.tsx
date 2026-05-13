@@ -200,6 +200,7 @@ const ProductFrame = ({
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [exitingIndex, setExitingIndex] = React.useState<number | null>(null);
   const [transitionStep, setTransitionStep] = React.useState(0);
+  const isPausedRef = React.useRef(false);
 
   React.useEffect(() => {
     if (images.length <= 1 || typeof window === "undefined") return;
@@ -209,6 +210,8 @@ const ProductFrame = ({
 
     let exitTimeoutId = 0;
     const intervalId = window.setInterval(() => {
+      if (isPausedRef.current) return;
+
       setActiveIndex((current) => {
         setExitingIndex(current);
         setTransitionStep((step) => step + 1);
@@ -228,7 +231,15 @@ const ProductFrame = ({
   }, [images.length]);
 
   return (
-    <figure className="promo-product-frame promo-product-frame--rotating">
+    <figure
+      className="promo-product-frame promo-product-frame--rotating"
+      onPointerEnter={() => {
+        isPausedRef.current = true;
+      }}
+      onPointerLeave={() => {
+        isPausedRef.current = false;
+      }}
+    >
       {images.map((image, index) => (
         <img
           key={image}

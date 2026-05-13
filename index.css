@@ -4007,6 +4007,40 @@ html {
     transform 320ms var(--promo-ease);
 }
 
+.promo-product-frame::before,
+.promo-product-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.promo-product-frame::before {
+  background:
+    linear-gradient(115deg, transparent 0 40%, rgba(255, 255, 255, 0.12) 50%, transparent 60%),
+    radial-gradient(ellipse at 72% 18%, rgba(255, 255, 255, 0.12), transparent 34%);
+  mix-blend-mode: screen;
+  opacity: 0.26;
+  transform: translate3d(-18%, 0, 0);
+  transition:
+    opacity 420ms var(--promo-ease),
+    transform 520ms var(--promo-ease);
+}
+
+.promo-product-frame::after {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -80px 90px rgba(0, 0, 0, 0.22);
+  opacity: 0.74;
+  transition:
+    border-color 320ms var(--promo-ease),
+    box-shadow 320ms var(--promo-ease),
+    opacity 320ms var(--promo-ease);
+}
+
 .promo-product-frame img {
   width: 100%;
   height: 100%;
@@ -4028,12 +4062,14 @@ html {
 .promo-product-frame--rotating img.is-active {
   opacity: 1;
   z-index: 2;
-  animation: promoHeroImageArrive 2400ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation:
+    promoHeroImageArrive 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both,
+    promoHeroImageIdle 12600ms ease-in-out 2800ms infinite;
 }
 
 .promo-product-frame--rotating img.is-exiting {
   z-index: 1;
-  animation: promoHeroImageDepart 2400ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: promoHeroImageDepart 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .promo-product-frame__transition {
@@ -4048,14 +4084,14 @@ html {
   mix-blend-mode: screen;
   opacity: 0;
   transform: translate3d(0, 6%, 0) scale(1.04);
-  animation: promoHeroTransitionVeil 2400ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: promoHeroTransitionVeil 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 @keyframes promoHeroImageArrive {
   0% {
     opacity: 0;
-    filter: saturate(0.96) brightness(0.96);
-    transform: scale(1) translate3d(0, 0.6%, 0);
+    filter: saturate(0.96) brightness(0.97);
+    transform: scale(1.014) translate3d(0, 0.8%, 0);
   }
 
   40% {
@@ -4066,7 +4102,20 @@ html {
   100% {
     opacity: 1;
     filter: saturate(1.02) brightness(1);
-    transform: scale(1) translate3d(0, 0, 0);
+    transform: scale(1.004) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes promoHeroImageIdle {
+  0%,
+  100% {
+    filter: saturate(1.02) brightness(1);
+    transform: scale(1.004) translate3d(0, 0, 0);
+  }
+
+  50% {
+    filter: saturate(1.04) brightness(1.015);
+    transform: scale(1.018) translate3d(0, -0.45%, 0);
   }
 }
 
@@ -4126,6 +4175,10 @@ html {
   .promo-product-frame__transition {
     display: none;
   }
+
+  .promo-product-frame::before {
+    display: none;
+  }
 }
 
 .promo-product-frame:hover {
@@ -4137,6 +4190,23 @@ html {
     0 0 40px rgba(255, 255, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
   transform: translateY(-4px) scale(1.015);
+}
+
+.promo-product-frame:hover::before {
+  opacity: 0.36;
+  transform: translate3d(8%, 0, 0);
+}
+
+.promo-product-frame:hover::after {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+    inset 0 -70px 80px rgba(0, 0, 0, 0.16);
+  opacity: 1;
+}
+
+.promo-product-frame:hover img.is-active {
+  filter: saturate(1.06) brightness(1.03);
 }
 
 .promo-product-frame:not(.promo-product-frame--rotating):hover img {
