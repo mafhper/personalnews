@@ -31,7 +31,7 @@ type LiquidMeshProgram = {
 };
 
 const DAY_NIGHT_CYCLE_PRESET = {
-  duration: 60,
+  duration: 120,
   speed: 1,
   warp: 0.42,
   ripple: 0.68,
@@ -54,6 +54,8 @@ const DAY_NIGHT_CYCLE_PRESET = {
 
 const FORCED_CYCLE_PHASES: Record<string, number> = {
   morning: 0.14,
+  day: 0.28,
+  noon: 0.28,
   dusk: 0.36,
   night: 0.62,
   "deep-night": 0.8,
@@ -63,9 +65,9 @@ const FORCED_CYCLE_PHASES: Record<string, number> = {
 const CLOCK_CYCLE_SEGMENTS = [
   { startHour: 2, endHour: 5, startCycle: 0.76, endCycle: 0.88 },
   { startHour: 5, endHour: 7, startCycle: 0.88, endCycle: 0.1 },
-  { startHour: 7, endHour: 17, startCycle: 0.1, endCycle: 0.3 },
-  { startHour: 17, endHour: 20, startCycle: 0.3, endCycle: 0.54 },
-  { startHour: 20, endHour: 26, startCycle: 0.54, endCycle: 0.76 },
+  { startHour: 7, endHour: 16, startCycle: 0.1, endCycle: 0.34 },
+  { startHour: 16, endHour: 20, startCycle: 0.34, endCycle: 0.56 },
+  { startHour: 20, endHour: 26, startCycle: 0.56, endCycle: 0.76 },
 ];
 
 const VERTEX_SHADER_SOURCE = `
@@ -225,13 +227,15 @@ const FRAGMENT_SHADER_SOURCE = `
     float focusGlow = smoothstep(0.82 * centerSize, 0.0, length(p - center));
 
     float cycle = fract(uCycle);
-    float morning = wrappedPhaseWindow(cycle, 0.00, 0.28, 0.08);
-    float dusk = phaseWindow(cycle, 0.22, 0.52, 0.10);
-    float night = phaseWindow(cycle, 0.46, 0.76, 0.12);
+    float morning = wrappedPhaseWindow(cycle, 0.00, 0.22, 0.07);
+    float day = phaseWindow(cycle, 0.16, 0.40, 0.08);
+    float dusk = phaseWindow(cycle, 0.34, 0.58, 0.09);
+    float night = phaseWindow(cycle, 0.52, 0.76, 0.11);
     float deepNight = phaseWindow(cycle, 0.70, 0.92, 0.08);
     float dawn = wrappedPhaseWindow(cycle, 0.88, 0.08, 0.07);
-    float phaseTotal = max(morning + dusk + night + deepNight + dawn, 0.001);
+    float phaseTotal = max(morning + day + dusk + night + deepNight + dawn, 0.001);
     morning /= phaseTotal;
+    day /= phaseTotal;
     dusk /= phaseTotal;
     night /= phaseTotal;
     deepNight /= phaseTotal;
@@ -240,6 +244,10 @@ const FRAGMENT_SHADER_SOURCE = `
     vec3 morningTop = vec3(0.039, 0.137, 0.388);
     vec3 morningMid = uColorA;
     vec3 morningHorizon = vec3(0.890, 0.965, 0.992);
+
+    vec3 dayTop = vec3(0.020, 0.230, 0.620);
+    vec3 dayMid = vec3(0.075, 0.420, 0.840);
+    vec3 dayHorizon = vec3(0.920, 0.975, 1.000);
 
     vec3 duskTop = vec3(0.102, 0.137, 0.494);
     vec3 duskMid = vec3(0.612, 0.153, 0.690);
@@ -259,6 +267,7 @@ const FRAGMENT_SHADER_SOURCE = `
 
     vec3 skyTop =
       morningTop * morning +
+      dayTop * day +
       duskTop * dusk +
       nightTop * night +
       deepTop * deepNight +
@@ -266,6 +275,7 @@ const FRAGMENT_SHADER_SOURCE = `
 
     vec3 skyMid =
       morningMid * morning +
+      dayMid * day +
       duskMid * dusk +
       nightMid * night +
       deepMid * deepNight +
@@ -273,13 +283,14 @@ const FRAGMENT_SHADER_SOURCE = `
 
     vec3 skyHorizon =
       morningHorizon * morning +
+      dayHorizon * day +
       duskHorizon * dusk +
       nightHorizon * night +
       deepHorizon * deepNight +
       dawnHorizon * dawn;
 
-    skyTop = mix(skyTop, uAccent, uAccentMix * (0.18 + dusk * 0.45 + deepNight * 0.24));
-    skyMid = mix(skyMid, uAccent, uAccentMix * (0.12 + dusk * 0.34));
+    skyTop = mix(skyTop, uAccent, uAccentMix * (0.10 + dusk * 0.45 + deepNight * 0.24));
+    skyMid = mix(skyMid, uAccent, uAccentMix * (0.08 + dusk * 0.34));
     skyHorizon = mix(skyHorizon, uAccent, uAccentMix * (0.10 + dawn * 0.28));
 
     vec3 base = mix(skyTop, skyHorizon, bands);
@@ -306,15 +317,22 @@ const FRAGMENT_SHADER_SOURCE = `
     sky = mix(sky, skyMid, smoothstep(0.24, 0.76, 1.0 - abs(uv.y - 0.52) * 1.7) * 0.22);
     sky += vec3(0.06, 0.1, 0.14) * (1.0 - uv.y) * (1.0 - cloudMask) * (0.45 + night + deepNight);
 
-    float cloudPhase = morning * 0.95 + dusk * 0.72 + dawn * 0.78 + night * 0.22 + deepNight * 0.08;
-    vec3 cloud = mix(vec3(0.72, 0.82, 0.92), uColorB, 0.64 + morning * 0.16);
+    float cloudPhase = morning * 0.95 + day * 0.64 + dusk * 0.72 + dawn * 0.78 + night * 0.22 + deepNight * 0.08;
+    vec3 cloud = mix(vec3(0.72, 0.82, 0.92), uColorB, 0.64 + morning * 0.16 + day * 0.18);
     cloud = mix(cloud, vec3(0.30, 0.24, 0.36), dusk * 0.5 + night * 0.3 + deepNight * 0.42);
     cloud += vec3(0.2, 0.19, 0.16) * pow(cloudMask, 2.4) * (0.6 + dusk * 0.4);
     vec3 cloudColor = mix(sky, cloud, cloudMask * (0.58 + cloudBody * 0.38));
     cloudColor = mix(cloudColor, uColorC, sheen * 0.08);
     color = mix(color, cloudColor, uClouds * cloudPhase);
 
-    float starsVisible = (dusk * 0.16 + night * 0.72 + deepNight + dawn * 0.18) * uStarIntensity;
+    vec2 sunPos = vec2(0.58 + dusk * -0.12, 0.82 - dusk * 0.46);
+    float sunDistance = distance(uv, sunPos);
+    float sunCore = smoothstep(0.034, 0.0, sunDistance) * (day * 0.88 + morning * 0.36 + dusk * 0.42);
+    float sunHalo = smoothstep(0.34, 0.0, sunDistance) * (day * 0.32 + morning * 0.20 + dusk * 0.30);
+    vec3 sunColor = mix(vec3(1.0, 0.98, 0.82), vec3(1.0, 0.46, 0.20), dusk * 0.62);
+    color += sunColor * (sunCore + sunHalo);
+
+    float starsVisible = (dusk * 0.08 + night * 0.72 + deepNight + dawn * 0.18) * uStarIntensity;
     float stars = starLayer(uv + vec2(0.0, uTime * 0.002), uTime) * starsVisible;
     float novas = supernovaLayer(uv, uTime) * deepNight * uStarIntensity;
     vec3 starColor = mix(vec3(0.76, 0.86, 1.0), uAccent, uAccentMix * 0.72);
