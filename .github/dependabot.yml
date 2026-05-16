@@ -4,13 +4,38 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
     open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    cooldown:
+      default-days: 5
+      semver-patch-days: 3
+      semver-minor-days: 7
+      semver-major-days: 30
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "npm"
     directory: "/quality-core/dashboard"
     schedule:
       interval: "weekly"
+      day: "tuesday"
+      time: "09:20"
+      timezone: "America/Sao_Paulo"
     open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    cooldown:
+      default-days: 5
+      semver-patch-days: 3
+      semver-minor-days: 7
+      semver-major-days: 30
     groups:
       npm-dashboard-dependencies:
         patterns:
@@ -20,7 +45,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "tuesday"
+      time: "09:40"
+      timezone: "America/Sao_Paulo"
     open-pull-requests-limit: 3
+    cooldown:
+      default-days: 5
+      semver-patch-days: 3
+      semver-minor-days: 7
+      semver-major-days: 30
     groups:
       github-actions-dependencies:
         patterns:
