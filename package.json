@@ -1,6 +1,6 @@
 {
   "name": "personal-news",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "private": true,
   "type": "module",
   "description": "A fast, modern personal news aggregator that serves as your browser homepage. Built with React, TypeScript, and optimized with Bun.",
@@ -157,7 +157,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.58.1",
     "vite": "^8.0.10",
-    "vitest": "4.1.5"
+    "vitest": "4.1.6"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
@@ -168,7 +168,7 @@
     "caniuse-lite": "^1.0.30001792",
     "dompurify": "^3.4.2",
     "eslint-plugin-security": "^4.0.0",
-    "i18next": "^25.10.10",
+    "i18next": "^26.2.0",
     "lucide-react": "^1.7.0",
     "npm-run-all2": "^8.0.4",
     "react": "^19.2.6",
