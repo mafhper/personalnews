@@ -8,6 +8,7 @@ import { FavoriteButton } from '../FavoriteButton';
 import { FeedInteractiveActions } from '../FeedInteractiveActions';
 import { FeedResponsiveDate } from '../FeedResponsiveDate';
 import { getVideoEmbed } from '../../utils/videoEmbed';
+import { sanitizeArticleDescription } from '../../utils/sanitization';
 
 interface NewspaperLayoutProps {
   articles: Article[];
@@ -59,10 +60,10 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
 
   const main = articles[0];
   const rest = articles.slice(1);
-  const mainExcerpt = [main?.description, main?.content]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+  const mainExcerpt = sanitizeArticleDescription(
+    [main?.description, main?.content].filter(Boolean).join(" "),
+    1200,
+  );
 
   const handleCityChange = () => {
     const next = prompt(t('weather.city_prompt'), city);
@@ -273,23 +274,21 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               </div>
 
               <div className="feed-card-bottom-copy flex flex-col gap-3">
-                <div className="feed-card-top-rail">
-                  <div className="feed-card-meta-stack">
-                    <span className="feed-chip inline-flex w-fit max-w-full text-[10px] uppercase tracking-widest px-2 py-0.5 rounded font-bold truncate">
-                      {article.sourceTitle}
-                    </span>
-                    <FeedResponsiveDate
-                      date={article.pubDate}
-                      className="text-xs text-[rgb(var(--color-textSecondary))]"
-                    />
-                  </div>
+                <div className="flex min-w-0 flex-col items-start gap-1 text-left">
+                  <span className="feed-chip inline-flex w-fit max-w-full whitespace-normal break-words rounded px-2 py-0.5 text-left text-[10px] font-bold uppercase leading-tight tracking-widest">
+                    {article.sourceTitle}
+                  </span>
+                  <FeedResponsiveDate
+                    date={article.pubDate}
+                    className="text-xs text-[rgb(var(--color-textSecondary))]"
+                  />
                 </div>
                 {article.description && (
                   <p
                     className="feed-desc feed-card-desc-clamp text-sm"
                     style={{ "--feed-desc-lines": 3 } as React.CSSProperties}
                   >
-                    {article.description}
+                    {sanitizeArticleDescription(article.description, 360)}
                   </p>
                 )}
               </div>

@@ -5,6 +5,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 import { FeedInteractiveActions } from '../FeedInteractiveActions';
 import { getVideoEmbed } from '../../utils/videoEmbed';
+import { sanitizeArticleDescription } from '../../utils/sanitization';
 
 interface TimelineLayoutProps {
   articles: Article[];
@@ -107,20 +108,17 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
 
           <div className="space-y-8">
             {dateArticles.map((article) => {
-              const timelineText = [
-                article.description,
-                article.content,
-              ]
-                .filter(Boolean)
-                .join(" ")
-                .trim();
+              const timelineText = sanitizeArticleDescription(
+                [article.description, article.content].filter(Boolean).join(" "),
+                520,
+              );
 
               return (
               <article key={article.link} className="relative pl-10 md:pl-16 group">
                 {/* Timeline Dot */}
                 <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-[rgba(var(--color-accent),0.6)] border-4 border-[rgb(var(--color-background))] shadow-sm group-hover:scale-125 transition-transform" />
 
-                <div className="bg-[rgb(var(--color-surface))] p-4 md:p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-white/20 transition-all shadow-sm hover:shadow-md relative overflow-hidden">
+                <div className="relative overflow-hidden rounded-2xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] p-4 text-left shadow-sm transition-all hover:border-white/20 hover:shadow-md md:p-6">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))] min-w-0">
                       <span className="font-medium feed-accent-text truncate max-w-[150px] sm:max-w-[200px]">{article.sourceTitle}</span>
@@ -160,7 +158,10 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                   )}
 
                   <div className="relative">
-                    <p className="text-[rgb(var(--color-textSecondary))] text-sm line-clamp-3 mb-2 leading-relaxed max-w-[70ch]">
+                    <p
+                      className="feed-desc feed-card-desc-clamp mb-2 w-full max-w-none text-left text-sm leading-relaxed"
+                      style={{ "--feed-desc-lines": 4 } as React.CSSProperties}
+                    >
                       {timelineText || article.title}
                     </p>
 

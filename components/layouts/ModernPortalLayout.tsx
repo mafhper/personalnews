@@ -5,6 +5,7 @@ import { FavoriteButton } from "../FavoriteButton";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
 import { FeedResponsiveDate } from "../FeedResponsiveDate";
 import { getVideoEmbed } from "../../utils/videoEmbed";
+import { sanitizeArticleDescription } from "../../utils/sanitization";
 interface ModernPortalLayoutProps {
   articles: Article[];
   timeFormat: "12h" | "24h";
@@ -24,6 +25,11 @@ const ModernFeedCard: React.FC<{
     article.author && article.author !== article.sourceTitle
       ? article.author
       : undefined;
+  const sourceChip = (
+    <span className="inline-flex w-fit max-w-[calc(100%-4.5rem)] truncate rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/90 shadow-sm backdrop-blur-md">
+      {article.sourceTitle}
+    </span>
+  );
 
   return (
     <article className="feed-card group flex h-full flex-col p-4 sm:p-5">
@@ -46,7 +52,14 @@ const ModernFeedCard: React.FC<{
           />
         </button>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/65 to-transparent" />
-        <div className="absolute left-3 top-3 z-20 feed-card-action-rail">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/65 to-transparent sm:hidden" />
+        <div className="absolute left-3 top-3 z-20 hidden sm:block">
+          {sourceChip}
+        </div>
+        <div className="absolute bottom-3 left-3 z-20 sm:hidden">
+          {sourceChip}
+        </div>
+        <div className="feed-card-action-rail absolute left-3 top-3 z-20 max-w-[calc(100%-4.5rem)] justify-start sm:top-12">
           <FeedInteractiveActions
             variant="onDarkMedia"
             articleLink={article.link}
@@ -66,39 +79,35 @@ const ModernFeedCard: React.FC<{
         />
       </div>
 
-      <div className="flex min-h-0 flex-col items-start justify-start gap-2 px-1 text-left">
+      <div className="flex min-h-0 flex-1 flex-col items-start gap-2 px-1 text-left">
+        <FeedResponsiveDate
+          date={article.pubDate}
+          className="feed-meta shrink-0 whitespace-nowrap text-[11px]"
+        />
         <button
           type="button"
           onClick={() => onRead(article)}
           className="bg-transparent p-0 text-left"
         >
-          <h4 className="feed-title feed-title-card feed-card-title-clamp text-base font-bold leading-tight sm:text-lg">
+          <h4
+            className="feed-title feed-title-card feed-card-title-clamp text-base font-bold leading-tight sm:text-lg"
+            style={{ "--feed-title-lines": large ? 3 : 4 } as React.CSSProperties}
+          >
             {article.title}
           </h4>
         </button>
-        <div className="flex w-full min-w-0 flex-col items-start gap-1">
-          <div className="flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="feed-chip inline-flex w-fit max-w-[14rem] shrink-0 truncate px-2.5 py-1">
-              {article.sourceTitle}
-            </span>
-            <FeedResponsiveDate
-              date={article.pubDate}
-              className="feed-meta shrink-0 whitespace-nowrap text-[11px]"
-            />
-          </div>
-          {authorLabel && (
-            <span className="feed-meta w-full truncate text-[11px]">
-              Por {authorLabel}
-            </span>
-          )}
-        </div>
         {article.description && (
           <p
-            className="feed-desc feed-card-desc-clamp mt-2 text-left text-sm leading-relaxed"
+            className="feed-desc feed-card-desc-clamp text-left text-sm leading-relaxed"
             style={{ "--feed-desc-lines": 4 } as React.CSSProperties}
           >
-            {article.description}
+            {sanitizeArticleDescription(article.description, 420)}
           </p>
+        )}
+        {authorLabel && (
+          <span className="feed-meta mt-auto w-full truncate pt-2 text-[11px]">
+            Por {authorLabel}
+          </span>
         )}
       </div>
     </article>
@@ -259,7 +268,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
               <div className="mb-4 hidden max-w-2xl md:block">
                 <p className="text-lg text-white/92 line-clamp-2 drop-shadow-sm">
                   <span className="feed-image-subtitle-band">
-                    {heroArticle.description}
+                    {sanitizeArticleDescription(heroArticle.description, 360)}
                   </span>
                 </p>
               </div>
