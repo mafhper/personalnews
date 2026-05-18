@@ -179,6 +179,10 @@ async function main() {
   const { port: backendPort, useExistingBackend } = await resolveBackendPort();
   const frontendPort = await resolveFrontendPort();
   const backendBaseUrl = `http://${BACKEND_HOST}:${backendPort}`;
+  const frontendOrigins = [
+    `http://localhost:${frontendPort}`,
+    `http://127.0.0.1:${frontendPort}`,
+  ].join(",");
   const forceFeedHash = startView === "feed";
   const frontendEnv = {
     VITE_BACKEND_ENABLED: "true",
@@ -216,6 +220,7 @@ async function main() {
     backend = spawnScript("backend", "backend:start", {
       BACKEND_HOST,
       BACKEND_PORT: String(backendPort),
+      BACKEND_ALLOWED_ORIGINS: frontendOrigins,
     });
 
     const healthy = await waitForBackendHealth(backendPort, 15000);

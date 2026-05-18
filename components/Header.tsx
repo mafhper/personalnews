@@ -686,7 +686,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     <>
       <header
         ref={headerRef}
-        className={`${headerPositionClasses[headerPosition]} z-30 transition-[transform,opacity,top,margin,box-shadow,background-color,border-color] duration-300 ${
+        className={`app-system-font ${headerPositionClasses[headerPosition]} z-30 transition-[transform,opacity,top,margin,box-shadow,background-color,border-color] duration-300 ${
           isScrolled || isFloating ? (headerStyleVariant === 'minimal' ? 'shadow-sm' : 'shadow-lg') : ''
         } ${headerPosition === 'floating' ? '[background-clip:padding-box]' : ''} ${
           isScrolled && !isFloating ? 'border-b' : ''

@@ -267,7 +267,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
       />
 
       {/* Sidebar */}
-      <div className="feed-header-drawer fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col animate-in slide-in-from-right duration-300">
+      <div className="app-system-font feed-header-drawer fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col animate-in slide-in-from-right duration-300">
 
         {/* Header */}
         <div className="feed-header-drawer__top flex items-center justify-between p-4">
