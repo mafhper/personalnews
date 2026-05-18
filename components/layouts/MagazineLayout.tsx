@@ -280,10 +280,10 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             {gridArticles.map((article, i) => (
               <article
                 key={i}
-                className="group grid cursor-pointer grid-cols-[5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-[rgb(var(--color-border))]/22 bg-[rgb(var(--theme-surface-readable))]/54 p-3 transition-all hover:bg-[rgb(var(--theme-surface-elevated))]/84 sm:grid-cols-[6.5rem_minmax(0,1fr)]"
+                className="group grid cursor-pointer grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-[rgb(var(--color-border))]/22 bg-[rgb(var(--theme-surface-readable))]/54 p-3 text-left transition-all hover:bg-[rgb(var(--theme-surface-elevated))]/84 sm:grid-cols-[7rem_minmax(0,1fr)]"
                 onClick={() => handleOpenReader(article)}
               >
-                <div className="relative aspect-square overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
+                <div className="relative h-24 overflow-hidden rounded-lg bg-[rgb(var(--color-background))] sm:h-28">
                   <ArticleImage
                     article={article}
                     width={260}
@@ -291,24 +291,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                     fill={true}
                     className="w-full h-full object-cover object-center"
                   />
-                </div>
-                <div className="flex min-w-0 flex-col gap-2 self-start">
-                  <div className="feed-card-meta-stack">
-                    <span className="text-[10px] font-bold uppercase feed-accent-text truncate">
-                      {article.sourceTitle}
-                    </span>
-                    <FeedResponsiveDate
-                      date={article.pubDate}
-                      className="text-[10px] text-[rgb(var(--color-textSecondary))]"
-                    />
-                  </div>
-                  <h3
-                    className="feed-card-title-clamp font-semibold text-sm sm:text-base text-[rgb(var(--theme-text-on-surface))] transition-colors leading-snug"
-                    style={{ "--feed-title-lines": 3 } as React.CSSProperties}
-                  >
-                    {article.title}
-                  </h3>
-                  <div className="feed-card-action-rail mt-1 justify-start">
+                  <div className="feed-card-action-rail absolute left-2 top-2 z-20 max-w-[calc(100%-2.5rem)] justify-start">
                     {(() => {
                       const embedUrl = getVideoEmbed(article.link);
                       return (
@@ -319,17 +302,43 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                           showWatch={!!embedUrl}
                           showVisit={true}
                           compact
+                          variant="onDarkMedia"
                           className="!mt-0"
                         />
                       );
                     })()}
-                    <FavoriteButton
-                      article={article}
-                      size="small"
-                      position="inline"
-                      className="bg-[rgb(var(--color-surfaceElevated))]/80"
+                  </div>
+                  <FavoriteButton
+                    article={article}
+                    size="small"
+                    position="overlay"
+                    className="right-2 top-2 z-20"
+                  />
+                </div>
+                <div className="flex min-w-0 flex-col items-start gap-1.5 self-start py-0.5">
+                  <div className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-left">
+                    <span className="feed-chip inline-flex w-fit max-w-[12rem] truncate px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em]">
+                      {article.sourceTitle}
+                    </span>
+                    <FeedResponsiveDate
+                      date={article.pubDate}
+                      className="feed-meta shrink-0 text-[10px] leading-none text-[rgb(var(--color-textSecondary))]"
                     />
                   </div>
+                  <h3
+                    className="feed-card-title-clamp w-full font-semibold text-sm leading-snug text-[rgb(var(--theme-text-on-surface))] transition-colors sm:text-base"
+                    style={{ "--feed-title-lines": 3 } as React.CSSProperties}
+                  >
+                    {article.title}
+                  </h3>
+                  {article.description && (
+                    <p
+                      className="feed-desc feed-card-desc-clamp w-full text-xs leading-relaxed"
+                      style={{ "--feed-desc-lines": 2 } as React.CSSProperties}
+                    >
+                      {article.description}
+                    </p>
+                  )}
                 </div>
               </article>
             ))}
