@@ -92,6 +92,7 @@ const FavoriteButtonComponent: React.FC<FavoriteButtonProps> = ({
 
   // Base styles that apply to all variants
   const baseClasses = `
+    feed-card-favorite-control
     ${sizeClasses[size].container}
     ${positionClasses[position]}
     rounded-full

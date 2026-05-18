@@ -2659,10 +2659,32 @@ body::-webkit-scrollbar-corner,
       transform 180ms ease;
   }
 
+  .feed-card-favorite-control {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+    pointer-events: none;
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease,
+      filter 180ms ease;
+  }
+
   .group:hover .feed-card-action-rail,
   .group:focus-within .feed-card-action-rail,
   .feed-card:hover .feed-card-action-rail,
   .feed-card:focus-within .feed-card-action-rail {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .group:hover .feed-card-favorite-control,
+  .group:focus-within .feed-card-favorite-control,
+  .feed-card:hover .feed-card-favorite-control,
+  .feed-card:focus-within .feed-card-favorite-control,
+  article:hover .feed-card-favorite-control,
+  article:focus-within .feed-card-favorite-control,
+  .feed-card-favorite-control:focus-visible {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
