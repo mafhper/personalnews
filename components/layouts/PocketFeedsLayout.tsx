@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Article } from '../../types';
 import { LazyImage } from '../LazyImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 
 interface PocketFeedsLayoutProps {
@@ -48,7 +47,6 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
   const [volume, setVolume] = useState(0.9);
   const [playbackRate, setPlaybackRate] = useState(1);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const { t } = useLanguage();
 
   // Group articles by sourceTitle (podcast name)
   const podcastGroups = React.useMemo(() => {
@@ -63,6 +61,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
 
   const podcastNames = Object.keys(podcastGroups);
   const hasFewPodcasts = podcastNames.length <= 4;
+  const episodeLabel = (count: number) => count === 1 ? 'episódio' : 'episódios';
+  const previewTitle = 'Abrir detalhes do episódio';
 
   // Format duration (e.g., "3600" -> "1:00:00" or "45:30" -> "45:30")
   const formatDuration = (duration?: string): string => {
@@ -155,9 +155,9 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
           <svg className="w-6 h-6 feed-accent-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
           </svg>
-          <h1 className="text-xl font-bold text-[rgb(var(--color-text))]">PocketFeeds</h1>
+          <h1 className="text-xl font-bold text-[rgb(var(--color-text))]">Podcasts</h1>
           <span className="text-sm text-[rgb(var(--color-textSecondary))]">
-            {podcastNames.length} {podcastNames.length === 1 ? 'podcast' : 'podcasts'} • {articles.length} {articles.length === 1 ? t('article.episode') || 'episódio' : t('article.episodes') || 'episódios'}
+            {podcastNames.length} {podcastNames.length === 1 ? 'podcast' : 'podcasts'} • {articles.length} {episodeLabel(articles.length)}
           </span>
         </div>
       </div>
@@ -256,7 +256,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                           <h3 className="font-medium text-[rgb(var(--color-text))] text-sm md:text-base line-clamp-1 hover:text-white transition-colors">
                             {episode.title}
                           </h3>
-                          <div className="flex items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))] mt-1">
+                          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))]">
                             <span>{new Date(episode.pubDate).toLocaleDateString()}</span>
                             {episode.audioDuration && (
                               <>
@@ -264,33 +264,36 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                                 <span>{formatDuration(episode.audioDuration)}</span>
                               </>
                             )}
+                            <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                              <FavoriteButton
+                                article={episode}
+                                size="small"
+                                position="inline"
+                                className="text-[rgb(var(--color-textSecondary))] hover:text-white"
+                              />
+                              <button
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setReadingArticle(episode);
+                                }}
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(var(--color-text),0.08)] text-[rgb(var(--color-textSecondary))] transition-colors hover:bg-[rgba(var(--color-accent),0.28)] hover:text-white"
+                                title={previewTitle}
+                                aria-label={previewTitle}
+                                type="button"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                </svg>
+                              </button>
+                            </span>
                           </div>
-                        </div>
-
-                        {/* More options */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <FavoriteButton
-                            article={episode}
-                            size="small"
-                            position="inline"
-                            className="text-[rgb(var(--color-textSecondary))] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                          />
-                          <button
-                            onClick={() => setReadingArticle(episode)}
-                            className="p-2 text-[rgb(var(--color-textSecondary))] hover:text-white transition-colors"
-                            title={t('action.preview')}
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                            </svg>
-                          </button>
                         </div>
                       </div>
                     ))}
 
                     {episodes.length > 10 && (
                       <div className="p-4 text-center text-sm text-[rgb(var(--color-textSecondary))]">
-                        +{episodes.length - 10} {t('article.more_episodes') || 'mais episódios'}
+                        +{episodes.length - 10} episódios adicionais
                       </div>
                     )}
                   </div>
@@ -467,7 +470,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold text-[rgb(var(--color-text))] truncate">{expandedPodcast}</h2>
                 <p className="text-sm text-[rgb(var(--color-textSecondary))]">
-                  {podcastGroups[expandedPodcast].length} episódios
+                  {podcastGroups[expandedPodcast].length} {episodeLabel(podcastGroups[expandedPodcast].length)}
                 </p>
               </div>
               <button
@@ -521,7 +524,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                     <h3 className="font-medium text-[rgb(var(--color-text))] text-sm line-clamp-1 hover:text-white transition-colors">
                       {episode.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))] mt-1">
+                    <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))]">
                       <span>{new Date(episode.pubDate).toLocaleDateString()}</span>
                       {episode.audioDuration && (
                         <>
@@ -529,16 +532,16 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                           <span>{formatDuration(episode.audioDuration)}</span>
                         </>
                       )}
+                      <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                        <FavoriteButton
+                          article={episode}
+                          size="small"
+                          position="inline"
+                          className="text-[rgb(var(--color-textSecondary))] hover:text-white"
+                        />
+                      </span>
                     </div>
                   </div>
-
-                  {/* Favorite Button */}
-                  <FavoriteButton
-                    article={episode}
-                    size="small"
-                    position="inline"
-                    className="text-[rgb(var(--color-textSecondary))] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
                 </div>
               ))}
             </div>

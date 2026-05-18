@@ -204,7 +204,7 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
             >
               <div className="feed-card-top-rail">
                 <div className="feed-card-meta-stack">
-                  <span className="feed-chip inline-flex w-fit max-w-full text-xs font-bold uppercase tracking-widest">
+                  <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full text-xs font-bold uppercase tracking-widest">
                     {main.sourceTitle}
                   </span>
                   <FeedResponsiveDate
@@ -227,16 +227,16 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
         )}
 
         {/* EDITORIAL GRID */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-10">
+        <section className="grid grid-cols-1 items-start gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {rest.map(article => (
             <article
               key={article.link}
               onClick={() => setReadingArticle(article)}
-              className="cursor-pointer group border-t border-[rgb(var(--color-border))] pt-4"
+              className="group flex h-full cursor-pointer flex-col border-t border-[rgb(var(--color-border))] pt-4 text-left"
             >
               <h3
-                className="feed-card-title-clamp font-serif text-base font-bold leading-snug mb-3 group-hover:text-[rgb(var(--color-accent))]"
-                style={{ "--feed-title-lines": 5 } as React.CSSProperties}
+                className="feed-card-title-clamp mb-3 min-h-[4.6rem] font-serif text-base font-bold leading-snug group-hover:text-[rgb(var(--color-accent))] sm:min-h-[5.05rem]"
+                style={{ "--feed-title-lines": 4 } as React.CSSProperties}
               >
                 {article.title}
               </h3>
@@ -273,9 +273,9 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 />
               </div>
 
-              <div className="feed-card-bottom-copy flex flex-col gap-3">
+              <div className="feed-card-bottom-copy flex flex-1 flex-col gap-2">
                 <div className="flex min-w-0 flex-col items-start gap-1 text-left">
-                  <span className="feed-chip inline-flex w-fit max-w-full whitespace-normal break-words rounded px-2 py-0.5 text-left text-[10px] font-bold uppercase leading-tight tracking-widest">
+                  <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full whitespace-normal break-words rounded px-2 py-0.5 text-left text-[10px] font-bold uppercase leading-tight tracking-widest">
                     {article.sourceTitle}
                   </span>
                   <FeedResponsiveDate

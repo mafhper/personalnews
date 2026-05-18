@@ -8,6 +8,7 @@ import { FavoriteButton } from "../FavoriteButton";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
 import { FeedResponsiveDate } from "../FeedResponsiveDate";
 import { getVideoEmbed } from "../../utils/videoEmbed";
+import { sanitizeArticleDescription } from "../../utils/sanitization";
 
 interface MagazineLayoutProps {
   articles: Article[];
@@ -130,9 +131,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
             {/* Hero Content */}
             <div className="flex flex-col justify-between gap-8 p-6 md:p-10 xl:col-span-5 bg-gradient-to-br from-[rgb(var(--theme-surface-elevated))] to-[rgb(var(--color-background))] border-t border-[rgb(var(--color-border))]/35 xl:border-t-0 xl:border-l">
-              <div className="feed-card-top-rail">
+              <div className="feed-card-top-rail relative">
                 <div className="feed-card-meta-stack">
-                  <span className="feed-chip inline-flex w-fit max-w-full items-center px-3 py-1 shadow-sm shadow-black/15">
+                  <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full items-center px-3 py-1 shadow-sm shadow-black/15">
                     {heroArticle.sourceTitle}
                   </span>
                   <FeedResponsiveDate
@@ -140,7 +141,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                     className="text-sm font-bold text-[rgb(var(--theme-text-secondary-on-surface))]"
                   />
                 </div>
-                <div className="feed-card-action-rail">
+                <div className="feed-card-action-rail absolute right-0 top-0">
                   {(() => {
                     const embedUrl = getVideoEmbed(heroArticle.link);
                     return (
@@ -170,7 +171,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 </h1>
 
                 <p className="feed-desc feed-card-desc-clamp text-base md:text-lg leading-relaxed max-w-[48ch]">
-                  {heroArticle.description}
+                  {sanitizeArticleDescription(heroArticle.description, 420)}
                 </p>
 
                 {heroAuthor && (
@@ -202,9 +203,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 className="group cursor-pointer feed-surface rounded-2xl p-5 transition-all duration-300 shadow-sm"
                 onClick={() => handleOpenReader(article)}
               >
-                <div className="feed-card-top-rail mb-3">
+                <div className="feed-card-top-rail relative mb-3">
                   <div className="feed-card-meta-stack">
-                    <span className="feed-chip w-fit max-w-full text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
+                    <span className="feed-chip feed-chip-fit w-fit max-w-full text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
                       {article.sourceTitle}
                     </span>
                     <FeedResponsiveDate
@@ -212,7 +213,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                       className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-on-surface))] transition-colors"
                     />
                   </div>
-                  <div className="feed-card-action-rail">
+                  <div className="feed-card-action-rail absolute right-0 top-0">
                     {(() => {
                       const embedUrl = getVideoEmbed(article.link);
                       return (
@@ -256,7 +257,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                       className="feed-desc feed-card-desc-clamp mt-3 text-sm leading-relaxed"
                       style={{ "--feed-desc-lines": 3 } as React.CSSProperties}
                     >
-                      {article.description}
+                      {sanitizeArticleDescription(article.description, 320)}
                     </p>
                   )}
                 </div>
@@ -291,33 +292,10 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                     fill={true}
                     className="w-full h-full object-cover object-center"
                   />
-                  <div className="feed-card-action-rail absolute left-2 top-2 z-20 max-w-[calc(100%-2.5rem)] justify-start">
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          articleLink={article.link}
-                          onRead={() => handleOpenReader(article)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          compact
-                          variant="onDarkMedia"
-                          className="!mt-0"
-                        />
-                      );
-                    })()}
-                  </div>
-                  <FavoriteButton
-                    article={article}
-                    size="small"
-                    position="overlay"
-                    className="right-2 top-2 z-20"
-                  />
                 </div>
-                <div className="flex min-w-0 flex-col items-start gap-1.5 self-start py-0.5">
+                <div className="flex min-w-0 flex-col items-start gap-1.5 self-stretch py-0.5">
                   <div className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-left">
-                    <span className="feed-chip inline-flex w-fit max-w-[12rem] truncate px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em]">
+                    <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em]">
                       {article.sourceTitle}
                     </span>
                     <FeedResponsiveDate
@@ -336,9 +314,32 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                       className="feed-desc feed-card-desc-clamp w-full text-xs leading-relaxed"
                       style={{ "--feed-desc-lines": 2 } as React.CSSProperties}
                     >
-                      {article.description}
+                      {sanitizeArticleDescription(article.description, 260)}
                     </p>
                   )}
+                  <div className="mt-auto flex w-full justify-end pt-1">
+                    <div className="feed-card-action-rail max-w-full justify-end">
+                      {(() => {
+                        const embedUrl = getVideoEmbed(article.link);
+                        return (
+                          <FeedInteractiveActions
+                            articleLink={article.link}
+                            onRead={() => handleOpenReader(article)}
+                            showRead={!embedUrl}
+                            showWatch={!!embedUrl}
+                            showVisit={true}
+                            compact
+                            className="!mt-0"
+                          />
+                        );
+                      })()}
+                      <FavoriteButton
+                        article={article}
+                        size="small"
+                        position="inline"
+                      />
+                    </div>
+                  </div>
                 </div>
               </article>
             ))}

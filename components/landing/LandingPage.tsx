@@ -250,7 +250,10 @@ const ProductFrame = ({
 
   return (
     <figure
-      className="promo-product-frame promo-product-frame--rotating"
+      className={[
+        "promo-product-frame promo-product-frame--rotating",
+        exitingIndex !== null ? "is-transitioning" : "",
+      ].filter(Boolean).join(" ")}
       role="button"
       tabIndex={0}
       aria-label={`${alt}. Clique para alternar a imagem.`}

@@ -100,8 +100,8 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
       {Object.entries(groupedArticles).map(([date, dateArticles]) => (
         <div key={date} className="mb-12 relative">
           {/* Date Header */}
-          <div className="sticky top-20 z-10 mb-8 ml-10 md:ml-16">
-            <span className="feed-chip inline-block px-4 py-2 rounded-full text-sm font-bold capitalize shadow-sm">
+          <div className="relative z-10 mb-6 ml-10 md:ml-16">
+            <span className="inline-flex max-w-full whitespace-normal break-words rounded-full border border-[rgb(var(--color-border))]/35 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/88 px-3 py-1.5 text-left text-xs font-bold capitalize leading-snug text-[rgb(var(--theme-text-on-surface,var(--color-text)))] shadow-sm sm:px-4 sm:py-2 sm:text-sm">
               {date}
             </span>
           </div>
