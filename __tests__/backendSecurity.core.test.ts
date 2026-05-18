@@ -142,6 +142,26 @@ describe("backend security controls", () => {
     expect(validateBackendRequest(blockedRequest)?.status).toBe(403);
   });
 
+  it("allows loopback dev origins on fallback local stack ports", () => {
+    const devFallbackRequest = new Request("http://127.0.0.1:3001/health", {
+      headers: { origin: "http://localhost:5174" },
+    });
+    const previewFallbackRequest = new Request("http://127.0.0.1:3001/health", {
+      headers: { origin: "http://127.0.0.1:4176" },
+    });
+    const outOfRangeRequest = new Request("http://127.0.0.1:3001/health", {
+      headers: { origin: "http://localhost:5191" },
+    });
+
+    expect(buildJsonHeaders(devFallbackRequest)).toMatchObject({
+      "access-control-allow-origin": "http://localhost:5174",
+    });
+    expect(buildJsonHeaders(previewFallbackRequest)).toMatchObject({
+      "access-control-allow-origin": "http://127.0.0.1:4176",
+    });
+    expect(validateBackendRequest(outOfRangeRequest)?.status).toBe(403);
+  });
+
   it("requires the backend token when BACKEND_AUTH_TOKEN is configured", () => {
     vi.stubEnv("BACKEND_AUTH_TOKEN", "1234567890abcdef1234567890abcdef");
     const protectedRequest = new Request("http://127.0.0.1:3001/api/v1/settings", {

@@ -3,6 +3,8 @@ import { BACKEND_AUTH_TOKEN_HEADER } from "../../../shared/contracts/backend";
 const DEFAULT_ALLOWED_ORIGINS = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://localhost:4175",
+  "http://127.0.0.1:4175",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "http://tauri.localhost",
@@ -12,6 +14,10 @@ const DEFAULT_ALLOWED_ORIGINS = new Set([
 
 const CORS_METHODS = "GET,POST,PUT,OPTIONS";
 const CORS_HEADERS = `content-type,accept,${BACKEND_AUTH_TOKEN_HEADER}`;
+const LOCAL_DEV_PORT_START = 5173;
+const LOCAL_DEV_PORT_END = 5190;
+const LOCAL_PREVIEW_PORT_START = 4175;
+const LOCAL_PREVIEW_PORT_END = 4190;
 
 function configuredAllowedOrigins(): Set<string> {
   const configured = process.env.BACKEND_ALLOWED_ORIGINS;
@@ -27,7 +33,23 @@ function configuredAllowedOrigins(): Set<string> {
 
 export function isAllowedBackendOrigin(origin: string | null): boolean {
   if (!origin) return true;
-  return configuredAllowedOrigins().has(origin);
+  if (configuredAllowedOrigins().has(origin)) return true;
+
+  try {
+    const parsed = new URL(origin);
+    const port = Number.parseInt(parsed.port, 10);
+    const isLoopback =
+      parsed.protocol === "http:" &&
+      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1");
+    const isDevPort =
+      port >= LOCAL_DEV_PORT_START && port <= LOCAL_DEV_PORT_END;
+    const isPreviewPort =
+      port >= LOCAL_PREVIEW_PORT_START && port <= LOCAL_PREVIEW_PORT_END;
+
+    return isLoopback && (isDevPort || isPreviewPort);
+  } catch {
+    return false;
+  }
 }
 
 export function getRequiredBackendToken(): string | null {
