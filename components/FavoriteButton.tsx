@@ -116,11 +116,11 @@ const FavoriteButtonComponent: React.FC<FavoriteButtonProps> = ({
       shadow-lg shadow-red-950/25
     `
       : `
-      !bg-[rgba(var(--color-error),0.14)] hover:!bg-[rgba(var(--color-error),0.22)]
+      !bg-[rgb(var(--color-error))] text-white shadow-sm shadow-red-950/20 hover:brightness-110
       ${
         isFavorited
-          ? "text-[rgb(var(--color-error))] focus:ring-red-500"
-          : "text-[rgb(var(--color-error))] focus:ring-gray-400"
+          ? "focus:ring-red-500"
+          : "focus:ring-gray-400"
       }
     `;
 

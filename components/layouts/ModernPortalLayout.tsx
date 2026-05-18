@@ -26,7 +26,7 @@ const ModernFeedCard: React.FC<{
       ? article.author
       : undefined;
   const sourceChip = (
-    <span className="inline-flex w-fit max-w-[calc(100%-4.5rem)] truncate rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/90 shadow-sm backdrop-blur-md">
+    <span className="inline-flex w-fit max-w-[calc(100%-1.5rem)] whitespace-normal break-words rounded-full bg-black/45 px-2.5 py-1 text-left text-[10px] font-black uppercase leading-tight tracking-[0.06em] text-white/90 shadow-sm backdrop-blur-md">
       {article.sourceTitle}
     </span>
   );
@@ -53,13 +53,13 @@ const ModernFeedCard: React.FC<{
         </button>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/65 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/65 to-transparent sm:hidden" />
-        <div className="absolute left-3 top-3 z-20 hidden sm:block">
+        <div className="absolute left-3 top-3 z-20 hidden max-w-[calc(100%-1.5rem)] text-left sm:block">
           {sourceChip}
         </div>
-        <div className="absolute bottom-3 left-3 z-20 sm:hidden">
+        <div className="absolute bottom-3 left-3 z-20 max-w-[calc(100%-1.5rem)] text-left sm:hidden">
           {sourceChip}
         </div>
-        <div className="feed-card-action-rail absolute left-3 top-3 z-20 max-w-[calc(100%-4.5rem)] justify-start sm:top-12">
+        <div className="feed-card-action-rail absolute bottom-3 right-3 z-20 max-w-[calc(100%-1.5rem)] justify-end">
           <FeedInteractiveActions
             variant="onDarkMedia"
             articleLink={article.link}
@@ -70,27 +70,27 @@ const ModernFeedCard: React.FC<{
             compact
             className="!mt-0"
           />
+          <FavoriteButton
+            article={article}
+            size="small"
+            position="inline"
+            className="border border-white/10 bg-black/40 shadow-sm hover:bg-black/60"
+          />
         </div>
-        <FavoriteButton
-          article={article}
-          size="small"
-          position="overlay"
-          className="right-3 top-3 z-20 bg-black/40 hover:bg-black/60 border border-white/10 shadow-sm"
-        />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col items-start gap-2 px-1 text-left">
         <FeedResponsiveDate
           date={article.pubDate}
-          className="feed-meta shrink-0 whitespace-nowrap text-[11px]"
+          className="feed-meta w-full shrink-0 text-left text-[11px]"
         />
         <button
           type="button"
           onClick={() => onRead(article)}
-          className="bg-transparent p-0 text-left"
+          className="w-full bg-transparent p-0 text-left"
         >
           <h4
-            className="feed-title feed-title-card feed-card-title-clamp text-base font-bold leading-tight sm:text-lg"
+            className="feed-title feed-title-card feed-card-title-clamp w-full text-left text-base font-bold leading-tight sm:text-lg"
             style={{ "--feed-title-lines": large ? 3 : 4 } as React.CSSProperties}
           >
             {article.title}
@@ -98,14 +98,14 @@ const ModernFeedCard: React.FC<{
         </button>
         {article.description && (
           <p
-            className="feed-desc feed-card-desc-clamp text-left text-sm leading-relaxed"
+            className="feed-desc feed-card-desc-clamp w-full text-left text-sm leading-relaxed"
             style={{ "--feed-desc-lines": 4 } as React.CSSProperties}
           >
             {sanitizeArticleDescription(article.description, 420)}
           </p>
         )}
         {authorLabel && (
-          <span className="feed-meta mt-auto w-full truncate pt-2 text-[11px]">
+          <span className="feed-meta mt-auto w-full truncate pt-2 text-left text-[11px]">
             Por {authorLabel}
           </span>
         )}
@@ -218,39 +218,39 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.18)_0%,rgba(3,5,9,0.28)_20%,rgba(3,5,9,0.74)_64%,rgba(3,5,9,0.97)_100%)]" />
 
-          <div className="feed-image-story-top-rail">
+          <div className="feed-image-story-top-rail justify-start text-left">
             <div className="feed-card-meta-stack max-w-[18rem] text-xs font-semibold text-white/86">
-              <span className="inline-flex w-fit max-w-full truncate rounded-full bg-black/34 px-3 py-1 text-white/88 backdrop-blur-md">
+              <span className="inline-flex w-fit max-w-full whitespace-normal break-words rounded-full bg-black/34 px-3 py-1 text-left leading-tight text-white/88 backdrop-blur-md">
                 {heroArticle.sourceTitle}
               </span>
               <FeedResponsiveDate
                 date={heroArticle.pubDate}
-                className="text-[11px] font-semibold text-white/72 drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
+                className="w-full text-left text-[11px] font-semibold text-white/72 drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
               />
             </div>
-            <div className="feed-card-action-rail">
-              {(() => {
-                const embedUrl = getVideoEmbed(heroArticle.link);
-                return (
-                  <FeedInteractiveActions
-                    variant="onDarkMedia"
-                    articleLink={heroArticle.link}
-                    onRead={() => handleOpenReader(heroArticle)}
-                    showRead={!embedUrl}
-                    showWatch={!!embedUrl}
-                    showVisit={true}
-                    compact
-                    className="!mt-0"
-                  />
-                );
-              })()}
-              <FavoriteButton
-                article={heroArticle}
-                size="large"
-                position="inline"
-                className="bg-black/30 hover:bg-black/50 border border-white/15 shadow-md"
-              />
-            </div>
+          </div>
+          <div className="feed-card-action-rail absolute bottom-5 right-5 z-20 max-w-[calc(100%-2.5rem)] justify-end">
+            {(() => {
+              const embedUrl = getVideoEmbed(heroArticle.link);
+              return (
+                <FeedInteractiveActions
+                  variant="onDarkMedia"
+                  articleLink={heroArticle.link}
+                  onRead={() => handleOpenReader(heroArticle)}
+                  showRead={!embedUrl}
+                  showWatch={!!embedUrl}
+                  showVisit={true}
+                  compact
+                  className="!mt-0"
+                />
+              );
+            })()}
+            <FavoriteButton
+              article={heroArticle}
+              size="large"
+              position="inline"
+              className="border border-white/15 bg-black/30 shadow-md hover:bg-black/50"
+            />
           </div>
 
           <div className="feed-image-story-bottom-copy max-w-[42rem]">
@@ -289,39 +289,39 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
                 style={{ backgroundImage: `url(${article.imageUrl})` }}
               />
               <div className="feed-image-story-overlay absolute inset-0" />
-              <div className="feed-image-story-top-rail">
-                <div className="feed-image-story-meta feed-card-meta-stack max-w-[70%] text-[10px] font-semibold text-white/82 sm:text-xs">
-                  <span className="inline-flex w-fit max-w-full truncate rounded-full bg-black/40 px-2.5 py-1 text-white/88 backdrop-blur-md">
+              <div className="feed-image-story-top-rail justify-start text-left">
+                <div className="feed-image-story-meta feed-card-meta-stack max-w-[calc(100%-1.5rem)] text-[10px] font-semibold text-white/82 sm:text-xs">
+                  <span className="inline-flex w-fit max-w-full whitespace-normal break-words rounded-full bg-black/40 px-2.5 py-1 text-left leading-tight text-white/88 backdrop-blur-md">
                     {article.sourceTitle}
                   </span>
                   <FeedResponsiveDate
                     date={article.pubDate}
-                    className="text-white/72 drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
+                    className="w-full text-left text-white/72 drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
                   />
                 </div>
-                <div className="feed-card-action-rail">
-                  {(() => {
-                    const embedUrl = getVideoEmbed(article.link);
-                    return (
-                      <FeedInteractiveActions
-                        variant="onDarkMedia"
-                        articleLink={article.link}
-                        onRead={() => handleOpenReader(article)}
-                        showRead={!embedUrl}
-                        showWatch={!!embedUrl}
-                        showVisit={true}
-                        compact
-                        className="!mt-0"
-                      />
-                    );
-                  })()}
-                  <FavoriteButton
-                    article={article}
-                    size="medium"
-                    position="inline"
-                    className="bg-black/30 hover:bg-black/50 border border-white/10 shadow-sm"
-                  />
-                </div>
+              </div>
+              <div className="feed-card-action-rail absolute bottom-3 right-3 z-20 max-w-[calc(100%-1.5rem)] justify-end">
+                {(() => {
+                  const embedUrl = getVideoEmbed(article.link);
+                  return (
+                    <FeedInteractiveActions
+                      variant="onDarkMedia"
+                      articleLink={article.link}
+                      onRead={() => handleOpenReader(article)}
+                      showRead={!embedUrl}
+                      showWatch={!!embedUrl}
+                      showVisit={true}
+                      compact
+                      className="!mt-0"
+                    />
+                  );
+                })()}
+                <FavoriteButton
+                  article={article}
+                  size="medium"
+                  position="inline"
+                  className="border border-white/10 bg-black/30 shadow-sm hover:bg-black/50"
+                />
               </div>
               <div className="feed-image-story-bottom-copy">
                 <div className="feed-image-story-shell">

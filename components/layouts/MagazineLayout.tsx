@@ -109,11 +109,11 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
     );
 
   return (
-    <div className="feed-page-frame py-12 animate-in fade-in duration-300 min-h-screen pb-16">
+    <div className="feed-page-frame min-h-screen py-12 pb-16 text-left animate-in fade-in duration-300">
       {/* Hero Section - Full Width */}
       <section className="mb-12">
         <article
-          className="relative group cursor-pointer overflow-hidden rounded-2xl bg-[rgb(var(--color-surface))]/90 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.8)]"
+          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-[rgb(var(--color-surface))]/90 text-left shadow-[0_30px_90px_-60px_rgba(0,0,0,0.8)]"
           onClick={() => handleOpenReader(heroArticle)}
         >
           <div className="grid xl:grid-cols-12 gap-0 items-stretch">
@@ -130,7 +130,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             </div>
 
             {/* Hero Content */}
-            <div className="flex flex-col justify-between gap-8 p-6 md:p-10 xl:col-span-5 bg-gradient-to-br from-[rgb(var(--theme-surface-elevated))] to-[rgb(var(--color-background))] border-t border-[rgb(var(--color-border))]/35 xl:border-t-0 xl:border-l">
+            <div className="flex flex-col justify-between gap-8 border-t border-[rgb(var(--color-border))]/35 bg-gradient-to-br from-[rgb(var(--theme-surface-elevated))] to-[rgb(var(--color-background))] p-6 text-left md:p-10 xl:col-span-5 xl:border-l xl:border-t-0">
               <div className="feed-card-top-rail relative">
                 <div className="feed-card-meta-stack">
                   <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full items-center px-3 py-1 shadow-sm shadow-black/15">
@@ -165,8 +165,8 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 </div>
               </div>
 
-              <div className="feed-card-bottom-copy">
-                <h1 className="feed-card-title-clamp font-serif text-2xl md:text-4xl font-bold text-[rgb(var(--theme-text-on-surface))] leading-tight mb-4 transition-colors">
+                <div className="feed-card-bottom-copy text-left">
+                  <h1 className="feed-card-title-clamp font-serif text-2xl md:text-4xl font-bold text-[rgb(var(--theme-text-on-surface))] leading-tight mb-4 transition-colors">
                   {heroArticle.title}
                 </h1>
 
@@ -200,7 +200,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
             {featuredArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer feed-surface rounded-2xl p-5 transition-all duration-300 shadow-sm"
+                className="feed-surface group cursor-pointer rounded-2xl p-5 text-left shadow-sm transition-all duration-300"
                 onClick={() => handleOpenReader(article)}
               >
                 <div className="feed-card-top-rail relative mb-3">
@@ -248,7 +248,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-40 group-hover:opacity-60 transition-opacity" />
                 </div>
 
-                <div className="feed-card-bottom-copy !mt-0">
+                <div className="feed-card-bottom-copy !mt-0 text-left">
                   <h3 className="feed-card-title-clamp font-serif font-bold text-lg lg:text-xl text-[rgb(var(--theme-text-on-surface))] leading-tight group-hover:underline transition-all">
                     {article.title}
                   </h3>

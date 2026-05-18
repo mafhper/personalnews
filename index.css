@@ -2701,6 +2701,12 @@ body::-webkit-scrollbar-corner,
     pointer-events: auto;
   }
 
+  .masonry-featured .feed-card-favorite-control {
+    top: auto !important;
+    right: 1.5rem !important;
+    bottom: 1.5rem !important;
+  }
+
   .feed-card-bottom-copy {
     margin-top: auto;
     min-width: 0;
@@ -2794,9 +2800,16 @@ body::-webkit-scrollbar-corner,
     display: block;
     max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .feed-card-meta-stack > .feed-chip + .feed-responsive-date,
+  .feed-card-meta-stack > .feed-overlay-chip + .feed-responsive-date,
+  .feed-card-meta-stack > span.rounded-full + .feed-responsive-date {
+    padding-left: var(--feed-meta-text-inset, 0.65rem);
   }
 
   .feed-date-medium,

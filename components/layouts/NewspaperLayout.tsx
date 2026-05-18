@@ -196,13 +196,14 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               className="
                 lg:col-span-5
                 2xl:col-span-4
-                flex flex-col justify-between
-                gap-4
+                flex flex-col justify-start
+                gap-5
                 h-full
                 max-w-none
+                text-left
               "
             >
-              <div className="feed-card-top-rail">
+              <div className="feed-card-top-rail text-left">
                 <div className="feed-card-meta-stack">
                   <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full text-xs font-bold uppercase tracking-widest">
                     {main.sourceTitle}
@@ -214,9 +215,9 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 </div>
               </div>
 
-              <div className="feed-card-bottom-copy">
+              <div className="feed-card-bottom-copy !mt-0 text-left">
                 <p
-                  className="feed-desc font-serif text-base leading-8 text-[rgb(var(--color-text))]/82 first-letter:float-left first-letter:mr-2 first-letter:text-5xl first-letter:font-bold first-letter:leading-none"
+                  className="feed-desc max-w-none text-left font-serif text-base leading-8 text-[rgb(var(--color-text))]/82 first-letter:float-left first-letter:mr-2 first-letter:text-5xl first-letter:font-bold first-letter:leading-none"
                   style={{ columnCount: 1 }}
                 >
                   {mainExcerpt || main.title}
@@ -234,12 +235,14 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               onClick={() => setReadingArticle(article)}
               className="group flex h-full cursor-pointer flex-col border-t border-[rgb(var(--color-border))] pt-4 text-left"
             >
-              <h3
-                className="feed-card-title-clamp mb-3 min-h-[4.6rem] font-serif text-base font-bold leading-snug group-hover:text-[rgb(var(--color-accent))] sm:min-h-[5.05rem]"
-                style={{ "--feed-title-lines": 4 } as React.CSSProperties}
-              >
-                {article.title}
-              </h3>
+              <div className="mb-3 flex min-h-[4.6rem] items-end text-left sm:min-h-[5.05rem]">
+                <h3
+                  className="feed-card-title-clamp w-full text-left font-serif text-base font-bold leading-snug group-hover:text-[rgb(var(--color-accent))]"
+                  style={{ "--feed-title-lines": 4 } as React.CSSProperties}
+                >
+                  {article.title}
+                </h3>
+              </div>
               <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
                 <ArticleImage
                   article={article}
@@ -280,12 +283,12 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                   </span>
                   <FeedResponsiveDate
                     date={article.pubDate}
-                    className="text-xs text-[rgb(var(--color-textSecondary))]"
+                    className="w-full text-left text-xs text-[rgb(var(--color-textSecondary))]"
                   />
                 </div>
                 {article.description && (
                   <p
-                    className="feed-desc feed-card-desc-clamp text-sm"
+                    className="feed-desc feed-card-desc-clamp w-full text-left text-sm"
                     style={{ "--feed-desc-lines": 3 } as React.CSSProperties}
                   >
                     {sanitizeArticleDescription(article.description, 360)}

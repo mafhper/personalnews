@@ -4,6 +4,7 @@ import { useArticleLayout } from "../hooks/useArticleLayout";
 import { OptimizedImage } from "./OptimizedImage";
 import { FavoriteButton } from "./FavoriteButton";
 import { sanitizeArticleDescription } from "../utils/sanitization";
+import { FeedResponsiveDate } from "./FeedResponsiveDate";
 
 // ChatBubbleIcon removed as it's no longer used
 
@@ -27,13 +28,20 @@ export const FeaturedArticle: React.FC<{
       aria-labelledby="featured-article-title"
     >
       <div className="relative group h-full overflow-hidden rounded-2xl">
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           className="block relative h-full w-full overflow-hidden bg-transparent p-0 text-left"
           aria-label={`Read featured article: ${article.title} from ${
             authorLabel || article.sourceTitle
           }`}
           onClick={() => onClick?.(article)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onClick?.(article);
+            }
+          }}
         >
           <OptimizedImage
             src={article.imageUrl}
@@ -54,7 +62,7 @@ export const FeaturedArticle: React.FC<{
           ></div>
 
           {/* Source badge */}
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 feed-overlay-chip truncate max-w-[150px] sm:max-w-[200px]">
+          <div className="feed-overlay-chip absolute left-3 top-3 z-10 max-w-[calc(100%-2rem)] truncate sm:left-4 sm:top-4 sm:max-w-[28rem]">
             {article.sourceTitle}
           </div>
 
@@ -109,27 +117,16 @@ export const FeaturedArticle: React.FC<{
                     •
                   </span>
                 )}
-                <time
+                <FeedResponsiveDate
+                  date={article.pubDate}
+                  hour12={timeFormat === "12h"}
+                  includeTime={layoutSettings.showPublicationTime}
                   className="drop-shadow-md"
-                  dateTime={article.pubDate.toISOString()}
-                  aria-label={`Published on ${article.pubDate.toLocaleDateString()}`}
-                >
-                  {layoutSettings.showPublicationTime
-                    ? timeFormat === "12h"
-                      ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
-                          "pt-BR",
-                          { hour: "2-digit", minute: "2-digit", hour12: true },
-                        )}`
-                      : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString(
-                          "pt-BR",
-                          { hour: "2-digit", minute: "2-digit", hour12: false },
-                        )}`
-                    : article.pubDate.toLocaleDateString()}
-                </time>
+                />
               </footer>
             </div>
           </div>
-        </button>
+        </div>
       </div>
     </article>
   );
