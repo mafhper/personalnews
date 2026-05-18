@@ -65,9 +65,9 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
             </div>
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,10,18,0.08)_0%,rgba(6,10,18,0.24)_100%)] group-hover:bg-transparent transition-colors" />
           </div>
-          <div className="w-full lg:w-1/2 p-7 md:p-10 lg:p-14 xl:p-16 flex flex-col items-center justify-center bg-[rgb(var(--theme-surface-elevated))] text-center">
-            <div className="mx-auto flex max-w-[38rem] flex-col items-center">
-              <div className="mb-5 flex w-full items-start justify-center gap-4">
+          <div className="w-full lg:w-1/2 p-7 md:p-10 lg:p-14 xl:p-16 flex flex-col justify-center bg-[rgb(var(--theme-surface-elevated))] text-left">
+            <div className="mx-auto flex max-w-[38rem] flex-col items-start">
+              <div className="mb-5 flex w-full items-start justify-between gap-4">
                 <span className="feed-chip font-bold uppercase tracking-widest text-xs truncate max-w-[150px] md:max-w-[320px]">
                   {article.sourceTitle}
                 </span>
@@ -87,7 +87,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
               <p className="text-[rgb(var(--theme-text-secondary-on-surface))] text-[clamp(1rem,0.3vw+0.96rem,1.2rem)] leading-relaxed mb-7 line-clamp-4 max-w-[58ch]">
                 {sanitizeArticleDescription(article.description, 420)}
               </p>
-              <div className="flex items-center justify-center text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-on-surface))]">
+              <div className="flex items-center justify-start text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-on-surface))]">
                 {new Date(article.pubDate).toDateString()}
               </div>
               {(() => {
@@ -99,7 +99,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
                     showRead={!embedUrl}
                     showWatch={!!embedUrl}
                     showVisit={true}
-                    className="!mt-7 justify-center"
+                    className="!mt-7 justify-start"
                   />
                 );
               })()}

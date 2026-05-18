@@ -2624,6 +2624,7 @@ body::-webkit-scrollbar-corner,
     justify-content: space-between;
     gap: 0.75rem;
     flex-wrap: wrap;
+    text-align: left;
   }
 
   .feed-card-top-rail--actions-only {
@@ -2637,7 +2638,9 @@ body::-webkit-scrollbar-corner,
     container-type: inline-size;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.18rem;
+    text-align: left;
   }
 
   .feed-card-action-rail {
@@ -2674,6 +2677,15 @@ body::-webkit-scrollbar-corner,
   .feed-card-bottom-copy {
     margin-top: auto;
     min-width: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .feed-card :is(h1, h2, h3, h4, p, .feed-title, .feed-desc),
+  .feed-image-card-frame :is(h1, h2, h3, h4, p, .feed-title, .feed-desc),
+  .feed-card-bottom-copy :is(h1, h2, h3, h4, p, .feed-title, .feed-desc),
+  .feed-image-story-shell :is(h1, h2, h3, h4, p, .feed-title, .feed-desc) {
+    text-align: left;
   }
 
   .feed-card-title-clamp {

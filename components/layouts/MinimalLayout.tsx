@@ -225,8 +225,8 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                   </div>
 
                   {/* Content Section */}
-                  <div className={`flex-1 p-6 md:p-8 flex flex-col justify-center ${isFullWidth ? 'text-center items-center' : ''}`}>
-                    <div className={`feed-meta flex flex-wrap items-center gap-3 text-[9px] tracking-[0.2em] uppercase mb-4 ${isFullWidth ? 'justify-center' : ''}`}>
+                  <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
+                    <div className="feed-meta flex flex-wrap items-center gap-3 text-[9px] tracking-[0.2em] uppercase mb-4">
                       {article.author && article.author !== article.sourceTitle && (
                         <span className="feed-accent-text truncate max-w-[180px]">
                           {t('article.by') || 'Por'} {article.author}
