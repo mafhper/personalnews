@@ -66,7 +66,7 @@ const ModernFeedCard: React.FC<{
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col items-start justify-start gap-2 px-1 text-left">
+      <div className="flex min-h-0 flex-col items-start justify-start gap-2 px-1 text-left">
         <button
           type="button"
           onClick={() => onRead(article)}
@@ -76,21 +76,25 @@ const ModernFeedCard: React.FC<{
             {article.title}
           </h4>
         </button>
-        <div className="feed-card-meta-stack items-start">
-          <span className="feed-chip inline-flex w-fit max-w-full truncate px-2.5 py-1">
-            {article.sourceTitle}
-          </span>
-          <FeedResponsiveDate
-            date={article.pubDate}
-            className="feed-meta text-[11px]"
-          />
+        <div className="flex w-full min-w-0 flex-col items-start gap-1">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="feed-chip inline-flex w-fit max-w-[14rem] shrink-0 truncate px-2.5 py-1">
+              {article.sourceTitle}
+            </span>
+            <FeedResponsiveDate
+              date={article.pubDate}
+              className="feed-meta shrink-0 whitespace-nowrap text-[11px]"
+            />
+          </div>
           {authorLabel && (
-            <span className="feed-meta text-[11px]">Por {authorLabel}</span>
+            <span className="feed-meta w-full truncate text-[11px]">
+              Por {authorLabel}
+            </span>
           )}
         </div>
         {article.description && (
           <p
-            className="feed-desc feed-card-desc-clamp mt-1 text-left text-sm leading-relaxed"
+            className="feed-desc feed-card-desc-clamp mt-2 text-left text-sm leading-relaxed"
             style={{ "--feed-desc-lines": 4 } as React.CSSProperties}
           >
             {article.description}
