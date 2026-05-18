@@ -27,6 +27,7 @@ _dev
 .dev
 tmp/
 temp/
+output/
 .bun/
 
 # Logs & Reports
