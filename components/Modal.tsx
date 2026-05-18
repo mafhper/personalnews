@@ -95,7 +95,7 @@ export const Modal: React.FC<ModalProps> = ({
         >
             <div
                 ref={containerRef}
-                className={`bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]/95 text-[rgb(var(--theme-manager-text,var(--color-text)))] backdrop-blur-xl border ${toneClasses[tone]} shadow-2xl overflow-hidden transform transition-all duration-300 animate-in fade-in zoom-in-95 relative ${modalSizeClass} ${size === 'full' ? 'h-full w-full m-0 p-0 rounded-none border-none' : 'rounded-2xl m-4 max-h-[90vh]'} ${contentClassName}`}
+                className={`app-system-font bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]/95 text-[rgb(var(--theme-manager-text,var(--color-text)))] backdrop-blur-xl border ${toneClasses[tone]} shadow-2xl overflow-hidden transform transition-all duration-300 animate-in fade-in zoom-in-95 relative ${modalSizeClass} ${size === 'full' ? 'h-full w-full m-0 p-0 rounded-none border-none' : 'rounded-2xl m-4 max-h-[90vh]'} ${contentClassName}`}
                 onClick={(e) => e.stopPropagation()}
                 role="document"
             >
