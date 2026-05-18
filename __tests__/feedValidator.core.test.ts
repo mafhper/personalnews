@@ -14,6 +14,8 @@ import {
   getFeedStatusColor,
   getFeedStatusText,
 } from "../services/feedValidator";
+import { feedDiscoveryService } from "../services/feedDiscoveryService";
+import { proxyManager } from "../services/proxyManager";
 
 // Mock do fetch global
 global.fetch = vi.fn();
@@ -193,6 +195,51 @@ describe("FeedValidator", () => {
       expect(result.isValid).toBe(false);
       expect(result.status).toBe("parse_error");
       expect(result.error).toContain("Not a valid RSS, Atom, or RDF feed");
+    });
+  });
+
+  describe("validateFeedWithDiscovery", () => {
+    it("preserves direct feed URLs after upstream 403 instead of reusing discovery", async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        status: 403,
+        statusText: "Forbidden",
+        headers: { get: () => null },
+      });
+      vi.spyOn(proxyManager, "tryProxiesWithFailover").mockRejectedValueOnce(
+        new Error("No healthy proxies available"),
+      );
+      const discoverySpy = vi.spyOn(feedDiscoveryService, "discoverFromWebsite");
+
+      const url = "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science";
+      const result = await feedValidator.validateFeedWithDiscovery(url);
+
+      expect(result.isValid).toBe(false);
+      expect(result.url).toBe(url);
+      expect(result.title).toBe("Science");
+      expect(result.finalMethod).not.toBe("discovery");
+      expect(discoverySpy).not.toHaveBeenCalled();
+    });
+
+    it("validates a direct Nature RSS feed without discovery", async () => {
+      const mockRSSContent = `<?xml version="1.0"?>
+        <rss version="2.0">
+          <channel><title>Nature</title><description>Nature RSS</description></channel>
+        </rss>`;
+      (global.fetch as any).mockResolvedValueOnce({
+        status: 200,
+        headers: { get: () => "application/rss+xml" },
+        text: () => Promise.resolve(mockRSSContent),
+      });
+      const discoverySpy = vi.spyOn(feedDiscoveryService, "discoverFromWebsite");
+
+      const result = await feedValidator.validateFeedWithDiscovery(
+        "https://www.nature.com/nature.rss",
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.url).toBe("https://www.nature.com/nature.rss");
+      expect(result.title).toBe("Nature");
+      expect(discoverySpy).not.toHaveBeenCalled();
     });
   });
 

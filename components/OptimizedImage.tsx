@@ -61,7 +61,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         ? buildSvgPlaceholder("brand", fallbackText)
         : nextLevel === 2
           ? buildSvgPlaceholder("neutral", fallbackText)
-          : buildSvgPlaceholder("neutral", "Imagem indisponivel");
+          : buildSvgPlaceholder("neutral", "Imagem indisponível");
 
     if (nextLevel <= 3) {
       setFallbackLevel(nextLevel);

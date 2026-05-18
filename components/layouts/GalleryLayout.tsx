@@ -4,6 +4,7 @@ import { OptimizedImage } from '../OptimizedImage';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { FavoriteButton } from '../FavoriteButton';
 import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { FeedResponsiveDate } from '../FeedResponsiveDate';
 import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface GalleryLayoutProps {
@@ -14,8 +15,8 @@ interface GalleryLayoutProps {
 export const GallerySkeleton: React.FC = () => {
   return (
     <div className="min-h-screen">
-      <div className="feed-top-clearance feed-page-frame grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 px-1 pb-1">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(i => (
+      <div className="feed-top-clearance feed-page-frame grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-1 pb-1">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
           <div key={i} className="aspect-square feed-skeleton-block rounded-xl" />
         ))}
       </div>
@@ -28,7 +29,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
 
   return (
     <div className="min-h-screen">
-      <div className="feed-top-clearance feed-page-frame grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 px-1 pb-1">
+      <div className="feed-top-clearance feed-page-frame grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-1 pb-1">
         {articles.map((article, i) => (
           <div
             key={i}
@@ -55,42 +56,47 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
             {/* Always visible gradient overlay at bottom */}
             <div className="feed-image-story-overlay absolute inset-0 pointer-events-none" />
 
-            {/* Favorite Button - Fixed Positioning */}
-            <FavoriteButton
-              article={article}
-              size="small"
-              position="overlay"
-              className="top-2 right-2 z-20 bg-black/40 hover:bg-black/60 border border-white/10 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-            />
+            <div className="feed-image-story-top-rail feed-image-story-top-rail--compact !p-4">
+              <div className="feed-image-story-meta feed-card-meta-stack text-[10px] uppercase tracking-[0.18em] text-white">
+                <span className="inline-flex w-fit max-w-full truncate rounded-full bg-black/55 px-2.5 py-1 text-white shadow-sm backdrop-blur-md">
+                  {article.sourceTitle}
+                </span>
+                <FeedResponsiveDate
+                  date={article.pubDate}
+                  className="text-white/82 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                />
+              </div>
+              <div className="feed-card-action-rail">
+                {(() => {
+                  const embedUrl = getVideoEmbed(article.link);
+                  return (
+                    <FeedInteractiveActions
+                      variant="onDarkMedia"
+                      articleLink={article.link}
+                      onRead={() => setReadingArticle(article)}
+                      showRead={!embedUrl}
+                      showWatch={!!embedUrl}
+                      showVisit={true}
+                      compact
+                      className="!mt-0"
+                    />
+                  );
+                })()}
+                <FavoriteButton
+                  article={article}
+                  size="small"
+                  position="inline"
+                  className="bg-black/40 hover:bg-black/60 border border-white/10 shadow-md"
+                />
+              </div>
+            </div>
 
             {/* Post info at bottom-left */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-              <div className="feed-image-story-shell">
-              <div className="feed-image-story-meta mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] min-w-0">
-                <span className="truncate">{article.sourceTitle}</span>
-                <span className="h-px w-4 flex-shrink-0 bg-white/20" />
-                <span className="flex-shrink-0">
-                  {new Date(article.pubDate).toLocaleDateString()}
-                </span>
-              </div>
-              <h3 className="feed-title feed-title-card feed-image-story-title text-sm leading-tight line-clamp-2 transition-colors">
-                {article.title}
-              </h3>
-              
-              {(() => {
-                const embedUrl = getVideoEmbed(article.link);
-                return (
-                  <FeedInteractiveActions
-                    variant="onDarkMedia"
-                    articleLink={article.link}
-                    onRead={() => setReadingArticle(article)}
-                    showRead={!embedUrl}
-                    showWatch={!!embedUrl}
-                    showVisit={true}
-                    className="!mt-3 justify-between"
-                  />
-                );
-              })()}
+            <div className="feed-image-story-bottom-copy !p-4">
+              <div className="feed-image-story-shell !px-0 !py-0">
+                <h3 className="feed-title feed-title-card feed-image-story-title feed-card-title-clamp text-base leading-tight transition-colors">
+                  {article.title}
+                </h3>
               </div>
             </div>
           </div>

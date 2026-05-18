@@ -49,8 +49,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
 
   const mainFeatured = articles[0];
   const subFeatured = articles.slice(1, 3);
-  const sidebar = articles.slice(3, 8);
-  const feed = articles.slice(8);
+  const feed = articles.slice(3);
 
   return (
     <div className="feed-top-clearance container mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-8 animate-in fade-in duration-500">
@@ -63,6 +62,25 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
             timeFormat={timeFormat}
             onClick={() => setReadingArticle(mainFeatured)}
           />
+          {mainFeatured && (
+            <div className="absolute bottom-5 right-5 z-20 feed-card-action-rail">
+              {(() => {
+                const embedUrl = getVideoEmbed(mainFeatured.link);
+                return (
+                  <FeedInteractiveActions
+                    variant="onDarkMedia"
+                    articleLink={mainFeatured.link}
+                    onRead={() => setReadingArticle(mainFeatured)}
+                    showRead={!embedUrl}
+                    showWatch={!!embedUrl}
+                    showVisit={true}
+                    compact
+                    className="!mt-0"
+                  />
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         {/* Sub Featured (4 cols) */}
@@ -71,12 +89,9 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
             <div
               key={idx}
               className="min-h-[170px] sm:min-h-[210px] lg:min-h-0 flex-1 relative rounded-xl overflow-hidden group cursor-pointer"
+              onClick={() => setReadingArticle(article)}
             >
-              <button
-                type="button"
-                className="block h-full w-full bg-transparent p-0 text-left"
-                onClick={() => setReadingArticle(article)}
-              >
+              <div className="block h-full w-full bg-transparent p-0 text-left">
                 <div className="absolute inset-0">
                   <SmallOptimizedImage
                     src={article.imageUrl}
@@ -87,6 +102,24 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
                   />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+                <div className="absolute left-3 top-3 z-20 feed-card-action-rail">
+                  {(() => {
+                    const embedUrl = getVideoEmbed(article.link);
+                    return (
+                      <FeedInteractiveActions
+                        variant="onDarkMedia"
+                        articleLink={article.link}
+                        onRead={() => setReadingArticle(article)}
+                        showRead={!embedUrl}
+                        showWatch={!!embedUrl}
+                        showVisit={true}
+                        compact
+                        className="!mt-0"
+                      />
+                    );
+                  })()}
+                </div>
 
                 <FavoriteButton
                   article={article}
@@ -110,135 +143,99 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
                     {article.title}
                   </h3>
                 </div>
-              </button>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Content Grid: Feed + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-white/10 pt-8">
-        {/* Main Feed (8 cols) */}
-        <div className="lg:col-span-8 space-y-4">
+      {/* Content Grid */}
+      <div className="border-t border-white/10 pt-8">
+        <div className="space-y-4">
           <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">
             Últimas Notícias
           </h3>
-          {feed.map((article, idx) => (
-            <article
-              key={idx}
-              className="feed-card flex gap-4 p-5 rounded-2xl hover:border-[rgba(var(--color-accent),0.25)] transition-all relative group shadow-sm"
-            >
-              <div className="flex flex-col gap-3 w-32 sm:w-48 flex-shrink-0">
-                <div className="relative aspect-square sm:aspect-[4/5] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
-                  <SmallOptimizedImage
-                    src={article.imageUrl}
-                    alt={article.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    fallbackText={article.sourceTitle}
-                    size={200}
-                  />
-
-                  {/* Favorite Button (Over image, hover-only) */}
-                  <FavoriteButton
-                    article={article}
-                    size="small"
-                    position="overlay"
-                    className="top-2 right-2 z-20 bg-black/40 hover:bg-black/60 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1 flex flex-col p-1 relative">
-                <div className="mb-2 flex items-center gap-2 min-w-0 text-[10px] uppercase tracking-[0.22em]">
-                  <span className="feed-meta truncate max-w-[220px]">
-                    {article.sourceTitle}
-                  </span>
-                  <span className="h-px w-4 flex-shrink-0 bg-[rgb(var(--color-border))]/35" />
-                  <span className="feed-meta flex-shrink-0">
-                    {article.pubDate.toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  className="group/title block bg-transparent p-0 text-left"
-                  onClick={() => setReadingArticle(article)}
-                >
-                  <h3 className="feed-title text-base sm:text-lg font-bold leading-tight mb-2 transition-colors line-clamp-2">
-                    {article.title}
-                  </h3>
-                </button>
-
-                {article.description && (
-                  <p className="feed-desc text-sm line-clamp-3 mb-4">
-                    {article.description}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between mt-auto">
-                  {article.author && article.author !== article.sourceTitle && (
-                    <p className="feed-meta text-xs italic">{`Por ${article.author}`}</p>
-                  )}
-                </div>
-
-                {(() => {
-                  const embedUrl = getVideoEmbed(article.link);
-                  return (
-                    <FeedInteractiveActions
-                      articleLink={article.link}
-                      onRead={() => setReadingArticle(article)}
-                      showRead={!embedUrl}
-                      showWatch={!!embedUrl}
-                      showVisit={true}
-                      className="!mt-4"
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {feed.map((article, idx) => (
+              <article
+                key={idx}
+                className="feed-card flex items-stretch gap-4 p-5 rounded-2xl hover:border-[rgba(var(--color-accent),0.25)] transition-all relative group shadow-sm"
+              >
+                <div className="flex flex-col gap-3 w-40 sm:w-52 flex-shrink-0 self-stretch">
+                  <div className="relative h-full min-h-[11rem] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
+                    <SmallOptimizedImage
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      fallbackText={article.sourceTitle}
+                      size={260}
                     />
-                  );
-                })()}
-              </div>
-            </article>
-          ))}
-        </div>
 
-        {/* Sidebar (4 cols) */}
-        <div className="lg:col-span-4">
-          <div className="sticky top-24">
-            <h3 className="text-xl font-bold feed-accent-text uppercase tracking-wider mb-6 border-b border-[rgba(var(--color-accent),0.25)] pb-2 inline-block">
-              Em Alta
-            </h3>
-            <div className="feed-surface rounded-2xl p-6 space-y-4 shadow-md">
-              {sidebar.map((article, idx) => (
-                <div
-                  key={idx}
-                  className="group cursor-pointer border-b border-[rgb(var(--color-border))]/20 last:border-0 pb-4 last:pb-0"
-                >
-                  <div className="flex justify-between items-start gap-3">
-                    <button
-                      type="button"
-                      className="flex-1 min-w-0 bg-transparent p-0 text-left"
-                      onClick={() => setReadingArticle(article)}
-                    >
-                      <span className="feed-meta text-[10px] font-bold mb-1 block uppercase tracking-[0.22em] opacity-80 group-hover:opacity-100 transition-all">
-                        {article.sourceTitle}
-                      </span>
-                      <h4 className="feed-title text-sm font-bold transition-all line-clamp-2 leading-tight">
-                        {article.title}
-                      </h4>
-                    </button>
-                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <FavoriteButton
-                        article={article}
-                        size="small"
-                        position="inline"
-                        className="opacity-100 feed-accent-text hover:scale-110 transition-all"
-                      />
-                    </div>
+                    <FavoriteButton
+                      article={article}
+                      size="small"
+                      position="overlay"
+                      className="top-2 right-2 z-20 bg-black/40 hover:bg-black/60 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="flex-1 flex flex-col p-1 relative">
+                  <div className="mb-2 flex items-center gap-2 min-w-0 text-[10px] uppercase tracking-[0.22em]">
+                    <span className="feed-meta truncate max-w-[220px]">
+                      {article.sourceTitle}
+                    </span>
+                    <span className="h-px w-4 flex-shrink-0 bg-[rgb(var(--color-border))]/35" />
+                    <span className="feed-meta flex-shrink-0">
+                      {article.pubDate.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="group/title block bg-transparent p-0 text-left"
+                    onClick={() => setReadingArticle(article)}
+                  >
+                    <h3 className="feed-title text-base sm:text-lg font-bold leading-tight mb-2 transition-colors line-clamp-2">
+                      {article.title}
+                    </h3>
+                  </button>
+
+                  {article.description && (
+                    <p className="feed-desc text-sm line-clamp-3 mb-4">
+                      {article.description}
+                    </p>
+                  )}
+
+                  <div className="mt-auto flex items-end justify-between gap-3 pt-2">
+                    {article.author && article.author !== article.sourceTitle ? (
+                      <p className="feed-meta text-xs italic">{`Por ${article.author}`}</p>
+                    ) : (
+                      <span className="feed-meta text-xs italic">
+                        {article.sourceTitle}
+                      </span>
+                    )}
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => setReadingArticle(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          compact
+                          className="!mt-0 justify-end"
+                        />
+                      );
+                    })()}
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </div>

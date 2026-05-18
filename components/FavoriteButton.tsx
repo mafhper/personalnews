@@ -68,19 +68,20 @@ const FavoriteButtonComponent: React.FC<FavoriteButtonProps> = ({
     [toggleFavorite, article]
   );
 
-  // Size configurations
+  // Favorite controls use one visual size everywhere so cards do not drift
+  // when individual layouts pass different size props.
   const sizeClasses = {
     small: {
-      container: "w-6 h-6 p-1",
-      icon: "h-3 w-3",
+      container: "h-8 w-8 p-1.5",
+      icon: "h-4 w-4",
     },
     medium: {
-      container: "w-8 h-8 p-1.5",
+      container: "h-8 w-8 p-1.5",
       icon: "h-4 w-4",
     },
     large: {
-      container: "w-10 h-10 p-2",
-      icon: "h-5 w-5",
+      container: "h-8 w-8 p-1.5",
+      icon: "h-4 w-4",
     },
   };
 
@@ -92,36 +93,28 @@ const FavoriteButtonComponent: React.FC<FavoriteButtonProps> = ({
 
   // Base styles that apply to all variants
   const baseClasses = `
+    feed-card-favorite-control
     ${sizeClasses[size].container}
     ${positionClasses[position]}
     rounded-full
+    border
+    border-[rgba(var(--color-error-500),0.45)]
     transition-all duration-200 ease-in-out
     flex items-center justify-center
     focus:outline-none
-    focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
+    focus:ring-2 focus:ring-[rgb(var(--color-error-500))]
+    focus:ring-offset-2 focus:ring-offset-transparent
     ${className}
   `;
 
-  // Color and background styles based on state and position
-  const stateClasses =
-    position === "overlay"
-      ? `
-      bg-black/70 backdrop-blur-sm
-      ${
-        isFavorited
-          ? "text-red-500 hover:text-red-400 focus:ring-red-500"
-          : "text-white hover:text-red-500 focus:ring-white"
-      }
-      hover:bg-black/80
-    `
-      : `
-      bg-gray-800/90 hover:bg-gray-700/90
-      ${
-        isFavorited
-          ? "text-red-500 hover:text-red-400 focus:ring-red-500"
-          : "text-gray-400 hover:text-red-500 focus:ring-gray-400"
-      }
-    `;
+  const stateClasses = `
+    !bg-[rgb(var(--color-error-500))]
+    !text-white
+    shadow-md shadow-red-950/25
+    backdrop-blur-sm
+    hover:brightness-110
+    ${isFavorited ? "ring-1 ring-white/35" : ""}
+  `;
 
   // Generate accessible labels
   const defaultAriaLabel = isFavorited

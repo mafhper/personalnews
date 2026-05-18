@@ -44,6 +44,9 @@ const VALID_LAYOUTS = new Set([
   'default',
 ]);
 const VALID_HEADER_POSITIONS = new Set(['static', 'sticky', 'floating', 'hidden']);
+const VALID_HEADER_HEIGHTS = new Set(['ultra-compact', 'tiny', 'compact', 'normal', 'spacious']);
+const VALID_LOGO_SIZES = new Set(['sm', 'md', 'lg']);
+const VALID_PAGINATION_TYPES = new Set(['numbered', 'loadMore', 'infinite']);
 const VALID_TIME_FORMATS = new Set(['12h', '24h']);
 const VALID_THEMES = new Set([
   'dark',
@@ -53,6 +56,16 @@ const VALID_THEMES = new Set([
 const normalizeValue = (value: string) => value.trim();
 const normalizeId = (value: string) =>
   normalizeValue(value).toLowerCase().replace(/\s+/g, '-');
+const parseInteger = (value: string) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+const parseOpacity = (value: string) => {
+  const normalized = value.replace('%', '').trim();
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed > 1 ? Math.max(0, Math.min(100, parsed)) / 100 : Math.max(0, Math.min(1, parsed));
+};
 
 function sync() {
   const startTime = Date.now();
@@ -100,7 +113,15 @@ function sync() {
   const globalConfig: Record<string, unknown> = {
     theme: 'dark',
     layout: 'bento',
-    timeFormat: '24h'
+    timeFormat: '24h',
+    headerHeight: 'normal',
+    headerOpacity: 0.6,
+    headerBlur: 20,
+    logoSize: 'md',
+    paginationType: 'numbered',
+    topStoriesCount: 15,
+    autoRefreshInterval: 15,
+    feedCacheTtlMinutes: 10
   };
   const seenCategoryIds = new Set<string>(['all']);
   const seenFeedUrls = new Set<string>();
@@ -165,6 +186,70 @@ function sync() {
           globalConfig.header = normalizedValue;
         } else {
           log.warn(`Header global inválido: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'altura do header') {
+        if (VALID_HEADER_HEIGHTS.has(normalizedValue)) {
+          globalConfig.headerHeight = normalizedValue;
+        } else {
+          log.warn(`Altura do header inválida: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'opacidade do header') {
+        const opacity = parseOpacity(value);
+        if (opacity !== null) {
+          globalConfig.headerOpacity = opacity;
+        } else {
+          log.warn(`Opacidade do header inválida: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'blur do header') {
+        const blur = parseInteger(value);
+        if (blur !== null && blur >= 0 && blur <= 30) {
+          globalConfig.headerBlur = blur;
+        } else {
+          log.warn(`Blur do header inválido: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'tamanho do logo') {
+        if (VALID_LOGO_SIZES.has(normalizedValue)) {
+          globalConfig.logoSize = normalizedValue;
+        } else {
+          log.warn(`Tamanho do logo inválido: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'tipo de paginação' || key === 'tipo de paginacao') {
+        const paginationValue = normalizedValue === 'load-more' || normalizedValue === 'loadmore'
+          ? 'loadMore'
+          : normalizedValue;
+        if (VALID_PAGINATION_TYPES.has(paginationValue)) {
+          globalConfig.paginationType = paginationValue;
+        } else {
+          log.warn(`Tipo de paginação inválido: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'destaques principais') {
+        const count = parseInteger(value);
+        if (count !== null && [0, 5, 10, 15, 20].includes(count)) {
+          globalConfig.topStoriesCount = count;
+        } else {
+          log.warn(`Quantidade de destaques inválida: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'intervalo de atualização automática' || key === 'intervalo de atualizacao automatica') {
+        const interval = parseInteger(value);
+        if (interval !== null && interval >= 0) {
+          globalConfig.autoRefreshInterval = interval;
+        } else {
+          log.warn(`Intervalo de atualização inválido: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'cache temporário de feeds' || key === 'cache temporario de feeds') {
+        const ttl = parseInteger(value);
+        if (ttl !== null && [0, 5, 10].includes(ttl)) {
+          globalConfig.feedCacheTtlMinutes = ttl;
+        } else {
+          log.warn(`Cache temporário de feeds inválido: "${value}" — mantendo padrão.`);
         }
       }
       if (key === 'formato hora') {

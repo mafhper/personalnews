@@ -15,7 +15,7 @@ const BACKEND_PREFERRED_PORT = 3001;
 const BACKEND_MAX_PORT = 3015;
 const FRONTEND_PREFERRED_PORT = 5173;
 const FRONTEND_MAX_PORT = 5190;
-const ALLOW_BACKEND_REUSE = process.env.LOCAL_STACK_REUSE_BACKEND === "true";
+const ALLOW_BACKEND_REUSE = process.env.LOCAL_STACK_REUSE_BACKEND !== "false";
 const repoRoot = process.cwd();
 
 let shuttingDown = false;
@@ -197,9 +197,13 @@ async function main() {
       `[local-stack] porta ${FRONTEND_PREFERRED_PORT} em uso; usando ${frontendPort}.`,
     );
   }
-  if (!ALLOW_BACKEND_REUSE) {
+  if (ALLOW_BACKEND_REUSE) {
     console.log(
-      `[local-stack] backend reuse disabled (set LOCAL_STACK_REUSE_BACKEND=true to reuse an existing backend).`,
+      `[local-stack] backend reuse enabled (set LOCAL_STACK_REUSE_BACKEND=false to force a new backend).`,
+    );
+  } else {
+    console.log(
+      `[local-stack] backend reuse disabled by LOCAL_STACK_REUSE_BACKEND=false.`,
     );
   }
 

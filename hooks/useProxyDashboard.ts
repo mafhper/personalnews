@@ -269,7 +269,7 @@ export const buildProxyDashboardSnapshot =
             consecutiveFailures: 0,
             detail: health.initializing
               ? "Backend local inicializando"
-              : backendError || "Backend local indisponivel",
+              : backendError || "Backend local indisponível",
           },
           ...baseRoutes,
         ];

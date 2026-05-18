@@ -18,6 +18,8 @@ import type {
 } from '../types';
 import { INITIAL_APP_CONFIG, DEFAULT_CATEGORIES as GEN_CATEGORIES, DEFAULT_FEEDS as GEN_FEEDS, CURATED_LISTS as GEN_CURATED_LISTS } from '../constants/curatedFeeds';
 
+const initialConfig = INITIAL_APP_CONFIG as Record<string, unknown>;
+
 const resolveHeaderPosition = (value?: string) => {
   const normalized = (value || '').toLowerCase();
   const allowed: HeaderConfig['position'][] = ['static', 'sticky', 'floating', 'hidden'];
@@ -26,7 +28,41 @@ const resolveHeaderPosition = (value?: string) => {
     : 'floating';
 };
 
-const defaultHeaderPosition = resolveHeaderPosition(INITIAL_APP_CONFIG.header as string | undefined);
+const defaultHeaderPosition = resolveHeaderPosition(initialConfig.header as string | undefined);
+const resolveOneOf = <T extends string | number>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T,
+): T => {
+  const normalizedValue =
+    typeof fallback === 'number' && typeof value === 'string'
+      ? Number(value)
+      : value;
+  return allowed.includes(normalizedValue as T) ? (normalizedValue as T) : fallback;
+};
+
+const resolveNumber = (
+  value: unknown,
+  fallback: number,
+  min = Number.NEGATIVE_INFINITY,
+  max = Number.POSITIVE_INFINITY,
+) => {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
+};
+
+const defaultHeaderOpacity = resolveNumber(initialConfig.headerOpacity, 0.6, 0, 1);
+const defaultHeaderBlur = resolveNumber(initialConfig.headerBlur, 20, 0, 30);
+const defaultTopStoriesCount = resolveOneOf(
+  initialConfig.topStoriesCount,
+  [0, 5, 10, 15, 20] as const,
+  15,
+);
+const defaultFeedCacheTtl = resolveOneOf(
+  initialConfig.feedCacheTtlMinutes,
+  [0, 5, 10] as const,
+  10,
+);
 
 // =============================================================================
 // CONFIGURAÇÕES DE APARÊNCIA (Header, Content, Background)
@@ -39,21 +75,21 @@ const defaultHeaderPosition = resolveHeaderPosition(INITIAL_APP_CONFIG.header as
 export const DEFAULT_HEADER_CONFIG: HeaderConfig = {
     style: 'default',           // 'default' | 'minimal' | 'centered' | 'transparent'
     position: defaultHeaderPosition,       // 'static' | 'sticky' | 'floating' | 'hidden'
-    height: 'normal',          // "ultra-compact" | "tiny" | "compact" | "normal" | "spacious"
+    height: resolveOneOf(initialConfig.headerHeight, ['ultra-compact', 'tiny', 'compact', 'normal', 'spacious'] as const, 'normal'),
     showTitle: true,           // Mostrar título no header
     showLogo: true,             // Mostrar logo no header
     customTitle: 'Personal News',
     logoUrl: null,
-    logoSize: 'md',             // 'sm' | 'md' | 'lg' | 'xl'
-    backgroundOpacity: 60,      // Opacidade do fundo (0-100)
+    logoSize: resolveOneOf(initialConfig.logoSize, ['sm', 'md', 'lg'] as const, 'md'),
+    backgroundOpacity: Math.round(defaultHeaderOpacity * 100),
     blurIntensity: 'heavy',     // 'none' | 'light' | 'medium' | 'heavy'
     borderColor: '#ffffff',
     borderOpacity: 8,           // Opacidade da borda (0-100)
     categoryBackgroundColor: '#ffffff',
     categoryBackgroundOpacity: 3,
     bgColor: '#1F1F1F',
-    bgOpacity: 0.6,
-    blur: 20,
+    bgOpacity: defaultHeaderOpacity,
+    blur: defaultHeaderBlur,
 };
 
 /**
@@ -65,19 +101,19 @@ export const DEFAULT_CONTENT_CONFIG: ContentConfig = {
     showDate: true,             // Mostrar data de publicação
     showTime: true,            // Mostrar hora de publicação
     showTags: true,             // Mostrar tags/categorias
-    layoutMode: INITIAL_APP_CONFIG.layout as ContentConfig['layoutMode'],       // Layout padrão dos artigos
+    layoutMode: initialConfig.layout as ContentConfig['layoutMode'],       // Layout padrão dos artigos
     density: 'comfortable',     // 'compact' | 'comfortable' | 'spacious'
-    paginationType: 'numbered', // 'numbered' | 'infinite' | 'load-more'
+    paginationType: resolveOneOf(initialConfig.paginationType, ['numbered', 'loadMore', 'infinite'] as const, 'numbered'),
 };
 /**
  * Configurações de exibição de artigos
  */
 export const DEFAULT_ARTICLE_LAYOUT = {
-    topStoriesCount: 15 as 0 | 5 | 10 | 15 | 20,  // Quantidade de top stories
+    topStoriesCount: defaultTopStoriesCount,
     showPublicationTime: true,   // Mostrar hora de publicação
-    articlesPerPage: 21,         // Artigos por página (1 featured + 5 recent + 15 top)
-    autoRefreshInterval: 15,     // Intervalo de atualização automática (minutos, 0 = desabilitado)
-    feedCacheTtlMinutes: 10 as 0 | 5 | 10, // Cache temporário por escopo (0 = desabilitado)
+    articlesPerPage: 1 + 5 + defaultTopStoriesCount,
+    autoRefreshInterval: resolveNumber(initialConfig.autoRefreshInterval, 15, 0),
+    feedCacheTtlMinutes: defaultFeedCacheTtl,
 };
 
 // =============================================================================
@@ -107,7 +143,7 @@ export const DEFAULT_CURATED_LISTS = GEN_CURATED_LISTS;
 /**
  * Cidade padrão para previsão do tempo
  */
-export const DEFAULT_WEATHER_CITY = INITIAL_APP_CONFIG.weatherCity;
+export const DEFAULT_WEATHER_CITY = initialConfig.weatherCity;
 
 /**
  * Configurações de performance

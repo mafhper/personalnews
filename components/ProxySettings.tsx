@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -155,6 +155,7 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
   const [expandedProxy, setExpandedProxy] = useState<string | null>(
     "local-proxy",
   );
+  const userSelectedProxyRef = useRef(false);
   const [testingProxy, setTestingProxy] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<
     Record<string, ProxyTestResult>
@@ -200,6 +201,13 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
 
   useEffect(() => {
     if (!detailed) return;
+    if (userSelectedProxyRef.current) {
+      const stillDisplayed = displayedProxies.some(
+        (proxy) => proxy.id === expandedProxy,
+      );
+      if (stillDisplayed || expandedProxy === null) return;
+      userSelectedProxyRef.current = false;
+    }
 
     const currentProxy = displayedProxies.find(
       (proxy) => proxy.id === expandedProxy,
@@ -379,11 +387,12 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                 >
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
+                      userSelectedProxyRef.current = true;
                       setExpandedProxy((current) =>
                         current === proxy.id ? null : proxy.id,
-                      )
-                    }
+                      );
+                    }}
                     className="flex w-full flex-col gap-4 px-4 py-4 text-left md:flex-row md:items-center md:justify-between"
                   >
                     <div className="min-w-0 flex-1">

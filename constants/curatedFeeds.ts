@@ -9,7 +9,15 @@ export const INITIAL_APP_CONFIG = {
   "theme": "dark",
   "layout": "magazine",
   "timeFormat": "24h",
-  "header": "sticky",
+  "headerHeight": "compact",
+  "headerOpacity": 0.6,
+  "headerBlur": 20,
+  "logoSize": "md",
+  "paginationType": "numbered",
+  "topStoriesCount": 15,
+  "autoRefreshInterval": 15,
+  "feedCacheTtlMinutes": 10,
+  "header": "floating",
   "weatherCity": "São Paulo"
 };
 
@@ -28,8 +36,8 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "isDefault": true,
     "name": "Tecnologia",
     "id": "tech",
-    "color": "#3B82F6",
-    "layoutMode": "magazine",
+    "color": "#0078D7",
+    "layoutMode": "masonry",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
@@ -39,7 +47,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "isDefault": true,
     "name": "Design",
     "id": "design",
-    "color": "#F0EEE9",
+    "color": "#663399",
     "layoutMode": "immersive",
     "isPinned": false,
     "autoDiscovery": true,
@@ -50,7 +58,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "isDefault": true,
     "name": "Games",
     "id": "games",
-    "color": "#F59E0B",
+    "color": "#FFDA03",
     "layoutMode": "modern",
     "isPinned": false,
     "autoDiscovery": true,
@@ -61,7 +69,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "isDefault": true,
     "name": "Política",
     "id": "politics",
-    "color": "#EF4444",
+    "color": "#E13111",
     "layoutMode": "magazine",
     "isPinned": false,
     "autoDiscovery": true,
@@ -70,9 +78,20 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
   {
     "order": 5,
     "isDefault": true,
+    "name": "Podcasts",
+    "id": "podcasts",
+    "color": "#FF8C00",
+    "layoutMode": "pocketfeeds",
+    "isPinned": false,
+    "autoDiscovery": true,
+    "description": "Seus podcasts preferidos direto no feed."
+  },
+  {
+    "order": 6,
+    "isDefault": true,
     "name": "Vídeos",
     "id": "youtube",
-    "color": "#C4302B",
+    "color": "#8B0000",
     "layoutMode": "brutalist",
     "isPinned": false,
     "autoDiscovery": false,
@@ -115,6 +134,18 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://www.xda-developers.com/feed/",
     "categoryId": "tech",
     "customTitle": "XDA"
+  },
+  {
+    "url": "https://feeds.megaphone.fm/NPP2619427256",
+    "categoryId": "podcasts",
+    "customTitle": "Foro de Teresina",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/f064cfa8/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "RapaduraCast",
+    "hideFromAll": true
   },
   {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
@@ -188,29 +219,46 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Tecnoblog"
     },
     {
+      "url": "https://feeds.megaphone.fm/NPP2619427256",
+      "categoryId": "podcasts",
+      "customTitle": "Foro de Teresina",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://anchor.fm/s/f064cfa8/podcast/rss",
+      "categoryId": "podcasts",
+      "customTitle": "RapaduraCast",
+      "hideFromAll": true
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
       "categoryId": "youtube",
-      "customTitle": "1155 do ET"
+      "customTitle": "1155 do ET",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
       "categoryId": "youtube",
-      "customTitle": "Diolinux"
+      "customTitle": "Diolinux",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
       "categoryId": "youtube",
-      "customTitle": "NORMOSE"
+      "customTitle": "NORMOSE",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg",
       "categoryId": "youtube",
-      "customTitle": "Tecnologia e Classe"
+      "customTitle": "Tecnologia e Classe",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw",
       "categoryId": "youtube",
-      "customTitle": "Gamera"
+      "customTitle": "Gamera",
+      "hideFromAll": true
     }
   ],
   "International Mix": [
@@ -332,47 +380,56 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
       "categoryId": "youtube",
-      "customTitle": "Alex Ziskind"
+      "customTitle": "Alex Ziskind",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
       "categoryId": "youtube",
-      "customTitle": "Benn Jordan"
+      "customTitle": "Benn Jordan",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
       "categoryId": "youtube",
-      "customTitle": "Bizly"
+      "customTitle": "Bizly",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
       "categoryId": "youtube",
-      "customTitle": "Corridor Crew"
+      "customTitle": "Corridor Crew",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",
       "categoryId": "youtube",
-      "customTitle": "GreatScott!"
+      "customTitle": "GreatScott!",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ",
       "categoryId": "youtube",
-      "customTitle": "Macho Nacho"
+      "customTitle": "Macho Nacho",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
       "categoryId": "youtube",
-      "customTitle": "News Rockstar"
+      "customTitle": "News Rockstar",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ",
       "categoryId": "youtube",
-      "customTitle": "Stuff Made Here"
+      "customTitle": "Stuff Made Here",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
       "categoryId": "youtube",
-      "customTitle": "The Spiffing Brit"
+      "customTitle": "The Spiffing Brit",
+      "hideFromAll": true
     }
   ],
   "Pacote Mix Global": [
@@ -562,74 +619,106 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "XDA"
     },
     {
+      "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+      "categoryId": "podcasts",
+      "customTitle": "Medo e Delírio em Brasília",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://feeds.megaphone.fm/NPP2619427256",
+      "categoryId": "podcasts",
+      "customTitle": "Foro de Teresina",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://anchor.fm/s/f064cfa8/podcast/rss",
+      "categoryId": "podcasts",
+      "customTitle": "RapaduraCast",
+      "hideFromAll": true
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
       "categoryId": "youtube",
-      "customTitle": "1155 do ET"
+      "customTitle": "1155 do ET",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
       "categoryId": "youtube",
-      "customTitle": "Alex Ziskind"
+      "customTitle": "Alex Ziskind",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng",
       "categoryId": "youtube",
-      "customTitle": "Benn Jordan"
+      "customTitle": "Benn Jordan",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A",
       "categoryId": "youtube",
-      "customTitle": "Bizly"
+      "customTitle": "Bizly",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
       "categoryId": "youtube",
-      "customTitle": "Corridor Crew"
+      "customTitle": "Corridor Crew",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
       "categoryId": "youtube",
-      "customTitle": "Diolinux"
+      "customTitle": "Diolinux",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw",
       "categoryId": "youtube",
-      "customTitle": "Gamera"
+      "customTitle": "Gamera",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ",
       "categoryId": "youtube",
-      "customTitle": "GreatScott!"
+      "customTitle": "GreatScott!",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ",
       "categoryId": "youtube",
-      "customTitle": "Macho Nacho"
+      "customTitle": "Macho Nacho",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA",
       "categoryId": "youtube",
-      "customTitle": "News Rockstar"
+      "customTitle": "News Rockstar",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
       "categoryId": "youtube",
-      "customTitle": "NORMOSE"
+      "customTitle": "NORMOSE",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ",
       "categoryId": "youtube",
-      "customTitle": "Stuff Made Here"
+      "customTitle": "Stuff Made Here",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg",
       "categoryId": "youtube",
-      "customTitle": "Tecnologia e Classe"
+      "customTitle": "Tecnologia e Classe",
+      "hideFromAll": true
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ",
       "categoryId": "youtube",
-      "customTitle": "The Spiffing Brit"
+      "customTitle": "The Spiffing Brit",
+      "hideFromAll": true
     }
   ]
 };

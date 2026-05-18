@@ -110,6 +110,29 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                 {/* Visual texture overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent mix-blend-overlay" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-[rgb(var(--color-border))]/16" />
+                <div className="feed-card-action-rail absolute left-4 top-4 z-20">
+                  {(() => {
+                    const embedUrl = getVideoEmbed(heroArticle.link);
+                    return (
+                      <FeedInteractiveActions
+                        variant="onDarkMedia"
+                        articleLink={heroArticle.link}
+                        onRead={() => setReadingIndex(0)}
+                        showRead={!embedUrl}
+                        showWatch={!!embedUrl}
+                        showVisit={true}
+                        compact
+                        className="!mt-0"
+                      />
+                    );
+                  })()}
+                </div>
+                <FavoriteButton
+                  article={heroArticle}
+                  size="medium"
+                  position="overlay"
+                  className="right-4 top-4 z-20"
+                />
               </div>
 
               {/* Hero Content Side */}
@@ -122,39 +145,18 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                   </div>
 
                   <h1 className={`feed-title font-serif font-black leading-[1.05] tracking-tighter transition-colors duration-500 break-words line-clamp-4 ${heroArticle.title.length > 100
-                    ? 'text-3xl md:text-5xl xl:text-6xl'
+                    ? 'text-2xl md:text-4xl xl:text-5xl'
                     : heroArticle.title.length > 60
-                      ? 'text-4xl md:text-6xl xl:text-7xl'
-                      : 'text-5xl md:text-7xl xl:text-8xl'
+                      ? 'text-3xl md:text-5xl xl:text-6xl'
+                      : 'text-4xl md:text-6xl xl:text-7xl'
                     }`}>
                     {heroArticle.title}
                   </h1>
 
-                  <p className="feed-desc text-lg md:text-xl leading-relaxed font-light line-clamp-4 italic">
+                  <p className="feed-desc text-lg md:text-xl leading-relaxed font-light line-clamp-3 italic">
                     {heroArticle.description}
                   </p>
 
-                  <div className="pt-4 flex items-center gap-8 flex-wrap">
-                    {(() => {
-                      const embedUrl = getVideoEmbed(heroArticle.link);
-                      return (
-                        <FeedInteractiveActions
-                          articleLink={heroArticle.link}
-                          onRead={() => setReadingIndex(0)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                        />
-                      );
-                    })()}
-
-                    <FavoriteButton
-                      article={heroArticle}
-                      size="large"
-                      position="inline"
-                      className="bg-[rgb(var(--theme-control-bg))]/72 hover:bg-[rgb(var(--theme-control-bg))]/92 border border-[rgb(var(--color-border))]/24 transition-all duration-500 opacity-0 group-hover:opacity-100"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -162,7 +164,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
         )}
 
         {/* Asymmetric Grid for rest */}
-        <div className="space-y-16 md:space-y-24 max-w-[1400px] mx-auto">
+        <div className="space-y-8 md:space-y-12 max-w-[1400px] mx-auto">
           {remainingArticles.map((article, index) => {
             const isFullWidth = (index + 1) % 5 === 0;
 
@@ -179,12 +181,6 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                     <span className={`text-[8px] font-black uppercase tracking-[0.3em] feed-accent-text truncate ${isFullWidth ? 'max-w-[150px]' : 'md:max-h-[120px] md:[writing-mode:vertical-lr] md:rotate-180'}`}>
                       {article.sourceTitle}
                     </span>
-                    <FavoriteButton
-                      article={article}
-                      size="small"
-                      position="inline"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
                   </div>
 
                   {/* Image Section */}
@@ -203,11 +199,39 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="feed-card-action-rail absolute left-4 top-4 z-20">
+                      {(() => {
+                        const embedUrl = getVideoEmbed(article.link);
+                        return (
+                          <FeedInteractiveActions
+                            variant="onDarkMedia"
+                            articleLink={article.link}
+                            onRead={() => setReadingIndex(index + 1)}
+                            showRead={!embedUrl}
+                            showWatch={!!embedUrl}
+                            showVisit={true}
+                            compact
+                            className="!mt-0"
+                          />
+                        );
+                      })()}
+                    </div>
+                    <FavoriteButton
+                      article={article}
+                      size="small"
+                      position="overlay"
+                      className="right-4 top-4 z-20"
+                    />
                   </div>
 
                   {/* Content Section */}
-                  <div className={`flex-1 p-6 md:p-8 flex flex-col justify-center ${isFullWidth ? 'text-center items-center' : ''}`}>
-                    <div className={`feed-meta flex items-center gap-3 text-[9px] tracking-[0.2em] uppercase mb-4 ${isFullWidth ? 'justify-center' : ''}`}>
+                  <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
+                    <div className="feed-meta flex flex-wrap items-center gap-3 text-[9px] tracking-[0.2em] uppercase mb-4">
+                      {article.author && article.author !== article.sourceTitle && (
+                        <span className="feed-accent-text truncate max-w-[180px]">
+                          {t('article.by') || 'Por'} {article.author}
+                        </span>
+                      )}
                       <time>{formatTimeAgo(article.pubDate)}</time>
                     </div>
 
@@ -215,23 +239,9 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
                       {article.title}
                     </h2>
 
-                    <p className={`feed-desc leading-relaxed font-light line-clamp-2 ${isFullWidth ? 'text-base max-w-2xl' : 'text-sm'}`}>
+                    <p className={`feed-desc leading-relaxed font-light line-clamp-6 ${isFullWidth ? 'text-base max-w-3xl' : 'text-sm'}`}>
                       {article.description}
                     </p>
-
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          articleLink={article.link}
-                          onRead={() => setReadingIndex(index + 1)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          className={`mt-6 ${isFullWidth ? 'justify-center' : ''}`}
-                        />
-                      );
-                    })()}
                   </div>
                 </div>
               </article>

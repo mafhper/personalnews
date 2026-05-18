@@ -12,7 +12,7 @@ interface CompactLayoutProps {
 
 export const CompactSkeleton: React.FC = () => {
   const Bone = ({ className = "" }) => <div className={`feed-skeleton-block ${className}`} />;
-  
+
   return (
     <div className="min-h-screen font-mono text-sm p-2 sm:p-4">
       <div className="max-w-5xl mx-auto bg-[rgb(var(--color-surface))] border border-white/5 rounded-lg overflow-hidden">
@@ -35,25 +35,35 @@ export const CompactSkeleton: React.FC = () => {
 
 export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const [twoColumns, setTwoColumns] = useState(true);
 
   return (
     <div className="feed-page-frame min-h-screen font-mono text-base pb-12">
-      <div className="mx-auto bg-[rgb(var(--color-surface))] shadow-xl border border-[rgb(var(--color-border))]/40 rounded-xl overflow-hidden">
+      <div className="mx-auto max-w-[1480px] bg-[rgb(var(--color-surface))] shadow-xl border border-[rgb(var(--color-border))]/40 rounded-xl overflow-hidden">
         <div className="bg-[rgba(var(--color-accent),0.18)] border-b border-[rgb(var(--color-border))]/30 p-3 px-6 flex items-center justify-between">
           <div className="flex items-center">
             <span className="font-bold feed-accent-text mr-4 text-base tracking-tight">Personal News Digest</span>
           </div>
-          <div className="text-[10px] uppercase font-bold tracking-tighter opacity-70">
-            {new Date().toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setTwoColumns((value) => !value)}
+              className="hidden rounded-full border border-[rgb(var(--color-border))]/40 px-3 py-1 text-[10px] font-bold uppercase tracking-wider hover:border-[rgb(var(--color-accent))]/60 xl:inline-flex"
+            >
+              {twoColumns ? "2 colunas" : "1 coluna"}
+            </button>
+            <div className="text-[10px] uppercase font-bold tracking-tighter opacity-70">
+              {new Date().toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })}
+            </div>
           </div>
         </div>
         <div className="p-3 sm:p-6">
-          <ol className="list-decimal list-inside space-y-1 text-[rgb(var(--color-textSecondary))]">
+          <ol className={`list-decimal list-inside gap-3 text-[rgb(var(--color-textSecondary))] ${twoColumns ? "compact-feed-two-col grid grid-cols-1 xl:grid-cols-2" : "mx-auto grid max-w-[920px] grid-cols-1"}`}>
             {articles.map((article, i) => (
-              <li key={i} className="py-4 border-b border-[rgb(var(--color-border))]/20 last:border-b-0 group flex gap-5 items-start">
+              <li key={i} className="py-4 border-b border-[rgb(var(--color-border))]/20 last:border-b-0 group flex gap-5 items-stretch">
                 {/* Image Thumbnail - Slightly larger */}
                 {article.imageUrl && (
-                  <div className="flex-shrink-0 w-36 h-24 bg-gray-200 dark:bg-gray-800 rounded-md overflow-hidden border border-[rgb(var(--color-border))]/30 mt-1 shadow-sm">
+                  <div className="flex-shrink-0 w-44 min-h-[9rem] self-stretch bg-gray-200 dark:bg-gray-800 rounded-md overflow-hidden border border-[rgb(var(--color-border))]/30 mt-1 shadow-sm">
                     <img
                       src={article.imageUrl}
                       alt=""
@@ -88,7 +98,7 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
 
                   <div className="text-sm text-[rgb(var(--color-textSecondary))] leading-relaxed mt-1 flex flex-col gap-2">
                     {article.description && (
-                      <p className="line-clamp-2 italic opacity-75 mb-1 max-w-4xl font-sans text-xs leading-relaxed">
+                      <p className="line-clamp-3 opacity-80 mb-1 max-w-3xl font-sans text-sm leading-relaxed">
                         {article.description}
                       </p>
                     )}

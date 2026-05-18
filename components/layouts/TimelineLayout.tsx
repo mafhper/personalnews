@@ -5,6 +5,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { FavoriteButton } from '../FavoriteButton';
 import { FeedInteractiveActions } from '../FeedInteractiveActions';
 import { getVideoEmbed } from '../../utils/videoEmbed';
+import { sanitizeArticleDescription } from '../../utils/sanitization';
 
 interface TimelineLayoutProps {
   articles: Article[];
@@ -99,19 +100,25 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
       {Object.entries(groupedArticles).map(([date, dateArticles]) => (
         <div key={date} className="mb-12 relative">
           {/* Date Header */}
-          <div className="sticky top-20 z-10 mb-8 ml-10 md:ml-16">
-            <span className="feed-chip inline-block px-4 py-2 rounded-full text-sm font-bold capitalize shadow-sm">
+          <div className="relative z-10 mb-6 ml-10 md:ml-16">
+            <span className="inline-flex max-w-full whitespace-normal break-words rounded-full border border-[rgb(var(--color-border))]/35 bg-[rgb(var(--theme-surface-readable,var(--color-surface)))]/88 px-3 py-1.5 text-left text-xs font-bold capitalize leading-snug text-[rgb(var(--theme-text-on-surface,var(--color-text)))] shadow-sm sm:px-4 sm:py-2 sm:text-sm">
               {date}
             </span>
           </div>
 
           <div className="space-y-8">
-            {dateArticles.map((article) => (
+            {dateArticles.map((article) => {
+              const timelineText = sanitizeArticleDescription(
+                [article.description, article.content].filter(Boolean).join(" "),
+                520,
+              );
+
+              return (
               <article key={article.link} className="relative pl-10 md:pl-16 group">
                 {/* Timeline Dot */}
                 <div className="absolute left-[14px] md:left-[30px] top-6 w-3 h-3 rounded-full bg-[rgba(var(--color-accent),0.6)] border-4 border-[rgb(var(--color-background))] shadow-sm group-hover:scale-125 transition-transform" />
 
-                <div className="bg-[rgb(var(--color-surface))] p-4 md:p-6 rounded-2xl border border-[rgb(var(--color-border))] hover:border-white/20 transition-all shadow-sm hover:shadow-md relative overflow-hidden">
+                <div className="relative overflow-hidden rounded-2xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))] p-4 text-left shadow-sm transition-all hover:border-white/20 hover:shadow-md md:p-6">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center space-x-2 text-xs text-[rgb(var(--color-textSecondary))] min-w-0">
                       <span className="font-medium feed-accent-text truncate max-w-[150px] sm:max-w-[200px]">{article.sourceTitle}</span>
@@ -151,30 +158,32 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                   )}
 
                   <div className="relative">
-                    <p className="text-[rgb(var(--color-textSecondary))] text-sm line-clamp-6 mb-2 leading-relaxed max-w-[70ch]">
-                      {article.description}
+                    <p
+                      className="feed-desc feed-card-desc-clamp mb-2 w-full max-w-none text-left text-sm leading-relaxed"
+                      style={{ "--feed-desc-lines": 4 } as React.CSSProperties}
+                    >
+                      {timelineText || article.title}
                     </p>
 
                     {/* Action Buttons */}
-                    
-        {(() => {
-          const embedUrl = getVideoEmbed(article.link);
-          return (
-            <FeedInteractiveActions
-              articleLink={article.link}
-              onRead={() => handleOpenReader(article)}
-              showRead={!embedUrl}
-              showWatch={!!embedUrl}
-              showVisit={true}
-              className="!mt-4 !mb-0 pt-4 border-t border-[rgb(var(--color-border))]/50 w-full justify-between"
-            />
-          );
-        })()}
-        
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => handleOpenReader(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          className="!mt-4 !mb-0 pt-4 border-t border-[rgb(var(--color-border))]/50 w-full justify-between"
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}

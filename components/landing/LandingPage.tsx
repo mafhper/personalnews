@@ -201,6 +201,32 @@ const ProductFrame = ({
   const [exitingIndex, setExitingIndex] = React.useState<number | null>(null);
   const [transitionStep, setTransitionStep] = React.useState(0);
   const isPausedRef = React.useRef(false);
+  const exitTimeoutRef = React.useRef<number | null>(null);
+  const stackImages = React.useMemo(() => {
+    if (images.length <= 1) return [];
+
+    return [1, 2]
+      .map((offset) => images[(activeIndex + offset) % images.length])
+      .filter((image) => image && image !== images[activeIndex]);
+  }, [activeIndex, images]);
+
+  const showNextImage = React.useCallback(() => {
+    if (images.length <= 1 || typeof window === "undefined") return;
+
+    setActiveIndex((current) => {
+      setExitingIndex(current);
+      setTransitionStep((step) => step + 1);
+      return (current + 1) % images.length;
+    });
+
+    if (exitTimeoutRef.current !== null) {
+      window.clearTimeout(exitTimeoutRef.current);
+    }
+    exitTimeoutRef.current = window.setTimeout(() => {
+      setExitingIndex(null);
+      exitTimeoutRef.current = null;
+    }, 2500);
+  }, [images.length]);
 
   React.useEffect(() => {
     if (images.length <= 1 || typeof window === "undefined") return;
@@ -208,31 +234,36 @@ const ProductFrame = ({
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     if (reduceMotion?.matches) return;
 
-    let exitTimeoutId = 0;
     const intervalId = window.setInterval(() => {
       if (isPausedRef.current) return;
-
-      setActiveIndex((current) => {
-        setExitingIndex(current);
-        setTransitionStep((step) => step + 1);
-        return (current + 1) % images.length;
-      });
-
-      window.clearTimeout(exitTimeoutId);
-      exitTimeoutId = window.setTimeout(() => {
-        setExitingIndex(null);
-      }, 2500);
+      showNextImage();
     }, 8400);
 
     return () => {
       window.clearInterval(intervalId);
-      window.clearTimeout(exitTimeoutId);
+      if (exitTimeoutRef.current !== null) {
+        window.clearTimeout(exitTimeoutRef.current);
+        exitTimeoutRef.current = null;
+      }
     };
-  }, [images.length]);
+  }, [images.length, showNextImage]);
 
   return (
     <figure
-      className="promo-product-frame promo-product-frame--rotating"
+      className={[
+        "promo-product-frame promo-product-frame--rotating",
+        exitingIndex !== null ? "is-transitioning" : "",
+      ].filter(Boolean).join(" ")}
+      role="button"
+      tabIndex={0}
+      aria-label={`${alt}. Clique para alternar a imagem.`}
+      onClick={showNextImage}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          showNextImage();
+        }
+      }}
       onPointerEnter={() => {
         isPausedRef.current = true;
       }}
@@ -253,6 +284,16 @@ const ProductFrame = ({
             .filter(Boolean)
             .join(" ")}
           loading={index === 0 ? "eager" : "lazy"}
+        />
+      ))}
+      {stackImages.map((image, index) => (
+        <img
+          key={`stack-${image}`}
+          src={image}
+          alt=""
+          aria-hidden="true"
+          className={`promo-product-frame__stack-image promo-product-frame__stack-image--${index + 1}`}
+          loading="lazy"
         />
       ))}
       {transitionStep > 0 ? (

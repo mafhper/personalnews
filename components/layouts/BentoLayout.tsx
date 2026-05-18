@@ -81,14 +81,14 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
           span: "sm:col-span-2 sm:row-span-1 md:col-span-2 md:row-span-1",
           size: "wide",
           showDescription: true,
-          containerClass: "min-h-[220px]",
+          containerClass: "min-h-[300px]",
         };
       default: // Standard
         return {
           span: "sm:col-span-1 sm:row-span-1 md:col-span-1 md:row-span-1",
           size: "standard",
           showDescription: false,
-          containerClass: "min-h-[220px]",
+          containerClass: "min-h-[320px]",
         };
     }
   };
@@ -108,8 +108,8 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
               : isTall
                 ? "min-h-[6.75rem] md:min-h-[8.5rem]"
                 : isWide
-                  ? "min-h-[5.5rem] md:min-h-[6.5rem]"
-                  : "min-h-[4.5rem]";
+                  ? "min-h-[7rem] md:min-h-[8rem]"
+                  : "min-h-[7rem]";
 
             return (
               <article
@@ -173,6 +173,21 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   <div
                     className={`mt-auto flex flex-col justify-end transform transition-all duration-500 ${bottomBlockClass}`}
                   >
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          variant="onDarkMedia"
+                          articleLink={article.link}
+                          onRead={() => setReadingArticle(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          className="!mt-0 mb-3"
+                        />
+                      );
+                    })()}
+
                     {/* Title */}
                     <h3
                       className={`font-bold text-white leading-[1.04] drop-shadow-xl ${style.showDescription ? "mb-2" : "mb-0"} ${
@@ -193,7 +208,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                     {/* Description (only on larger cards) */}
                     {style.showDescription && article.description && (
                       <p
-                        className={`text-white/80 leading-relaxed drop-shadow-lg transition-all duration-500 ${
+                        className={`mt-3 text-white/80 leading-relaxed drop-shadow-lg transition-all duration-500 ${
                           isHero
                             ? "text-sm md:text-base line-clamp-3 opacity-90"
                             : "text-sm line-clamp-2 opacity-0 group-hover:opacity-90"
@@ -202,22 +217,6 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                         {article.description}
                       </p>
                     )}
-
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          variant="onDarkMedia"
-                          articleLink={article.link}
-                          onRead={() => setReadingArticle(article)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          forceVisible={isHero}
-                          className="!mt-4"
-                        />
-                      );
-                    })()}
                   </div>
                 </div>
               </article>

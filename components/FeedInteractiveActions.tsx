@@ -40,6 +40,8 @@ export interface FeedInteractiveActionsProps {
   className?: string;
   /** Skip hover-hide (large hero cells, always-on toolbars) */
   forceVisible?: boolean;
+  /** Compact rail variant for top-aligned card actions */
+  compact?: boolean;
   variant?: FeedInteractiveActionsVariant;
   /** Brutalist: second button style when video panel is open */
   watchActive?: boolean;
@@ -58,6 +60,7 @@ export const FeedInteractiveActions: React.FC<FeedInteractiveActionsProps> = ({
   showVisit = false,
   className = "",
   forceVisible = false,
+  compact = false,
   variant = "default",
   watchActive = false,
 }) => {
@@ -69,6 +72,7 @@ export const FeedInteractiveActions: React.FC<FeedInteractiveActionsProps> = ({
   const rootClass = [
     "feed-card-actions",
     forceVisible ? "feed-card-actions--force-visible" : "",
+    compact ? "feed-card-actions--compact" : "",
     variant === "onDarkMedia" ? "feed-card-actions--on-dark-media" : "",
     variant === "brutalist" ? "feed-card-actions--brutalist" : "",
     variant === "terminal" ? "feed-card-actions--terminal" : "",
@@ -108,7 +112,7 @@ export const FeedInteractiveActions: React.FC<FeedInteractiveActionsProps> = ({
 
   return (
     <div className={rootClass}>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="feed-card-actions__inner">
         {showRead && (
           <button
             type="button"

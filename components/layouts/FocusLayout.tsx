@@ -144,8 +144,8 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                 <span className="text-xs text-white/60 font-mono tracking-widest">
                     {new Date(currentArticle.pubDate).toLocaleDateString().split('/').join('.')}
                 </span>
-                <FavoriteButton 
-                  article={currentArticle} 
+                <FavoriteButton
+                  article={currentArticle}
                   size="medium"
                   position="inline"
                   className="bg-black/40 hover:bg-black/70 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -175,8 +175,7 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                   showRead={!embedUrl}
                   showWatch={!!embedUrl}
                   showVisit={true}
-                  forceVisible={true}
-                  className="!mt-0 !opacity-100 !pointer-events-auto !transform-none [&_.feed-btn-action]:text-sm [&_.feed-btn-action]:px-6 [&_.feed-btn-action]:py-3 [&_.feed-link-action]:text-sm"
+                  className="!mt-0 [&_.feed-btn-action]:text-sm [&_.feed-btn-action]:px-6 [&_.feed-btn-action]:py-3 [&_.feed-link-action]:text-sm"
                 />
               );
             })()}

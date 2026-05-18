@@ -70,7 +70,7 @@ export const FeedDiscoveryModal: React.FC<FeedDiscoveryModalProps> = ({
       onClose={onClose}
       size="3xl"
       title="Feeds encontrados"
-      description="Encontramos mais de uma opcao RSS para a URL informada. Escolha a fonte que deve entrar na sua colecao."
+      description="Encontramos mais de uma opção RSS para a URL informada. Escolha a fonte que deve entrar na sua coleção."
       tone="selection"
       zIndexClass="z-[9999]"
       footer={
@@ -96,10 +96,10 @@ export const FeedDiscoveryModal: React.FC<FeedDiscoveryModalProps> = ({
             <StatusIcons.Info className="mt-0.5 h-5 w-5 text-[rgb(var(--color-accent))]" />
             <div>
               <h3 className="mb-1 font-semibold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
-                A URL tem multiplas fontes possiveis
+                A URL tem múltiplas fontes possíveis
               </h3>
               <p className="text-sm text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
-                Selecione a opcao mais confiavel ou a que melhor representa o conteudo que voce quer acompanhar.
+                Selecione a opção mais confiável ou a que melhor representa o conteúdo que você quer acompanhar.
               </p>
               <p className="mt-2 font-mono text-xs text-[rgb(var(--color-accent))] break-all">
                 {originalUrl}

@@ -97,6 +97,7 @@ const isBackendReachabilityError = (error: unknown) => {
   }
 
   return (
+    message.includes("backend local indisponível") ||
     message.includes("backend local indisponivel") ||
     message.includes("failed to fetch") ||
     message.includes("networkerror") ||
@@ -128,7 +129,7 @@ const buildBackendUnavailableError = (
   new Error(
     initializing
       ? `Backend local inicializando: ${message}`
-      : `Backend local indisponivel: ${message}`,
+      : `Backend local indisponível: ${message}`,
   );
 
 export const getFeedRuntimeState = (): FeedRuntimeState => ({
@@ -249,7 +250,7 @@ export async function loadFeedWithRuntime(
           undefined,
           backendRoute,
           allowClientProxyFallback
-            ? "Fallback automatico para proxies em nuvem ativado."
+            ? "Fallback automático para proxies em nuvem ativado."
             : undefined,
         );
 
@@ -315,7 +316,7 @@ export async function loadFeedWithRuntime(
         checkedAt: Date.now(),
       },
       allowClientProxyFallback
-        ? "Fallback automatico para proxies em nuvem ativado."
+        ? "Fallback automático para proxies em nuvem ativado."
         : undefined,
     );
 

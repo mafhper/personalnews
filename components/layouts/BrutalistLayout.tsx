@@ -4,6 +4,7 @@ import { getVideoEmbed } from "../../utils/videoEmbed";
 import { FavoriteButton } from "../FavoriteButton";
 import { ArticleReaderModal } from "../ArticleReaderModal";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { FeedResponsiveDate } from "../FeedResponsiveDate";
 
 interface BrutalistLayoutProps {
   articles: Article[];
@@ -35,9 +36,9 @@ const BrutalistCard: React.FC<{
   const embedUrl = getVideoEmbed(article.link);
 
   return (
-    <article className="group relative flex flex-col border-4 border-[rgb(var(--color-text))] bg-[rgb(var(--color-surface))] transition-all duration-300 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.2)] dark:hover:shadow-[12px_12px_0px_0px_rgba(var(--color-text),0.1)]">
+    <article className="group relative flex flex-col border-2 border-[rgb(var(--color-text))]/70 bg-[rgb(var(--color-surface))] transition-all duration-300 hover:-translate-y-1 hover:border-[rgb(var(--color-text))] hover:shadow-[10px_10px_0px_0px_rgba(var(--color-text),0.14)] dark:hover:shadow-[10px_10px_0px_0px_rgba(var(--color-text),0.1)]">
       {/* Media Content */}
-      <div className="relative overflow-hidden border-b-4 border-[rgb(var(--color-text))] transition-all duration-500 aspect-[4/3]">
+      <div className="relative overflow-hidden border-b-2 border-[rgb(var(--color-text))]/60 transition-all duration-500 aspect-[4/3]">
         <ArticleImage
           article={article}
           width={800}
@@ -58,12 +59,40 @@ const BrutalistCard: React.FC<{
             </div>
           </div>
         )}
+        <div className="feed-card-action-rail absolute left-3 top-3 z-20">
+          <FeedInteractiveActions
+            variant="brutalist"
+            articleLink={article.link}
+            onRead={() => onRead(article)}
+            showRead={!embedUrl}
+            showWatch={!!embedUrl}
+            showVisit={true}
+            compact
+            className="!mt-0 flex-wrap gap-2"
+          />
+        </div>
+        <FavoriteButton
+          article={article}
+          size="small"
+          position="overlay"
+          className="right-3 top-3 z-20 bg-[rgb(var(--color-surface))]/88 text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-accent))] opacity-0 group-hover:opacity-100"
+        />
       </div>
 
       {/* Content Block */}
-      <div className="p-4 flex flex-col flex-1 justify-between">
-        <div>
-          <h2 className="font-black tracking-tighter leading-[0.95] mb-4 uppercase group-hover:text-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-text))] hover:text-[rgb(var(--color-surface))] feed-title-hoverable transition-all text-xl md:text-2xl line-clamp-3">
+      <div className="p-4 flex flex-col flex-1 gap-3">
+        <div className="feed-card-bottom-copy">
+          <div className="feed-card-meta-stack mb-3 border-l-2 border-[rgb(var(--color-text))]/70 pl-3">
+            <span className="text-xs font-black uppercase tracking-widest">
+              {article.sourceTitle}
+            </span>
+            <FeedResponsiveDate
+              date={article.pubDate}
+              className="text-xs font-black uppercase tracking-widest opacity-70"
+            />
+          </div>
+
+          <h2 className="font-black tracking-tighter leading-[0.98] mb-3 uppercase group-hover:text-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-text))] hover:text-[rgb(var(--color-surface))] feed-title-hoverable transition-all text-lg md:text-xl line-clamp-3">
             <button
               type="button"
               className="block bg-transparent px-1 py-0 text-left"
@@ -73,31 +102,9 @@ const BrutalistCard: React.FC<{
             </button>
           </h2>
 
-          <p className="text-xs font-medium opacity-70 mb-4 border-l-2 border-current pl-2 line-clamp-3">
+          <p className="text-xs font-medium opacity-70 border-l border-current pl-2 line-clamp-3">
             {article.description}
           </p>
-        </div>
-
-        <div className="pt-3 border-t-2 border-dashed border-[rgb(var(--color-text))]/20 flex justify-between items-center gap-2 text-xs font-bold flex-wrap">
-          <div className="flex items-center gap-3">
-            <span>{new Date(article.pubDate).toLocaleDateString()}</span>
-            <FavoriteButton
-              article={article}
-              size="small"
-              position="inline"
-              className="text-[rgb(var(--color-text))] hover:text-[rgb(var(--color-accent))] p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            />
-          </div>
-
-          <FeedInteractiveActions
-            variant="brutalist"
-            articleLink={article.link}
-            onRead={() => onRead(article)}
-            showRead={!embedUrl}
-            showWatch={!!embedUrl}
-            showVisit={true}
-            className="z-20 !mt-2 flex-wrap gap-2"
-          />
         </div>
       </div>
     </article>
@@ -187,7 +194,7 @@ const ArticleImage: React.FC<{
       <img
         src={props.article.imageUrl}
         alt=""
-        className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-500"
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         loading={props.priority ? "eager" : "lazy"}
       />
     </div>

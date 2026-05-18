@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Article } from '../../types';
-import { ArticleItem } from '../ArticleItem';
 import { FeaturedArticle } from '../FeaturedArticle';
 import { ArticleReaderModal } from '../ArticleReaderModal';
 import { FeedInteractiveActions } from '../FeedInteractiveActions';
 import { getVideoEmbed } from '../../utils/videoEmbed';
+import { ArticleImage } from '../ArticleImage';
+import { FavoriteButton } from '../FavoriteButton';
+import { FeedResponsiveDate } from '../FeedResponsiveDate';
 
 interface MasonryLayoutProps {
   articles: Article[];
@@ -16,7 +18,7 @@ export const MasonrySkeleton: React.FC = () => {
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 space-y-8">
       {/* Featured Hero Skeleton */}
       <div className="h-[60vh] min-h-[400px] rounded-2xl feed-skeleton-block" />
-      
+
       {/* Masonry Columns Skeleton */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
@@ -55,14 +57,14 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
   return (
     <div className="feed-page-frame feed-page-frame--wide space-y-8 animate-in fade-in duration-500">
       {/* Featured Article - Full Width Hero */}
-      <div className="h-[60vh] min-h-[400px] rounded-2xl overflow-hidden shadow-xl relative group">
+      <div className="masonry-featured group relative h-[60vh] min-h-[400px] overflow-hidden rounded-2xl shadow-xl">
         <FeaturedArticle
           article={featured}
           timeFormat={timeFormat}
           onClick={handleOpenReader}
         />
         {/* Preview Button for Featured */}
-        <div className="absolute bottom-6 right-6 p-4 z-10">
+        <div className="feed-card-action-rail absolute bottom-6 right-20 z-20 justify-end">
           {(() => {
             const embedUrl = getVideoEmbed(featured.link);
             return (
@@ -73,6 +75,8 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
                 showRead={!embedUrl}
                 showWatch={!!embedUrl}
                 showVisit={true}
+                compact
+                className="!mt-0"
               />
             );
           })()}
@@ -84,17 +88,12 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
         className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6"
       >
         {rest.map((article, index) => (
-          <div
+          <MasonryCard
             key={`${article.link}-${index}`}
-            className="break-inside-avoid mb-6"
-          >
-            <ArticleItem
-              article={article}
-              timeFormat={timeFormat}
-              onClick={handleOpenReader}
-              className="hover:-translate-y-1 transition-transform duration-300"
-            />
-          </div>
+            article={article}
+            index={index}
+            onRead={handleOpenReader}
+          />
         ))}
       </div>
 
@@ -109,5 +108,84 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
         />
       )}
     </div>
+  );
+};
+
+const MASONRY_MEDIA_SHAPES = [
+  "aspect-[4/3]",
+  "aspect-[3/4]",
+  "aspect-square",
+  "aspect-[5/4]",
+];
+
+const MasonryCard: React.FC<{
+  article: Article;
+  index: number;
+  onRead: (article: Article) => void;
+}> = ({ article, index, onRead }) => {
+  const embedUrl = getVideoEmbed(article.link);
+  const mediaShape = MASONRY_MEDIA_SHAPES[index % MASONRY_MEDIA_SHAPES.length];
+
+  return (
+    <article className="feed-card group mb-6 break-inside-avoid overflow-hidden text-left transition-transform duration-300 hover:-translate-y-1">
+      <div className={`feed-media relative ${mediaShape}`}>
+        <button
+          type="button"
+          className="block h-full w-full bg-transparent p-0 text-left"
+          onClick={() => onRead(article)}
+          aria-label={`Abrir ${article.title} no leitor`}
+        >
+          <ArticleImage
+            article={article}
+            width={700}
+            height={900}
+            fill={true}
+            className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+          />
+        </button>
+        <div className="feed-card-action-rail absolute bottom-3 right-3 z-20 justify-end">
+          <FeedInteractiveActions
+            variant="onDarkMedia"
+            articleLink={article.link}
+            onRead={() => onRead(article)}
+            showRead={!embedUrl}
+            showWatch={!!embedUrl}
+            showVisit={true}
+            compact
+            className="!mt-0"
+          />
+          <FavoriteButton
+            article={article}
+            size="small"
+            position="inline"
+            className="border border-white/10 bg-black/40 shadow-sm hover:bg-black/60"
+          />
+        </div>
+      </div>
+
+      <div className="flex min-h-[8rem] flex-col gap-3 p-4 text-left">
+        <div className="feed-card-top-rail min-h-0">
+          <div className="feed-card-meta-stack">
+            <span className="feed-meta truncate text-[10px] font-bold uppercase tracking-[0.18em]">
+              {article.sourceTitle}
+            </span>
+            <FeedResponsiveDate
+              date={article.pubDate}
+              className="feed-meta w-full text-left text-[10px] uppercase tracking-[0.14em]"
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="feed-card-bottom-copy bg-transparent p-0 text-left"
+          onClick={() => onRead(article)}
+        >
+          <h3 className="feed-title feed-title-card feed-title-hoverable feed-card-title-clamp w-full text-left text-base">
+            {article.title}
+          </h3>
+        </button>
+      </div>
+    </article>
   );
 };

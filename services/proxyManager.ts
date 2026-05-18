@@ -430,7 +430,7 @@ export class ProxyManager {
   /**
    * Get available proxies sorted by health score and priority
    */
-  getAvailableProxies(): ProxyConfig[] {
+  getAvailableProxies(options: { forceClientFallback?: boolean } = {}): ProxyConfig[] {
     const isTauri = ProxyManager.isTauriRuntime();
     const isLocalhost =
       typeof window !== "undefined" &&
@@ -440,7 +440,8 @@ export class ProxyManager {
     const allowLocalProxy =
       !isTauri && (ProxyManager.preferLocalProxy || isLocalhost);
     const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
-    const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
+    const allowClientProxyFallback =
+      options.forceClientFallback || ProxyManager.shouldUseClientProxyFallback();
 
     // Create a copy to modify priorities dynamically
     const configsToSort = this.PROXY_CONFIGS.filter(
@@ -618,12 +619,15 @@ export class ProxyManager {
   /**
    * Try multiple proxies with automatic failover
    */
-  async tryProxiesWithFailover(targetUrl: string): Promise<{
+  async tryProxiesWithFailover(
+    targetUrl: string,
+    options: { forceClientFallback?: boolean } = {},
+  ): Promise<{
     content: string;
     proxyUsed: string;
     attempts: ProxyAttempt[];
   }> {
-    const availableProxies = this.getAvailableProxies();
+    const availableProxies = this.getAvailableProxies(options);
     const attempts: ProxyAttempt[] = [];
 
     if (availableProxies.length === 0) {
@@ -911,8 +915,8 @@ export class ProxyManager {
             desktopStatus?.lastStartError ||
             (desktopStatus
               ? `Supervisor reportou estado ${desktopStatus.health}.`
-              : "Status do supervisor indisponivel."),
-          detail: "Backend local indisponivel pelo supervisor.",
+              : "Status do supervisor indisponível."),
+          detail: "Backend local indisponível pelo supervisor.",
           route: "backend-health",
         };
       }
@@ -922,7 +926,7 @@ export class ProxyManager {
         return {
           success: true,
           responseTime,
-          detail: `Backend local ativo. ${stats.localProxy.totalRequests} requisicoes registradas, ${Math.round(
+          detail: `Backend local ativo. ${stats.localProxy.totalRequests} requisições registradas, ${Math.round(
             stats.localProxy.successRate,
           )}% de sucesso.`,
           route: "backend-fetch",
@@ -932,7 +936,7 @@ export class ProxyManager {
           success: true,
           responseTime,
           detail:
-            "Backend local esta pronto pelo supervisor, mas as estatisticas nao puderam ser carregadas.",
+            "Backend local está pronto pelo supervisor, mas as estatísticas não puderam ser carregadas.",
           error: error instanceof Error ? error.message : String(error),
           route: "backend-health",
         };
@@ -947,7 +951,7 @@ export class ProxyManager {
         success: false,
         responseTime: 0,
         error: `Unknown proxy: ${proxyName}`,
-        detail: "Proxy nao encontrado na configuracao ativa.",
+        detail: "Proxy não encontrado na configuração ativa.",
         route: "client-proxy",
       };
     }

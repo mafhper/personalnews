@@ -7,6 +7,7 @@ import { useArticleLayout } from "../hooks/useArticleLayout";
 import { useAppearance } from "../hooks/useAppearance";
 import { ArticleItemLight } from "./ArticleItemLight";
 import { FeedInteractiveActions } from "./FeedInteractiveActions";
+import { FeedResponsiveDate } from "./FeedResponsiveDate";
 import { getVideoEmbed } from "../utils/videoEmbed";
 
 const ChatBubbleIcon: React.FC = memo(() => (
@@ -66,6 +67,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
     article.author && article.author !== article.sourceTitle
       ? article.author
       : undefined;
+  const embedUrl = getVideoEmbed(article.link);
 
   // Start performance measurement
   useEffect(() => {
@@ -74,21 +76,6 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
       endRenderTiming();
     };
   }, [startRenderTiming, endRenderTiming]);
-
-  const timeSince = (date: Date): string => {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " years ago";
-    interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " months ago";
-    interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " days ago";
-    interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " hours ago";
-    interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " minutes ago";
-    return Math.floor(seconds) + " seconds ago";
-  };
 
   const isHorizontal = layoutMode === "list" || layoutMode === "minimal";
 
@@ -117,89 +104,77 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
               className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           </button>
-
-          {/* Favorite button overlay */}
-          <FavoriteButton
-            article={article}
-            size="medium"
-            position="overlay"
-            className="top-2 right-2 z-10 opacity-0 group-hover:opacity-100 shadow-lg bg-black/20 hover:bg-black/40 transition-all"
-          />
         </div>
 
         {/* Article content */}
-        <div className="flex-1 flex flex-col">
-          <button
-            type="button"
-            className="flex-1 flex flex-col group min-h-0 bg-transparent p-0 text-left"
-            onClick={() => onClick?.(article)}
-            aria-label={`Article: ${article.title} from ${
-              authorLabel || article.sourceTitle
-            }`}
-          >
-            {/* Source line */}
-            {contentConfig.showTags && (
-              <div className="mb-2 flex items-center gap-2 min-w-0">
-                <span className="feed-meta text-[10px] font-bold uppercase tracking-[0.22em] truncate max-w-full">
+        <div className="flex-1 flex min-h-0 flex-col gap-3">
+          <div className="feed-card-top-rail">
+            <div className="feed-card-meta-stack">
+              {contentConfig.showTags && (
+                <span className="feed-meta text-[10px] font-bold uppercase tracking-[0.18em] truncate max-w-[220px]">
                   {article.sourceTitle}
                 </span>
-                <span className="h-px w-5 flex-shrink-0 bg-[rgb(var(--color-border))]/35" />
+              )}
+              <div className="flex min-w-0 flex-col gap-1">
+                {contentConfig.showAuthor && authorLabel && (
+                  <span
+                    className="feed-meta text-[11px] truncate"
+                    aria-label={`Autor: ${authorLabel}`}
+                    title={authorLabel}
+                  >
+                    Por {authorLabel}
+                  </span>
+                )}
+                {(contentConfig.showDate || contentConfig.showTime) && (
+                  <FeedResponsiveDate
+                    date={article.pubDate}
+                    hour12={timeFormat === "12h"}
+                    includeTime={
+                      layoutSettings.showPublicationTime ||
+                      contentConfig.showTime
+                    }
+                    className="feed-meta feed-meta-hoverable text-[10px] uppercase tracking-[0.14em]"
+                  />
+                )}
               </div>
-            )}
-
-            {/* Title with better text wrapping */}
-            <h4 className="feed-title feed-title-card feed-title-hoverable text-base lg:text-lg mb-2 line-clamp-3 group-hover:underline decoration-current underline-offset-[0.18em]">
-              {article.title}
-            </h4>
-
-            {article.description && (
-              <p className="feed-desc feed-desc-hoverable text-sm mt-1 mb-3 line-clamp-2 leading-relaxed font-medium">
-                {article.description}
-              </p>
-            )}
-
-            {/* Article metadata */}
-            <div
-              className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${isHorizontal ? "" : "mt-auto"}`}
-            >
-              {contentConfig.showAuthor && authorLabel && (
-                <span
-                  className="feed-meta text-[11px] truncate max-w-[220px]"
-                  aria-label={`Author: ${authorLabel}`}
-                  title={authorLabel}
-                >
-                  Por {authorLabel}
-                </span>
-              )}
-              {(contentConfig.showDate || contentConfig.showTime) && (
-                <time
-                  className="feed-meta feed-meta-hoverable text-[10px] uppercase tracking-[0.18em] block self-start"
-                  dateTime={article.pubDate.toISOString()}
-                  aria-label={`Published ${timeSince(article.pubDate)}`}
-                >
-                  {layoutSettings.showPublicationTime || contentConfig.showTime
-                    ? timeFormat === "12h"
-                      ? `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: true })}`
-                      : `${article.pubDate.toLocaleDateString()} às ${article.pubDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}`
-                    : timeSince(article.pubDate)}
-                </time>
-              )}
             </div>
-          </button>
-
-          {(() => {
-            const embedUrl = getVideoEmbed(article.link);
-            return (
+            <div className="feed-card-action-rail">
               <FeedInteractiveActions
                 articleLink={article.link}
                 onRead={() => onClick?.(article)}
                 showRead={!embedUrl && !!onClick}
                 showWatch={!!embedUrl}
                 showVisit={true}
-                className="!mt-2 !mb-4"
+                compact
+                className="!mt-0"
               />
-            );
-          })()}
+              <FavoriteButton
+                article={article}
+                size="small"
+                position="inline"
+                className="bg-[rgb(var(--color-surfaceElevated))]/80 hover:bg-[rgb(var(--color-surfaceElevated))]"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="feed-card-bottom-copy flex flex-col bg-transparent p-0 text-left"
+            onClick={() => onClick?.(article)}
+            aria-label={`Artigo: ${article.title} de ${
+              authorLabel || article.sourceTitle
+            }`}
+          >
+            <h4 className="feed-title feed-title-card feed-title-hoverable feed-card-title-clamp text-base lg:text-lg mb-2 group-hover:underline decoration-current underline-offset-[0.18em]">
+              {article.title}
+            </h4>
+
+            {article.description && !isHorizontal && (
+              <p className="feed-desc feed-desc-hoverable feed-card-desc-clamp text-sm leading-relaxed font-medium">
+                {article.description}
+              </p>
+            )}
+          </button>
         </div>
       </div>
     </article>

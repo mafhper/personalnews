@@ -118,6 +118,8 @@ export const ArticleWireSchema = z.object({
   sourceTitle: z.string(),
   feedUrl: z.string().optional(),
   imageUrl: z.string().optional(),
+  audioUrl: z.string().optional(),
+  audioDuration: z.string().optional(),
   description: z.string().optional(),
   content: z.string().optional(),
   author: z.string().optional(),
