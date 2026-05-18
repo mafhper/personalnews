@@ -6,6 +6,7 @@ import { useLanguage } from "../../hooks/useLanguage";
 import { ArticleImage } from "../ArticleImage";
 import { FavoriteButton } from "../FavoriteButton";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { FeedResponsiveDate } from "../FeedResponsiveDate";
 import { getVideoEmbed } from "../../utils/videoEmbed";
 
 interface MagazineLayoutProps {
@@ -32,7 +33,7 @@ export const MagazineSkeleton: React.FC = () => {
 
       {/* FEATURED SKELETON */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="space-y-4">
             <Bone className="aspect-video" />
             <Bone className="h-4 w-1/2" />
@@ -43,7 +44,7 @@ export const MagazineSkeleton: React.FC = () => {
 
       {/* GRID SKELETON */}
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
           <div key={i} className="flex gap-4 items-center">
             <Bone className="w-24 h-24 flex-shrink-0" />
             <div className="flex-1 space-y-2">
@@ -61,7 +62,6 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   useAppearance();
   const { t } = useLanguage();
-  const now = new Date();
 
   const visibleArticles = articles;
 
@@ -89,39 +89,14 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
     }
   };
 
-  // Helper
-  const formatTimeAgo = (dateInput: Date | string) => {
-    const date =
-      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-    const diffMs = now.getTime() - date.getTime();
-    if (diffMs < 0 || isNaN(diffMs))
-      return date.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-      });
-
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return t("time.now") || "agora";
-    if (diffMins < 60) return `${diffMins}min`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays}d`;
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-    });
-  };
-
   // Layout Slices - Magazine style with clear sections
   const heroArticle = visibleArticles[0];
   const heroAuthor =
     heroArticle?.author && heroArticle.author !== heroArticle.sourceTitle
       ? heroArticle.author
       : undefined;
-  const featuredArticles = visibleArticles.slice(1, 4); // 3 featured below hero
-  const gridArticles = visibleArticles.slice(4, 10); // 6 in grid
-  const listArticles = visibleArticles.slice(10); // Rest in list
+  const featuredArticles = visibleArticles.slice(1, 7); // 6 featured below hero
+  const gridArticles = visibleArticles.slice(7, 19); // 12 in grid
 
   if (!heroArticle)
     return (
@@ -134,24 +109,6 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
 
   return (
     <div className="feed-page-frame py-12 animate-in fade-in duration-300 min-h-screen pb-16">
-      <div className="flex items-center justify-between border-b border-[rgb(var(--color-border))]/40 pb-4 mb-8">
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.35em] text-[rgb(var(--color-textSecondary))] font-black">
-          <span className="feed-accent-text">
-            {t("layout.magazine") || "Magazine"}
-          </span>
-          <span className="h-px w-8 bg-[rgba(var(--color-accent),0.4)]" />
-          <span>
-            {now.toLocaleDateString("pt-BR", {
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-        </div>
-        <div className="text-[10px] uppercase tracking-[0.3em] text-[rgb(var(--color-textSecondary))] font-black">
-          {t("layout.edition") || "Edição"} {now.getFullYear()}
-        </div>
-      </div>
-
       {/* Hero Section - Full Width */}
       <section className="mb-12">
         <article
@@ -160,7 +117,7 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
         >
           <div className="grid xl:grid-cols-12 gap-0 items-stretch">
             {/* Hero Image */}
-            <div className="relative aspect-[16/10] sm:aspect-[4/3] xl:aspect-auto xl:col-span-7 xl:min-h-[500px] overflow-hidden flex-1 self-stretch">
+            <div className="relative h-[clamp(240px,34vw,420px)] xl:h-auto xl:col-span-7 xl:min-h-[380px] xl:max-h-[430px] overflow-hidden flex-1 self-stretch">
               <ArticleImage
                 article={heroArticle}
                 width={1200}
@@ -169,67 +126,71 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent md:hidden" />
-
-              {/* Favorite Button */}
-              <FavoriteButton
-                article={heroArticle}
-                size="medium"
-                position="overlay"
-                className="top-4 right-4 z-10 bg-black/50 hover:bg-black/70 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-              />
             </div>
 
             {/* Hero Content */}
-            <div className="flex flex-col justify-center p-6 md:p-10 xl:col-span-5 bg-gradient-to-br from-[rgb(var(--theme-surface-elevated))] to-[rgb(var(--color-background))] border-t border-[rgb(var(--color-border))]/35 xl:border-t-0 xl:border-l">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="feed-chip inline-flex items-center px-3 py-1 shadow-sm shadow-black/15">
-                  {heroArticle.sourceTitle}
-                </span>
-                <span className="text-sm font-bold text-[rgb(var(--theme-text-secondary-on-surface))] bg-[rgb(var(--theme-control-bg))]/70 px-2 py-0.5 rounded">
-                  {formatTimeAgo(heroArticle.pubDate)}
-                </span>
+            <div className="flex flex-col justify-between gap-8 p-6 md:p-10 xl:col-span-5 bg-gradient-to-br from-[rgb(var(--theme-surface-elevated))] to-[rgb(var(--color-background))] border-t border-[rgb(var(--color-border))]/35 xl:border-t-0 xl:border-l">
+              <div className="feed-card-top-rail">
+                <div className="feed-card-meta-stack">
+                  <span className="feed-chip inline-flex w-fit max-w-full items-center px-3 py-1 shadow-sm shadow-black/15">
+                    {heroArticle.sourceTitle}
+                  </span>
+                  <FeedResponsiveDate
+                    date={heroArticle.pubDate}
+                    className="text-sm font-bold text-[rgb(var(--theme-text-secondary-on-surface))]"
+                  />
+                </div>
+                <div className="feed-card-action-rail">
+                  {(() => {
+                    const embedUrl = getVideoEmbed(heroArticle.link);
+                    return (
+                      <FeedInteractiveActions
+                        articleLink={heroArticle.link}
+                        onRead={() => handleOpenReader(heroArticle)}
+                        showRead={!embedUrl}
+                        showWatch={!!embedUrl}
+                        showVisit={true}
+                        compact
+                        className="!mt-0"
+                      />
+                    );
+                  })()}
+                  <FavoriteButton
+                    article={heroArticle}
+                    size="small"
+                    position="inline"
+                    className="bg-[rgb(var(--color-surfaceElevated))]/80"
+                  />
+                </div>
               </div>
 
-              <h1 className="font-serif text-2xl md:text-4xl font-bold text-[rgb(var(--theme-text-on-surface))] leading-tight mb-4 transition-colors">
-                {heroArticle.title}
-              </h1>
+              <div className="feed-card-bottom-copy">
+                <h1 className="feed-card-title-clamp font-serif text-2xl md:text-4xl font-bold text-[rgb(var(--theme-text-on-surface))] leading-tight mb-4 transition-colors">
+                  {heroArticle.title}
+                </h1>
 
-              <p className="text-[rgb(var(--theme-text-secondary-on-surface))] text-base md:text-lg leading-relaxed line-clamp-3 mb-6 max-w-[48ch]">
-                {heroArticle.description}
-              </p>
-
-              {heroAuthor && (
-                <p className="text-sm text-[rgb(var(--color-textSecondary))] italic">
-                  {t("article.by") || "Por"} {heroAuthor}
+                <p className="feed-desc feed-card-desc-clamp text-base md:text-lg leading-relaxed max-w-[48ch]">
+                  {heroArticle.description}
                 </p>
-              )}
 
-              {(() => {
-                const embedUrl = getVideoEmbed(heroArticle.link);
-                return (
-                  <FeedInteractiveActions
-                    articleLink={heroArticle.link}
-                    onRead={() => handleOpenReader(heroArticle)}
-                    showRead={!embedUrl}
-                    showWatch={!!embedUrl}
-                    showVisit={true}
-                    forceVisible
-                    className="mt-6 self-start"
-                  />
-                );
-              })()}
+                {heroAuthor && (
+                  <p className="mt-5 text-sm text-[rgb(var(--color-textSecondary))] italic">
+                    {t("article.by") || "Por"} {heroAuthor}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </article>
       </section>
 
-      {/* Featured Section - 3 Cards */}
+      {/* Featured Section - 6 Cards */}
       {featuredArticles.length > 0 && (
         <section className="mb-12">
           <div className="flex items-center gap-4 mb-6">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
             <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-              {t("layout.featured") || "Destaques"}
+              Destaques
             </h2>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgb(var(--color-border))] to-transparent" />
           </div>
@@ -241,6 +202,40 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                 className="group cursor-pointer feed-surface rounded-2xl p-5 transition-all duration-300 shadow-sm"
                 onClick={() => handleOpenReader(article)}
               >
+                <div className="feed-card-top-rail mb-3">
+                  <div className="feed-card-meta-stack">
+                    <span className="feed-chip w-fit max-w-full text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
+                      {article.sourceTitle}
+                    </span>
+                    <FeedResponsiveDate
+                      date={article.pubDate}
+                      className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-on-surface))] transition-colors"
+                    />
+                  </div>
+                  <div className="feed-card-action-rail">
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => handleOpenReader(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          compact
+                          className="!mt-0"
+                        />
+                      );
+                    })()}
+                    <FavoriteButton
+                      article={article}
+                      size="small"
+                      position="inline"
+                      className="bg-[rgb(var(--color-surfaceElevated))]/80"
+                    />
+                  </div>
+                </div>
+
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl mb-5 bg-[rgb(var(--color-background))]">
                   <ArticleImage
                     article={article}
@@ -250,140 +245,94 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ articles }) => {
                     className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-40 group-hover:opacity-60 transition-opacity" />
-
-                  {/* Favorite Button */}
-                  <FavoriteButton
-                    article={article}
-                    size="medium"
-                    position="overlay"
-                    className="top-3 right-3 z-10 bg-black/40 hover:bg-black/60 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  />
                 </div>
 
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="feed-chip text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
-                    {article.sourceTitle}
-                  </span>
-                  <span className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-on-surface))] transition-colors bg-[rgb(var(--theme-control-bg))]/70 px-1.5 py-0.5 rounded">
-                    {formatTimeAgo(article.pubDate)}
-                  </span>
+                <div className="feed-card-bottom-copy !mt-0">
+                  <h3 className="feed-card-title-clamp font-serif font-bold text-lg lg:text-xl text-[rgb(var(--theme-text-on-surface))] leading-tight group-hover:underline transition-all">
+                    {article.title}
+                  </h3>
+                  {article.description && (
+                    <p
+                      className="feed-desc feed-card-desc-clamp mt-3 text-sm leading-relaxed"
+                      style={{ "--feed-desc-lines": 3 } as React.CSSProperties}
+                    >
+                      {article.description}
+                    </p>
+                  )}
                 </div>
-
-                <h3 className="font-serif font-bold text-lg lg:text-xl text-[rgb(var(--theme-text-on-surface))] leading-tight group-hover:underline transition-all line-clamp-2">
-                  {article.title}
-                </h3>
               </article>
             ))}
           </div>
         </section>
       )}
 
-      {/* Grid Section - 6 Cards */}
+      {/* Grid Section - 12 Cards */}
       {gridArticles.length > 0 && (
         <section className="mb-12">
           <div className="flex items-center gap-4 mb-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-              {t("layout.more_news") || "Mais Notícias"}
+              Radar editorial
             </h2>
             <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
           </div>
 
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid gap-3 xl:grid-cols-2">
             {gridArticles.map((article, i) => (
               <article
                 key={i}
-                className="group cursor-pointer flex gap-4 p-4 rounded-xl feed-surface hover:bg-[rgb(var(--theme-surface-elevated))] transition-all relative"
+                className="group grid cursor-pointer grid-cols-[5rem_minmax(0,1fr)] items-start gap-3 rounded-xl border border-[rgb(var(--color-border))]/22 bg-[rgb(var(--theme-surface-readable))]/54 p-3 transition-all hover:bg-[rgb(var(--theme-surface-elevated))]/84 sm:grid-cols-[6.5rem_minmax(0,1fr)]"
                 onClick={() => handleOpenReader(article)}
               >
-                <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
+                <div className="relative aspect-square overflow-hidden rounded-lg bg-[rgb(var(--color-background))]">
                   <ArticleImage
                     article={article}
-                    width={200}
-                    height={200}
+                    width={260}
+                    height={260}
                     fill={true}
                     className="w-full h-full object-cover object-center"
                   />
                 </div>
-                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] font-bold uppercase feed-accent-text truncate max-w-[100px]">
-                        {article.sourceTitle}
-                      </span>
-                      <span className="text-[10px] text-[rgb(var(--color-textSecondary))] flex-shrink-0">
-                        {formatTimeAgo(article.pubDate)}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <FavoriteButton
-                        article={article}
-                        size="small"
-                        position="inline"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    </div>
+                <div className="flex min-w-0 flex-col gap-2 self-start">
+                  <div className="feed-card-meta-stack">
+                    <span className="text-[10px] font-bold uppercase feed-accent-text truncate">
+                      {article.sourceTitle}
+                    </span>
+                    <FeedResponsiveDate
+                      date={article.pubDate}
+                      className="text-[10px] text-[rgb(var(--color-textSecondary))]"
+                    />
                   </div>
-                  <h3 className="font-semibold text-sm text-[rgb(var(--theme-text-on-surface))] transition-colors line-clamp-2 leading-snug">
+                  <h3
+                    className="feed-card-title-clamp font-semibold text-sm sm:text-base text-[rgb(var(--theme-text-on-surface))] transition-colors leading-snug"
+                    style={{ "--feed-title-lines": 3 } as React.CSSProperties}
+                  >
                     {article.title}
                   </h3>
+                  <div className="feed-card-action-rail mt-1 justify-start">
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => handleOpenReader(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          compact
+                          className="!mt-0"
+                        />
+                      );
+                    })()}
+                    <FavoriteButton
+                      article={article}
+                      size="small"
+                      position="inline"
+                      className="bg-[rgb(var(--color-surfaceElevated))]/80"
+                    />
+                  </div>
                 </div>
               </article>
             ))}
-          </div>
-        </section>
-      )}
-
-      {/* List Section - Compact */}
-      {listArticles.length > 0 && (
-        <section className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-              {t("layout.latest") || "Últimas"}
-            </h2>
-            <div className="h-px flex-1 bg-[rgb(var(--color-border))]" />
-          </div>
-
-          <div className="max-w-full lg:max-w-[780px] xl:max-w-[840px] 2xl:max-w-[900px] mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {listArticles.map((article, i) => (
-                <article
-                  key={i}
-                  className="group cursor-pointer flex items-center gap-4 p-5 rounded-2xl feed-surface transition-all duration-300 shadow-md"
-                  onClick={() => handleOpenReader(article)}
-                >
-                  <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-xl bg-[rgb(var(--color-background))] shadow-inner border border-white/10">
-                    <ArticleImage
-                      article={article}
-                      width={150}
-                      height={150}
-                      fill={true}
-                      className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="feed-chip text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded shadow-sm shadow-black/15">
-                        {article.sourceTitle}
-                      </span>
-                      <span className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-on-surface))] bg-[rgb(var(--theme-control-bg))]/65 px-2 py-0.5 rounded">
-                        {formatTimeAgo(article.pubDate)}
-                      </span>
-                    </div>
-                    <h4 className="font-bold text-base text-[rgb(var(--theme-text-on-surface))] group-hover:underline transition-all line-clamp-2 leading-tight">
-                      {article.title}
-                    </h4>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <FavoriteButton
-                      article={article}
-                      size="medium"
-                      position="inline"
-                      className="feed-accent-text opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                </article>
-              ))}
-            </div>
           </div>
         </section>
       )}

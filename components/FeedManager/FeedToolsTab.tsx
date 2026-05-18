@@ -46,13 +46,13 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
               <SectionHeader
                 eyebrow="Bancada"
                 title="Fluxos principais"
-                description="Acoes de entrada e saida ficam juntas, com impacto claro antes de qualquer manutencao pesada."
+                description="Ações de entrada e saída ficam juntas, com impacto claro antes de qualquer manutenção pesada."
               />
 
               <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                 <OperationMetric label="Feeds" value={feedCount} />
                 <OperationMetric
-                  label="Validos"
+                  label="Válidos"
                   value={validCount}
                   tone="success"
                 />
@@ -67,7 +67,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
             <div className="grid gap-4 md:grid-cols-3">
               <OperationAction
                 title="Exportar OPML"
-                description="Baixe a colecao atual para backup ou migracao."
+                description="Baixe a coleção atual para backup ou migração."
                 icon={<Download className="h-5 w-5" />}
                 onClick={onExportOPML}
               />
@@ -79,7 +79,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
               />
               <OperationAction
                 title="Listas curadas"
-                description="Mescle colecoes prontas ou substitua tudo com confirmacao."
+                description="Mescle coleções prontas ou substitua tudo com confirmação."
                 icon={<ListPlus className="h-5 w-5" />}
                 onClick={onShowImportModal}
               />
@@ -90,21 +90,21 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.46fr)]">
           <section className={GROUP_CLASS}>
             <SectionHeader
-              eyebrow="Manutencao"
+              eyebrow="Manutenção"
               title="Reparos controlados"
-              description="Use esta area para recuperar a colecao. Investigacao detalhada de causa fica em Diagnostico."
+              description="Use esta área para recuperar a coleção. Investigação detalhada de causa fica em Diagnóstico."
             />
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
               <OperationAction
                 title="Limpar feeds com erro"
-                description="Abra uma revisao segura dos feeds problematicos antes de remover."
+                description="Abra uma revisão segura dos feeds problemáticos antes de remover."
                 icon={<RefreshCcw className="h-5 w-5" />}
                 onClick={onCleanupErrors}
               />
               <OperationAction
-                title="Restaurar padroes"
-                description="Recria a base inicial do projeto depois de confirmacao."
+                title="Restaurar padrões"
+                description="Recria a base inicial do projeto depois de confirmação."
                 icon={<RotateCcw className="h-5 w-5" />}
                 onClick={onResetDefaults}
                 warning
@@ -123,10 +123,10 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                     Zona de risco
                   </p>
                   <h3 className="mt-1 text-lg font-black text-[rgb(var(--theme-text-readable))]">
-                    Acoes destrutivas
+                    Ações destrutivas
                   </h3>
                   <p className="mt-1 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))]">
-                    Concentrada aqui para nao disputar atencao com importacao,
+                    Concentrada aqui para não disputar atenção com importação,
                     backup e reparos comuns.
                   </p>
                 </div>

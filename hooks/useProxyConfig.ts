@@ -267,7 +267,7 @@ export function useProxyConfig() {
           success: false,
           responseTime: 0,
           error: `Unknown proxy: ${proxyId}`,
-          detail: "Proxy nao encontrado na configuracao.",
+          detail: "Proxy não encontrado na configuração.",
           route: "client-proxy",
         };
       }
@@ -278,7 +278,7 @@ export function useProxyConfig() {
           responseTime: 0,
           error: `Unsupported proxy runtime: ${config.name}`,
           detail:
-            "Esta rota existe apenas como metadado e ainda nao possui implementacao no runtime ativo.",
+            "Esta rota existe apenas como metadado e ainda não possui implementação no runtime ativo.",
           route: "client-proxy",
         };
       }

@@ -60,6 +60,11 @@ const ModernPortalLayout = lazy(() =>
     default: m.ModernPortalLayout,
   })),
 );
+const MagazineLayout = lazy(() =>
+  import("./layouts/MagazineLayout").then((m) => ({
+    default: m.MagazineLayout,
+  })),
+);
 const NewspaperLayout = lazy(() =>
   import("./layouts/NewspaperLayout").then((m) => ({
     default: m.NewspaperLayout,
@@ -138,11 +143,11 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   // T4 & T10 & T36: Log articles arriving and trigger mount handshake
   useEffect(() => {
-    logger.debugTag('STATE', `FeedContent MOUNTED for category: ${selectedCategory || 'all'}`, { 
+    logger.debugTag('STATE', `FeedContent MOUNTED for category: ${selectedCategory || 'all'}`, {
         articlesCount: articles.length,
-        effectiveLayout: layoutMode || contentConfig.layoutMode 
+        effectiveLayout: layoutMode || contentConfig.layoutMode
     });
-    
+
     // T36: Atomic Handshake - tell parent we are ready to take over the screen
     onMounted?.();
 
@@ -178,7 +183,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   // Resolve effective layout - PRIORITIZE prop layoutMode
   let effectiveLayout = layoutMode || contentConfig.layoutMode;
-  
+
   if (!layoutMode && selectedCategory) {
     const category = getCategoryById(selectedCategory);
     if (category?.layoutMode) {
@@ -236,7 +241,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   // Layouts that manage their own container/virtualization for now
   const complexLayouts = [
-    'masonry', 'immersive', 'brutalist', 'timeline', 'bento',
+    'magazine', 'masonry', 'immersive', 'brutalist', 'timeline', 'bento',
     'newspaper', 'focus', 'gallery', 'compact', 'split',
     'cyberpunk', 'terminal', 'pocketfeeds', 'modern',
     'minimal', 'list'
@@ -261,6 +266,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
         case 'minimal': return <MinimalLayout articles={articles} timeFormat={timeFormat} />;
         case 'list': return <PortalLayout articles={articles} timeFormat={timeFormat} />;
         case 'modern': return <ModernPortalLayout articles={articles} timeFormat={timeFormat} />;
+        case 'magazine': return <MagazineLayout articles={articles} timeFormat={timeFormat} />;
         default: return null;
       }
     };

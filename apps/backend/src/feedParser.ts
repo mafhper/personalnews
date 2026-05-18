@@ -178,6 +178,28 @@ function extractAtomEnclosureImageUrl(links: Element[]): string | null {
   return null;
 }
 
+function extractRssAudioUrl(enclosures: Element[]): string | null {
+  for (const enclosure of enclosures) {
+    const type = (enclosure.getAttribute("type") || "").toLowerCase();
+    if (!type.startsWith("audio/")) continue;
+    const url = enclosure.getAttribute("url");
+    if (url) return url;
+  }
+  return null;
+}
+
+function extractAtomAudioUrl(links: Element[]): string | null {
+  for (const link of links) {
+    const rel = (link.getAttribute("rel") || "").toLowerCase();
+    if (rel && rel !== "enclosure") continue;
+    const type = (link.getAttribute("type") || "").toLowerCase();
+    if (!type.startsWith("audio/")) continue;
+    const href = link.getAttribute("href");
+    if (href) return href;
+  }
+  return null;
+}
+
 function normalizeFeedImageUrl(
   imageUrl: string | null | undefined,
   fallbackLink?: string,
@@ -323,7 +345,8 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
     .map((item) => {
       const linkNode = firstChildByTag(item, "link");
       const articleLink = textOf(linkNode) || textOf(firstChildByTag(item, "guid"));
-      const enclosure = firstChildByTag(item, "enclosure");
+      const enclosures = allChildrenByTag(item, "enclosure");
+      const enclosure = enclosures[0] || null;
       const mediaContent = firstChildByTag(item, "media:content");
       const mediaThumb = firstChildByTag(item, "media:thumbnail");
       const descriptionRaw =
@@ -362,6 +385,11 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
           textOf(firstChildByTag(item, "dc:creator")) ||
           undefined,
         imageUrl: normalizeFeedImageUrl(imageCandidate, articleLink, articleLink),
+        audioUrl: normalizeImageCandidate(extractRssAudioUrl(enclosures), articleLink) || undefined,
+        audioDuration:
+          textOf(firstChildByTag(item, "itunes:duration")) ||
+          textOf(firstChildByTag(item, "duration")) ||
+          undefined,
         categories: categories.length > 0 ? categories : undefined,
       };
     })
@@ -415,6 +443,11 @@ function parseAtom(doc: Document, feedUrl: string): { title: string; articles: A
           textOf(firstChildByTag(entry, "author")) ||
           undefined,
         imageUrl: normalizeFeedImageUrl(imageCandidate, articleLink, articleLink),
+        audioUrl: normalizeImageCandidate(extractAtomAudioUrl(links), articleLink) || undefined,
+        audioDuration:
+          textOf(firstChildByTag(entry, "itunes:duration")) ||
+          textOf(firstChildByTag(entry, "duration")) ||
+          undefined,
         categories: categories.length > 0 ? categories : undefined,
       };
     })

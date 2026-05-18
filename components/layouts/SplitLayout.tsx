@@ -5,6 +5,7 @@ import { ArticleReaderModal } from "../ArticleReaderModal";
 import { FavoriteButton } from "../FavoriteButton";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
 import { getVideoEmbed } from "../../utils/videoEmbed";
+import { sanitizeArticleDescription, sanitizeTitle } from "../../utils/sanitization";
 
 interface SplitLayoutProps {
   articles: Article[];
@@ -64,9 +65,9 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
             </div>
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,10,18,0.08)_0%,rgba(6,10,18,0.24)_100%)] group-hover:bg-transparent transition-colors" />
           </div>
-          <div className="w-full lg:w-1/2 p-7 md:p-10 lg:p-14 xl:p-16 flex flex-col justify-center bg-[rgb(var(--theme-surface-elevated))]">
-            <div className="max-w-[38rem] mx-auto md:mx-0">
-              <div className="flex justify-between items-start mb-5 gap-4">
+          <div className="w-full lg:w-1/2 p-7 md:p-10 lg:p-14 xl:p-16 flex flex-col items-center justify-center bg-[rgb(var(--theme-surface-elevated))] text-center">
+            <div className="mx-auto flex max-w-[38rem] flex-col items-center">
+              <div className="mb-5 flex w-full items-start justify-center gap-4">
                 <span className="feed-chip font-bold uppercase tracking-widest text-xs truncate max-w-[150px] md:max-w-[320px]">
                   {article.sourceTitle}
                 </span>
@@ -78,15 +79,15 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
                 />
               </div>
               <h2
-                className="text-[clamp(2rem,2vw+1.2rem,4.25rem)] font-bold mb-5 text-[rgb(var(--theme-text-on-surface))] transition-colors cursor-pointer leading-[1.02] tracking-[-0.04em] max-w-[14ch]"
+                className="line-clamp-2 text-[clamp(2rem,2vw+1.2rem,4.25rem)] font-bold mb-5 text-[rgb(var(--theme-text-on-surface))] transition-colors cursor-pointer leading-[1.04] tracking-tight max-w-[16ch]"
                 onClick={() => setReadingArticle(article)}
               >
-                {article.title}
+                {sanitizeTitle(article.title)}
               </h2>
-              <p className="text-[rgb(var(--theme-text-secondary-on-surface))] text-[clamp(1rem,0.3vw+0.96rem,1.2rem)] leading-relaxed mb-7 line-clamp-4 max-w-[64ch]">
-                {article.description}
+              <p className="text-[rgb(var(--theme-text-secondary-on-surface))] text-[clamp(1rem,0.3vw+0.96rem,1.2rem)] leading-relaxed mb-7 line-clamp-4 max-w-[58ch]">
+                {sanitizeArticleDescription(article.description, 420)}
               </p>
-              <div className="flex items-center text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-on-surface))]">
+              <div className="flex items-center justify-center text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-on-surface))]">
                 {new Date(article.pubDate).toDateString()}
               </div>
               {(() => {
@@ -98,7 +99,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
                     showRead={!embedUrl}
                     showWatch={!!embedUrl}
                     showVisit={true}
-                    className="!mt-7 self-start"
+                    className="!mt-7 justify-center"
                   />
                 );
               })()}

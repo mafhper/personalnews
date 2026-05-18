@@ -442,7 +442,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
           );
         } else {
           await alertSuccess(
-            "Todos os feeds deste arquivo ja estao na sua colecao.",
+            "Todos os feeds deste arquivo já estão na sua coleção.",
           );
         }
 

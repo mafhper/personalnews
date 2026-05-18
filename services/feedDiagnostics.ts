@@ -33,40 +33,40 @@ export interface FeedDiagnosticInfo {
 
 const ACTIONS: Record<FeedFailureCause, string> = {
   backend_unavailable:
-    "Verifique se o backend local do desktop esta ativo. Se continuar indisponivel, use as chaves de proxy para reforcar o fallback.",
+    "Verifique se o backend local do desktop está ativo. Se continuar indisponível, use as chaves de proxy para reforçar o fallback.",
   proxy_exhausted:
     "Os proxies em nuvem falharam ou ficaram indisponiveis. Aguarde alguns minutos ou configure chaves de API para RSS2JSON/CorsProxy.io.",
   rate_limited:
-    "O provedor atingiu limite de requisicoes. Aguarde o reset da cota ou configure uma chave de API.",
+    "O provedor atingiu limite de requisições. Aguarde o reset da cota ou configure uma chave de API.",
   upstream_error:
     "O servidor do feed respondeu com erro. Tente novamente depois e confirme se a URL ainda publica RSS.",
   parse_error:
-    "O endereco respondeu, mas o conteudo nao parece um feed valido. Revise a URL ou use descoberta automatica.",
+    "O endereço respondeu, mas o conteúdo não parece um feed válido. Revise a URL ou use descoberta automática.",
   network_error:
     "Falha de rede ao buscar o feed. Confirme conectividade, VPN/firewall e disponibilidade do host.",
   not_found:
-    "A URL nao foi encontrada. Revise o endereco do feed ou substitua por uma URL atualizada.",
+    "A URL não foi encontrada. Revise o endereço do feed ou substitua por uma URL atualizada.",
   timeout:
     "A consulta excedeu o tempo limite. Tente novamente ou use um proxy/backend mais estavel.",
   cors_error:
     "A leitura direta foi bloqueada. Use o backend local ou um proxy em nuvem configurado.",
   invalid_feed:
-    "O conteudo nao representa um feed RSS/Atom valido. Revise a origem ou remova o feed.",
+    "O conteúdo não representa um feed RSS/Atom válido. Revise a origem ou remova o feed.",
   unknown:
-    "Abra os diagnosticos para ver a ultima rota usada e tente novamente.",
+    "Abra os diagnósticos para ver a última rota usada e tente novamente.",
 };
 
 const SUMMARIES: Record<FeedFailureCause, string> = {
-  backend_unavailable: "Backend local indisponivel",
+  backend_unavailable: "Backend local indisponível",
   proxy_exhausted: "Fallback em nuvem sem rota saudavel",
-  rate_limited: "Limite de requisicoes atingido",
+  rate_limited: "Limite de requisições atingido",
   upstream_error: "Servidor do feed respondeu com erro",
-  parse_error: "Conteudo recebido nao pode ser interpretado como feed",
+  parse_error: "Conteúdo recebido não pode ser interpretado como feed",
   network_error: "Falha de rede ao consultar o feed",
-  not_found: "Feed nao encontrado",
+  not_found: "Feed não encontrado",
   timeout: "Consulta expirou",
   cors_error: "Bloqueio de CORS na rota atual",
-  invalid_feed: "Conteudo invalido para RSS/Atom",
+  invalid_feed: "Conteúdo inválido para RSS/Atom",
   unknown: "Falha sem classificacao especifica",
 };
 

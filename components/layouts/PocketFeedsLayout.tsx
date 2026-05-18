@@ -41,7 +41,12 @@ export const PocketFeedsSkeleton: React.FC = () => {
 export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }) => {
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [activeEpisode, setActiveEpisode] = useState<Article | null>(null);
   const [expandedPodcast, setExpandedPodcast] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.9);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t } = useLanguage();
 
@@ -76,16 +81,56 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
     return `${mins}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayPause = (audioUrl: string) => {
-    if (playingAudio === audioUrl) {
+  const formatPlaybackTime = (seconds: number): string => {
+    if (!Number.isFinite(seconds) || seconds <= 0) return '0:00';
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handlePlayPause = (episode: Article) => {
+    if (!episode.audioUrl) return;
+
+    if (playingAudio === episode.audioUrl) {
       audioRef.current?.pause();
       setPlayingAudio(null);
     } else {
       if (audioRef.current) {
-        audioRef.current.src = audioUrl;
+        if (audioRef.current.src !== episode.audioUrl) {
+          audioRef.current.src = episode.audioUrl;
+          setCurrentTime(0);
+          setDuration(0);
+        }
+        audioRef.current.volume = volume;
+        audioRef.current.playbackRate = playbackRate;
         audioRef.current.play().catch(() => { });
       }
-      setPlayingAudio(audioUrl);
+      setActiveEpisode(episode);
+      setPlayingAudio(episode.audioUrl);
+    }
+  };
+
+  const handleSeek = (nextTime: number) => {
+    if (!audioRef.current) return;
+    audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  };
+
+  const handleVolumeChange = (nextVolume: number) => {
+    setVolume(nextVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = nextVolume;
+    }
+  };
+
+  const handlePlaybackRateChange = (nextRate: number) => {
+    setPlaybackRate(nextRate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextRate;
     }
   };
 
@@ -98,6 +143,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
       {/* Hidden audio element for playback */}
       <audio
         ref={audioRef}
+        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
+        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
         onEnded={() => setPlayingAudio(null)}
         className="hidden"
       />
@@ -176,7 +223,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                         {/* Play button */}
                         {episode.audioUrl ? (
                           <button
-                            onClick={(e) => { e.stopPropagation(); handlePlayPause(episode.audioUrl!); }}
+                            onClick={(e) => { e.stopPropagation(); handlePlayPause(episode); }}
+                            aria-label={playingAudio === episode.audioUrl ? 'Pausar episódio' : 'Tocar episódio'}
                             className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${playingAudio === episode.audioUrl
                                 ? 'bg-[rgba(var(--color-accent),0.6)] text-white'
                                 : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgba(var(--color-accent),0.45)] hover:text-white'
@@ -313,6 +361,86 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
         </div>
       )}
 
+      {activeEpisode?.audioUrl && (
+        <div className="sticky bottom-4 z-40 mt-8 rounded-2xl border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))]/95 p-4 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <button
+              type="button"
+              onClick={() => handlePlayPause(activeEpisode)}
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.75)] text-white transition-colors hover:bg-[rgb(var(--color-accent))]"
+              aria-label={playingAudio === activeEpisode.audioUrl ? 'Pausar episódio' : 'Tocar episódio'}
+            >
+              {playingAudio === activeEpisode.audioUrl ? (
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[rgb(var(--color-text))]">
+                    {activeEpisode.title}
+                  </p>
+                  <p className="truncate text-xs text-[rgb(var(--color-textSecondary))]">
+                    {activeEpisode.sourceTitle}
+                  </p>
+                </div>
+                <span className="flex-shrink-0 text-xs tabular-nums text-[rgb(var(--color-textSecondary))]">
+                  {formatPlaybackTime(currentTime)} / {formatPlaybackTime(duration || Number(activeEpisode.audioDuration) || 0)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={duration || 0}
+                step={1}
+                value={duration ? Math.min(currentTime, duration) : 0}
+                onChange={(event) => handleSeek(Number(event.currentTarget.value))}
+                className="w-full accent-[rgb(var(--color-accent))]"
+                aria-label="Posição da reprodução"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs text-[rgb(var(--color-textSecondary))] sm:flex sm:items-center">
+              <label className="flex items-center gap-2">
+                <span>Volume</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={volume}
+                  onChange={(event) => handleVolumeChange(Number(event.currentTarget.value))}
+                  className="w-24 accent-[rgb(var(--color-accent))]"
+                  aria-label="Volume"
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                <span>Velocidade</span>
+                <select
+                  value={playbackRate}
+                  onChange={(event) => handlePlaybackRateChange(Number(event.currentTarget.value))}
+                  className="rounded-md border border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))] px-2 py-1 text-[rgb(var(--color-text))]"
+                  aria-label="Velocidade de reprodução"
+                >
+                  {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                    <option key={rate} value={rate}>
+                      {rate}x
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Expanded podcast modal for library mode */}
       {expandedPodcast && !hasFewPodcasts && (
         <div
@@ -361,7 +489,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                 >
                   {episode.audioUrl ? (
                     <button
-                      onClick={() => handlePlayPause(episode.audioUrl!)}
+                      onClick={() => handlePlayPause(episode)}
+                      aria-label={playingAudio === episode.audioUrl ? 'Pausar episódio' : 'Tocar episódio'}
                       className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${playingAudio === episode.audioUrl
                           ? 'bg-[rgba(var(--color-accent),0.6)] text-white'
                           : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgba(var(--color-accent),0.45)] hover:text-white'

@@ -6,6 +6,7 @@ import { useLanguage } from '../../hooks/useLanguage';
 import { ArticleImage } from '../ArticleImage';
 import { FavoriteButton } from '../FavoriteButton';
 import { FeedInteractiveActions } from '../FeedInteractiveActions';
+import { FeedResponsiveDate } from '../FeedResponsiveDate';
 import { getVideoEmbed } from '../../utils/videoEmbed';
 
 interface NewspaperLayoutProps {
@@ -55,25 +56,17 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const { data: weatherData, city, getWeatherIcon, isLoading, changeCity } = useWeather();
   const { t } = useLanguage();
-  const now = new Date();
 
   const main = articles[0];
-  const secondary = articles.slice(1, 3);
-  const rest = articles.slice(3);
+  const rest = articles.slice(1);
+  const mainExcerpt = [main?.description, main?.content]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   const handleCityChange = () => {
     const next = prompt(t('weather.city_prompt'), city);
     if (next) changeCity(next);
-  };
-
-  const formatTimeAgo = (date: Date) => {
-    const diff = now.getTime() - date.getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return t('time.now') || 'agora';
-    if (mins < 60) return `${mins}min`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h`;
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   };
 
   return (
@@ -127,6 +120,8 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               lg:grid-cols-12
               gap-8
               items-stretch
+              lg:min-h-[420px]
+              2xl:min-h-[480px]
             "
           >
             {/* Media */}
@@ -136,8 +131,9 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 h-[260px]
                 sm:h-[320px]
                 md:h-[360px]
-                lg:h-[420px]
-                2xl:h-[480px]
+                lg:h-full
+                lg:min-h-[420px]
+                2xl:min-h-[480px]
                 lg:col-span-7
                 2xl:col-span-8
                 bg-[rgb(var(--color-background))]
@@ -150,14 +146,48 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                 width={1600}
                 height={900}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-
+              <div className="absolute inset-0 bg-gradient-to-t from-[rgb(var(--color-background))]/90 via-[rgb(var(--color-background))]/20 to-transparent" />
+              <div className="feed-card-action-rail absolute left-4 top-4 z-20">
+                {(() => {
+                  const embedUrl = getVideoEmbed(main.link);
+                  return (
+                    <FeedInteractiveActions
+                      variant="onDarkMedia"
+                      articleLink={main.link}
+                      onRead={() => setReadingArticle(main)}
+                      showRead={!embedUrl}
+                      showWatch={!!embedUrl}
+                      showVisit={true}
+                      compact
+                      className="!mt-0"
+                    />
+                  );
+                })()}
+              </div>
               <FavoriteButton
                 article={main}
-                size="medium"
+                size="small"
                 position="overlay"
-                className="top-4 right-4 z-20 bg-black/50 hover:bg-black/70 backdrop-blur-sm border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                className="right-4 top-4 z-20"
               />
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                <h2
+                  className="
+                    feed-card-title-clamp
+                    font-serif font-bold leading-tight
+                    text-xl
+                    sm:text-2xl
+                    md:text-3xl
+                    lg:text-3xl
+                    2xl:text-4xl
+                    text-[rgb(var(--color-text))]
+                    drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]
+                  "
+                  style={{ "--feed-title-lines": 5 } as React.CSSProperties}
+                >
+                  {main.title}
+                </h2>
+              </div>
             </div>
 
             {/* Content */}
@@ -165,99 +195,33 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               className="
                 lg:col-span-5
                 2xl:col-span-4
-                flex flex-col justify-center
+                flex flex-col justify-between
                 gap-4
+                h-full
                 max-w-none
               "
             >
-              <span className="text-xs font-bold uppercase tracking-widest feed-accent-text truncate max-w-[200px]">
-                {main.sourceTitle}
-              </span>
-
-              <h2
-                className="
-                  font-serif font-bold leading-tight
-                  text-2xl
-                  sm:text-3xl
-                  md:text-4xl
-                  lg:text-4xl
-                  2xl:text-5xl
-                "
-              >
-                {main.title}
-              </h2>
-
-              {main.description && (
-                <p className="text-[rgb(var(--color-textSecondary))] leading-relaxed line-clamp-4">
-                  {main.description}
-                </p>
-              )}
-
-              <span className="text-xs text-[rgb(var(--color-textSecondary))]">
-                {formatTimeAgo(main.pubDate)}
-              </span>
-            </div>
-          </section>
-        )}
-
-        {/* SECONDARY */}
-        {secondary.length > 0 && (
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-            {secondary.map(article => (
-              <article
-                key={article.link}
-                onClick={() => setReadingArticle(article)}
-                className="flex gap-5 cursor-pointer group"
-              >
-                <div className="relative w-40 aspect-[4/3] rounded-lg overflow-hidden bg-[rgb(var(--color-background))] flex-shrink-0">
-                  <ArticleImage
-                    article={article}
-                    fill={true}
-                    className="absolute inset-0 w-full h-full object-cover object-center"
-                    width={400}
-                    height={300}
+              <div className="feed-card-top-rail">
+                <div className="feed-card-meta-stack">
+                  <span className="feed-chip inline-flex w-fit max-w-full text-xs font-bold uppercase tracking-widest">
+                    {main.sourceTitle}
+                  </span>
+                  <FeedResponsiveDate
+                    date={main.pubDate}
+                    className="text-xs text-[rgb(var(--color-textSecondary))]"
                   />
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-2 flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                  <span className="feed-chip text-[10px] uppercase tracking-widest font-bold truncate max-w-[120px]">
-                    {article.sourceTitle}
-                  </span>
-                    <div className="flex-shrink-0">
-                      <FavoriteButton
-                        article={article}
-                        size="small"
-                        position="inline"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    </div>
-                  </div>
-
-                  <h3 className="font-serif text-lg font-bold leading-snug group-hover:text-[rgb(var(--color-accent))]">
-                    {article.title}
-                  </h3>
-
-                  <span className="text-xs text-[rgb(var(--color-textSecondary))]">
-                    {formatTimeAgo(article.pubDate)}
-                  </span>
-        
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          articleLink={article.link}
-                          onRead={() => setReadingArticle(article)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          className="!mt-4"
-                        />
-                      );
-                    })()}
-                </div>
-              </article>
-            ))}
+              <div className="feed-card-bottom-copy">
+                <p
+                  className="feed-desc font-serif text-base leading-8 text-[rgb(var(--color-text))]/82 first-letter:float-left first-letter:mr-2 first-letter:text-5xl first-letter:font-bold first-letter:leading-none"
+                  style={{ columnCount: 1 }}
+                >
+                  {mainExcerpt || main.title}
+                </p>
+              </div>
+            </div>
           </section>
         )}
 
@@ -269,6 +233,12 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
               onClick={() => setReadingArticle(article)}
               className="cursor-pointer group border-t border-[rgb(var(--color-border))] pt-4"
             >
+              <h3
+                className="feed-card-title-clamp font-serif text-base font-bold leading-snug mb-3 group-hover:text-[rgb(var(--color-accent))]"
+                style={{ "--feed-title-lines": 5 } as React.CSSProperties}
+              >
+                {article.title}
+              </h3>
               <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
                 <ArticleImage
                   article={article}
@@ -277,49 +247,52 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
                   width={600}
                   height={400}
                 />
-              </div>
-
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="feed-chip inline-block text-[10px] uppercase tracking-widest px-2 py-0.5 rounded font-bold truncate max-w-[150px]">
-                  {article.sourceTitle}
-                </span>
-                <div className="flex-shrink-0">
-                  <FavoriteButton
-                    article={article}
-                    size="small"
-                    position="inline"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
+                <div className="feed-card-action-rail absolute left-3 top-3 z-20">
+                  {(() => {
+                    const embedUrl = getVideoEmbed(article.link);
+                    return (
+                      <FeedInteractiveActions
+                        variant="onDarkMedia"
+                        articleLink={article.link}
+                        onRead={() => setReadingArticle(article)}
+                        showRead={!embedUrl}
+                        showWatch={!!embedUrl}
+                        showVisit={true}
+                        compact
+                        className="!mt-0"
+                      />
+                    );
+                  })()}
                 </div>
+                <FavoriteButton
+                  article={article}
+                  size="small"
+                  position="overlay"
+                  className="right-3 top-3 z-20"
+                />
               </div>
 
-              <h3 className="font-serif text-lg font-bold leading-snug mb-2 group-hover:text-[rgb(var(--color-accent))]">
-                {article.title}
-              </h3>
-
-              {article.description && (
-                <p className="text-sm text-[rgb(var(--color-textSecondary))] line-clamp-3 mb-2">
-                  {article.description}
-                </p>
-              )}
-
-              <span className="text-xs text-[rgb(var(--color-textSecondary))]">
-                {formatTimeAgo(article.pubDate)}
-              </span>
-        
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          articleLink={article.link}
-                          onRead={() => setReadingArticle(article)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          className="!mt-4"
-                        />
-                      );
-                    })()}
+              <div className="feed-card-bottom-copy flex flex-col gap-3">
+                <div className="feed-card-top-rail">
+                  <div className="feed-card-meta-stack">
+                    <span className="feed-chip inline-flex w-fit max-w-full text-[10px] uppercase tracking-widest px-2 py-0.5 rounded font-bold truncate">
+                      {article.sourceTitle}
+                    </span>
+                    <FeedResponsiveDate
+                      date={article.pubDate}
+                      className="text-xs text-[rgb(var(--color-textSecondary))]"
+                    />
+                  </div>
+                </div>
+                {article.description && (
+                  <p
+                    className="feed-desc feed-card-desc-clamp text-sm"
+                    style={{ "--feed-desc-lines": 3 } as React.CSSProperties}
+                  >
+                    {article.description}
+                  </p>
+                )}
+              </div>
             </article>
           ))}
         </section>

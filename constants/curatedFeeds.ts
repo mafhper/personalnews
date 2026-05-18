@@ -9,7 +9,15 @@ export const INITIAL_APP_CONFIG = {
   "theme": "dark",
   "layout": "magazine",
   "timeFormat": "24h",
-  "header": "sticky",
+  "headerHeight": "compact",
+  "headerOpacity": 0.6,
+  "headerBlur": 20,
+  "logoSize": "md",
+  "paginationType": "numbered",
+  "topStoriesCount": 15,
+  "autoRefreshInterval": 15,
+  "feedCacheTtlMinutes": 10,
+  "header": "floating",
   "weatherCity": "São Paulo"
 };
 
@@ -29,7 +37,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Tecnologia",
     "id": "tech",
     "color": "#3B82F6",
-    "layoutMode": "magazine",
+    "layoutMode": "masonry",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
@@ -69,6 +77,17 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
   },
   {
     "order": 5,
+    "isDefault": true,
+    "name": "Podcasts",
+    "id": "podcasts",
+    "color": "#F26522",
+    "layoutMode": "pocketfeeds",
+    "isPinned": false,
+    "autoDiscovery": true,
+    "description": "Seus podcasts preferidos direto no feed."
+  },
+  {
+    "order": 6,
     "isDefault": true,
     "name": "Vídeos",
     "id": "youtube",
@@ -115,6 +134,11 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://www.xda-developers.com/feed/",
     "categoryId": "tech",
     "customTitle": "XDA"
+  },
+  {
+    "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+    "categoryId": "podcasts",
+    "customTitle": "Medo e Delírio em Brasília"
   },
   {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
@@ -186,6 +210,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://tecnoblog.net/feed/",
       "categoryId": "tech",
       "customTitle": "Tecnoblog"
+    },
+    {
+      "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+      "categoryId": "podcasts",
+      "customTitle": "Medo e Delírio em Brasília"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
@@ -560,6 +589,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.xda-developers.com/feed/",
       "categoryId": "tech",
       "customTitle": "XDA"
+    },
+    {
+      "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+      "categoryId": "podcasts",
+      "customTitle": "Medo e Delírio em Brasília"
     },
     {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",

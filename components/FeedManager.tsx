@@ -579,11 +579,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           `Validação falhou: ${result.error}\n\nDeseja adicionar mesmo assim?`,
         )
       ) {
+        const fallbackTitle =
+          newFeedTitle.trim() ||
+          result.title ||
+          (new URL(url).hostname.replace(/^www\./, "") === "science.org"
+            ? "Science"
+            : undefined);
         setFeeds((prev) => [
           ...prev,
           {
             url,
-            customTitle: newFeedTitle.trim() || undefined,
+            customTitle: fallbackTitle,
             categoryId: newFeedCategory || undefined,
           },
         ]);
@@ -715,7 +721,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   {t("feeds.title")}
                 </h2>
                 <p className="mt-1 text-xs leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
-                  Gerencie colecao, entrada, organizacao e infraestrutura em areas separadas.
+                  Gerencie coleção, entrada, organização e infraestrutura em áreas separadas.
                 </p>
               </div>
               <button
@@ -732,11 +738,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
             <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
               <FeedManagerStat label="Total" value={currentFeeds.length} />
-              <FeedManagerStat label="Validos" value={validCount} tone="success" />
+              <FeedManagerStat label="Válidos" value={validCount} tone="success" />
               <FeedManagerStat label="Erros" value={invalidCount} tone="danger" />
             </div>
 
-            <nav className="grid grid-cols-3 gap-2 lg:flex lg:flex-col" aria-label="Areas do gerenciador de feeds">
+            <nav className="grid grid-cols-3 gap-2 lg:flex lg:flex-col" aria-label="Áreas do gerenciador de feeds">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -787,9 +793,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         {activeTab === "feeds" && (
           <div className="flex flex-col lg:h-full lg:overflow-hidden">
             <ManagerAreaHeader
-              eyebrow="Colecao"
-              title="Gestao da colecao"
-              description="Fontes, categorias e organizacao do feed."
+              eyebrow="Coleção"
+              title="Gestão da coleção"
+              description="Fontes, categorias e organização do feed."
               actions={
                 <>
                   <CollectionModeButton
@@ -873,9 +879,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         {activeTab === "operations" && (
           <div className="flex flex-col lg:h-full lg:overflow-hidden">
             <ManagerAreaHeader
-              eyebrow="Operacoes"
-              title="Manutencao e intercambio"
-              description="Importacao, exportacao e manutencao."
+              eyebrow="Operações"
+              title="Manutenção e intercâmbio"
+              description="Importação, exportação e manutenção."
               actions={
                 <>
                   <CollectionModeButton active={false} onClick={handleExportOPML}>
@@ -906,9 +912,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         {activeTab === "diagnostics" && (
           <div className="flex flex-col lg:h-full lg:overflow-hidden">
             <ManagerAreaHeader
-              eyebrow="Diagnostico"
-              title="Saude, impacto e infraestrutura"
-              description="Feeds, relatorios e rotas de conexao."
+              eyebrow="Diagnóstico"
+              title="Saúde, impacto e infraestrutura"
+              description="Feeds, relatórios e rotas de conexão."
               actions={
                 <CollectionModeButton active={false} onClick={() => void validateAllFeeds()}>
                   Revalidar feeds

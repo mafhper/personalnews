@@ -9,6 +9,7 @@
  */
 
 import { useLocalStorage } from './useLocalStorage';
+import { DEFAULT_ARTICLE_LAYOUT } from '../config/defaultConfig';
 
 export interface ArticleLayoutSettings {
   topStoriesCount: 0 | 5 | 10 | 15 | 20;
@@ -18,13 +19,7 @@ export interface ArticleLayoutSettings {
   feedCacheTtlMinutes: 0 | 5 | 10; // in minutes, 0 = disabled
 }
 
-const DEFAULT_SETTINGS: ArticleLayoutSettings = {
-  topStoriesCount: 15,
-  showPublicationTime: true,
-  articlesPerPage: 21, // 1 featured + 5 recent + 15 top stories
-  autoRefreshInterval: 15,
-  feedCacheTtlMinutes: 10,
-};
+const DEFAULT_SETTINGS: ArticleLayoutSettings = DEFAULT_ARTICLE_LAYOUT;
 
 export const useArticleLayout = () => {
   const [settings, setSettings] = useLocalStorage<ArticleLayoutSettings>(

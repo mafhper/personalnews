@@ -261,7 +261,7 @@ class FeedValidatorService {
     const validationStartTime = Date.now();
 
     const cached = this.getCachedResult(url);
-    if (cached && !cached.requiresUserSelection) {
+    if (cached && !cached.requiresUserSelection && cached.url === url) {
       return cached;
     }
 
@@ -301,6 +301,28 @@ class FeedValidatorService {
       const cacheKey = `validation:${url}`;
       smartValidationCache.set(cacheKey, result);
 
+      return result;
+    }
+
+    if (this.shouldPreserveFailedFeedUrl(url, directResult)) {
+      result.isValid = false;
+      result.status = directResult.status;
+      result.error = directResult.error || directResult.finalError?.message;
+      result.finalError = directResult.finalError;
+      result.finalMethod = directResult.finalMethod;
+      result.suggestions = [
+        ...directResult.suggestions,
+        "Este endereço parece ser um feed direto. Ele será preservado sem trocar por descoberta automática.",
+      ];
+      result.responseTime = directResult.responseTime;
+      result.statusCode = directResult.statusCode;
+      result.title = directResult.title || this.inferTitleForUrl(url);
+      result.description = directResult.description;
+      result.route = directResult.route;
+      result.diagnostics = directResult.diagnostics;
+      result.totalValidationTime = Date.now() - validationStartTime;
+      result.lastChecked = Date.now();
+      smartValidationCache.set(`validation:${url}`, result);
       return result;
     }
 
@@ -362,7 +384,7 @@ class FeedValidatorService {
   async validateFeed(url: string): Promise<FeedValidationResult> {
     const validationStartTime = Date.now();
     const cached = this.getCachedResult(url);
-    if (cached) return cached;
+    if (cached && cached.url === url) return cached;
 
     const result: FeedValidationResult = {
       url,
@@ -379,6 +401,7 @@ class FeedValidatorService {
     const env = detectEnvironment();
     let desktopFallbackDiagnostic: FeedDiagnosticInfo | undefined;
     let directSkipped = false;
+    const forceClientProxyFallback = this.isDirectFeedUrl(url);
 
     // Check if we are in a testing environment (Vitest/Jest) or fetch is mocked
     const fetchMock = globalThis.fetch as unknown as MockFetchFunction;
@@ -421,7 +444,8 @@ class FeedValidatorService {
         viaFallback: false,
         checkedAt: Date.now(),
       };
-      const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
+      const allowClientProxyFallback =
+        forceClientProxyFallback || ProxyManager.shouldUseClientProxyFallback();
       const finishWithLocalBackendError = (
         message: string,
         status: FeedValidationResult["status"] = "network_error",
@@ -534,7 +558,7 @@ class FeedValidatorService {
             undefined,
             backendRoute,
             allowClientProxyFallback
-              ? "Fallback automatico para validacao em nuvem ativado."
+              ? "Fallback automático para validação em nuvem ativado."
               : undefined,
           );
           if (!allowClientProxyFallback) {
@@ -557,7 +581,7 @@ class FeedValidatorService {
             undefined,
             backendRoute,
             allowClientProxyFallback
-              ? "Fallback automatico para validacao em nuvem ativado."
+              ? "Fallback automático para validação em nuvem ativado."
               : undefined,
           );
           if (!allowClientProxyFallback) {
@@ -571,7 +595,7 @@ class FeedValidatorService {
           undefined,
           backendRoute,
           allowClientProxyFallback
-            ? "Fallback automatico para validacao em nuvem ativado."
+            ? "Fallback automático para validação em nuvem ativado."
             : undefined,
         );
         if (!allowClientProxyFallback) {
@@ -614,7 +638,10 @@ class FeedValidatorService {
 
     if (!result.isValid) {
       try {
-        const proxyResult = await this.attemptProxyValidation(url);
+        const proxyResult = await this.attemptProxyValidation(
+          url,
+          forceClientProxyFallback,
+        );
         result.validationAttempts.push(...proxyResult.attempts);
         if (proxyResult.success) {
           result.isValid = true;
@@ -681,6 +708,7 @@ class FeedValidatorService {
         result.status = "invalid";
       }
       result.error = lastError.message;
+      result.title = this.inferTitleForUrl(url);
       result.route =
         result.route ||
         desktopFallbackDiagnostic?.route ||
@@ -923,7 +951,10 @@ class FeedValidatorService {
     return undefined;
   }
 
-  private async attemptProxyValidation(url: string): Promise<{
+  private async attemptProxyValidation(
+    url: string,
+    forceClientFallback = false,
+  ): Promise<{
     success: boolean;
     feedData?: { title: string; description: string };
     error?: ValidationError;
@@ -931,7 +962,9 @@ class FeedValidatorService {
     proxyUsed?: string;
   }> {
     try {
-      const content = await proxyManager.tryProxiesWithFailover(url);
+      const content = await proxyManager.tryProxiesWithFailover(url, {
+        forceClientFallback,
+      });
       const attempts = content.attempts.map((attempt, index) => ({
         attemptNumber: index + 1,
         timestamp: attempt.timestamp,
@@ -1017,7 +1050,7 @@ class FeedValidatorService {
 
   private classifyError(
     error: Error,
-    _url: string,
+    url: string,
     _attempt: number,
   ): ValidationError {
     let type = ValidationErrorType.UNKNOWN_ERROR;
@@ -1033,6 +1066,14 @@ class FeedValidatorService {
       message = "Validation timed out";
     } else if (lowerMessage.includes("404")) {
       type = ValidationErrorType.NOT_FOUND;
+    } else if (
+      lowerMessage.includes("403") &&
+      this.isDirectFeedUrl(url)
+    ) {
+      type = ValidationErrorType.NETWORK_ERROR;
+      message = this.isKnownUpstreamBlockedFeed(url)
+        ? "science.org bloqueia algumas requisições diretas ao RSS. Tentando fallback por proxy quando disponível."
+        : "O servidor bloqueou a requisição direta ao RSS. Tentando fallback por proxy quando disponível.";
     } else if (
       lowerMessage.includes("network error") ||
       lowerMessage.includes("fetch")
@@ -1065,6 +1106,54 @@ class FeedValidatorService {
     const cacheKey = `validation:${url}`;
     const cached = smartValidationCache.get<FeedValidationResult>(cacheKey);
     return cached?.data || null;
+  }
+
+  private isKnownUpstreamBlockedFeed(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+      return host === "science.org" && this.isDirectFeedUrl(url);
+    } catch {
+      return false;
+    }
+  }
+
+  private isDirectFeedUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      const feedParam = (parsed.searchParams.get("feed") || "").toLowerCase();
+      const typeParam = (parsed.searchParams.get("type") || "").toLowerCase();
+      return /\.(rss|xml|atom|rdf)$/i.test(parsed.pathname) ||
+        /\/(rss|feed|atom)(\/|$)/i.test(parsed.pathname) ||
+        ["rss", "atom", "rdf", "xml"].includes(feedParam) ||
+        ["rss", "atom", "rdf", "xml"].includes(typeParam);
+    } catch {
+      return false;
+    }
+  }
+
+  private inferTitleForUrl(url: string): string | undefined {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+      if (host === "science.org") return "Science";
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private shouldPreserveFailedFeedUrl(
+    url: string,
+    result: FeedValidationResult,
+  ): boolean {
+    return (
+      this.isDirectFeedUrl(url) &&
+      (this.isKnownUpstreamBlockedFeed(url) ||
+        result.status === "network_error" ||
+        result.status === "timeout" ||
+        result.status === "server_error")
+    );
   }
 
   /**

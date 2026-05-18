@@ -100,8 +100,10 @@ const Header: React.FC<HeaderProps> = (props) => {
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastScrollY = useRef(0);
   const headerRef = useRef<HTMLElement | null>(null);
+  const desktopActionsRef = useRef<HTMLDivElement | null>(null);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [mobileExpandedCategory, setMobileExpandedCategory] = useState<string | null>(null);
+  const [desktopActionsOpen, setDesktopActionsOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -257,12 +259,6 @@ const Header: React.FC<HeaderProps> = (props) => {
     hidden: `fixed left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isHeaderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`,
   };
 
-  const headerStyleClasses = {
-    default: "justify-between gap-4",
-    centered: "justify-between lg:justify-center lg:relative gap-4",
-    minimal: "justify-between gap-4",
-  };
-
   const headerHeightClasses = {
     'ultra-compact': 'h-8 lg:h-10', // Minimal height
     tiny: 'h-10 lg:h-12',
@@ -285,8 +281,10 @@ const Header: React.FC<HeaderProps> = (props) => {
   const activeCategories = props.categories.filter(
     category => category.isPinned || (props.categorizedFeeds[category.id] || []).length > 0
   );
+  const hasManyCategories = activeCategories.length >= 7;
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+  const closeDesktopActions = () => setDesktopActionsOpen(false);
 
   const drawerAdminShortcuts = [
     {
@@ -445,6 +443,22 @@ const Header: React.FC<HeaderProps> = (props) => {
     return () => window.removeEventListener('resize', checkScroll);
   }, [activeCategories]);
 
+  useEffect(() => {
+    if (!desktopActionsOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        desktopActionsRef.current &&
+        !desktopActionsRef.current.contains(event.target as Node)
+      ) {
+        setDesktopActionsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [desktopActionsOpen]);
+
   useLayoutEffect(() => {
     const updateHeaderOffset = () => {
       if (!headerRef.current) return;
@@ -529,6 +543,111 @@ const Header: React.FC<HeaderProps> = (props) => {
     }
   };
 
+  const desktopActionItems = [
+    {
+      key: "refresh",
+      label: t("header.refresh"),
+      onClick: props.onRefreshClick,
+      icon: <HeaderIcons.Refresh showBackground={false} size="md" />,
+    },
+    {
+      key: "favorites",
+      label: t("header.favorites"),
+      onClick: props.onOpenFavorites,
+      icon: <HeaderIcons.Favorites showBackground={false} size="md" />,
+    },
+    {
+      key: "settings",
+      label: "Configurações",
+      onClick: props.onOpenSettings,
+      icon: <HeaderIcons.Settings showBackground={false} size="md" />,
+    },
+    {
+      key: "feeds",
+      label: feedIssuesLabel,
+      onClick: handleManageFeedsActionClick,
+      icon: <HeaderIcons.Feeds showBackground={false} size="md" />,
+      hasBadge: hasFeedIssues,
+    },
+  ];
+
+  const desktopFullActionsClass = hasManyCategories
+    ? "hidden 2xl:flex"
+    : "hidden xl:flex";
+  const desktopOverflowClass = hasManyCategories
+    ? "hidden md:flex 2xl:hidden"
+    : "hidden md:flex xl:hidden";
+  const renderDesktopActionButtons = () => (
+    <>
+      {desktopActionItems.map((item) => (
+        <button
+          key={item.key}
+          onClick={item.onClick}
+          className="feed-header-control relative"
+          title={item.label}
+          aria-label={item.label}
+        >
+          {item.icon}
+          {item.hasBadge && (
+            <span
+              className="absolute right-0 top-0 block h-2.5 w-2.5 rounded-full border border-[rgb(var(--color-background))] bg-[rgb(var(--color-warning))]"
+              aria-hidden="true"
+            />
+          )}
+        </button>
+      ))}
+    </>
+  );
+
+  const renderCategoryRail = () => (
+    <div className="feed-header-category-rail relative hidden min-w-0 items-center justify-center overflow-hidden md:flex group/scroll">
+      <div className={`absolute left-0 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
+        <button
+          onClick={() => scroll('left')}
+          className="feed-header-scroll-button"
+          aria-label="Scroll left"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        ref={scrollContainerRef}
+        onScroll={checkScroll}
+        className={`feed-header-category-scroll flex max-w-full items-center space-x-1 overflow-x-auto rounded-full p-1 text-xs font-medium transition-all no-scrollbar scroll-smooth ${categoryContainerClass} ${headerStyleVariant === 'minimal' ? 'px-0' : ''}`}
+        style={{ ...(headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: headerBorderStyle }), scrollbarWidth: 'none' }}
+      >
+        {activeCategories.map((category) => (
+          <div key={category.id} className="flex-shrink-0">
+            <FeedDropdown
+              category={category}
+              feeds={props.categorizedFeeds[category.id] || []}
+              onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
+              onSelectCategory={() => props.onNavigation(category.id)}
+              selectedCategory={props.selectedCategory}
+              onEditCategory={props.onManageFeedsClick}
+              variant={headerStyleVariant}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
+        <button
+          onClick={() => scroll('right')}
+          className="feed-header-scroll-button"
+          aria-label="Scroll right"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+
   const headerInlineStyle: React.CSSProperties &
     Record<
       | '--theme-header-text'
@@ -569,7 +688,7 @@ const Header: React.FC<HeaderProps> = (props) => {
         ref={headerRef}
         className={`${headerPositionClasses[headerPosition]} z-30 transition-[transform,opacity,top,margin,box-shadow,background-color,border-color] duration-300 ${
           isScrolled || isFloating ? (headerStyleVariant === 'minimal' ? 'shadow-sm' : 'shadow-lg') : ''
-        } ${headerPosition === 'floating' ? 'overflow-hidden [background-clip:padding-box]' : ''} ${
+        } ${headerPosition === 'floating' ? '[background-clip:padding-box]' : ''} ${
           isScrolled && !isFloating ? 'border-b' : ''
         }`}
         style={headerInlineStyle}
@@ -583,22 +702,23 @@ const Header: React.FC<HeaderProps> = (props) => {
                 : ''
           }`}
         />
-        <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''} overflow-hidden`}>
+        <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''}`}>
 
           {/* Main header row - desktop/tablet shell. Phones use the compact category rail below. */}
           {/* Auto height when logo and title are both hidden */}
             <div className={`
-            flex items-center transition-all duration-300
+            feed-header-layout ${hasManyCategories ? "feed-header-layout--many-categories" : ""} items-center gap-3 transition-all duration-300
             ${headerHeightClasses[headerConfig.height] || 'h-14 lg:h-16'}
-            ${headerStyleClasses[headerConfig.style]}
-            hidden md:flex
+            ${isCentered ? "feed-header-layout--centered" : ""}
+            ${headerStyleVariant === "minimal" ? "feed-header-layout--minimal" : ""}
+            hidden md:grid
           `}>
 
             {/* Left Section: Logo & Title */}
-            <div className={`flex items-center space-x-2 md:space-x-4 group flex-shrink-0 ${isCentered ? 'lg:absolute lg:left-4' : ''}`}>
+            <div className="feed-header-brand flex min-w-0 items-center space-x-2 md:space-x-3 group">
               {headerConfig.showLogo !== false && (
                 <div
-                  className="relative cursor-pointer group/logo pl-4"
+                  className="feed-header-brand-logo relative cursor-pointer group/logo pl-4"
                   onClick={handleLogoClick}
                   aria-label="Voltar para a Home"
                 >
@@ -628,7 +748,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               )}
               {headerConfig.showTitle ? (
                 <h1
-                  className="feed-header-title font-bold tracking-tight cursor-pointer pb-1 text-lg md:text-xl truncate max-w-[120px] sm:max-w-[200px] md:max-w-none"
+                  className="feed-header-title feed-header-brand-title min-w-0 cursor-pointer truncate pb-1 text-lg font-bold tracking-tight md:text-xl"
                   onClick={handleTitleClick}
                   style={{ color: headerTextColor }}
                 >
@@ -642,123 +762,29 @@ const Header: React.FC<HeaderProps> = (props) => {
             </div>
 
             {/* Center Section: Categories (Desktop) - Centralized between logo and actions */}
-            {!isCentered && (
-              <div className="hidden md:flex flex-1 items-center justify-center relative group/scroll px-2 overflow-hidden">
-
-                {/* Left Scroll Button */}
-                <div className={`absolute left-0 z-10 transition-all duration-300 ${canScrollLeft ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
-                  <button
-                    onClick={() => scroll('left')}
-                    className="feed-header-scroll-button"
-                    aria-label="Scroll left"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Scroll Container */}
-                <div
-                  ref={scrollContainerRef}
-                  onScroll={checkScroll}
-                  className={`flex items-center space-x-1 p-1 rounded-full text-xs font-medium transition-all overflow-x-auto no-scrollbar max-w-full scroll-smooth ${categoryContainerClass} ${headerStyleVariant === 'minimal' ? 'px-0' : ''}`}
-                  style={{ ...(headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: headerBorderStyle }), scrollbarWidth: 'none' }}
-                >
-                  {activeCategories.map((category) => (
-                    <div key={category.id} className="flex-shrink-0">
-                      <FeedDropdown
-                        category={category}
-                        feeds={props.categorizedFeeds[category.id] || []}
-                        onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
-                        onSelectCategory={() => props.onNavigation(category.id)}
-                        selectedCategory={props.selectedCategory}
-                        onEditCategory={props.onManageFeedsClick}
-                        variant={headerStyleVariant}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Right Scroll Button */}
-                <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
-                  <button
-                    onClick={() => scroll('right')}
-                    className="feed-header-scroll-button"
-                    aria-label="Scroll right"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-
-              </div>
-            )}
-
-            {/* Centered Navigation (if style is centered) */}
-            {isCentered && (
-              <div
-                className={`hidden lg:flex items-center space-x-1 p-1 rounded-full transition-all flex-grow justify-center ${categoryContainerClass}`}
-                style={headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: headerBorderStyle }}
-              >
-                {activeCategories.map((category) => (
-                  <FeedDropdown
-                    key={category.id}
-                    category={category}
-                    feeds={props.categorizedFeeds[category.id] || []}
-                    onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
-                    onSelectCategory={() => props.onNavigation(category.id)}
-                    selectedCategory={props.selectedCategory}
-                    onEditCategory={props.onManageFeedsClick}
-                    variant={headerStyleVariant}
-                  />
-                ))}
-              </div>
-            )}
+            {renderCategoryRail()}
 
             {/* Right Section: Actions */}
-            <div className={`flex items-center justify-end space-x-2 flex-shrink-0 ${isCentered ? 'lg:absolute lg:right-4' : ''}`}>
+            <div className="feed-header-actions relative z-10 flex flex-shrink-0 items-center justify-end space-x-2" ref={desktopActionsRef}>
 
               {/* Desktop Actions */}
-              <div className="hidden lg:flex items-center space-x-1">
-                <button
-                  onClick={props.onRefreshClick}
-                  className="feed-header-control"
-                  title={t('header.refresh')}
-                  aria-label={t('header.refresh')}
-                >
-                  <HeaderIcons.Refresh showBackground={false} size="md" />
-                </button>
+              <div className={`${desktopFullActionsClass} items-center space-x-1`}>
+                {renderDesktopActionButtons()}
+              </div>
 
+              {/* Desktop compact overflow */}
+              <div className={`${desktopOverflowClass} relative items-center`}>
                 <button
-                  onClick={props.onOpenFavorites}
-                  className="feed-header-control"
-                  title={t('header.favorites')}
-                  aria-label={t('header.favorites')}
+                  onClick={() => setDesktopActionsOpen((open) => !open)}
+                  className={`feed-header-control ${desktopActionsOpen ? "feed-header-control--filled" : ""}`}
+                  aria-label="Menu de ações"
+                  aria-expanded={desktopActionsOpen}
                 >
-                  <HeaderIcons.Favorites showBackground={false} size="md" />
-                </button>
-
-                <button
-                  onClick={props.onOpenSettings}
-                  className="feed-header-control"
-                  title="Configurações"
-                  aria-label="Configurações"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-
-                <button
-                  onClick={handleManageFeedsActionClick}
-                  className="feed-header-control relative"
-                  title={feedIssuesLabel}
-                  aria-label={feedIssuesLabel}
-                >
-                  <HeaderIcons.Feeds showBackground={false} size="md" />
+                  <HeaderIcons.Menu
+                    showBackground={false}
+                    size="md"
+                    isActive={desktopActionsOpen}
+                  />
                   {hasFeedIssues && (
                     <span
                       className="absolute right-0 top-0 block h-2.5 w-2.5 rounded-full border border-[rgb(var(--color-background))] bg-[rgb(var(--color-warning))]"
@@ -766,21 +792,32 @@ const Header: React.FC<HeaderProps> = (props) => {
                     />
                   )}
                 </button>
-              </div>
-
-              {/* Mobile Menu Toggle */}
-              <div className="lg:hidden ml-2">
-                <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className={`feed-header-control ${mobileMenuOpen ? "feed-header-control--filled" : ""}`}
-                  aria-label="Menu"
-                >
-                  <HeaderIcons.Menu
-                    showBackground={false}
-                    size="md"
-                    isActive={mobileMenuOpen}
-                  />
-                </button>
+                {desktopActionsOpen && (
+                  <div className="feed-header-action-menu absolute right-0 top-[calc(100%+0.6rem)] z-50 w-56 rounded-2xl border border-[rgb(var(--color-border))]/20 bg-[rgb(var(--color-surface))]/95 p-1.5 shadow-[0_20px_50px_-16px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+                    {desktopActionItems.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => {
+                          item.onClick();
+                          closeDesktopActions();
+                        }}
+                        className="feed-header-action-menu__item"
+                      >
+                        <span className="relative inline-flex">
+                          {item.icon}
+                          {item.hasBadge && (
+                            <span
+                              className="absolute right-0 top-0 block h-2 w-2 rounded-full bg-[rgb(var(--color-warning))]"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </span>
+                        <span className="min-w-0 truncate">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

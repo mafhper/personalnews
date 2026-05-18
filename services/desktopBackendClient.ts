@@ -457,7 +457,7 @@ class DesktopBackendClient {
     const error =
       status.lastHealthError ||
       status.lastStartError ||
-      (initializing ? "Backend local inicializando" : "Backend local indisponivel");
+      (initializing ? "Backend local inicializando" : "Backend local indisponível");
 
     this.healthState = {
       available: false,
@@ -841,7 +841,7 @@ class DesktopBackendClient {
     if (!this.healthState.available) {
       const health = await this.checkHealth(true, init.signal ?? undefined);
       if (!health.available) {
-        throw new Error(health.error || "Backend local indisponivel");
+        throw new Error(health.error || "Backend local indisponível");
       }
     }
 

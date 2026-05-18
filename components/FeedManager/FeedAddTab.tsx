@@ -53,7 +53,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
                   Adicionar feed
                 </h3>
                 <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
-                  Cole uma URL RSS ou a pagina de um site. Se houver multiplas fontes, o sistema abre a selecao antes de adicionar.
+                  Cole uma URL RSS ou a página de um site. Se houver múltiplas fontes, o sistema abre a seleção antes de adicionar.
                 </p>
               </div>
             </div>
@@ -83,7 +83,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
             <div className="grid gap-4 lg:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
-                  Nome de exibicao
+                  Nome de exibição
                 </span>
                 <input
                   type="text"
@@ -117,7 +117,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
 
             <div className="flex flex-col gap-3 border-t border-[rgba(var(--color-border),0.12)] pt-5 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-relaxed text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
-                A colecao atual tem <strong className="text-[rgb(var(--theme-manager-text,var(--color-text)))]">{feedCount}</strong> feeds. Duplicatas e descoberta automatica sao tratadas antes da inclusao.
+                A coleção atual tem <strong className="text-[rgb(var(--theme-manager-text,var(--color-text)))]">{feedCount}</strong> feeds. Duplicatas e descoberta automática são tratadas antes da inclusão.
               </p>
               <button
                 type="submit"
@@ -169,7 +169,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
                   Listas curadas
                 </h4>
                 <p className="text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
-                  Comece com colecoes prontas e decida entre mesclar ou substituir.
+                  Comece com coleções prontas e decida entre mesclar ou substituir.
                 </p>
               </div>
             </div>

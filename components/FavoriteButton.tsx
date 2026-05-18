@@ -106,20 +106,20 @@ const FavoriteButtonComponent: React.FC<FavoriteButtonProps> = ({
   const stateClasses =
     position === "overlay"
       ? `
-      bg-black/70 backdrop-blur-sm
+      !bg-[rgb(var(--color-error))] backdrop-blur-sm text-white
       ${
         isFavorited
-          ? "text-red-500 hover:text-red-400 focus:ring-red-500"
-          : "text-white hover:text-red-500 focus:ring-white"
+          ? "hover:brightness-110 focus:ring-red-500"
+          : "hover:brightness-110 focus:ring-white"
       }
-      hover:bg-black/80
+      shadow-lg shadow-red-950/25
     `
       : `
-      bg-gray-800/90 hover:bg-gray-700/90
+      !bg-[rgba(var(--color-error),0.14)] hover:!bg-[rgba(var(--color-error),0.22)]
       ${
         isFavorited
-          ? "text-red-500 hover:text-red-400 focus:ring-red-500"
-          : "text-gray-400 hover:text-red-500 focus:ring-gray-400"
+          ? "text-[rgb(var(--color-error))] focus:ring-red-500"
+          : "text-[rgb(var(--color-error))] focus:ring-gray-400"
       }
     `;
 

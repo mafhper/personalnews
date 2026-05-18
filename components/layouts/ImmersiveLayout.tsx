@@ -10,6 +10,7 @@ import { ArticleReaderModal } from "../ArticleReaderModal";
 import { ArticleImage } from "../ArticleImage";
 import { FavoriteButton } from "../FavoriteButton";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { FeedResponsiveDate } from "../FeedResponsiveDate";
 import { getVideoEmbed } from "../../utils/videoEmbed";
 
 interface ImmersiveLayoutProps {
@@ -21,7 +22,7 @@ export const ImmersiveSkeleton: React.FC = () => {
   return (
     <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-12 pb-20 px-4">
       {/* HERO SKELETON */}
-      <div className="relative w-full rounded-3xl overflow-hidden min-h-[60vh] md:min-h-[70vh] xl:min-h-[75vh] feed-skeleton-block flex flex-col justify-end p-16 space-y-6">
+      <div className="relative w-full rounded-3xl overflow-hidden min-h-[46vh] md:min-h-[52vh] xl:min-h-[56vh] feed-skeleton-block flex flex-col justify-end p-10 space-y-5">
         <div className="w-48 h-6 feed-skeleton-block rounded-full" />
         <div className="w-3/4 h-20 feed-skeleton-block rounded-2xl" />
         <div className="w-1/2 h-8 feed-skeleton-block rounded-xl" />
@@ -146,7 +147,7 @@ const HeroArticle: React.FC<{
   const gradient = getGradientFromString(article.title);
 
   return (
-    <section className="relative w-full rounded-3xl overflow-hidden min-h-[60vh] md:min-h-[70vh] xl:min-h-[75vh] shadow-xl group flex flex-col">
+    <section className="relative w-full rounded-3xl overflow-hidden min-h-[46vh] md:min-h-[52vh] xl:min-h-[56vh] shadow-xl group flex flex-col">
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
       <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 opacity-80">
@@ -163,56 +164,13 @@ const HeroArticle: React.FC<{
       <div className="absolute inset-0 bg-gradient-to-t from-black/98 via-black/74 to-black/16 pointer-events-none" />
 
       {/* Top Controls: Site name and FavoriteButton aligned */}
-      <div className="absolute top-0 left-0 right-0 p-6 sm:p-8 md:p-10 flex justify-between items-start z-20">
+      <div className="feed-card-top-rail absolute top-0 left-0 right-0 z-20 p-5 sm:p-6 md:p-8">
         <div className="rounded-full border border-white/10 bg-black/50 px-4 py-2 backdrop-blur-md max-w-[180px] sm:max-w-[300px] truncate">
           <span className="text-xs font-bold uppercase tracking-widest text-white/90 truncate block">
             {article.sourceTitle}
           </span>
         </div>
-        <FavoriteButton
-          article={article}
-          size="large"
-          position="overlay"
-          className="!static bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300"
-        />
-      </div>
-
-      {/* Content at the bottom */}
-      <div className="relative z-10 mt-auto p-8 sm:p-12 md:p-16 w-full max-w-5xl">
-        <div className="space-y-6">
-          <time
-            dateTime={article.pubDate.toISOString()}
-            className="text-xs uppercase tracking-[0.3em] text-white/60 font-black"
-          >
-            {article.pubDate.toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
-          </time>
-
-          <h1
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight"
-            style={{ textShadow: "0 12px 32px rgba(0, 0, 0, 0.55)" }}
-          >
-            <button
-              type="button"
-              className="bg-transparent p-0 text-left hover:text-white/90 transition-colors"
-              onClick={onRead}
-            >
-              {article.title}
-            </button>
-          </h1>
-
-          {article.description && (
-            <p
-              className="text-base sm:text-lg md:text-xl text-white/90 line-clamp-3 leading-relaxed max-w-3xl"
-              style={{ textShadow: "0 8px 24px rgba(0, 0, 0, 0.45)" }}
-            >
-              {article.description}
-            </p>
-          )}
-
+        <div className="feed-card-action-rail">
           {(() => {
             const embedUrl = getVideoEmbed(article.link);
             return (
@@ -223,10 +181,54 @@ const HeroArticle: React.FC<{
                 showRead={!embedUrl}
                 showWatch={!!embedUrl}
                 showVisit={true}
-                className="!mt-0 pt-4"
+                compact
+                className="!mt-0"
               />
             );
           })()}
+          <FavoriteButton
+            article={article}
+            size="medium"
+            position="inline"
+            className="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-md"
+          />
+        </div>
+      </div>
+
+      {/* Content at the bottom */}
+      <div className="feed-card-bottom-copy relative z-10 mt-auto w-full max-w-5xl p-6 sm:p-8 md:p-10">
+        <div className="space-y-4">
+          <FeedResponsiveDate
+            date={article.pubDate}
+            className="text-xs uppercase tracking-[0.3em] text-white/60 font-black"
+          />
+
+          <h1
+            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.05] tracking-tight"
+            style={
+              {
+                textShadow: "0 12px 32px rgba(0, 0, 0, 0.55)",
+              } as React.CSSProperties
+            }
+          >
+            <button
+              type="button"
+              className="feed-card-title-clamp bg-transparent p-0 text-left hover:text-white/90 transition-colors"
+              onClick={onRead}
+              style={{ "--feed-title-lines": 3 } as React.CSSProperties}
+            >
+              {article.title}
+            </button>
+          </h1>
+
+          {article.description && (
+            <p
+              className="text-sm sm:text-base md:text-lg text-white/90 line-clamp-2 leading-relaxed max-w-3xl"
+              style={{ textShadow: "0 8px 24px rgba(0, 0, 0, 0.45)" }}
+            >
+              {article.description}
+            </p>
+          )}
         </div>
       </div>
     </section>
@@ -259,42 +261,61 @@ const ArticleCard: React.FC<{
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/96 via-black/62 to-transparent pointer-events-none" />
 
-      <FavoriteButton
-        article={article}
-        size="medium"
-        position="overlay"
-        className="top-4 right-4 z-20 bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-      />
-
       {/* Content Container */}
       <div className="relative z-10 h-full flex flex-col justify-between p-6 min-h-[inherit]">
         {/* Top Part */}
-        <div className="flex justify-start items-start w-full">
+        <div className="feed-card-top-rail w-full">
           <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 min-w-0 max-w-[170px] sm:max-w-[220px]">
             <span className="text-[10px] font-bold uppercase tracking-widest text-white/80 truncate block">
               {article.sourceTitle}
             </span>
           </div>
+          <div className="feed-card-action-rail">
+            {(() => {
+              const embedUrl = getVideoEmbed(article.link);
+              return (
+                <FeedInteractiveActions
+                  variant="onDarkMedia"
+                  articleLink={article.link}
+                  onRead={onRead}
+                  showRead={!embedUrl}
+                  showWatch={!!embedUrl}
+                  showVisit={true}
+                  compact
+                  className="!mt-0"
+                />
+              );
+            })()}
+            <FavoriteButton
+              article={article}
+              size="small"
+              position="inline"
+              className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 shadow-lg"
+            />
+          </div>
         </div>
 
         {/* Bottom Part */}
-        <div className="space-y-3">
-          <time
-            dateTime={article.pubDate.toISOString()}
+        <div className="feed-card-bottom-copy space-y-3">
+          <FeedResponsiveDate
+            date={article.pubDate}
             className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold"
-          >
-            {article.pubDate.toLocaleDateString("pt-BR")}
-          </time>
+          />
 
           <div className="space-y-2">
             <h2
               className="text-lg sm:text-xl font-bold text-white leading-tight"
-              style={{ textShadow: "0 10px 28px rgba(0, 0, 0, 0.48)" }}
+              style={
+                {
+                  textShadow: "0 10px 28px rgba(0, 0, 0, 0.48)",
+                } as React.CSSProperties
+              }
             >
               <button
                 type="button"
-                className="bg-transparent p-0 text-left hover:text-white/80 transition-colors"
+                className="feed-card-title-clamp bg-transparent p-0 text-left hover:text-white/80 transition-colors"
                 onClick={onRead}
+                style={{ "--feed-title-lines": 3 } as React.CSSProperties}
               >
                 {article.title}
               </button>
@@ -309,21 +330,6 @@ const ArticleCard: React.FC<{
               </p>
             )}
           </div>
-
-          {(() => {
-            const embedUrl = getVideoEmbed(article.link);
-            return (
-              <FeedInteractiveActions
-                variant="onDarkMedia"
-                articleLink={article.link}
-                onRead={onRead}
-                showRead={!embedUrl}
-                showWatch={!!embedUrl}
-                showVisit={true}
-                className="!mt-0"
-              />
-            );
-          })()}
         </div>
       </div>
     </section>

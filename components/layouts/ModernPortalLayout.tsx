@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Article } from "../../types";
-import { ArticleItem } from "../ArticleItem";
 import { ArticleReaderModal } from "../ArticleReaderModal";
 import { FavoriteButton } from "../FavoriteButton";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { FeedResponsiveDate } from "../FeedResponsiveDate";
 import { getVideoEmbed } from "../../utils/videoEmbed";
 interface ModernPortalLayoutProps {
   articles: Article[];
@@ -13,6 +13,93 @@ interface ModernPortalLayoutProps {
 const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`feed-skeleton-block rounded-xl ${className}`} />
 );
+
+const ModernFeedCard: React.FC<{
+  article: Article;
+  onRead: (article: Article) => void;
+  large?: boolean;
+}> = ({ article, onRead, large = false }) => {
+  const embedUrl = getVideoEmbed(article.link);
+  const authorLabel =
+    article.author && article.author !== article.sourceTitle
+      ? article.author
+      : undefined;
+
+  return (
+    <article className="feed-card group flex h-full flex-col p-4 sm:p-5">
+      <div
+        className={`feed-media relative mb-4 overflow-hidden rounded-[calc(var(--feed-card-radius)*0.8)] ${
+          large ? "aspect-[16/10] max-h-[18rem]" : "aspect-[4/3]"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => onRead(article)}
+          className="block h-full w-full bg-transparent p-0 text-left"
+          aria-label={`Abrir ${article.title} no leitor`}
+        >
+          <div
+            className="h-full w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+            style={{
+              backgroundImage: `url(${article.imageUrl || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070"})`,
+            }}
+          />
+        </button>
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/65 to-transparent" />
+        <div className="absolute left-3 top-3 z-20 feed-card-action-rail">
+          <FeedInteractiveActions
+            variant="onDarkMedia"
+            articleLink={article.link}
+            onRead={() => onRead(article)}
+            showRead={!embedUrl}
+            showWatch={!!embedUrl}
+            showVisit={true}
+            compact
+            className="!mt-0"
+          />
+        </div>
+        <FavoriteButton
+          article={article}
+          size="small"
+          position="overlay"
+          className="right-3 top-3 z-20 bg-black/40 hover:bg-black/60 border border-white/10 shadow-sm"
+        />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col items-start justify-start gap-2 px-1 text-left">
+        <button
+          type="button"
+          onClick={() => onRead(article)}
+          className="bg-transparent p-0 text-left"
+        >
+          <h4 className="feed-title feed-title-card feed-card-title-clamp text-base font-bold leading-tight sm:text-lg">
+            {article.title}
+          </h4>
+        </button>
+        <div className="feed-card-meta-stack items-start">
+          <span className="feed-chip inline-flex w-fit max-w-full truncate px-2.5 py-1">
+            {article.sourceTitle}
+          </span>
+          <FeedResponsiveDate
+            date={article.pubDate}
+            className="feed-meta text-[11px]"
+          />
+          {authorLabel && (
+            <span className="feed-meta text-[11px]">Por {authorLabel}</span>
+          )}
+        </div>
+        {article.description && (
+          <p
+            className="feed-desc feed-card-desc-clamp mt-1 text-left text-sm leading-relaxed"
+            style={{ "--feed-desc-lines": 4 } as React.CSSProperties}
+          >
+            {article.description}
+          </p>
+        )}
+      </div>
+    </article>
+  );
+};
 
 export const ModernPortalSkeleton: React.FC = () => {
   return (
@@ -27,8 +114,8 @@ export const ModernPortalSkeleton: React.FC = () => {
       </section>
 
       {/* STRIP SKELETON */}
-      <section className="py-10 border-y border-white/5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-        {[1, 2, 3, 4].map((i) => (
+      <section className="py-10 border-y border-white/5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        {[1, 2, 3].map((i) => (
           <div key={i} className="space-y-4">
             <Bone className="aspect-video" />
             <Bone className="h-4 w-3/4" />
@@ -40,13 +127,8 @@ export const ModernPortalSkeleton: React.FC = () => {
       {/* MAIN FEED SKELETON */}
       <section className="space-y-6">
         <Bone className="h-6 w-48" />
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)]">
+        <div className="grid grid-cols-1 gap-8">
           <div className="h-[320px] md:h-[360px] feed-skeleton-block rounded-2xl" />
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 feed-skeleton-block rounded-xl" />
-            ))}
-          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -71,11 +153,10 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
   // Slicing the data for different sections
   const heroArticle = articles[0];
   const topStories = articles.slice(1, 3); // 2 articles next to hero
-  const featuredStrip = articles.slice(3, 7);
-  const latestArticles = articles.slice(7);
+  const featuredStrip = articles.slice(3, 6);
+  const latestArticles = articles.slice(6);
   const leadStory = latestArticles[0];
-  const sidebarFeed = latestArticles.slice(1, 5);
-  const continuationFeed = latestArticles.slice(5);
+  const continuationFeed = latestArticles.slice(1);
 
   const handleOpenReader = (article: Article) => {
     setReadingArticle(article);
@@ -124,20 +205,49 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.18)_0%,rgba(3,5,9,0.28)_20%,rgba(3,5,9,0.74)_64%,rgba(3,5,9,0.97)_100%)]" />
 
-          <FavoriteButton
-            article={heroArticle}
-            size="large"
-            position="overlay"
-            className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/15 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-          />
+          <div className="feed-image-story-top-rail">
+            <div className="feed-card-meta-stack max-w-[18rem] text-xs font-semibold text-white/86">
+              <span className="inline-flex w-fit max-w-full truncate rounded-full bg-black/34 px-3 py-1 text-white/88 backdrop-blur-md">
+                {heroArticle.sourceTitle}
+              </span>
+              <FeedResponsiveDate
+                date={heroArticle.pubDate}
+                className="text-[11px] font-semibold text-white/72 drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
+              />
+            </div>
+            <div className="feed-card-action-rail">
+              {(() => {
+                const embedUrl = getVideoEmbed(heroArticle.link);
+                return (
+                  <FeedInteractiveActions
+                    variant="onDarkMedia"
+                    articleLink={heroArticle.link}
+                    onRead={() => handleOpenReader(heroArticle)}
+                    showRead={!embedUrl}
+                    showWatch={!!embedUrl}
+                    showVisit={true}
+                    compact
+                    className="!mt-0"
+                  />
+                );
+              })()}
+              <FavoriteButton
+                article={heroArticle}
+                size="large"
+                position="inline"
+                className="bg-black/30 hover:bg-black/50 border border-white/15 shadow-md"
+              />
+            </div>
+          </div>
 
-          <div className="absolute bottom-0 left-0 p-6 lg:p-8 xl:p-10 max-w-[42rem]">
+          <div className="feed-image-story-bottom-copy max-w-[42rem]">
             <div className="px-1 py-1 sm:px-2 sm:py-2 md:px-3">
               <h1 className="feed-title feed-title-hero text-2xl sm:text-3xl lg:text-4xl xl:text-5xl text-white mb-4 drop-shadow-xl">
                 <button
                   type="button"
-                  className="feed-link-affordance bg-transparent p-0 text-left"
+                  className="feed-link-affordance feed-card-title-clamp bg-transparent p-0 text-left"
                   onClick={() => handleOpenReader(heroArticle)}
+                  style={{ "--feed-title-lines": 4 } as React.CSSProperties}
                 >
                   {heroArticle.title}
                 </button>
@@ -149,35 +259,6 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
                   </span>
                 </p>
               </div>
-              <div className="flex items-center text-sm font-bold min-w-0 text-white mb-4">
-                <span className="feed-chip truncate max-w-[150px] sm:max-w-[250px] shadow-sm shadow-black/10">
-                  {heroArticle.sourceTitle}
-                </span>
-                <span className="mx-2 flex-shrink-0 text-white">•</span>
-                <span className="truncate text-white/88 font-black">
-                  {new Date(heroArticle.pubDate).toLocaleDateString(undefined, {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-
-              {(() => {
-                const embedUrl = getVideoEmbed(heroArticle.link);
-                return (
-                  <FeedInteractiveActions
-                    variant="onDarkMedia"
-                    articleLink={heroArticle.link}
-                    onRead={() => handleOpenReader(heroArticle)}
-                    showRead={!embedUrl}
-                    showWatch={!!embedUrl}
-                    showVisit={true}
-                    className="!mt-0 justify-start"
-                  />
-                );
-              })()}
             </div>
           </div>
         </div>
@@ -195,36 +276,17 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
                 style={{ backgroundImage: `url(${article.imageUrl})` }}
               />
               <div className="feed-image-story-overlay absolute inset-0" />
-              <FavoriteButton
-                article={article}
-                size="medium"
-                position="overlay"
-                className="top-4 right-4 z-20 bg-black/30 hover:bg-black/50 border border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-              />
-              <div className="absolute bottom-0 left-0 w-full p-5 pt-12">
-                <div className="feed-image-story-shell">
-                  <h2 className="feed-title feed-title-feature feed-image-story-title text-base lg:text-lg mb-2 line-clamp-2">
-                    <button
-                      type="button"
-                      className="feed-link-affordance bg-transparent p-0 text-left transition-colors hover:text-white/92"
-                      onClick={() => handleOpenReader(article)}
-                    >
-                      {article.title}
-                    </button>
-                  </h2>
-                  <div className="feed-image-story-meta flex items-center text-[10px] sm:text-xs font-bold min-w-0 mb-3">
-                    <span className="feed-chip truncate max-w-[120px] shadow-sm shadow-black/10">
-                      {article.sourceTitle}
-                    </span>
-                    <span className="mx-2 flex-shrink-0 text-white">•</span>
-                    <span className="text-white/82">
-                      {new Date(article.pubDate).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-
+              <div className="feed-image-story-top-rail">
+                <div className="feed-image-story-meta feed-card-meta-stack max-w-[70%] text-[10px] font-semibold text-white/82 sm:text-xs">
+                  <span className="inline-flex w-fit max-w-full truncate rounded-full bg-black/40 px-2.5 py-1 text-white/88 backdrop-blur-md">
+                    {article.sourceTitle}
+                  </span>
+                  <FeedResponsiveDate
+                    date={article.pubDate}
+                    className="text-white/72 drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
+                  />
+                </div>
+                <div className="feed-card-action-rail">
                   {(() => {
                     const embedUrl = getVideoEmbed(article.link);
                     return (
@@ -235,10 +297,30 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
                         showRead={!embedUrl}
                         showWatch={!!embedUrl}
                         showVisit={true}
-                        className="!mt-0 justify-between"
+                        compact
+                        className="!mt-0"
                       />
                     );
                   })()}
+                  <FavoriteButton
+                    article={article}
+                    size="medium"
+                    position="inline"
+                    className="bg-black/30 hover:bg-black/50 border border-white/10 shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="feed-image-story-bottom-copy">
+                <div className="feed-image-story-shell">
+                  <h2 className="feed-title feed-title-feature feed-image-story-title text-base lg:text-lg mb-2 line-clamp-2">
+                    <button
+                      type="button"
+                      className="feed-link-affordance bg-transparent p-0 text-left transition-colors hover:text-white/92"
+                      onClick={() => handleOpenReader(article)}
+                    >
+                      {article.title}
+                    </button>
+                  </h2>
                 </div>
               </div>
             </div>
@@ -246,22 +328,19 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
         </div>
       </section>
 
-      {/* SECTION 2: VISUAL STRIP (4 cols) */}
-      <section className="feed-surface rounded-[calc(var(--feed-card-radius)*1.1)] px-4 py-8 md:px-8 md:py-10">
-        <div className="feed-section-heading">
+      {/* SECTION 2: VISUAL STRIP (3 cols) */}
+      <section className="feed-surface rounded-[calc(var(--feed-card-radius)*1.1)] px-4 py-8 text-left md:px-8 md:py-10">
+        <div className="feed-section-heading mb-6">
           <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] feed-accent-text">
             Leituras em destaque
           </h3>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {featuredStrip.map((article) => (
-            <ArticleItem
+            <ModernFeedCard
               key={article.link}
               article={article}
-              layoutMode="modern"
-              density="compact"
-              onClick={handleOpenReader}
-              className="[&_.relative.mb-4]:!aspect-[4/3] [&_.relative.mb-4]:!h-auto"
+              onRead={handleOpenReader}
             />
           ))}
         </div>
@@ -277,73 +356,24 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
           </div>
 
           {leadStory && (
-            <div
-              className={`grid grid-cols-1 gap-[var(--feed-page-gap)] items-start ${
-                sidebarFeed.length > 0
-                  ? "lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)]"
-                  : ""
-              }`}
-            >
+            <div className="grid grid-cols-1 gap-[var(--feed-page-gap)] items-start">
               <div className="min-w-0">
-                <ArticleItem
+                <ModernFeedCard
                   article={leadStory}
-                  layoutMode="modern"
-                  density="compact"
-                  onClick={handleOpenReader}
-                  className="[&_.relative.mb-4]:!aspect-[16/10] [&_.relative.mb-4]:!h-auto [&_.relative.mb-4]:max-h-[18rem]"
+                  onRead={handleOpenReader}
+                  large
                 />
               </div>
-
-              {sidebarFeed.length > 0 && (
-                <div className="feed-surface-strong rounded-[var(--feed-card-radius)] p-6">
-                  <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 lg:block lg:space-y-4">
-                    {sidebarFeed.map((article) => (
-                      <div
-                        key={article.link}
-                        className="group cursor-pointer feed-card feed-card--flat rounded-[calc(var(--feed-card-radius)*0.9)] p-4 transition-all duration-300"
-                        onClick={() => handleOpenReader(article)}
-                      >
-                        <div className="flex gap-4 items-start">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start gap-2">
-                              <h5 className="feed-title feed-title-card feed-title-hoverable font-bold leading-tight transition-all text-sm mb-2 line-clamp-2">
-                                {article.title}
-                              </h5>
-                              <FavoriteButton
-                                article={article}
-                                size="small"
-                                position="inline"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[rgb(var(--color-textSecondary))]"
-                              />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="feed-chip text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded truncate max-w-full">
-                                {article.sourceTitle}
-                              </span>
-                              <span className="feed-meta feed-meta-hoverable text-[10px] font-bold transition-colors">
-                                {new Date(article.pubDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           {continuationFeed.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
               {continuationFeed.map((article) => (
-                <ArticleItem
+                <ModernFeedCard
                   key={article.link}
                   article={article}
-                  layoutMode="modern"
-                  density="comfortable"
-                  onClick={handleOpenReader}
-                  className="[&_.relative.mb-4]:!aspect-[4/3] [&_.relative.mb-4]:!h-auto"
+                  onRead={handleOpenReader}
                 />
               ))}
             </div>

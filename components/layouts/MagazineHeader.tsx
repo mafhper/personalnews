@@ -108,7 +108,6 @@ export const MagazineHeader: React.FC<MagazineHeaderProps> = ({ articles, onArti
                                         showRead={!embedUrl}
                                         showWatch={!!embedUrl}
                                         showVisit={true}
-                                        forceVisible
                                         className="mt-6 self-start"
                                     />
                                 );

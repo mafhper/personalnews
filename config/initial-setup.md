@@ -48,12 +48,32 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Header Global - Define o comportamento do cabeçalho de navegação
 
-- Header Global: sticky;
+- Header Global: floating;
   Opções:
 - `static`: Move junto com o scroll (topo da página)
 - `sticky`: Fixado no topo enquanto você navega
 - `floating`: Flutuante com transparência e desfoque
 - `hidden`: Escondido por padrão
+
+---
+
+---
+
+### Aparência do Header - Define dimensões e transparência iniciais
+
+- Altura do Header: compact;
+- Opacidade do Header: 60;
+- Blur do Header: 20;
+- Tamanho do Logo: md;
+  Opções:
+- `ultra-compact`: Cabeçalho muito baixo
+- `tiny`: Cabeçalho pequeno
+- `compact`: Cabeçalho compacto
+- `normal`: Cabeçalho padrão
+- `spacious`: Cabeçalho amplo
+- `sm`: Logo pequeno
+- `md`: Logo médio
+- `lg`: Logo grande
 
 ---
 
@@ -65,6 +85,23 @@ O formato é rigoroso para permitir a sincronização automática.
   Opções:
 - `12h`: Formato AM/PM
 - `24h`: Formato militar/europeu
+
+---
+
+---
+
+### Leitura e Atualização - Define paginação, destaques e cache
+
+- Tipo de Paginação: numbered;
+- Destaques Principais: 15;
+- Intervalo de Atualização Automática: 15;
+- Cache Temporário de Feeds: 10;
+  Opções:
+- `numbered`: Paginação numerada
+- `loadMore`: Botão para carregar mais
+- `infinite`: Rolagem infinita
+- `0`: Desabilitado quando usado em intervalo/cache
+- `5`, `10`, `15`, `20`: Valores válidos conforme o campo
 
 ---
 
@@ -83,7 +120,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Tecnologia;
 - ID: tech;
 - Cor: #3B82F6;
-- Layout: magazine;
+- Layout: masonry;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
@@ -128,6 +165,18 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ---
 
+- Nome: Podcasts;
+- ID: podcasts;
+- Cor: #F26522;
+- Layout: pocketfeeds;
+- Pinned: false;
+- Auto-Discovery: true;
+- Descrição: Seus podcasts preferidos direto no feed.;
+
+---
+
+---
+
 - Nome: Vídeos;
 - ID: youtube;
 - Cor: #C4302B;
@@ -158,6 +207,10 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - XDA: <https://www.xda-developers.com/feed/>
+
+### podcasts
+
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast>
 
 ### youtube
 
@@ -194,6 +247,10 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - MacMagazine: <https://macmagazine.com.br/feed/>
 - Meio Bit: <https://meiobit.com/feed/>
 - Tecnoblog: <https://tecnoblog.net/feed/>
+
+### podcasts
+
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast>
 
 ### youtube
 
@@ -299,6 +356,10 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - WIRED Guides: <https://www.wired.com/feed/tag/wired-guide/latest/rss>
 - WIRED Ideas: <https://www.wired.com/feed/category/ideas/latest/rss>
 - XDA: <https://www.xda-developers.com/feed/>
+
+### podcasts
+
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast>
 
 ### youtube
 
