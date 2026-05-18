@@ -119,7 +119,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Nome: Tecnologia;
 - ID: tech;
-- Cor: #3B82F6;
+- Cor: #0078D7;
 - Layout: masonry;
 - Pinned: false;
 - Auto-Discovery: true;
@@ -131,7 +131,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Nome: Design;
 - ID: design;
-- Cor: #F0EEE9;
+- Cor: #663399;
 - Layout: immersive;
 - Pinned: false;
 - Auto-Discovery: true;
@@ -143,7 +143,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Nome: Games;
 - ID: games;
-- Cor: #F59E0B;
+- Cor: #FFDA03;
 - Layout: modern;
 - Pinned: false;
 - Auto-Discovery: true;
@@ -155,7 +155,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Nome: Política;
 - ID: politics;
-- Cor: #EF4444;
+- Cor: #E13111;
 - Layout: magazine;
 - Pinned: false;
 - Auto-Discovery: true;
@@ -167,7 +167,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Nome: Podcasts;
 - ID: podcasts;
-- Cor: #F26522;
+- Cor: #FF8C00;
 - Layout: pocketfeeds;
 - Pinned: false;
 - Auto-Discovery: true;
@@ -179,7 +179,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 - Nome: Vídeos;
 - ID: youtube;
-- Cor: #C4302B;
+- Cor: #8B0000;
 - Layout: brutalist;
 - Pinned: false;
 - Auto-Discovery: false;
@@ -210,7 +210,8 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### podcasts
 
-- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast>
+- Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
+- RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
@@ -250,15 +251,16 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### podcasts
 
-- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast>
+- Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
+- RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
-- 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
-- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
-- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
-- Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg>
-- Gamera: <https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw>
+- 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
+- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw> | Hide-from-All: true
+- Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg> | Hide-from-All: true
+- Gamera: <https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw> | Hide-from-All: true
 
 ## International Mix
 
@@ -296,15 +298,15 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### youtube
 
-- Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug>
-- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
-- Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
-- Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
-- GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
-- Macho Nacho: <https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ>
-- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
-- Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ>
-- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ>
+- Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug> | Hide-from-All: true
+- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
+- Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A> | Hide-from-All: true
+- Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
+- GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ> | Hide-from-All: true
+- Macho Nacho: <https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ> | Hide-from-All: true
+- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA> | Hide-from-All: true
+- Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ> | Hide-from-All: true
+- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ> | Hide-from-All: true
 
 ## Pacote Mix Global
 
@@ -359,21 +361,23 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### podcasts
 
-- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast>
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
+- Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
+- RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
-- 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug>
-- Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug>
-- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng>
-- Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A>
-- Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ>
-- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA>
-- Gamera: <https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw>
-- GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ>
-- Macho Nacho: <https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ>
-- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA>
-- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw>
-- Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ>
-- Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg>
-- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ>
+- 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
+- Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug> | Hide-from-All: true
+- Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
+- Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A> | Hide-from-All: true
+- Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
+- Gamera: <https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw> | Hide-from-All: true
+- GreatScott!: <https://www.youtube.com/feeds/videos.xml?channel_id=UC6mIxFTvXkWQVEHPsEdflzQ> | Hide-from-All: true
+- Macho Nacho: <https://www.youtube.com/feeds/videos.xml?channel_id=UC4CsqctrGOn4NTz09sAhXwQ> | Hide-from-All: true
+- News Rockstar: <https://www.youtube.com/feeds/videos.xml?channel_id=UC7yRILFFJ2QZCykymr8LPwA> | Hide-from-All: true
+- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw> | Hide-from-All: true
+- Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ> | Hide-from-All: true
+- Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg> | Hide-from-All: true
+- The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ> | Hide-from-All: true

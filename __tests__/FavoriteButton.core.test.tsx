@@ -156,16 +156,16 @@ describe("FavoriteButton", () => {
   });
 
   describe("Size Variants", () => {
-    it("applies small size classes correctly", () => {
+    it("uses the standard favorite size for small requests", () => {
       mockIsFavorite.mockReturnValue(false);
 
       render(<FavoriteButton article={mockArticle} size="small" />);
 
       const button = screen.getByRole("button");
-      expect(button).toHaveClass("w-6", "h-6", "p-1");
+      expect(button).toHaveClass("w-8", "h-8", "p-1.5");
     });
 
-    it("applies medium size classes correctly (default)", () => {
+    it("uses the standard favorite size by default", () => {
       mockIsFavorite.mockReturnValue(false);
 
       render(<FavoriteButton article={mockArticle} />);
@@ -174,13 +174,13 @@ describe("FavoriteButton", () => {
       expect(button).toHaveClass("w-8", "h-8", "p-1.5");
     });
 
-    it("applies large size classes correctly", () => {
+    it("uses the standard favorite size for large requests", () => {
       mockIsFavorite.mockReturnValue(false);
 
       render(<FavoriteButton article={mockArticle} size="large" />);
 
       const button = screen.getByRole("button");
-      expect(button).toHaveClass("w-10", "h-10", "p-2");
+      expect(button).toHaveClass("w-8", "h-8", "p-1.5");
     });
   });
 
@@ -203,18 +203,24 @@ describe("FavoriteButton", () => {
       expect(button).toHaveClass("relative");
     });
 
-    it("applies different background styles for overlay vs inline", () => {
+    it("keeps the same visual styling for overlay and inline positions", () => {
       mockIsFavorite.mockReturnValue(false);
 
       const { rerender } = render(
         <FavoriteButton article={mockArticle} position="overlay" />
       );
       const overlayButton = screen.getByRole("button");
-      expect(overlayButton).toHaveClass("bg-black/70");
+      expect(overlayButton).toHaveClass(
+        "!bg-[rgb(var(--color-error-500))]",
+        "!text-white"
+      );
 
       rerender(<FavoriteButton article={mockArticle} position="inline" />);
       const inlineButton = screen.getByRole("button");
-      expect(inlineButton).toHaveClass("bg-gray-800/90");
+      expect(inlineButton).toHaveClass(
+        "!bg-[rgb(var(--color-error-500))]",
+        "!text-white"
+      );
     });
   });
 
@@ -225,7 +231,7 @@ describe("FavoriteButton", () => {
       render(<FavoriteButton article={mockArticle} />);
 
       const button = screen.getByRole("button");
-      expect(button).toHaveClass("text-white");
+      expect(button).toHaveClass("!text-white");
     });
 
     it("applies correct styles when favorited", () => {
@@ -234,7 +240,7 @@ describe("FavoriteButton", () => {
       render(<FavoriteButton article={mockArticle} />);
 
       const button = screen.getByRole("button");
-      expect(button).toHaveClass("text-red-500");
+      expect(button).toHaveClass("!text-white", "ring-1", "ring-white/35");
     });
 
     it("includes transition classes for smooth animations", () => {
@@ -335,7 +341,7 @@ describe("FavoriteButton", () => {
       );
 
       const button = screen.getByRole("button");
-      expect(button).toHaveClass("w-10", "h-10", "relative", "custom-class");
+      expect(button).toHaveClass("w-8", "h-8", "relative", "custom-class");
     });
   });
 
@@ -394,7 +400,7 @@ describe("FavoriteButton", () => {
       render(<FavoriteButton article={mockArticle} size="small" />);
 
       const svg = screen.getByRole("button").querySelector("svg");
-      expect(svg).toHaveClass("h-3", "w-3");
+      expect(svg).toHaveClass("h-4", "w-4");
     });
   });
 });

@@ -118,7 +118,7 @@ describe("feedRuntime", () => {
 
     await expect(
       loadFeedWithRuntime("https://example.com/rss.xml"),
-    ).rejects.toThrow("Backend local indisponivel");
+    ).rejects.toThrow("Backend local indisponível");
 
     expect(mockParseRssUrlDetailed).not.toHaveBeenCalled();
     expect(mockSetRuntimeState).toHaveBeenCalledWith(
@@ -186,7 +186,7 @@ describe("feedRuntime", () => {
 
     await expect(
       loadFeedWithRuntime("https://example.com/rss.xml"),
-    ).rejects.toThrow("Backend local indisponivel");
+    ).rejects.toThrow("Backend local indisponível");
 
     expect(mockParseRssUrlDetailed).not.toHaveBeenCalled();
   });
