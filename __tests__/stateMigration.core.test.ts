@@ -1,6 +1,6 @@
 /**
  * [CORE][MIGRATION] State Migration Suite
- * 
+ *
  * Purpose:
  * - Ensure old localStorage/store formats are correctly migrated.
  * - Protect data integrity across versions.
@@ -25,14 +25,14 @@ describe("[CORE][MIGRATION] state migration logic", () => {
   it("should add categoryId to legacy feeds that match default feeds", () => {
     const legacyFeeds: any[] = [
       {
-        url: "https://www.theverge.com/rss/index.xml",
-        title: "The Verge",
+        url: "https://www.xda-developers.com/feed/",
+        title: "XDA",
         // categoryId is missing
       }
     ];
 
     const result = migrateFeeds(legacyFeeds as FeedSource[]);
-    
+
     expect(result.migrated).toBe(true);
     expect(result.feeds[0].categoryId).toBeDefined();
     expect(result.feeds[0].categoryId).toBe("tech");
@@ -41,15 +41,15 @@ describe("[CORE][MIGRATION] state migration logic", () => {
   it("should NOT migrate if feeds are already up to date", () => {
     const upToDateFeeds: FeedSource[] = [
       {
-        url: "https://www.theverge.com/rss/index.xml",
-        title: "The Verge",
+        url: "https://www.xda-developers.com/feed/",
+        title: "XDA",
         categoryId: "tech",
         active: true
       }
     ];
 
     const result = migrateFeeds(upToDateFeeds);
-    
+
     // Note: If sync metadata logic finds exactly same values, it returns false.
     // However, some fields like hideFromAll might be added.
     // Let's check if it actually changed anything.
@@ -70,7 +70,7 @@ describe("[CORE][MIGRATION] state migration logic", () => {
     };
 
     const result = migrateFeeds([customFeed]);
-    
+
     expect(result.feeds).toContainEqual(customFeed);
   });
 });
