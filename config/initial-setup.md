@@ -192,31 +192,40 @@ O formato é rigoroso para permitir a sincronização automática.
 ### design
 
 - B9: <https://www.b9.com.br/feed/>
+- Awwwards: <https://www.awwwards.com/feed/>
 
 ### games
 
 - Kotaku: <https://kotaku.com/rss>
 - Jogabilidade: <https://jogabilida.de/feed/>
+- IGN Brasil: <https://br.ign.com/feed.xml>
 
 ### politics
 
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
+- Mídia Ninja: <https://midianinja.org/feed/>
 
 ### tech
 
-- The Verge: <https://www.theverge.com/rss/index.xml>
+- Ars Technica: <https://arstechnica.com/feed/>
+- CNET: <http://www.cnet.com/rss/news/>
+- Tecnoblog: <https://tecnoblog.net/feed/>
+- The Next Web: <https://thenextweb.com/feed>
 - XDA: <https://www.xda-developers.com/feed/>
 
 ### podcasts
 
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
+- MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
 
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
+- Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
+- Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg> | Hide-from-All: true
 
 
 # Listas Curadas
@@ -258,15 +267,16 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
 - Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
-- NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw> | Hide-from-All: true
 - Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg> | Hide-from-All: true
-- Gamera: <https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw> | Hide-from-All: true
 
 ## International Mix
 
 ### design
 
 - UX Collective: <https://uxdesign.cc/feed>
+- This is Colossal: <https://www.thisiscolossal.com/feed/>
+- Awwwards: <https://www.awwwards.com/feed/>
+- Thedieline: <https://thedieline.com/feed/>
 
 ### games
 
@@ -276,24 +286,18 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### tech
 
-- 9to5Google: <https://9to5google.com/feed/>
-- 9to5Linux: <https://9to5linux.com/feed/>
-- 9to5Mac: <https://9to5mac.com/feed/>
 - Ars Technica: <https://arstechnica.com/feed/>
 - CNET: <http://www.cnet.com/rss/news/>
 - Digital Trends: <https://www.digitaltrends.com/feed/>
 - ElecTrek: <https://electrek.co/feed/>
 - Engadget: <https://www.engadget.com/rss.xml>
-- OMG! Linux: <https://www.omglinux.com/feed/>
 - OMG! Ubuntu: <https://www.omgubuntu.co.uk/feed>
 - The Decoder: <https://the-decoder.com/feed/>
 - The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
 - Tom's Guide: <https://www.tomsguide.com/feeds.xml>
 - Tom's Hardware: <https://www.tomshardware.com/feeds.xml>
-- WIRED AI: <https://www.wired.com/feed/tag/ai/latest/rss>
 - WIRED Guides: <https://www.wired.com/feed/tag/wired-guide/latest/rss>
-- WIRED Ideas: <https://www.wired.com/feed/category/ideas/latest/rss>
 - XDA: <https://www.xda-developers.com/feed/>
 
 ### youtube
@@ -312,8 +316,11 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### design
 
-- B9: <https://www.b9.com.br/feed/>
 - UX Collective: <https://uxdesign.cc/feed>
+- B9: <https://www.b9.com.br/feed/>
+- This is Colossal: <https://www.thisiscolossal.com/feed/>
+- Awwwards: <https://www.awwwards.com/feed/>
+- Thedieline: <https://thedieline.com/feed/>
 
 ### games
 
