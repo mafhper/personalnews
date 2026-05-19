@@ -1,6 +1,16 @@
 import { FeedSource } from '../types';
 import { DEFAULT_FEEDS } from '../constants/curatedFeeds';
 
+const CANONICAL_FEED_REPLACEMENTS: Array<{
+  titlePattern: RegExp;
+  canonicalUrl: string;
+}> = [
+  {
+    titlePattern: /\bforo de teresina\b/i,
+    canonicalUrl: 'https://feeds.megaphone.fm/NPP2619427256',
+  },
+];
+
 /**
  * Returns the default list of feeds to start with
  */
@@ -44,26 +54,37 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
   // Sync metadata from DEFAULT_FEEDS to existing feeds
   let hasChanges = false;
   const migratedFeeds = currentFeeds.map(feed => {
-    const knownFeed = DEFAULT_FEEDS.find(df => df.url === feed.url);
+    const canonicalReplacement = CANONICAL_FEED_REPLACEMENTS.find((replacement) => {
+      const title = feed.customTitle || feed.url;
+      return replacement.titlePattern.test(title) && feed.url !== replacement.canonicalUrl;
+    });
+    const feedToSync = canonicalReplacement
+      ? { ...feed, url: canonicalReplacement.canonicalUrl }
+      : feed;
+    if (canonicalReplacement) {
+      hasChanges = true;
+    }
+
+    const knownFeed = DEFAULT_FEEDS.find(df => df.url === feedToSync.url);
     if (knownFeed) {
-      const updatedFeed = { ...feed };
+      const updatedFeed = { ...feedToSync };
       let changed = false;
 
       // Ensure categoryId exists or is updated if it matches default
-      if (!feed.categoryId && knownFeed.categoryId) {
+      if ((canonicalReplacement || !feedToSync.categoryId) && knownFeed.categoryId) {
         updatedFeed.categoryId = knownFeed.categoryId;
         changed = true;
       }
 
       // Sync hideFromAll from defaults
-      if (feed.hideFromAll !== knownFeed.hideFromAll) {
+      if (feedToSync.hideFromAll !== knownFeed.hideFromAll) {
         updatedFeed.hideFromAll = knownFeed.hideFromAll;
         changed = true;
       }
 
       // Sync customTitle if not set or if it's currently using the URL
-      if (!feed.customTitle || feed.customTitle === feed.url) {
-        if (knownFeed.customTitle && feed.customTitle !== knownFeed.customTitle) {
+      if (!feedToSync.customTitle || feedToSync.customTitle === feedToSync.url) {
+        if (knownFeed.customTitle && feedToSync.customTitle !== knownFeed.customTitle) {
           updatedFeed.customTitle = knownFeed.customTitle;
           changed = true;
         }
@@ -74,7 +95,7 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
         return updatedFeed;
       }
     }
-    return feed;
+    return feedToSync;
   });
 
   if (hasChanges) {

@@ -73,4 +73,22 @@ describe("[CORE][MIGRATION] state migration logic", () => {
 
     expect(result.feeds).toContainEqual(customFeed);
   });
+
+  it("should migrate stale Foro de Teresina post feeds to the podcast RSS", () => {
+    const staleForoFeed: FeedSource = {
+      url: "https://piaui.folha.uol.com.br/feed/",
+      customTitle: "Foro de Teresina",
+      categoryId: "politics",
+    };
+
+    const result = migrateFeeds([staleForoFeed]);
+
+    expect(result.migrated).toBe(true);
+    expect(result.feeds[0]).toMatchObject({
+      url: "https://feeds.megaphone.fm/NPP2619427256",
+      customTitle: "Foro de Teresina",
+      categoryId: "podcasts",
+      hideFromAll: true,
+    });
+  });
 });

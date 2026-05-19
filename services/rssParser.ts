@@ -223,7 +223,13 @@ interface ImageCandidate {
   height?: number;
   size?: number; // file size in bytes
   score: number;
-  source: "enclosure" | "media:content" | "media:thumbnail" | "html";
+  source:
+    | "enclosure"
+    | "itunes:image"
+    | "media:content"
+    | "media:thumbnail"
+    | "channel:image"
+    | "html";
   isFeatured?: boolean; // Whether this is likely a featured/hero image
 }
 
@@ -262,10 +268,18 @@ function selectBestImage(
     // 3. Prefer media:content/enclosure over thumbnail/html
     const scoreA =
       a.score +
-      (a.source === "media:content" || a.source === "enclosure" ? 2 : 0);
+      (a.source === "itunes:image" ||
+      a.source === "media:content" ||
+      a.source === "enclosure"
+        ? 2
+        : 0);
     const scoreB =
       b.score +
-      (b.source === "media:content" || b.source === "enclosure" ? 2 : 0);
+      (b.source === "itunes:image" ||
+      b.source === "media:content" ||
+      b.source === "enclosure"
+        ? 2
+        : 0);
 
     // 4. Sort by known width
     if (a.width && b.width && a.width !== b.width) return b.width - a.width;
@@ -281,7 +295,10 @@ function selectBestImage(
     // Allow small images only if they're featured or from reliable sources
     if (c.width && c.width <= 50) {
       return (
-        c.isFeatured || c.source === "media:content" || c.source === "enclosure"
+        c.isFeatured ||
+        c.source === "itunes:image" ||
+        c.source === "media:content" ||
+        c.source === "enclosure"
       );
     }
     return true;
@@ -501,19 +518,31 @@ export function parseXmlResponse(
 
   let channelTitle = "Untitled Feed";
   let items: HTMLCollectionOf<Element> | NodeListOf<Element>;
+  let channelImageUrl = "";
 
   const channels = xmlDoc.getElementsByTagName("channel");
   if (channels.length > 0) {
+    const channel = channels[0];
     const titleElements = channels[0].getElementsByTagName("title");
     channelTitle = titleElements[0]?.textContent?.trim() || "Untitled Feed";
     channelTitle = sanitizeSourceTitle(channelTitle, _feedUrl);
+    channelImageUrl =
+      channel.getElementsByTagName("itunes:image")[0]?.getAttribute("href") ||
+      channel.getElementsByTagName("image")[0]?.getElementsByTagName("url")[0]?.textContent?.trim() ||
+      "";
     items = xmlDoc.getElementsByTagName("item");
   } else {
     const feeds = xmlDoc.getElementsByTagName("feed");
     if (feeds.length > 0) {
+      const feed = feeds[0];
       const titleElements = feeds[0].getElementsByTagName("title");
       channelTitle = titleElements[0]?.textContent?.trim() || "Untitled Feed";
       channelTitle = sanitizeSourceTitle(channelTitle, _feedUrl);
+      channelImageUrl =
+        feed.getElementsByTagName("itunes:image")[0]?.getAttribute("href") ||
+        feed.getElementsByTagName("logo")[0]?.textContent?.trim() ||
+        feed.getElementsByTagName("icon")[0]?.textContent?.trim() ||
+        "";
       items = xmlDoc.getElementsByTagName("entry");
     } else {
       const rdfItems = xmlDoc.getElementsByTagName("item");
@@ -574,19 +603,22 @@ export function parseXmlResponse(
       let contentRaw = "";
 
       const descElements = item.getElementsByTagName("description");
+      const itunesSummaryElements = item.getElementsByTagName("itunes:summary");
       const summaryElements = item.getElementsByTagName("summary");
       const contentElements = item.getElementsByTagName("content");
       const encodedContentElements =
         item.getElementsByTagName("content:encoded");
       const bodyElements = item.getElementsByTagName("body");
 
-      const descEl = descElements[0] || summaryElements[0];
+      const descEl =
+        itunesSummaryElements[0] || descElements[0] || summaryElements[0];
       if (descEl?.textContent) descriptionRaw = descEl.textContent;
 
       const contentEl =
         encodedContentElements[0] ||
         contentElements[0] ||
         bodyElements[0] ||
+        itunesSummaryElements[0] ||
         descElements[0];
       if (contentEl?.textContent) contentRaw = contentEl.textContent;
 
@@ -597,11 +629,15 @@ export function parseXmlResponse(
       const content = sanitizeWithDomPurify(contentRaw);
 
       let author = "";
+      const itunesAuthorElements = item.getElementsByTagName("itunes:author");
       const authorElements = item.getElementsByTagName("author");
       const creatorElements = item.getElementsByTagName("creator");
       const dcCreatorElements = item.getElementsByTagName("dc:creator");
       const authorElement =
-        authorElements[0] || dcCreatorElements[0] || creatorElements[0];
+        itunesAuthorElements[0] ||
+        authorElements[0] ||
+        dcCreatorElements[0] ||
+        creatorElements[0];
       if (authorElement?.textContent) {
         author = sanitizeAuthor(authorElement.textContent.trim());
       }
@@ -617,6 +653,21 @@ export function parseXmlResponse(
       const imageCandidates: ImageCandidate[] = [];
       let audioUrl = "";
       let audioDuration = "";
+      const itemItunesImageUrl =
+        item.getElementsByTagName("itunes:image")[0]?.getAttribute("href") ||
+        "";
+      let enclosureImageUrl = "";
+      let mediaContentImageUrl = "";
+      let mediaThumbnailImageUrl = "";
+
+      if (itemItunesImageUrl) {
+        imageCandidates.push({
+          url: itemItunesImageUrl,
+          source: "itunes:image",
+          score: 30,
+          isFeatured: true,
+        });
+      }
 
       // 1. Check Enclosures
       const enclosureElements = item.getElementsByTagName("enclosure");
@@ -627,6 +678,7 @@ export function parseXmlResponse(
 
         if (url) {
           if (type.startsWith("image/")) {
+            if (!enclosureImageUrl) enclosureImageUrl = url;
             const normalized = normalizeImageUrl(url, link);
             if (normalized) {
               imageCandidates.push({
@@ -650,6 +702,7 @@ export function parseXmlResponse(
         const height = parseInt(getAttr(el, "height") || "0");
 
         if (url && (type.startsWith("image") || type === "image")) {
+          if (!mediaContentImageUrl) mediaContentImageUrl = url;
           const normalized = normalizeImageUrl(url, link);
           if (normalized) {
             imageCandidates.push({
@@ -680,6 +733,7 @@ export function parseXmlResponse(
         const url = getAttr(mediaThumbnails[j], "url");
         const width = parseInt(getAttr(mediaThumbnails[j], "width") || "0");
         if (url) {
+          if (!mediaThumbnailImageUrl) mediaThumbnailImageUrl = url;
           const normalized = normalizeImageUrl(url, link);
           if (normalized) {
             imageCandidates.push({
@@ -920,8 +974,28 @@ export function parseXmlResponse(
           audioDuration = plainDuration.textContent.trim();
       }
 
+      const isPodcastLike = Boolean(
+        audioUrl ||
+          audioDuration ||
+          itemItunesImageUrl ||
+          item.getElementsByTagName("itunes:episodeType")[0] ||
+          item.getElementsByTagName("itunes:episode")[0],
+      );
+      const podcastPreferredImage = isPodcastLike
+        ? [
+            itemItunesImageUrl,
+            mediaThumbnailImageUrl,
+            mediaContentImageUrl,
+            enclosureImageUrl,
+            channelImageUrl,
+          ]
+            .map((candidate) => normalizeImageUrl(candidate, link || _feedUrl))
+            .find((candidate): candidate is string => Boolean(candidate))
+        : undefined;
+
       // Select best image (normalization happens inside selectBestImage)
-      const imageUrl = selectBestImage(imageCandidates, link);
+      const imageUrl =
+        podcastPreferredImage || selectBestImage(imageCandidates, link);
 
       // Final validation - the URL should already be normalized, but double-check
       let validImageUrl: string | undefined = undefined;

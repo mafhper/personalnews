@@ -147,7 +147,11 @@ function normalizeImageCandidate(rawValue: string | null | undefined, articleLin
   }
 
   try {
-    resolved = articleLink ? new URL(resolved, articleLink).toString() : new URL(resolved).toString();
+    if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
+      resolved = new URL(resolved).toString();
+    } else {
+      resolved = articleLink ? new URL(resolved, articleLink).toString() : new URL(resolved).toString();
+    }
   } catch {
     return null;
   }
@@ -164,6 +168,15 @@ function extractRssEnclosureImageUrl(enclosure: Element | null): string | null {
   const type = (enclosure.getAttribute("type") || "").toLowerCase();
   if (type && !type.startsWith("image/")) return null;
   return enclosure.getAttribute("url");
+}
+
+function extractRssItunesImageUrl(parent: Element): string | null {
+  return firstChildByTag(parent, "itunes:image")?.getAttribute("href") || null;
+}
+
+function extractRssChannelImageUrl(channel: Element): string | null {
+  const image = firstChildByTag(channel, "image");
+  return (image ? textOf(firstChildByTag(image, "url")) : "") || extractRssItunesImageUrl(channel);
 }
 
 function extractAtomEnclosureImageUrl(links: Element[]): string | null {
@@ -339,6 +352,7 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
   }
 
   const title = textOf(firstChildByTag(channel, "title")) || "Feed";
+  const channelImageUrl = extractRssChannelImageUrl(channel);
   const items = allChildrenByTag(channel, "item");
 
   const articles: ArticleWire[] = items
@@ -349,18 +363,36 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
       const enclosure = enclosures[0] || null;
       const mediaContent = firstChildByTag(item, "media:content");
       const mediaThumb = firstChildByTag(item, "media:thumbnail");
+      const itunesSummary = textOf(firstChildByTag(item, "itunes:summary"));
       const descriptionRaw =
+        itunesSummary ||
         textOf(firstChildByTag(item, "description")) ||
         textOf(firstChildByTag(item, "content:encoded")) ||
         textOf(firstChildByTag(item, "content"));
       const contentRaw =
         textOf(firstChildByTag(item, "content:encoded")) ||
+        itunesSummary ||
         textOf(firstChildByTag(item, "description")) ||
         undefined;
+      const itemItunesImageUrl = extractRssItunesImageUrl(item);
+      const audioUrl = normalizeImageCandidate(extractRssAudioUrl(enclosures), articleLink) || undefined;
+      const audioDuration =
+        textOf(firstChildByTag(item, "itunes:duration")) ||
+        textOf(firstChildByTag(item, "duration")) ||
+        undefined;
+      const isPodcastLike = Boolean(
+        audioUrl ||
+          audioDuration ||
+          itemItunesImageUrl ||
+          textOf(firstChildByTag(item, "itunes:episodeType")) ||
+          textOf(firstChildByTag(item, "itunes:episode"))
+      );
       const imageCandidate =
-        mediaContent?.getAttribute("url") ||
+        itemItunesImageUrl ||
         mediaThumb?.getAttribute("url") ||
+        mediaContent?.getAttribute("url") ||
         extractRssEnclosureImageUrl(enclosure) ||
+        (isPodcastLike ? channelImageUrl : null) ||
         extractFirstImageUrlFromHtml(contentRaw) ||
         extractFirstImageUrlFromHtml(descriptionRaw);
 
@@ -381,15 +413,13 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
         description: cleanText(descriptionRaw).slice(0, 800),
         content: sanitizeFeedHtmlContent(contentRaw, articleLink),
         author:
+          textOf(firstChildByTag(item, "itunes:author")) ||
           textOf(firstChildByTag(item, "author")) ||
           textOf(firstChildByTag(item, "dc:creator")) ||
           undefined,
         imageUrl: normalizeFeedImageUrl(imageCandidate, articleLink, articleLink),
-        audioUrl: normalizeImageCandidate(extractRssAudioUrl(enclosures), articleLink) || undefined,
-        audioDuration:
-          textOf(firstChildByTag(item, "itunes:duration")) ||
-          textOf(firstChildByTag(item, "duration")) ||
-          undefined,
+        audioUrl,
+        audioDuration,
         categories: categories.length > 0 ? categories : undefined,
       };
     })

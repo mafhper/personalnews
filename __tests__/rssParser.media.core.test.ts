@@ -46,4 +46,71 @@ describe("rssParser media extraction", () => {
       audioDuration: "42:12",
     });
   });
+
+  it("prefers episode itunes images and podcast summary metadata", () => {
+    const xml = `<?xml version="1.0"?>
+      <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+        <channel>
+          <title>Podcast Feed</title>
+          <itunes:image href="https://cdn.example.com/channel-art.jpg" />
+          <item>
+            <title>Episode with artwork</title>
+            <link>https://example.com/episode-with-artwork</link>
+            <pubDate>Sun, 17 May 2026 12:00:00 GMT</pubDate>
+            <itunes:author>Host Name</itunes:author>
+            <itunes:summary>Podcast-specific summary</itunes:summary>
+            <description><![CDATA[<p>Generic summary</p><img src="https://cdn.example.com/html-large.jpg" />]]></description>
+            <itunes:image href="https://cdn.example.com/episode-art.jpg" />
+            <enclosure url="https://cdn.example.com/audio/episode.mp3" type="audio/mpeg" />
+            <itunes:duration>4174</itunes:duration>
+          </item>
+        </channel>
+      </rss>`;
+
+    const result = parseXmlResponse(xml, "https://example.com/podcast.rss");
+
+    expect(result.articles[0]).toMatchObject({
+      author: "Host Name",
+      description: "Podcast-specific summary",
+      imageUrl: "https://cdn.example.com/episode-art.jpg",
+      audioDuration: "4174",
+    });
+  });
+
+  it("falls back from media thumbnails to channel artwork for podcast images", () => {
+    const withMediaThumbnail = `<?xml version="1.0"?>
+      <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:media="http://search.yahoo.com/mrss/">
+        <channel>
+          <title>Podcast Feed</title>
+          <image><url>https://cdn.example.com/channel-art.jpg</url></image>
+          <item>
+            <title>Episode with media thumbnail</title>
+            <link>https://example.com/episode-media</link>
+            <description>Episode summary</description>
+            <media:content url="https://cdn.example.com/media-content.jpg" medium="image" />
+            <media:thumbnail url="https://cdn.example.com/media-thumbnail.jpg" />
+            <enclosure url="https://cdn.example.com/audio/media.mp3" type="audio/mpeg" />
+          </item>
+        </channel>
+      </rss>`;
+    const withoutEpisodeImage = `<?xml version="1.0"?>
+      <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+        <channel>
+          <title>Podcast Feed</title>
+          <image><url>https://cdn.example.com/channel-art.jpg</url></image>
+          <item>
+            <title>Episode with channel fallback</title>
+            <link>https://example.com/episode-channel</link>
+            <description>Episode summary</description>
+            <enclosure url="https://cdn.example.com/audio/channel.mp3" type="audio/mpeg" />
+          </item>
+        </channel>
+      </rss>`;
+
+    const mediaResult = parseXmlResponse(withMediaThumbnail, "https://example.com/podcast.rss");
+    const channelResult = parseXmlResponse(withoutEpisodeImage, "https://example.com/podcast.rss");
+
+    expect(mediaResult.articles[0].imageUrl).toBe("https://cdn.example.com/media-thumbnail.jpg");
+    expect(channelResult.articles[0].imageUrl).toBe("https://cdn.example.com/channel-art.jpg");
+  });
 });
