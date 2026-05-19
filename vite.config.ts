@@ -28,6 +28,7 @@ export const buildProductionCsp = ({ isTauri }: { isTauri: boolean }): string | 
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src * data: blob:",
+    "media-src 'self' https: http: blob:",
     `frame-src 'self' ${productionFrameSources.join(' ')}`,
     "connect-src 'self' http://localhost:* https://api.github.com https://api.rss2json.com https://api.allorigins.win https://corsproxy.io https://api.codetabs.com https://api.open-meteo.com https://nominatim.openstreetmap.org https://esm.sh https://fonts.googleapis.com https://fonts.gstatic.com https://whatever-origin.herokuapp.com https://textproxy.io https://cors-anywhere.herokuapp.com",
   ].join('; ');

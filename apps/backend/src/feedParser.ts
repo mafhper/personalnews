@@ -147,7 +147,11 @@ function normalizeImageCandidate(rawValue: string | null | undefined, articleLin
   }
 
   try {
-    resolved = articleLink ? new URL(resolved, articleLink).toString() : new URL(resolved).toString();
+    if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
+      resolved = new URL(resolved).toString();
+    } else {
+      resolved = articleLink ? new URL(resolved, articleLink).toString() : new URL(resolved).toString();
+    }
   } catch {
     return null;
   }
@@ -164,6 +168,15 @@ function extractRssEnclosureImageUrl(enclosure: Element | null): string | null {
   const type = (enclosure.getAttribute("type") || "").toLowerCase();
   if (type && !type.startsWith("image/")) return null;
   return enclosure.getAttribute("url");
+}
+
+function extractRssItunesImageUrl(parent: Element): string | null {
+  return firstDirectChildByTag(parent, "itunes:image")?.getAttribute("href") || null;
+}
+
+function extractRssChannelImageUrl(channel: Element): string | null {
+  const image = firstDirectChildByTag(channel, "image");
+  return (image ? textOf(firstDirectChildByTag(image, "url")) : "") || extractRssItunesImageUrl(channel);
 }
 
 function extractAtomEnclosureImageUrl(links: Element[]): string | null {
@@ -316,6 +329,29 @@ function textOf(node: Element | null): string {
   return node?.textContent?.trim() || "";
 }
 
+function tagNameOf(node: Element): string {
+  return (node.localName || node.nodeName || "").toLowerCase();
+}
+
+function nodeMatchesTag(node: Element, tagName: string): boolean {
+  const expected = tagName.toLowerCase();
+  return (
+    (node.nodeName || "").toLowerCase() === expected ||
+    tagNameOf(node) === expected ||
+    `${node.prefix || ""}:${tagNameOf(node)}`.toLowerCase() === expected
+  );
+}
+
+function firstDirectChildByTag(parent: Element, tagName: string): Element | null {
+  for (let i = 0; i < parent.childNodes.length; i += 1) {
+    const child = parent.childNodes.item(i);
+    if (child.nodeType !== 1) continue;
+    const element = child as Element;
+    if (nodeMatchesTag(element, tagName)) return element;
+  }
+  return null;
+}
+
 function firstChildByTag(parent: Document | Element, tagName: string): Element | null {
   const list = parent.getElementsByTagName(tagName);
   if (!list || list.length === 0) return null;
@@ -339,6 +375,7 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
   }
 
   const title = textOf(firstChildByTag(channel, "title")) || "Feed";
+  const channelImageUrl = extractRssChannelImageUrl(channel);
   const items = allChildrenByTag(channel, "item");
 
   const articles: ArticleWire[] = items
@@ -349,18 +386,36 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
       const enclosure = enclosures[0] || null;
       const mediaContent = firstChildByTag(item, "media:content");
       const mediaThumb = firstChildByTag(item, "media:thumbnail");
+      const itunesSummary = textOf(firstChildByTag(item, "itunes:summary"));
       const descriptionRaw =
+        itunesSummary ||
         textOf(firstChildByTag(item, "description")) ||
         textOf(firstChildByTag(item, "content:encoded")) ||
         textOf(firstChildByTag(item, "content"));
       const contentRaw =
         textOf(firstChildByTag(item, "content:encoded")) ||
+        itunesSummary ||
         textOf(firstChildByTag(item, "description")) ||
         undefined;
+      const itemItunesImageUrl = extractRssItunesImageUrl(item);
+      const audioUrl = normalizeImageCandidate(extractRssAudioUrl(enclosures), articleLink) || undefined;
+      const audioDuration =
+        textOf(firstChildByTag(item, "itunes:duration")) ||
+        textOf(firstChildByTag(item, "duration")) ||
+        undefined;
+      const isPodcastLike = Boolean(
+        audioUrl ||
+          audioDuration ||
+          itemItunesImageUrl ||
+          textOf(firstChildByTag(item, "itunes:episodeType")) ||
+          textOf(firstChildByTag(item, "itunes:episode"))
+      );
       const imageCandidate =
-        mediaContent?.getAttribute("url") ||
+        itemItunesImageUrl ||
         mediaThumb?.getAttribute("url") ||
+        mediaContent?.getAttribute("url") ||
         extractRssEnclosureImageUrl(enclosure) ||
+        (isPodcastLike ? channelImageUrl : null) ||
         extractFirstImageUrlFromHtml(contentRaw) ||
         extractFirstImageUrlFromHtml(descriptionRaw);
 
@@ -381,15 +436,13 @@ function parseRss(doc: Document, feedUrl: string): { title: string; articles: Ar
         description: cleanText(descriptionRaw).slice(0, 800),
         content: sanitizeFeedHtmlContent(contentRaw, articleLink),
         author:
+          textOf(firstChildByTag(item, "itunes:author")) ||
           textOf(firstChildByTag(item, "author")) ||
           textOf(firstChildByTag(item, "dc:creator")) ||
           undefined,
         imageUrl: normalizeFeedImageUrl(imageCandidate, articleLink, articleLink),
-        audioUrl: normalizeImageCandidate(extractRssAudioUrl(enclosures), articleLink) || undefined,
-        audioDuration:
-          textOf(firstChildByTag(item, "itunes:duration")) ||
-          textOf(firstChildByTag(item, "duration")) ||
-          undefined,
+        audioUrl,
+        audioDuration,
         categories: categories.length > 0 ? categories : undefined,
       };
     })
@@ -478,14 +531,24 @@ function parseXml(body: string): Document {
   return doc;
 }
 
-function warnUnexpectedFeedContentType(response: Response, url: string): void {
+function isLikelyXmlFeedPayload(body: string): boolean {
+  const trimmed = body.trimStart().slice(0, 256).toLowerCase();
+  return (
+    trimmed.startsWith("<?xml") ||
+    trimmed.startsWith("<rss") ||
+    trimmed.startsWith("<feed") ||
+    trimmed.startsWith("<rdf:rdf")
+  );
+}
+
+function warnUnexpectedFeedContentType(response: Response, url: string, body: string): void {
   const contentType = response.headers.get("content-type")?.toLowerCase() || "";
   if (!contentType) return;
 
   const expected = EXPECTED_FEED_CONTENT_TYPES.some((type) =>
     contentType.includes(type),
   );
-  if (!expected) {
+  if (!expected && !isLikelyXmlFeedPayload(body)) {
     console.warn(`Unexpected feed Content-Type: ${contentType} for ${url}`);
   }
 }
@@ -550,11 +613,11 @@ export async function fetchAndParseFeed(
     );
   }
 
-  warnUnexpectedFeedContentType(response, url);
   const body = await response.text();
   if (!body || body.trim().length < 30) {
     throw new BackendHttpError(422, "Upstream feed returned an empty payload");
   }
+  warnUnexpectedFeedContentType(response, url, body);
 
   const doc = parseXml(body);
   const rssParsed = parseRss(doc, url);

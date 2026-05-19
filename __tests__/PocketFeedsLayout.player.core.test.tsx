@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PocketFeedsLayout } from "../components/layouts/PocketFeedsLayout";
 import type { Article } from "../types";
@@ -19,6 +19,14 @@ const podcastEpisode: Article = {
   audioDuration: "42:12",
 };
 
+const richPodcastEpisode: Article = {
+  ...podcastEpisode,
+  title: "Episode with rich metadata",
+  imageUrl: "https://cdn.example.com/episode-art.jpg",
+  author: "Host Name",
+  description: "A focused episode summary for the listener.",
+};
+
 describe("PocketFeedsLayout audio player", () => {
   beforeEach(() => {
     Object.defineProperty(HTMLMediaElement.prototype, "play", {
@@ -31,12 +39,12 @@ describe("PocketFeedsLayout audio player", () => {
     });
   });
 
-  it("opens player controls with play, seek, volume and speed", () => {
+  it("opens player controls with play, seek, volume and speed", async () => {
     render(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
 
-    expect(screen.getAllByText("Science podcast episode").length).toBeGreaterThan(1);
+    await waitFor(() => expect(screen.getAllByText("Science podcast episode").length).toBeGreaterThan(1));
     expect(screen.getByLabelText("Posição da reprodução")).toBeInTheDocument();
     expect(screen.getByLabelText("Volume")).toBeInTheDocument();
     expect(screen.getByLabelText("Velocidade de reprodução")).toBeInTheDocument();
@@ -46,5 +54,30 @@ describe("PocketFeedsLayout audio player", () => {
     });
 
     expect(screen.getByLabelText("Velocidade de reprodução")).toHaveValue("1.5");
+  });
+
+  it("does not mark an episode as playing when the browser rejects playback", async () => {
+    Object.defineProperty(HTMLMediaElement.prototype, "play", {
+      configurable: true,
+      value: vi.fn().mockRejectedValue(new Error("CSP blocked media")),
+    });
+
+    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
+
+    expect(await screen.findByText(/não foi possível iniciar o áudio/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /tocar episódio/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /pausar episódio/i })).not.toBeInTheDocument();
+  });
+
+  it("renders episode artwork, author, summary and duration metadata", () => {
+    render(<PocketFeedsLayout articles={[richPodcastEpisode]} />);
+
+    expect(screen.getByAltText("Science Podcast")).toBeInTheDocument();
+    expect(screen.getByAltText("Episode with rich metadata")).toBeInTheDocument();
+    expect(screen.getByText("Science Podcast • Host Name")).toBeInTheDocument();
+    expect(screen.getByText("A focused episode summary for the listener.")).toBeInTheDocument();
+    expect(screen.getByText("42:12")).toBeInTheDocument();
   });
 });

@@ -1,6 +1,30 @@
 import { FeedSource } from '../types';
 import { DEFAULT_FEEDS } from '../constants/curatedFeeds';
 
+const CANONICAL_FEED_REPLACEMENTS: Array<{
+  titlePattern: RegExp;
+  staleUrls: string[];
+  canonicalUrl: string;
+}> = [
+  {
+    titlePattern: /\bforo de teresina\b/i,
+    staleUrls: ['https://piaui.folha.uol.com.br/feed/'],
+    canonicalUrl: 'https://feeds.megaphone.fm/NPP2619427256',
+  },
+];
+
+const normalizeFeedUrlForMigration = (url: string): string => {
+  try {
+    const parsed = new URL(url.trim());
+    parsed.hash = '';
+    parsed.search = '';
+    parsed.pathname = parsed.pathname.replace(/\/+$/, '') || '/';
+    return parsed.toString().replace(/\/$/, '').toLowerCase();
+  } catch {
+    return url.trim().replace(/\/+$/, '').toLowerCase();
+  }
+};
+
 /**
  * Returns the default list of feeds to start with
  */
@@ -44,26 +68,45 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
   // Sync metadata from DEFAULT_FEEDS to existing feeds
   let hasChanges = false;
   const migratedFeeds = currentFeeds.map(feed => {
-    const knownFeed = DEFAULT_FEEDS.find(df => df.url === feed.url);
+    const canonicalReplacement = CANONICAL_FEED_REPLACEMENTS.find((replacement) => {
+      const title = feed.customTitle || feed.url;
+      const normalizedUrl = normalizeFeedUrlForMigration(feed.url);
+      const isKnownStaleUrl = replacement.staleUrls.some(
+        (staleUrl) => normalizeFeedUrlForMigration(staleUrl) === normalizedUrl
+      );
+      return (
+        replacement.titlePattern.test(title) &&
+        isKnownStaleUrl &&
+        normalizedUrl !== normalizeFeedUrlForMigration(replacement.canonicalUrl)
+      );
+    });
+    const feedToSync = canonicalReplacement
+      ? { ...feed, url: canonicalReplacement.canonicalUrl }
+      : feed;
+    if (canonicalReplacement) {
+      hasChanges = true;
+    }
+
+    const knownFeed = DEFAULT_FEEDS.find(df => df.url === feedToSync.url);
     if (knownFeed) {
-      const updatedFeed = { ...feed };
+      const updatedFeed = { ...feedToSync };
       let changed = false;
 
       // Ensure categoryId exists or is updated if it matches default
-      if (!feed.categoryId && knownFeed.categoryId) {
+      if ((canonicalReplacement || !feedToSync.categoryId) && knownFeed.categoryId) {
         updatedFeed.categoryId = knownFeed.categoryId;
         changed = true;
       }
 
       // Sync hideFromAll from defaults
-      if (feed.hideFromAll !== knownFeed.hideFromAll) {
+      if (feedToSync.hideFromAll !== knownFeed.hideFromAll) {
         updatedFeed.hideFromAll = knownFeed.hideFromAll;
         changed = true;
       }
 
       // Sync customTitle if not set or if it's currently using the URL
-      if (!feed.customTitle || feed.customTitle === feed.url) {
-        if (knownFeed.customTitle && feed.customTitle !== knownFeed.customTitle) {
+      if (!feedToSync.customTitle || feedToSync.customTitle === feedToSync.url) {
+        if (knownFeed.customTitle && feedToSync.customTitle !== knownFeed.customTitle) {
           updatedFeed.customTitle = knownFeed.customTitle;
           changed = true;
         }
@@ -74,13 +117,25 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
         return updatedFeed;
       }
     }
-    return feed;
+    return feedToSync;
   });
+
+  const dedupedFeeds: FeedSource[] = [];
+  const seenUrls = new Set<string>();
+  for (const feed of migratedFeeds) {
+    const normalizedUrl = normalizeFeedUrlForMigration(feed.url);
+    if (seenUrls.has(normalizedUrl)) {
+      hasChanges = true;
+      continue;
+    }
+    seenUrls.add(normalizedUrl);
+    dedupedFeeds.push(feed);
+  }
 
   if (hasChanges) {
     return {
       migrated: true,
-      feeds: migratedFeeds,
+      feeds: dedupedFeeds,
       reason: 'Synchronized metadata with default configurations'
     };
   }

@@ -11,6 +11,20 @@ interface PocketFeedsLayoutProps {
 
 const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`feed-skeleton-block ${className}`} />;
 
+const EpisodeArtwork: React.FC<{ episode: Article; fallbackAlt: string }> = ({ episode, fallbackAlt }) => (
+  <div className="hidden h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)] sm:block">
+    {episode.imageUrl ? (
+      <LazyImage src={episode.imageUrl} className="h-full w-full object-cover" alt={episode.title || fallbackAlt} />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[rgba(var(--color-accent),0.45)] to-[rgba(var(--color-primary),0.45)]">
+        <svg className="h-5 w-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg>
+      </div>
+    )}
+  </div>
+);
+
 export const PocketFeedsSkeleton: React.FC = () => {
   return (
     <div className="feed-top-clearance container mx-auto px-6 pb-8 md:px-8 space-y-8">
@@ -46,6 +60,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.9);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
   // Group articles by sourceTitle (podcast name)
@@ -63,6 +78,10 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
   const hasFewPodcasts = podcastNames.length <= 4;
   const episodeLabel = (count: number) => count === 1 ? 'episódio' : 'episódios';
   const previewTitle = 'Abrir detalhes do episódio';
+  const getEpisodeByline = (episode: Article) =>
+    episode.author && episode.author !== episode.sourceTitle
+      ? `${episode.sourceTitle} • ${episode.author}`
+      : episode.sourceTitle;
 
   // Format duration (e.g., "3600" -> "1:00:00" or "45:30" -> "45:30")
   const formatDuration = (duration?: string): string => {
@@ -92,25 +111,34 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayPause = (episode: Article) => {
+  const handlePlayPause = async (episode: Article) => {
     if (!episode.audioUrl) return;
 
     if (playingAudio === episode.audioUrl) {
       audioRef.current?.pause();
       setPlayingAudio(null);
+      setPlaybackError(null);
     } else {
-      if (audioRef.current) {
-        if (audioRef.current.src !== episode.audioUrl) {
-          audioRef.current.src = episode.audioUrl;
-          setCurrentTime(0);
-          setDuration(0);
-        }
-        audioRef.current.volume = volume;
-        audioRef.current.playbackRate = playbackRate;
-        audioRef.current.play().catch(() => { });
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      if (audio.src !== episode.audioUrl) {
+        audio.src = episode.audioUrl;
+        setCurrentTime(0);
+        setDuration(0);
       }
+      audio.volume = volume;
+      audio.playbackRate = playbackRate;
       setActiveEpisode(episode);
-      setPlayingAudio(episode.audioUrl);
+      setPlaybackError(null);
+
+      try {
+        await audio.play();
+        setPlayingAudio(episode.audioUrl);
+      } catch {
+        setPlayingAudio(null);
+        setPlaybackError("Não foi possível iniciar o áudio. Verifique sua conexão ou tente outro episódio.");
+      }
     }
   };
 
@@ -145,7 +173,14 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
         ref={audioRef}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
-        onEnded={() => setPlayingAudio(null)}
+        onEnded={() => {
+          setPlayingAudio(null);
+          setPlaybackError(null);
+        }}
+        onError={() => {
+          setPlayingAudio(null);
+          setPlaybackError("Não foi possível carregar o áudio deste episódio.");
+        }}
         className="hidden"
       />
 
@@ -248,6 +283,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                           </div>
                         )}
 
+                        <EpisodeArtwork episode={episode} fallbackAlt={podcastName} />
+
                         {/* Episode info */}
                         <div
                           className="flex-1 min-w-0 cursor-pointer"
@@ -264,6 +301,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                                 <span>{formatDuration(episode.audioDuration)}</span>
                               </>
                             )}
+                            <span className="opacity-40">•</span>
+                            <span className="min-w-0 truncate">{getEpisodeByline(episode)}</span>
                             <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                               <FavoriteButton
                                 article={episode}
@@ -287,6 +326,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                               </button>
                             </span>
                           </div>
+                          {episode.description && (
+                            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[rgb(var(--color-textSecondary))]">
+                              {episode.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -408,6 +452,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                 className="w-full accent-[rgb(var(--color-accent))]"
                 aria-label="Posição da reprodução"
               />
+              {playbackError && (
+                <p className="mt-2 text-xs text-red-300" role="status">
+                  {playbackError}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs text-[rgb(var(--color-textSecondary))] sm:flex sm:items-center">
@@ -517,6 +566,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                     </div>
                   )}
 
+                  <EpisodeArtwork episode={episode} fallbackAlt={expandedPodcast} />
+
                   <div
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => setReadingArticle(episode)}
@@ -532,6 +583,8 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                           <span>{formatDuration(episode.audioDuration)}</span>
                         </>
                       )}
+                      <span className="opacity-40">•</span>
+                      <span className="min-w-0 truncate">{getEpisodeByline(episode)}</span>
                       <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                         <FavoriteButton
                           article={episode}
@@ -541,6 +594,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
                         />
                       </span>
                     </div>
+                    {episode.description && (
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[rgb(var(--color-textSecondary))]">
+                        {episode.description}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

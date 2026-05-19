@@ -90,7 +90,7 @@ describe("backend security controls", () => {
     );
   });
 
-  it("warns but still parses feeds with unexpected content type", async () => {
+  it("does not warn when an XML feed is served with a misleading content type", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const feed = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -119,7 +119,7 @@ describe("backend security controls", () => {
     });
 
     expect(result.articles).toHaveLength(1);
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(warnSpy).not.toHaveBeenCalledWith(
       expect.stringContaining("Unexpected feed Content-Type"),
     );
   });
