@@ -68,6 +68,50 @@ function getAttr(el: Element, name: string): string | null {
   return el.getAttribute(name);
 }
 
+function elementMatchesTag(el: Element, tagName: string): boolean {
+  const expected = tagName.toLowerCase();
+  return (
+    el.tagName.toLowerCase() === expected ||
+    `${el.prefix || ""}:${el.localName}`.toLowerCase() === expected ||
+    el.localName.toLowerCase() === expected
+  );
+}
+
+function firstDirectChildByTag(
+  parent: Element,
+  tagName: string,
+): Element | undefined {
+  return Array.from(parent.children).find((child) =>
+    elementMatchesTag(child, tagName),
+  );
+}
+
+function textOfDirectChild(parent: Element, tagName: string): string {
+  return firstDirectChildByTag(parent, tagName)?.textContent?.trim() || "";
+}
+
+function getDirectChildAttr(
+  parent: Element,
+  tagName: string,
+  attrName: string,
+): string {
+  return firstDirectChildByTag(parent, tagName)?.getAttribute(attrName) || "";
+}
+
+function getRssChannelImageUrl(channel: Element): string {
+  const image = firstDirectChildByTag(channel, "image");
+  const channelImageUrl = image ? textOfDirectChild(image, "url") : "";
+  return channelImageUrl || getDirectChildAttr(channel, "itunes:image", "href");
+}
+
+function getAtomFeedImageUrl(feed: Element): string {
+  return (
+    textOfDirectChild(feed, "logo") ||
+    textOfDirectChild(feed, "icon") ||
+    getDirectChildAttr(feed, "itunes:image", "href")
+  );
+}
+
 /**
  * Normalize image URL - resolve relative URLs and protocol-relative URLs
  */
@@ -329,6 +373,95 @@ function selectBestImage(
       : normalizedCandidates[0].url;
 }
 
+function validateImageUrl(imageUrl: string): string | undefined {
+  const urlLower = imageUrl.toLowerCase();
+
+  if (
+    urlLower.includes("?text=") ||
+    urlLower.match(/^[a-z0-9]{6}\?text=/i) ||
+    (urlLower.includes("placeholder") && !urlLower.includes("image")) ||
+    (urlLower.includes("blank") && urlLower.includes(".gif"))
+  ) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[ImageValidation] Rejected placeholder pattern", {
+        url: imageUrl.substring(0, 80),
+      });
+    }
+    return undefined;
+  }
+
+  try {
+    const urlObj = new URL(imageUrl);
+    if (urlObj.protocol !== "http:" && urlObj.protocol !== "https:") {
+      return undefined;
+    }
+
+    const pathname = urlObj.pathname.toLowerCase();
+    const hasImageExtension =
+      /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
+    const hasImageIndicator =
+      pathname.includes("image") ||
+      pathname.includes("img") ||
+      pathname.includes("photo") ||
+      pathname.includes("media");
+    const hasImageParam =
+      urlObj.searchParams.has("image") ||
+      urlObj.searchParams.has("img") ||
+      urlObj.searchParams.has("photo");
+    const isKnownImageCdn =
+      urlObj.hostname.includes("cdn") ||
+      urlObj.hostname.includes("images") ||
+      urlObj.hostname.includes("media") ||
+      urlObj.hostname.includes("static") ||
+      urlObj.hostname.includes("assets") ||
+      urlObj.hostname.includes("uploads") ||
+      urlObj.hostname.includes("wp-content");
+
+    if (
+      hasImageExtension ||
+      hasImageIndicator ||
+      hasImageParam ||
+      isKnownImageCdn
+    ) {
+      if (process.env.NODE_ENV === "development") {
+        logger.debugTag("FEED", "Accepted image URL", {
+          url: imageUrl.substring(0, 80),
+          hasImageExtension,
+          hasImageIndicator,
+          hasImageParam,
+          isKnownImageCdn,
+        });
+      }
+      return imageUrl;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      logger.debugTag("FEED", "Rejected - no image indicators", {
+        url: imageUrl.substring(0, 80),
+        pathname: pathname.substring(0, 50),
+      });
+    }
+  } catch (e) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[ImageValidation] Failed to validate URL", {
+        url: imageUrl.substring(0, 80),
+        error: e,
+      });
+    }
+  }
+
+  return undefined;
+}
+
+function selectFirstValidImageUrl(candidates: Array<string | undefined>): string | undefined {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const validImageUrl = validateImageUrl(candidate);
+    if (validImageUrl) return validImageUrl;
+  }
+  return undefined;
+}
+
 // --- PARSERS ---
 
 /**
@@ -526,10 +659,7 @@ export function parseXmlResponse(
     const titleElements = channels[0].getElementsByTagName("title");
     channelTitle = titleElements[0]?.textContent?.trim() || "Untitled Feed";
     channelTitle = sanitizeSourceTitle(channelTitle, _feedUrl);
-    channelImageUrl =
-      channel.getElementsByTagName("itunes:image")[0]?.getAttribute("href") ||
-      channel.getElementsByTagName("image")[0]?.getElementsByTagName("url")[0]?.textContent?.trim() ||
-      "";
+    channelImageUrl = getRssChannelImageUrl(channel);
     items = xmlDoc.getElementsByTagName("item");
   } else {
     const feeds = xmlDoc.getElementsByTagName("feed");
@@ -538,11 +668,7 @@ export function parseXmlResponse(
       const titleElements = feeds[0].getElementsByTagName("title");
       channelTitle = titleElements[0]?.textContent?.trim() || "Untitled Feed";
       channelTitle = sanitizeSourceTitle(channelTitle, _feedUrl);
-      channelImageUrl =
-        feed.getElementsByTagName("itunes:image")[0]?.getAttribute("href") ||
-        feed.getElementsByTagName("logo")[0]?.textContent?.trim() ||
-        feed.getElementsByTagName("icon")[0]?.textContent?.trim() ||
-        "";
+      channelImageUrl = getAtomFeedImageUrl(feed);
       items = xmlDoc.getElementsByTagName("entry");
     } else {
       const rdfItems = xmlDoc.getElementsByTagName("item");
@@ -981,7 +1107,7 @@ export function parseXmlResponse(
           item.getElementsByTagName("itunes:episodeType")[0] ||
           item.getElementsByTagName("itunes:episode")[0],
       );
-      const podcastPreferredImage = isPodcastLike
+      const podcastPreferredImages = isPodcastLike
         ? [
             itemItunesImageUrl,
             mediaThumbnailImageUrl,
@@ -990,98 +1116,15 @@ export function parseXmlResponse(
             channelImageUrl,
           ]
             .map((candidate) => normalizeImageUrl(candidate, link || _feedUrl))
-            .find((candidate): candidate is string => Boolean(candidate))
-        : undefined;
+            .filter((candidate): candidate is string => Boolean(candidate))
+        : [];
+      const imageCandidatesToValidate = [
+        ...podcastPreferredImages,
+        selectBestImage(imageCandidates, link),
+      ];
+      const validImageUrl = selectFirstValidImageUrl(imageCandidatesToValidate);
 
-      // Select best image (normalization happens inside selectBestImage)
-      const imageUrl =
-        podcastPreferredImage || selectBestImage(imageCandidates, link);
-
-      // Final validation - the URL should already be normalized, but double-check
-      let validImageUrl: string | undefined = undefined;
-      if (imageUrl) {
-        // Additional validation to filter out placeholders and invalid images
-        const urlLower = imageUrl.toLowerCase();
-
-        // Skip common placeholder patterns
-        if (
-          urlLower.includes("?text=") ||
-          urlLower.match(/^[a-z0-9]{6}\?text=/i) ||
-          (urlLower.includes("placeholder") && !urlLower.includes("image")) ||
-          (urlLower.includes("blank") && urlLower.includes(".gif"))
-        ) {
-          if (process.env.NODE_ENV === "development") {
-            console.warn("[ImageValidation] Rejected placeholder pattern", {
-              url: imageUrl.substring(0, 80),
-            });
-          }
-          validImageUrl = undefined;
-        } else {
-          try {
-            const urlObj = new URL(imageUrl);
-            if (urlObj.protocol === "http:" || urlObj.protocol === "https:") {
-              // Check if it looks like an image URL
-              const pathname = urlObj.pathname.toLowerCase();
-              const hasImageExtension =
-                /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$|#)/i.test(pathname);
-              const hasImageIndicator =
-                pathname.includes("image") ||
-                pathname.includes("img") ||
-                pathname.includes("photo") ||
-                pathname.includes("media");
-              const hasImageParam =
-                urlObj.searchParams.has("image") ||
-                urlObj.searchParams.has("img") ||
-                urlObj.searchParams.has("photo");
-
-              // More lenient validation - accept if it has extension, indicator, param, or is from known image CDNs
-              const isKnownImageCdn =
-                urlObj.hostname.includes("cdn") ||
-                urlObj.hostname.includes("images") ||
-                urlObj.hostname.includes("media") ||
-                urlObj.hostname.includes("static") ||
-                urlObj.hostname.includes("assets") ||
-                urlObj.hostname.includes("uploads") ||
-                urlObj.hostname.includes("wp-content");
-
-              if (
-                hasImageExtension ||
-                hasImageIndicator ||
-                hasImageParam ||
-                isKnownImageCdn
-              ) {
-                validImageUrl = imageUrl;
-
-                if (process.env.NODE_ENV === "development") {
-                  logger.debugTag("FEED", "Accepted image URL", {
-                    url: imageUrl.substring(0, 80),
-                    hasImageExtension,
-                    hasImageIndicator,
-                    hasImageParam,
-                    isKnownImageCdn,
-                  });
-                }
-              } else {
-                if (process.env.NODE_ENV === "development") {
-                  logger.debugTag("FEED", "Rejected - no image indicators", {
-                    url: imageUrl.substring(0, 80),
-                    pathname: pathname.substring(0, 50),
-                  });
-                }
-              }
-            }
-          } catch (e) {
-            // Invalid URL - already normalized, so this shouldn't happen, but just in case
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[ImageValidation] Failed to validate URL", {
-                url: imageUrl.substring(0, 80),
-                error: e,
-              });
-            }
-            validImageUrl = undefined;
-          }
-        }
-      } else {
+      if (!validImageUrl) {
         if (process.env.NODE_ENV === "development") {
           console.warn("[ImageValidation] No image URL selected", {
             candidatesCount: imageCandidates.length,

@@ -113,4 +113,53 @@ describe("rssParser media extraction", () => {
     expect(mediaResult.articles[0].imageUrl).toBe("https://cdn.example.com/media-thumbnail.jpg");
     expect(channelResult.articles[0].imageUrl).toBe("https://cdn.example.com/channel-art.jpg");
   });
+
+  it("reads channel artwork from direct children only", () => {
+    const xml = `<?xml version="1.0"?>
+      <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+        <channel>
+          <title>Podcast Feed</title>
+          <image><url>https://cdn.example.com/channel-art.jpg</url></image>
+          <item>
+            <title>Episode with own art</title>
+            <link>https://example.com/episode-own-art</link>
+            <description>Episode summary</description>
+            <itunes:image href="https://cdn.example.com/episode-art.jpg" />
+            <enclosure url="https://cdn.example.com/audio/own-art.mp3" type="audio/mpeg" />
+          </item>
+          <item>
+            <title>Episode with channel art</title>
+            <link>https://example.com/episode-channel-art</link>
+            <description>Episode summary</description>
+            <enclosure url="https://cdn.example.com/audio/channel-art.mp3" type="audio/mpeg" />
+          </item>
+        </channel>
+      </rss>`;
+
+    const result = parseXmlResponse(xml, "https://example.com/podcast.rss");
+
+    expect(result.articles[0].imageUrl).toBe("https://cdn.example.com/episode-art.jpg");
+    expect(result.articles[1].imageUrl).toBe("https://cdn.example.com/channel-art.jpg");
+  });
+
+  it("tries the next podcast image when the preferred image is rejected", () => {
+    const xml = `<?xml version="1.0"?>
+      <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:media="http://search.yahoo.com/mrss/">
+        <channel>
+          <title>Podcast Feed</title>
+          <item>
+            <title>Episode with rejected preferred art</title>
+            <link>https://example.com/episode-rejected-art</link>
+            <description>Episode summary</description>
+            <itunes:image href="https://example.com/artwork" />
+            <media:thumbnail url="https://cdn.example.com/media-thumbnail.jpg" />
+            <enclosure url="https://cdn.example.com/audio/rejected-art.mp3" type="audio/mpeg" />
+          </item>
+        </channel>
+      </rss>`;
+
+    const result = parseXmlResponse(xml, "https://example.com/podcast.rss");
+
+    expect(result.articles[0].imageUrl).toBe("https://cdn.example.com/media-thumbnail.jpg");
+  });
 });

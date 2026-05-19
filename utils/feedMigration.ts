@@ -3,13 +3,27 @@ import { DEFAULT_FEEDS } from '../constants/curatedFeeds';
 
 const CANONICAL_FEED_REPLACEMENTS: Array<{
   titlePattern: RegExp;
+  staleUrls: string[];
   canonicalUrl: string;
 }> = [
   {
     titlePattern: /\bforo de teresina\b/i,
+    staleUrls: ['https://piaui.folha.uol.com.br/feed/'],
     canonicalUrl: 'https://feeds.megaphone.fm/NPP2619427256',
   },
 ];
+
+const normalizeFeedUrlForMigration = (url: string): string => {
+  try {
+    const parsed = new URL(url.trim());
+    parsed.hash = '';
+    parsed.search = '';
+    parsed.pathname = parsed.pathname.replace(/\/+$/, '') || '/';
+    return parsed.toString().replace(/\/$/, '').toLowerCase();
+  } catch {
+    return url.trim().replace(/\/+$/, '').toLowerCase();
+  }
+};
 
 /**
  * Returns the default list of feeds to start with
@@ -56,7 +70,15 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
   const migratedFeeds = currentFeeds.map(feed => {
     const canonicalReplacement = CANONICAL_FEED_REPLACEMENTS.find((replacement) => {
       const title = feed.customTitle || feed.url;
-      return replacement.titlePattern.test(title) && feed.url !== replacement.canonicalUrl;
+      const normalizedUrl = normalizeFeedUrlForMigration(feed.url);
+      const isKnownStaleUrl = replacement.staleUrls.some(
+        (staleUrl) => normalizeFeedUrlForMigration(staleUrl) === normalizedUrl
+      );
+      return (
+        replacement.titlePattern.test(title) &&
+        isKnownStaleUrl &&
+        normalizedUrl !== normalizeFeedUrlForMigration(replacement.canonicalUrl)
+      );
     });
     const feedToSync = canonicalReplacement
       ? { ...feed, url: canonicalReplacement.canonicalUrl }
@@ -98,10 +120,22 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
     return feedToSync;
   });
 
+  const dedupedFeeds: FeedSource[] = [];
+  const seenUrls = new Set<string>();
+  for (const feed of migratedFeeds) {
+    const normalizedUrl = normalizeFeedUrlForMigration(feed.url);
+    if (seenUrls.has(normalizedUrl)) {
+      hasChanges = true;
+      continue;
+    }
+    seenUrls.add(normalizedUrl);
+    dedupedFeeds.push(feed);
+  }
+
   if (hasChanges) {
     return {
       migrated: true,
-      feeds: migratedFeeds,
+      feeds: dedupedFeeds,
       reason: 'Synchronized metadata with default configurations'
     };
   }

@@ -171,12 +171,12 @@ function extractRssEnclosureImageUrl(enclosure: Element | null): string | null {
 }
 
 function extractRssItunesImageUrl(parent: Element): string | null {
-  return firstChildByTag(parent, "itunes:image")?.getAttribute("href") || null;
+  return firstDirectChildByTag(parent, "itunes:image")?.getAttribute("href") || null;
 }
 
 function extractRssChannelImageUrl(channel: Element): string | null {
-  const image = firstChildByTag(channel, "image");
-  return (image ? textOf(firstChildByTag(image, "url")) : "") || extractRssItunesImageUrl(channel);
+  const image = firstDirectChildByTag(channel, "image");
+  return (image ? textOf(firstDirectChildByTag(image, "url")) : "") || extractRssItunesImageUrl(channel);
 }
 
 function extractAtomEnclosureImageUrl(links: Element[]): string | null {
@@ -327,6 +327,29 @@ function normalizeDate(raw: string | null | undefined): string {
 
 function textOf(node: Element | null): string {
   return node?.textContent?.trim() || "";
+}
+
+function tagNameOf(node: Element): string {
+  return (node.localName || node.nodeName || "").toLowerCase();
+}
+
+function nodeMatchesTag(node: Element, tagName: string): boolean {
+  const expected = tagName.toLowerCase();
+  return (
+    (node.nodeName || "").toLowerCase() === expected ||
+    tagNameOf(node) === expected ||
+    `${node.prefix || ""}:${tagNameOf(node)}`.toLowerCase() === expected
+  );
+}
+
+function firstDirectChildByTag(parent: Element, tagName: string): Element | null {
+  for (let i = 0; i < parent.childNodes.length; i += 1) {
+    const child = parent.childNodes.item(i);
+    if (child.nodeType !== 1) continue;
+    const element = child as Element;
+    if (nodeMatchesTag(element, tagName)) return element;
+  }
+  return null;
 }
 
 function firstChildByTag(parent: Document | Element, tagName: string): Element | null {
@@ -508,14 +531,24 @@ function parseXml(body: string): Document {
   return doc;
 }
 
-function warnUnexpectedFeedContentType(response: Response, url: string): void {
+function isLikelyXmlFeedPayload(body: string): boolean {
+  const trimmed = body.trimStart().slice(0, 256).toLowerCase();
+  return (
+    trimmed.startsWith("<?xml") ||
+    trimmed.startsWith("<rss") ||
+    trimmed.startsWith("<feed") ||
+    trimmed.startsWith("<rdf:rdf")
+  );
+}
+
+function warnUnexpectedFeedContentType(response: Response, url: string, body: string): void {
   const contentType = response.headers.get("content-type")?.toLowerCase() || "";
   if (!contentType) return;
 
   const expected = EXPECTED_FEED_CONTENT_TYPES.some((type) =>
     contentType.includes(type),
   );
-  if (!expected) {
+  if (!expected && !isLikelyXmlFeedPayload(body)) {
     console.warn(`Unexpected feed Content-Type: ${contentType} for ${url}`);
   }
 }
@@ -580,11 +613,11 @@ export async function fetchAndParseFeed(
     );
   }
 
-  warnUnexpectedFeedContentType(response, url);
   const body = await response.text();
   if (!body || body.trim().length < 30) {
     throw new BackendHttpError(422, "Upstream feed returned an empty payload");
   }
+  warnUnexpectedFeedContentType(response, url, body);
 
   const doc = parseXml(body);
   const rssParsed = parseRss(doc, url);
