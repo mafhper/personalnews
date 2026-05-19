@@ -2506,6 +2506,11 @@ body::-webkit-scrollbar-corner,
     transform: translateY(-1px);
   }
 
+  .bento-feed-card {
+    --feed-card-border: rgba(var(--color-border) / 0.1);
+    --feed-card-border-hover: rgba(255, 255, 255, 0.18);
+  }
+
   .feed-card--flat {
     background: rgba(var(--color-surface) / 0.35);
     box-shadow: none;
@@ -3017,6 +3022,12 @@ body::-webkit-scrollbar-corner,
       var(--feed-card-bg-hover),
       rgba(var(--theme-surface-readable, var(--color-surface)) / 0.96)
     );
+  }
+
+  :root:not(.dark) .bento-feed-card {
+    --feed-card-border: rgba(15, 23, 42, 0.08);
+    --feed-card-border-hover: rgba(255, 255, 255, 0.38);
+    box-shadow: 0 18px 36px -30px rgba(15, 23, 42, 0.2);
   }
 
   :root:not(.dark) .feed-card--flat {
@@ -4377,22 +4388,17 @@ html {
   z-index: 1;
   width: 100%;
   margin: 0;
-  aspect-ratio: 1264 / 1410;
+  aspect-ratio: 1660 / 1385;
   overflow: visible;
   isolation: isolate;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--promo-radius-card);
-  border-top-right-radius: 3px;
-  background: rgba(8, 10, 16, 0.72);
-  box-shadow:
-    0 30px 82px rgba(0, 0, 0, 0.48),
-    0 16px 38px rgba(22, 120, 212, 0.12),
-    0 9px 24px rgba(155, 216, 255, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  transition:
-    border-color 320ms var(--promo-ease),
-    box-shadow 320ms var(--promo-ease),
-  transform 320ms var(--promo-ease);
+  cursor: pointer;
+  perspective: 1800px;
+  perspective-origin: 50% 44%;
+  transform:
+    rotateX(var(--promo-stack-tilt-x, 0deg))
+    rotateY(var(--promo-stack-tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .promo-product-frame:focus-visible {
@@ -4400,299 +4406,205 @@ html {
   outline-offset: 8px;
 }
 
-.promo-product-frame::before,
-.promo-product-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 7;
-  pointer-events: none;
+.promo-product-frame:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .promo-product-frame::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 2%;
+  z-index: -1;
+  height: 22%;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.54), transparent 70%);
+  filter: blur(28px);
+  opacity: 0.72;
+  transform: translate3d(0, 12%, -80px);
+  pointer-events: none;
+}
+
+.promo-product-frame__card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 92%;
+  aspect-ratio: 1660 / 1385;
+  box-sizing: border-box;
+  padding: clamp(2px, 0.22vw, 3px);
+  overflow: hidden;
+  border-radius: var(--promo-radius-card);
   background:
-    linear-gradient(115deg, transparent 0 40%, rgba(255, 255, 255, 0.12) 50%, transparent 60%),
-    radial-gradient(ellipse at 72% 18%, rgba(255, 255, 255, 0.12), transparent 34%);
-  mix-blend-mode: screen;
-  opacity: 0.14;
-  transform: translate3d(-18%, 0, 0);
-  transition:
-    opacity 420ms var(--promo-ease),
-    transform 520ms var(--promo-ease);
-}
-
-.promo-product-frame::after {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: inherit;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.025) 18%, rgba(4, 7, 12, 0.76)),
+    rgba(13, 17, 24, 0.92);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 -42px 58px rgba(0, 0, 0, 0.12);
-  opacity: 0.38;
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 18px 38px -18px rgba(0, 0, 0, 0.72),
+    0 34px 76px -28px rgba(0, 0, 0, 0.62);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform, opacity, filter;
   transition:
-    border-color 320ms var(--promo-ease),
-    box-shadow 320ms var(--promo-ease),
-    opacity 320ms var(--promo-ease);
+    transform 650ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.promo-product-frame img {
+.promo-product-frame__card::before,
+.promo-product-frame__card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.promo-product-frame__card::before {
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.055), transparent 24%, transparent 72%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(180deg, transparent 68%, rgba(0, 0, 0, 0.09));
+  mix-blend-mode: screen;
+}
+
+.promo-product-frame__card::after {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -34px 52px rgba(0, 0, 0, 0.14);
+}
+
+.promo-product-frame__card img {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  border-radius: calc(var(--promo-radius-card) - clamp(2px, 0.22vw, 3px));
+  object-fit: contain;
   object-position: top center;
-  border-radius: inherit;
-  filter: saturate(1.02) brightness(1);
-  transform: scale(1) translate3d(0, 0, 0);
-  will-change: opacity, transform;
+  user-select: none;
 }
 
-.promo-product-frame--rotating img {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  z-index: 0;
-}
-
-.promo-product-frame--rotating img.is-active {
+.promo-product-frame__card[data-depth="0"] {
+  z-index: 40;
   opacity: 1;
-  z-index: 6;
-  animation:
-    promoHeroImageArrive 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both,
-    promoHeroImageIdle 12600ms ease-in-out 2800ms infinite;
+  filter: saturate(1.02) brightness(1);
+  transform: translate3d(-50%, -50%, 0) rotate(-0.7deg) scale(1);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 34px 88px rgba(0, 0, 0, 0.54);
 }
 
-.promo-product-frame--rotating img.is-exiting {
-  z-index: 5;
-  animation: promoHeroImageDepart 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+.promo-product-frame__card[data-depth="1"] {
+  z-index: 30;
+  opacity: 0.86;
+  filter: saturate(0.98) brightness(0.9);
+  transform: translate3d(-45.8%, -47.5%, -26px) rotate(2.4deg) scale(0.972);
 }
 
-.promo-product-frame--rotating img.promo-product-frame__stack-image {
-  pointer-events: none;
-  opacity: 0.68;
-  z-index: 3;
-  filter: saturate(0.98) brightness(0.96);
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34);
+.promo-product-frame__card[data-depth="2"] {
+  z-index: 20;
+  opacity: 0.66;
+  filter: saturate(0.94) brightness(0.8);
+  transform: translate3d(-54.2%, -43.6%, -54px) rotate(-3.5deg) scale(0.936);
+}
+
+.promo-product-frame__card[data-depth="3"] {
+  z-index: 10;
+  opacity: 0.44;
+  filter: saturate(0.88) brightness(0.72);
+  transform: translate3d(-42.6%, -40%, -82px) rotate(5.6deg) scale(0.9);
+}
+
+.promo-product-frame__card[data-depth="exit"] {
+  z-index: 50;
+  opacity: 0;
+  filter: saturate(0.94) brightness(0.96);
+  transform: translate3d(-18%, -39%, 44px) rotate(14deg) scale(0.92);
   transition:
-    opacity 420ms var(--promo-ease),
-    filter 420ms var(--promo-ease),
-    transform 520ms var(--promo-ease);
+    transform 620ms cubic-bezier(0.45, 0, 0.2, 1),
+    opacity 420ms ease-in 150ms,
+    filter 420ms ease-out;
 }
 
-.promo-product-frame--rotating img.promo-product-frame__stack-image--1 {
-  transform: translate3d(3.2%, 1.8%, 0) rotate(1.8deg) scale(0.988);
+.promo-product-frame[data-hover="true"] .promo-product-frame__card[data-depth="0"] {
+  transform: translate3d(-54%, -51%, 36px) rotate(-7.5deg) scale(1.012);
 }
 
-.promo-product-frame--rotating img.promo-product-frame__stack-image--2 {
-  opacity: 0.5;
-  transform: translate3d(-3%, 3.4%, 0) rotate(-2.1deg) scale(0.974);
+.promo-product-frame[data-hover="true"] .promo-product-frame__card[data-depth="1"] {
+  opacity: 0.92;
+  filter: saturate(1) brightness(0.95);
+  transform: translate3d(-42%, -49%, 12px) rotate(1deg) scale(0.982);
 }
 
-.promo-product-frame.is-transitioning .promo-product-frame__stack-image--1 {
-  animation: promoHeroStackLift 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+.promo-product-frame[data-hover="true"] .promo-product-frame__card[data-depth="2"] {
+  opacity: 0.74;
+  filter: saturate(0.96) brightness(0.86);
+  transform: translate3d(-58%, -45%, -18px) rotate(-5.8deg) scale(0.946);
 }
 
-.promo-product-frame.is-transitioning .promo-product-frame__stack-image--2 {
-  animation: promoHeroStackFollow 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+.promo-product-frame[data-hover="true"] .promo-product-frame__card[data-depth="3"] {
+  opacity: 0.58;
+  filter: saturate(0.92) brightness(0.8);
+  transform: translate3d(-36%, -41%, -46px) rotate(8.8deg) scale(0.91);
 }
 
-.promo-product-frame__transition {
+.promo-product-frame__glow {
   position: absolute;
-  inset: -12%;
-  z-index: 8;
+  inset: -8%;
+  z-index: 60;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 46% 40%, rgba(155, 216, 255, 0.18), transparent 42%),
-    linear-gradient(168deg, transparent 18%, rgba(248, 251, 255, 0.1) 42%, rgba(155, 216, 255, 0.08) 58%, transparent 78%);
+    radial-gradient(ellipse at 48% 44%, rgba(155, 216, 255, 0.14), transparent 36%),
+    linear-gradient(118deg, transparent 24%, rgba(255, 255, 255, 0.14) 46%, rgba(155, 216, 255, 0.07) 58%, transparent 80%);
   filter: blur(24px);
   mix-blend-mode: screen;
   opacity: 0;
-  transform: translate3d(0, 6%, 0) scale(1.04);
-  animation: promoHeroTransitionVeil 2800ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  transform: translate3d(-16%, 10%, 0) scale(1.03);
 }
 
-@keyframes promoHeroImageArrive {
+.promo-product-frame.is-transitioning .promo-product-frame__glow {
+  animation: promoHeroStackGlow 900ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes promoHeroStackGlow {
   0% {
-    opacity: 0.62;
-    filter: saturate(0.96) brightness(0.95);
-    transform: translate3d(-3%, 2.4%, 0) rotate(-1.6deg) scale(0.978);
-  }
-
-  40% {
-    opacity: 0.92;
-    filter: saturate(0.99) brightness(0.99);
-    transform: translate3d(-0.6%, 0.4%, 0) rotate(-0.4deg) scale(0.995);
-  }
-
-  100% {
-    opacity: 1;
-    filter: saturate(1.02) brightness(1);
-    transform: scale(1.004) translate3d(0, 0, 0);
-  }
-}
-
-@keyframes promoHeroImageIdle {
-  0%,
-  100% {
-    filter: saturate(1.02) brightness(1);
-    transform: scale(1.004) translate3d(0, 0, 0);
-  }
-
-  50% {
-    filter: saturate(1.04) brightness(1.015);
-    transform: scale(1.018) translate3d(0, -0.45%, 0);
-  }
-}
-
-@keyframes promoHeroImageDepart {
-  0% {
-    opacity: 1;
-    filter: saturate(1.02) brightness(1);
-    transform: scale(1) translate3d(0, 0, 0);
-  }
-
-  50% {
-    opacity: 0.74;
-    filter: saturate(0.98) brightness(0.96);
-    transform: translate3d(1.8%, 1%, 0) rotate(0.8deg) scale(0.994);
-  }
-
-  100% {
     opacity: 0;
-    filter: saturate(0.9) brightness(0.9);
-    transform: translate3d(3.2%, 1.8%, 0) rotate(1.8deg) scale(0.988);
-  }
-}
-
-@keyframes promoHeroStackLift {
-  0% {
-    opacity: 0.68;
-    filter: saturate(0.98) brightness(0.96);
-    transform: translate3d(3.2%, 1.8%, 0) rotate(1.8deg) scale(0.988);
+    transform: translate3d(-16%, 10%, 0) scale(1.03);
   }
 
   42% {
-    opacity: 0.86;
-    filter: saturate(1) brightness(0.99);
-    transform: translate3d(1.2%, 0.7%, 0) rotate(0.7deg) scale(0.996);
-  }
-
-  100% {
-    opacity: 0.68;
-    filter: saturate(0.98) brightness(0.96);
-    transform: translate3d(3.2%, 1.8%, 0) rotate(1.8deg) scale(0.988);
-  }
-}
-
-@keyframes promoHeroStackFollow {
-  0% {
-    opacity: 0.5;
-    filter: saturate(0.92) brightness(0.9);
-    transform: translate3d(-3%, 3.4%, 0) rotate(-2.1deg) scale(0.974);
-  }
-
-  48% {
-    opacity: 0.62;
-    filter: saturate(0.96) brightness(0.94);
-    transform: translate3d(-1.8%, 2.5%, 0) rotate(-1.4deg) scale(0.982);
-  }
-
-  100% {
-    opacity: 0.5;
-    filter: saturate(0.92) brightness(0.9);
-    transform: translate3d(-3%, 3.4%, 0) rotate(-2.1deg) scale(0.974);
-  }
-}
-
-@keyframes promoHeroTransitionVeil {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 6%, 0) scale(1.04);
-  }
-
-  28% {
-    opacity: 0.42;
-  }
-
-  62% {
-    opacity: 0.16;
+    opacity: 0.34;
   }
 
   100% {
     opacity: 0;
-    transform: translate3d(0, -4%, 0) scale(1.02);
+    transform: translate3d(18%, -8%, 0) scale(1.01);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .promo-product-frame--rotating img.is-active,
-  .promo-product-frame--rotating img.is-exiting,
-  .promo-product-frame.is-transitioning .promo-product-frame__stack-image--1,
-  .promo-product-frame.is-transitioning .promo-product-frame__stack-image--2 {
-    animation: none;
-    filter: none;
-    transform: scale(1);
-  }
-
-  .promo-product-frame--rotating img.is-active {
-    opacity: 1;
-  }
-
-  .promo-product-frame--rotating img.is-exiting,
-  .promo-product-frame__transition {
-    display: none;
-  }
-
-  .promo-product-frame__stack-image {
+  .promo-product-frame,
+  .promo-product-frame__card {
     transition: none;
   }
 
-  .promo-product-frame::before {
+  .promo-product-frame__card {
+    filter: none;
+  }
+
+  .promo-product-frame__card[data-depth="0"] {
+    opacity: 1;
+  }
+
+  .promo-product-frame__card[data-depth="exit"],
+  .promo-product-frame__glow {
     display: none;
   }
-}
-
-.promo-product-frame:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow:
-    0 38px 110px rgba(0, 0, 0, 0.6),
-    0 22px 54px rgba(255, 255, 255, 0.08),
-    0 12px 32px rgba(255, 255, 255, 0.06),
-    0 0 40px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
-  transform: translateY(-4px) scale(1.015);
-}
-
-.promo-product-frame:hover::before {
-  opacity: 0.22;
-  transform: translate3d(8%, 0, 0);
-}
-
-.promo-product-frame:hover::after {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
-    inset 0 -70px 80px rgba(0, 0, 0, 0.16);
-  opacity: 0.56;
-}
-
-.promo-product-frame:hover img.is-active {
-  filter: saturate(1.06) brightness(1.03);
-}
-
-.promo-product-frame:hover .promo-product-frame__stack-image--1 {
-  opacity: 0.76;
-  filter: saturate(1) brightness(0.98);
-  transform: translate3d(7.2%, 2.4%, 0) rotate(3.4deg) scale(0.982);
-}
-
-.promo-product-frame:hover .promo-product-frame__stack-image--2 {
-  opacity: 0.58;
-  filter: saturate(0.94) brightness(0.92);
-  transform: translate3d(-6.4%, 5.6%, 0) rotate(-3.6deg) scale(0.962);
-}
-
-.promo-product-frame:not(.promo-product-frame--rotating):hover img {
-  transform: scale(1.025);
 }
 
 .promo-proof {
@@ -4876,7 +4788,7 @@ html {
 .promo-mode-card {
   position: relative;
   overflow: hidden;
-  min-height: 348px;
+  min-height: 412px;
   padding: 0;
 }
 
@@ -4887,8 +4799,9 @@ html {
 .promo-layout-preview {
   position: relative;
   overflow: hidden;
-  height: 176px;
-  min-height: 176px;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  min-height: 0;
   margin: 0 0 24px;
   border: 0;
   border-bottom: 1px solid var(--promo-border);
@@ -4920,22 +4833,22 @@ html {
 }
 
 .promo-layout-preview--magazine img {
-  object-position: 42% 22%;
+  object-position: 50% 50%;
   transform: scale(1.02);
 }
 
 .promo-layout-preview--editorial img {
-  object-position: 48% 24%;
+  object-position: 50% 50%;
   transform: scale(1.02);
 }
 
 .promo-layout-preview--gallery img {
-  object-position: 50% 18%;
+  object-position: 50% 50%;
   transform: scale(1.02);
 }
 
 .promo-layout-preview--brutalist img {
-  object-position: 50% 24%;
+  object-position: 50% 50%;
   transform: scale(1.02);
 }
 

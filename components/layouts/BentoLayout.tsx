@@ -119,8 +119,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                   ${style.span}
                   ${style.containerClass}
                   group relative overflow-hidden cursor-pointer
-                  rounded-3xl feed-card
-                  hover:border-[rgba(var(--color-accent),0.25)]
+                  rounded-3xl feed-card bento-feed-card
                   transition-all duration-400
                 `}
               >

@@ -16,7 +16,7 @@ interface ArticleImageProps {
 
 /**
  * ArticleImage - Centralized component for handling article images
- * 
+ *
  * Features:
  * - Robust source chain: Original -> Secondary (if available) -> Picsum Fallback
  * - Lazy loading with intersection observer (or immediate load if priority)
@@ -39,6 +39,8 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
     width: placeholderWidth,
     height: placeholderHeight,
     label: article.sourceTitle || 'Personal News',
+    feedUrl: article.feedUrl,
+    headline: article.title,
     tone: 'brand',
     variant: 'ambient',
   });
@@ -46,6 +48,8 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
     width: placeholderWidth,
     height: placeholderHeight,
     label: article.sourceTitle || 'Personal News',
+    feedUrl: article.feedUrl,
+    headline: article.title,
     tone: 'neutral',
     variant: 'ambient',
   });
