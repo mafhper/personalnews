@@ -106,6 +106,11 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "B9"
   },
   {
+    "url": "https://www.awwwards.com/feed/",
+    "categoryId": "design",
+    "customTitle": "Awwwards"
+  },
+  {
     "url": "https://kotaku.com/rss",
     "categoryId": "games",
     "customTitle": "Kotaku"
@@ -114,6 +119,11 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://jogabilida.de/feed/",
     "categoryId": "games",
     "customTitle": "Jogabilidade"
+  },
+  {
+    "url": "https://br.ign.com/feed.xml",
+    "categoryId": "games",
+    "customTitle": "IGN Brasil"
   },
   {
     "url": "https://piaui.folha.uol.com.br/feed/",
@@ -126,9 +136,29 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "The Intercept Brasil"
   },
   {
-    "url": "https://www.theverge.com/rss/index.xml",
+    "url": "https://midianinja.org/feed/",
+    "categoryId": "politics",
+    "customTitle": "Mídia Ninja"
+  },
+  {
+    "url": "https://arstechnica.com/feed/",
     "categoryId": "tech",
-    "customTitle": "The Verge"
+    "customTitle": "Ars Technica"
+  },
+  {
+    "url": "http://www.cnet.com/rss/news/",
+    "categoryId": "tech",
+    "customTitle": "CNET"
+  },
+  {
+    "url": "https://tecnoblog.net/feed/",
+    "categoryId": "tech",
+    "customTitle": "Tecnoblog"
+  },
+  {
+    "url": "https://thenextweb.com/feed",
+    "categoryId": "tech",
+    "customTitle": "The Next Web"
   },
   {
     "url": "https://www.xda-developers.com/feed/",
@@ -148,6 +178,12 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "hideFromAll": true
   },
   {
+    "url": "https://feeds.simplecast.com/kfPT8_s8",
+    "categoryId": "podcasts",
+    "customTitle": "MIDCast Política",
+    "hideFromAll": true
+  },
+  {
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
     "categoryId": "youtube",
     "customTitle": "1155 do ET",
@@ -157,6 +193,18 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ",
     "categoryId": "youtube",
     "customTitle": "Corridor Crew",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA",
+    "categoryId": "youtube",
+    "customTitle": "Diolinux",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg",
+    "categoryId": "youtube",
+    "customTitle": "Tecnologia e Classe",
     "hideFromAll": true
   }
 ];
@@ -243,21 +291,9 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "hideFromAll": true
     },
     {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw",
-      "categoryId": "youtube",
-      "customTitle": "NORMOSE",
-      "hideFromAll": true
-    },
-    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg",
       "categoryId": "youtube",
       "customTitle": "Tecnologia e Classe",
-      "hideFromAll": true
-    },
-    {
-      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCpmygvQeXq1jz3fo9IP3Gzw",
-      "categoryId": "youtube",
-      "customTitle": "Gamera",
       "hideFromAll": true
     }
   ],
@@ -266,6 +302,21 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://uxdesign.cc/feed",
       "categoryId": "design",
       "customTitle": "UX Collective"
+    },
+    {
+      "url": "https://www.thisiscolossal.com/feed/",
+      "categoryId": "design",
+      "customTitle": "This is Colossal"
+    },
+    {
+      "url": "https://www.awwwards.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Awwwards"
+    },
+    {
+      "url": "https://thedieline.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Thedieline"
     },
     {
       "url": "https://kotaku.com/rss",
@@ -281,21 +332,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.polygon.com/feed/",
       "categoryId": "games",
       "customTitle": "Polygon"
-    },
-    {
-      "url": "https://9to5google.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "9to5Google"
-    },
-    {
-      "url": "https://9to5linux.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "9to5Linux"
-    },
-    {
-      "url": "https://9to5mac.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "9to5Mac"
     },
     {
       "url": "https://arstechnica.com/feed/",
@@ -321,11 +357,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.engadget.com/rss.xml",
       "categoryId": "tech",
       "customTitle": "Engadget"
-    },
-    {
-      "url": "https://www.omglinux.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "OMG! Linux"
     },
     {
       "url": "https://www.omgubuntu.co.uk/feed",
@@ -358,19 +389,9 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Tom's Hardware"
     },
     {
-      "url": "https://www.wired.com/feed/tag/ai/latest/rss",
-      "categoryId": "tech",
-      "customTitle": "WIRED AI"
-    },
-    {
       "url": "https://www.wired.com/feed/tag/wired-guide/latest/rss",
       "categoryId": "tech",
       "customTitle": "WIRED Guides"
-    },
-    {
-      "url": "https://www.wired.com/feed/category/ideas/latest/rss",
-      "categoryId": "tech",
-      "customTitle": "WIRED Ideas"
     },
     {
       "url": "https://www.xda-developers.com/feed/",
@@ -434,14 +455,29 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
   ],
   "Pacote Mix Global": [
     {
+      "url": "https://uxdesign.cc/feed",
+      "categoryId": "design",
+      "customTitle": "UX Collective"
+    },
+    {
       "url": "https://www.b9.com.br/feed/",
       "categoryId": "design",
       "customTitle": "B9"
     },
     {
-      "url": "https://uxdesign.cc/feed",
+      "url": "https://www.thisiscolossal.com/feed/",
       "categoryId": "design",
-      "customTitle": "UX Collective"
+      "customTitle": "This is Colossal"
+    },
+    {
+      "url": "https://www.awwwards.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Awwwards"
+    },
+    {
+      "url": "https://thedieline.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Thedieline"
     },
     {
       "url": "https://adrenaline.com.br/feed/",
