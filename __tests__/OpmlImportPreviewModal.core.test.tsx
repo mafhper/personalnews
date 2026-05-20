@@ -62,6 +62,14 @@ describe("OpmlImportPreviewModal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
 
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("heading", { name: "Confirmar importação" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Tecnologia")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar importação" }));
+
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm.mock.calls[0][0]).toEqual(
       expect.arrayContaining([
@@ -87,6 +95,7 @@ describe("OpmlImportPreviewModal", () => {
     fireEvent.change(batchCategorySelect, { target: { value: "design" } });
     fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
     fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar importação" }));
 
     expect(onConfirm.mock.calls[0][0][0]).toMatchObject({
       id: "ready",
@@ -112,6 +121,7 @@ describe("OpmlImportPreviewModal", () => {
 
     fireEvent.change(candidateCategorySelect, { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar importação" }));
 
     expect(onConfirm.mock.calls[0][0][0]).toMatchObject({
       id: "ready",
@@ -139,8 +149,11 @@ describe("OpmlImportPreviewModal", () => {
       />,
     );
 
-    const confirmButton = screen.getByRole("button", {
+    fireEvent.click(screen.getByRole("button", {
       name: "Importar selecionados",
+    }));
+    const confirmButton = screen.getByRole("button", {
+      name: "Confirmar importação",
     });
     fireEvent.click(confirmButton);
     fireEvent.click(confirmButton);
@@ -149,5 +162,58 @@ describe("OpmlImportPreviewModal", () => {
     expect(confirmButton).toBeDisabled();
     expect(screen.getByRole("button", { name: "Importando..." })).toBeDisabled();
     resolveImport?.();
+  });
+
+  it("returns to edit without losing draft changes", () => {
+    const onConfirm = vi.fn();
+    render(
+      <OpmlImportPreviewModal
+        isOpen
+        candidates={[makeCandidate({ id: "ready" })]}
+        categories={categories}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const titleInput = screen.getByDisplayValue("Example");
+    fireEvent.change(titleInput, { target: { value: "Edited title" } });
+    fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
+    fireEvent.click(screen.getByRole("button", { name: "Voltar para editar" }));
+
+    expect(screen.getByDisplayValue("Edited title")).toBeInTheDocument();
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("defaults large OPML imports to not loading immediately", () => {
+    const candidates = Array.from({ length: 51 }, (_, index) =>
+      makeCandidate({
+        id: `ready-${index}`,
+        url: `https://example.com/${index}.xml`,
+        normalizedUrl: `https://example.com/${index}.xml`,
+        suggestedTitle: `Feed ${index}`,
+      }),
+    );
+
+    render(
+      <OpmlImportPreviewModal
+        isOpen
+        candidates={candidates}
+        categories={categories}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
+
+    expect(
+      screen.getByText(/Esta importação tem mais de 50 feeds/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", {
+        name: /Carregar artigos e episódios agora/i,
+      }),
+    ).not.toBeChecked();
   });
 });

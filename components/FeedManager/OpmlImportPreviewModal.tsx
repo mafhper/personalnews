@@ -1,7 +1,10 @@
 import React, { useMemo, useRef, useState } from "react";
 import type { FeedCategory } from "../../types";
 import type { ImportCandidate } from "../../services/opmlImportPreview";
-import { normalizeCategoryName } from "../../services/opmlImportPreview";
+import {
+  buildOpmlImportConfirmationSummary,
+  normalizeCategoryName,
+} from "../../services/opmlImportPreview";
 import { Modal } from "../Modal";
 
 interface OpmlImportPreviewModalProps {
@@ -11,6 +14,8 @@ interface OpmlImportPreviewModalProps {
   onClose: () => void;
   onConfirm: (candidates: ImportCandidate[]) => void | Promise<void>;
 }
+
+type OpmlImportStep = "edit" | "confirm";
 
 const statusLabels: Record<ImportCandidate["status"], string> = {
   pending: "pendente",
@@ -69,6 +74,8 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
   );
   const [categoryToApply, setCategoryToApply] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState<OpmlImportStep>("edit");
+  const [loadImmediately, setLoadImmediately] = useState(true);
   const isSubmittingRef = useRef(false);
 
   React.useEffect(() => {
@@ -82,6 +89,7 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       ),
     );
     setCategoryToApply("");
+    setStep("edit");
     setIsSubmitting(false);
     isSubmittingRef.current = false;
   }, [candidates, isOpen]);
@@ -115,6 +123,11 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       ).size,
     };
   }, [categories, draftCandidates]);
+
+  const confirmationSummary = useMemo(
+    () => buildOpmlImportConfirmationSummary(draftCandidates, categories),
+    [categories, draftCandidates],
+  );
 
   const updateCandidate = (
     candidateId: string,
@@ -238,13 +251,30 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
     }
   };
 
+  const goToConfirmation = () => {
+    const nextSummary = buildOpmlImportConfirmationSummary(
+      draftCandidates,
+      categories,
+    );
+    setLoadImmediately(!nextSummary.isLargeImport);
+    setStep("confirm");
+  };
+
+  const goBackToEdit = () => {
+    setStep("edit");
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       size="6xl"
-      title="Revisar OPML"
-      description="Confirme quais feeds entram na coleção antes de gravar."
+      title={step === "confirm" ? "Confirmar importação" : "Revisar OPML"}
+      description={
+        step === "confirm"
+          ? "Revise o resumo final antes de gravar os feeds."
+          : "Confirme quais feeds entram na coleção antes de gravar."
+      }
       tone="selection"
       zIndexClass="z-[9999]"
       footer={
@@ -253,26 +283,134 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
             {summary.importing} de {summary.total} feeds marcados para importar.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            {step === "confirm" && (
+              <button
+                type="button"
+                onClick={goBackToEdit}
+                disabled={isSubmitting}
+                className="rounded-lg border border-[rgba(var(--color-border),0.24)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Voltar para editar
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="rounded-lg border border-[rgba(var(--color-border),0.24)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+              className="rounded-lg border border-[rgba(var(--color-border),0.24)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancelar
             </button>
             <button
               type="button"
-              onClick={() => void handleConfirm()}
+              onClick={() =>
+                step === "confirm" ? void handleConfirm() : goToConfirmation()
+              }
               disabled={isSubmitting || summary.importing === 0}
               className="rounded-lg border border-[rgb(var(--color-accentSurface))] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? "Importando..." : "Importar selecionados"}
+              {isSubmitting
+                ? "Importando..."
+                : step === "confirm"
+                  ? "Confirmar importação"
+                  : "Importar selecionados"}
             </button>
           </div>
         </div>
       }
     >
+      {step === "confirm" ? (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-5">
+            <PreviewStat label="Importar" value={confirmationSummary.importCount} />
+            <PreviewStat label="Ignorados" value={confirmationSummary.ignoredCount} />
+            <PreviewStat label="Duplicados" value={confirmationSummary.duplicateCount} />
+            <PreviewStat label="Inválidos" value={confirmationSummary.invalidCount} />
+            <PreviewStat
+              label="Novas categorias"
+              value={confirmationSummary.newCategories.length}
+            />
+          </div>
+
+          {confirmationSummary.isLargeImport && (
+            <div className="rounded-[16px] border border-[rgba(var(--color-warning),0.28)] bg-[rgba(var(--color-warning),0.12)] p-3 text-sm text-[rgb(var(--color-warning))]">
+              Esta importação tem mais de 50 feeds. Para evitar travamentos, o
+              padrão seguro é gravar a coleção sem carregar tudo imediatamente.
+            </div>
+          )}
+
+          <label className="flex items-start gap-3 rounded-[16px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+            <input
+              type="checkbox"
+              checked={loadImmediately}
+              onChange={(event) => setLoadImmediately(event.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              <span className="block font-bold">
+                Carregar artigos e episódios agora
+              </span>
+              <span className="text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                Esta rodada apenas registra a escolha no resumo. O carregamento
+                controlado será implementado em um ciclo de escala separado.
+              </span>
+            </span>
+          </label>
+
+          {confirmationSummary.newCategories.length > 0 && (
+            <div className="rounded-[16px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3">
+              <h3 className="text-sm font-bold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                Categorias que serão criadas
+              </h3>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {confirmationSummary.newCategories.map((categoryName) => (
+                  <span
+                    key={categoryName}
+                    className="rounded-full border border-[rgba(var(--color-accent),0.22)] px-3 py-1 text-xs font-bold text-[rgb(var(--color-accent))]"
+                  >
+                    {categoryName}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-[52vh] space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+            {confirmationSummary.groupsByCategory.map((group) => (
+              <section
+                key={group.categoryLabel}
+                className="rounded-[18px] border border-[rgba(var(--color-border),0.14)] bg-[rgb(var(--theme-manager-elevated,var(--color-surface)))] p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-bold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                    {group.categoryLabel}
+                  </h3>
+                  <span className="rounded-full bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-2.5 py-1 text-xs font-bold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                    {group.feeds.length} feeds
+                  </span>
+                </div>
+                <ul className="mt-3 space-y-2">
+                  {group.feeds.slice(0, 12).map((feed) => (
+                    <li key={feed.id} className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                        {feed.title}
+                      </div>
+                      <div className="break-all font-mono text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                        {feed.url}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {group.feeds.length > 12 && (
+                  <p className="mt-3 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                    Mais {group.feeds.length - 12} feeds nesta categoria.
+                  </p>
+                )}
+              </section>
+            ))}
+          </div>
+        </div>
+      ) : (
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-5">
           <PreviewStat label="Total" value={summary.total} />
@@ -416,6 +554,7 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
           })}
         </div>
       </div>
+      )}
     </Modal>
   );
 };
