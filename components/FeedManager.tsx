@@ -36,9 +36,20 @@ import { FeedDuplicateModal } from "./FeedDuplicateModal";
 import { FeedAddTab } from "./FeedManager/FeedAddTab";
 import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
+import { FeedQuarantineTab } from "./FeedManager/FeedQuarantineTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
 import { FeedAnalytics } from "./FeedAnalytics";
 import { Modal } from "./Modal";
+import {
+  type FeedErrorHistoryItem,
+  isFeedActive,
+  isFeedQuarantined,
+  markFeedInactive,
+  quarantineFeed,
+  restoreQuarantinedFeed,
+  shouldRecommendQuarantine,
+  updateQuarantineAfterValidation,
+} from "../utils/feedQuarantine";
 
 interface FeedManagerProps {
   currentFeeds: FeedSource[];
@@ -49,7 +60,7 @@ interface FeedManagerProps {
 }
 
 type FeedManagerTab = "feeds" | "operations" | "diagnostics";
-type CollectionView = "feeds" | "categories" | "add";
+type CollectionView = "feeds" | "categories" | "add" | "quarantine";
 
 const normalizePersistedTab = (value?: string): FeedManagerTab => {
   if (value === "diagnostics") return "diagnostics";
@@ -77,6 +88,26 @@ const shouldOpenDiagnostics = (
     return true;
   }
   return false;
+};
+
+const readFeedErrorHistory = (): FeedErrorHistoryItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem("feed-error-history");
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is Record<string, unknown> => Boolean(item?.url))
+      .map((item) => ({
+        url: String(item.url),
+        failures: Number(item.failures || 1),
+        lastError: Number(item.lastError || Date.now()),
+        lastErrorType: String(item.lastErrorType || "unknown"),
+      }));
+  } catch {
+    return [];
+  }
 };
 
 const EditFeedDialog: React.FC<{
@@ -262,13 +293,21 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [editUrlDraft, setEditUrlDraft] = useState("");
   const [editingFeedTitleUrl, setEditingFeedTitleUrl] = useState<string | null>(null);
   const [editTitleDraft, setEditTitleDraft] = useState("");
+  const activeFeeds = React.useMemo(
+    () => currentFeeds.filter(isFeedActive),
+    [currentFeeds],
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (showImportModal && !selectedListType) {
       const firstList = Object.keys(DEFAULT_CURATED_LISTS)[0];
-      if (firstList) setSelectedListType(firstList);
+      if (!firstList) return;
+      const frameId = requestAnimationFrame(() => {
+        setSelectedListType(firstList);
+      });
+      return () => cancelAnimationFrame(frameId);
     }
   }, [showImportModal, selectedListType]);
 
@@ -284,17 +323,20 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         openProxySettings?: boolean;
       };
 
-      const nextTab = normalizePersistedTab(parsed.tab);
-      setActiveTab(
-        shouldOpenDiagnostics(parsed.section, parsed.openProxySettings)
-          ? "diagnostics"
-          : nextTab,
-      );
-      if (parsed.openProxySettings) {
-        setDiagnosticsFocus("proxy-health");
-      } else if (parsed.section) {
-        setDiagnosticsFocus(parsed.section);
-      }
+      const frameId = requestAnimationFrame(() => {
+        const nextTab = normalizePersistedTab(parsed.tab);
+        setActiveTab(
+          shouldOpenDiagnostics(parsed.section, parsed.openProxySettings)
+            ? "diagnostics"
+            : nextTab,
+        );
+        if (parsed.openProxySettings) {
+          setDiagnosticsFocus("proxy-health");
+        } else if (parsed.section) {
+          setDiagnosticsFocus(parsed.section);
+        }
+      });
+      return () => cancelAnimationFrame(frameId);
     } catch {
       // Ignore malformed state.
     } finally {
@@ -305,7 +347,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const validateAllFeeds = React.useCallback(async () => {
     if (isValidating) return;
     setIsValidating(true);
-    const urls = currentFeeds.map((feed) => feed.url);
+    const urls = activeFeeds.map((feed) => feed.url);
 
     try {
       const results = await feedValidator.validateFeeds(urls);
@@ -317,16 +359,19 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     } finally {
       setIsValidating(false);
     }
-  }, [currentFeeds, isValidating, logger]);
+  }, [activeFeeds, isValidating, logger]);
 
   useEffect(() => {
     if (
-      currentFeeds.length > 0 &&
+      activeFeeds.length > 0 &&
       (activeTab === "feeds" || activeTab === "diagnostics")
     ) {
-      void validateAllFeeds();
+      const frameId = requestAnimationFrame(() => {
+        void validateAllFeeds();
+      });
+      return () => cancelAnimationFrame(frameId);
     }
-  }, [activeTab, currentFeeds.length, validateAllFeeds]);
+  }, [activeFeeds.length, activeTab, validateAllFeeds]);
 
   const validateSingleFeed = async (url: string) => {
     try {
@@ -517,6 +562,130 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
   };
 
+  const getQuarantineReason = React.useCallback(
+    (url: string) => {
+      const validation = feedValidations.get(url);
+      const history = readFeedErrorHistory().find((item) => item.url === url);
+      const failures = history?.failures || 0;
+      const detail =
+        validation?.diagnostics?.summary ||
+        validation?.error ||
+        history?.lastErrorType ||
+        "falhas recorrentes";
+      const effectiveFailures = Math.max(1, failures);
+      return {
+        reason: `${effectiveFailures} falha${effectiveFailures === 1 ? "" : "s"}: ${detail}`,
+        failureCountAtEntry: failures,
+        lastErrorType: validation?.status || history?.lastErrorType,
+        lastError: validation?.error || detail,
+      };
+    },
+    [feedValidations],
+  );
+
+  const handleQuarantineFeed = React.useCallback(
+    async (url: string) => {
+      const feed = currentFeeds.find((item) => item.url === url);
+      if (!feed || isFeedQuarantined(feed)) return;
+      const confirmed = await confirmWarning(
+        "Colocar este feed em quarentena? Ele sairá das categorias e do carregamento, mas poderá ser testado e restaurado depois.",
+        "Quarentenar feed",
+      );
+      if (!confirmed) return;
+
+      const reason = getQuarantineReason(url);
+      setFeeds((prev) =>
+        prev.map((item) =>
+          item.url === url ? quarantineFeed(item, reason) : item,
+        ),
+      );
+      await alertSuccess("Feed enviado para quarentena.");
+    },
+    [alertSuccess, confirmWarning, currentFeeds, getQuarantineReason, setFeeds],
+  );
+
+  const handleQuarantineFeeds = React.useCallback(
+    (urls: string[]) => {
+      const urlSet = new Set(urls);
+      setFeeds((prev) =>
+        prev.map((feed) =>
+          urlSet.has(feed.url) && !isFeedQuarantined(feed)
+            ? quarantineFeed(feed, getQuarantineReason(feed.url))
+            : feed,
+        ),
+      );
+    },
+    [getQuarantineReason, setFeeds],
+  );
+
+  const handleValidateQuarantinedFeed = React.useCallback(
+    async (url: string) => {
+      const result = await validateSingleFeed(url);
+      if (!result) {
+        await alertError("Não foi possível validar este feed.");
+        return;
+      }
+
+      let nextFeed: FeedSource | undefined;
+      setFeeds((prev) =>
+        prev.map((feed) => {
+          if (feed.url !== url) return feed;
+          nextFeed = updateQuarantineAfterValidation(feed, {
+            isValid: result.isValid,
+            status: result.status,
+            error: result.error,
+          });
+          return nextFeed;
+        }),
+      );
+
+      if (result.isValid) {
+        const successes = (nextFeed?.quarantine?.recoverySuccesses || 0);
+        if (successes >= 2) {
+          await alertSuccess("Feed recuperado. Você já pode restaurá-lo.");
+        } else {
+          await alertSuccess("Feed validado. Mais uma validação libera a restauração recomendada.");
+        }
+        return;
+      }
+
+      await alertError("O feed ainda falhou na validação.");
+    },
+    [alertError, alertSuccess, setFeeds],
+  );
+
+  const handleRestoreQuarantinedFeed = React.useCallback(
+    async (url: string) => {
+      const confirmed = await confirmWarning(
+        "Restaurar este feed para a coleção ativa?",
+        "Restaurar feed",
+      );
+      if (!confirmed) return;
+      setFeeds((prev) =>
+        prev.map((feed) =>
+          feed.url === url ? restoreQuarantinedFeed(feed) : feed,
+        ),
+      );
+      await alertSuccess("Feed restaurado para a coleção ativa.");
+    },
+    [alertSuccess, confirmWarning, setFeeds],
+  );
+
+  const handleMarkFeedInactive = React.useCallback(
+    async (url: string) => {
+      const confirmed = await confirmWarning(
+        "Marcar este feed como inativo? Ele continuará preservado, mas fora da circulação.",
+        "Marcar inativo",
+      );
+      if (!confirmed) return;
+      setFeeds((prev) =>
+        prev.map((feed) => (feed.url === url ? markFeedInactive(feed) : feed)),
+      );
+      await alertSuccess("Feed marcado como inativo.");
+    },
+    [alertSuccess, confirmWarning, setFeeds],
+  );
+
   const handleConfirmOpmlImport = async (candidates: ImportCandidate[]) => {
     const firstPass = commitImportCandidates({
       candidates,
@@ -690,6 +859,18 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const invalidCount = Array.from(feedValidations.values()).filter(
     (v) => !v.isValid,
   ).length;
+  const quarantineCount = currentFeeds.filter(isFeedQuarantined).length;
+  const quarantineRecommendedUrls = new Set(
+    currentFeeds
+      .filter((feed) =>
+        shouldRecommendQuarantine({
+          feed,
+          history: readFeedErrorHistory().find((item) => item.url === feed.url),
+          isValid: feedValidations.get(feed.url)?.isValid,
+        }),
+      )
+      .map((feed) => feed.url),
+  );
   const tabs: Array<{
     id: FeedManagerTab;
     label: string;
@@ -700,8 +881,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     {
       id: "feeds",
       label: "Coleção",
-      description: "Feeds, adicionar e categorias",
+      description: "Feeds, adicionar, categorias e quarentena",
       icon: <Library className="h-4 w-4" />,
+      badge: quarantineCount > 0 ? quarantineCount : undefined,
     },
     {
       id: "operations",
@@ -838,6 +1020,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   >
                     Categorias
                   </CollectionModeButton>
+                  <CollectionModeButton
+                    active={collectionView === "quarantine"}
+                    onClick={() => setCollectionView("quarantine")}
+                  >
+                    Quarentena{quarantineCount > 0 ? ` (${quarantineCount})` : ""}
+                  </CollectionModeButton>
                   <button
                     type="button"
                     onClick={() => setCollectionView("add")}
@@ -856,7 +1044,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <div className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
               {collectionView === "feeds" && (
                 <FeedListTab
-                  feeds={currentFeeds}
+                  feeds={activeFeeds}
                   validations={feedValidations}
                   categories={categories}
                   onRemove={handleRemoveFeed}
@@ -866,6 +1054,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   onShowError={handleShowError}
                   onMoveCategory={moveFeedToCategory}
                   onToggleHideFromAll={handleToggleHideFromAll}
+                  onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
+                  quarantineRecommendedUrls={quarantineRecommendedUrls}
                   onRefreshAll={onRefreshFeeds}
                   onConfirmRefreshAll={handleConfirmRefreshAll}
                   articles={articles}
@@ -899,6 +1089,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               />
                   </div>
                 </div>
+              )}
+
+              {collectionView === "quarantine" && (
+                <FeedQuarantineTab
+                  feeds={currentFeeds}
+                  onValidate={(url) => void handleValidateQuarantinedFeed(url)}
+                  onRestore={(url) => void handleRestoreQuarantinedFeed(url)}
+                  onMarkInactive={(url) => void handleMarkFeedInactive(url)}
+                  onRemove={(url) => void handleRemoveFeed(url)}
+                />
               )}
             </div>
           </div>
@@ -952,11 +1152,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <div className="flex-1 overflow-visible custom-scrollbar p-4 sm:p-6 lg:min-h-0 lg:overflow-y-auto">
               <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6">
                 <FeedAnalytics
-                  feeds={currentFeeds}
+                  feeds={activeFeeds}
                   articles={articles}
                   feedValidations={feedValidations}
                   focusSection={diagnosticsFocus || undefined}
                   onFocusConsumed={() => setDiagnosticsFocus(null)}
+                  quarantineRecommendedUrls={quarantineRecommendedUrls}
+                  onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
                 />
               </div>
             </div>
@@ -1047,6 +1249,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         isOpen={showCleanupModal}
         onClose={() => setShowCleanupModal(false)}
         feeds={currentFeeds}
+        onQuarantineFeeds={handleQuarantineFeeds}
         onRemoveFeeds={(urls) =>
           setFeeds((prev) => prev.filter((f) => !urls.includes(f.url)))
         }

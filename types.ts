@@ -68,6 +68,18 @@ export interface FeedSource {
   categoryId?: string;
   customTitle?: string;
   hideFromAll?: boolean;
+  status?: "active" | "quarantined" | "inactive";
+  quarantine?: {
+    enteredAt: string;
+    reason: string;
+    failureCountAtEntry: number;
+    lastCheckedAt?: string;
+    nextCheckAt?: string;
+    recoverySuccesses: number;
+    inactiveAfter?: string;
+    lastErrorType?: string;
+    lastError?: string;
+  };
 }
 
 export interface FeedLoadRequest {

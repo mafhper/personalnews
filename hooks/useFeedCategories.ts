@@ -3,6 +3,7 @@ import { useLocalStorage } from './useLocalStorage';
 import type { FeedCategory, FeedSource } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants/curatedFeeds';
 import { getFeedSortKey } from '../utils/feedDisplay';
+import { isFeedActive } from '../utils/feedQuarantine';
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
@@ -27,9 +28,9 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     setCategories(prev => {
       const existingIds = new Set(prev.map(c => c.id));
       const missingDefaults = DEFAULT_CATEGORIES.filter(d => !existingIds.has(d.id));
-      
+
       let hasChanges = missingDefaults.length > 0;
-      
+
       // Also sync properties for existing default categories (like autoDiscovery)
       const updatedExisting = prev.map(cat => {
         const legacyLayoutMode = cat.layoutMode as string | undefined;
@@ -134,7 +135,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     // Add uncategorized feeds to 'all' category
     result['uncategorized'] = [];
 
-    feeds.forEach(feed => {
+    feeds.filter(isFeedActive).forEach(feed => {
       if (feed.categoryId && result[feed.categoryId]) {
         result[feed.categoryId].push(feed);
       } else {

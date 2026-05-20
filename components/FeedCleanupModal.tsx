@@ -15,6 +15,7 @@ interface FeedCleanupModalProps {
   onClose: () => void;
   feeds: FeedSource[];
   onRemoveFeeds: (urls: string[]) => void;
+  onQuarantineFeeds?: (urls: string[]) => void;
 }
 
 export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
@@ -22,10 +23,11 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
   onClose,
   feeds,
   onRemoveFeeds,
+  onQuarantineFeeds,
 }) => {
   const [errorHistory, setErrorHistory] = useState<FeedErrorHistoryItem[]>([]);
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
-  
+
   // Filters
   const [minFailures, setMinFailures] = useState<number>(1);
   const [errorTypeFilter, setErrorTypeFilter] = useState<string>('all');
@@ -38,7 +40,7 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
       if (stored) {
         const parsed = JSON.parse(stored);
         // Ensure compatibility with the new format (array of objects)
-        const history: FeedErrorHistoryItem[] = Array.isArray(parsed) 
+        const history: FeedErrorHistoryItem[] = Array.isArray(parsed)
           ? parsed.map((item: Record<string, unknown>) => ({
               url: item.url as string,
               failures: (item.failures as number) || 1, // Fallback for old format
@@ -107,17 +109,33 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
 
     if (confirmed) {
       onRemoveFeeds(Array.from(selectedUrls));
-      
+
       // Clean up local storage for removed feeds
       const remainingHistory = errorHistory.filter(item => !selectedUrls.has(item.url));
       localStorage.setItem('feed-error-history', JSON.stringify(remainingHistory));
-      
+
       alertSuccess(`${selectedUrls.size} feeds removidos com sucesso.`);
       loadErrorHistory(); // Reload
       setSelectedUrls(new Set());
-      onClose(); // Optional: close modal or stay open? Let's close for now or let user see empty list. 
+      onClose(); // Optional: close modal or stay open? Let's close for now or let user see empty list.
       // Actually, staying open to see result is better UX if they want to verify. But usually modal closes on success action.
       // Let's close it.
+    }
+  };
+
+  const handleQuarantine = async () => {
+    if (selectedUrls.size === 0 || !onQuarantineFeeds) return;
+
+    const confirmed = await confirmDanger(
+      `Colocar ${selectedUrls.size} feeds selecionados em quarentena? Eles sairão das categorias e do carregamento, mas poderão ser restaurados depois.`,
+    );
+
+    if (confirmed) {
+      onQuarantineFeeds(Array.from(selectedUrls));
+      alertSuccess(`${selectedUrls.size} feeds enviados para quarentena.`);
+      loadErrorHistory();
+      setSelectedUrls(new Set());
+      onClose();
     }
   };
 
@@ -136,6 +154,16 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
       bodyClassName="p-0"
       footer={
         <div className="flex justify-end gap-3">
+          {onQuarantineFeeds && (
+            <button
+              onClick={() => void handleQuarantine()}
+              disabled={selectedUrls.size === 0}
+              className="rounded-lg bg-[rgba(var(--color-warning),0.16)] px-4 py-2 text-sm font-medium text-[rgb(var(--color-warning))] transition-colors hover:bg-[rgba(var(--color-warning),0.22)] disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+            >
+              Quarentenar {selectedUrls.size > 0 ? `(${selectedUrls.size})` : ""}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="rounded-lg px-4 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition-colors hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-manager-text,var(--color-text)))]"

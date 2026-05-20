@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Layers3 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Layers3, ShieldAlert } from "lucide-react";
 import { Article, FeedSource } from "../types";
 import { useProxyDashboard } from "../hooks/useProxyDashboard";
 import {
@@ -17,6 +17,8 @@ interface FeedAnalyticsProps {
   feedValidations: Map<string, FeedValidationResult>;
   focusSection?: string;
   onFocusConsumed?: () => void;
+  quarantineRecommendedUrls?: Set<string>;
+  onQuarantineFeed?: (url: string) => void;
 }
 
 type AnalyticsAccordionSection =
@@ -38,6 +40,7 @@ type AffectedFeedRow = {
   lastChecked?: number;
   impact: "alto" | "médio" | "baixo";
   isValid: boolean;
+  quarantineRecommended: boolean;
 };
 
 const SURFACE_CLASS =
@@ -173,6 +176,8 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   feedValidations,
   focusSection,
   onFocusConsumed,
+  quarantineRecommendedUrls = new Set(),
+  onQuarantineFeed,
 }) => {
   const { snapshot, refresh } = useProxyDashboard();
   const [showAllRows, setShowAllRows] = useState(false);
@@ -320,6 +325,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           lastChecked: validation?.lastChecked,
           impact: getImpact(articleCount, isValid),
           isValid,
+          quarantineRecommended: quarantineRecommendedUrls.has(feed.url),
         };
       })
       .sort((a, b) => {
@@ -332,7 +338,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         }
         return a.title.localeCompare(b.title);
       });
-  }, [activityStats.countsByFeed, feedValidations, feeds]);
+  }, [activityStats.countsByFeed, feedValidations, feeds, quarantineRecommendedUrls]);
 
   const visibleRows = showAllRows ? affectedRows : affectedRows.slice(0, 8);
   const invalidRows = affectedRows.filter(
@@ -344,6 +350,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   const hasAttentionItems =
     invalidRows.length > 0 ||
     uncheckedRows.length > 0 ||
+    quarantineRecommendedUrls.size > 0 ||
     snapshot.summary.fallbackActive;
 
   const diagnosis = useMemo(() => {
@@ -410,12 +417,16 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       items.add(invalidRows[0].action);
     }
 
+    if (quarantineRecommendedUrls.size > 0) {
+      items.add(`${quarantineRecommendedUrls.size} feeds podem ir para quarentena.`);
+    }
+
     if (uncheckedRows.length > 0) {
       items.add(`Revalidar ${uncheckedRows.length} feeds pendentes.`);
     }
 
     return Array.from(items).slice(0, 3);
-  }, [diagnosis.action, invalidRows, snapshot, uncheckedRows.length]);
+  }, [diagnosis.action, invalidRows, quarantineRecommendedUrls.size, snapshot, uncheckedRows.length]);
 
   const exportFeeds = useMemo(
     () =>
@@ -635,6 +646,16 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                     <p className="mt-3 text-xs leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
                       {row.error}
                     </p>
+                    {row.quarantineRecommended && onQuarantineFeed && (
+                      <button
+                        type="button"
+                        onClick={() => onQuarantineFeed(row.url)}
+                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-[rgba(var(--color-warning),0.12)] px-3 py-2 text-xs font-bold text-[rgb(var(--color-warning))]"
+                      >
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                        Quarentenar
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -698,6 +719,16 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                         <div className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
                           {row.articleCount} arts.
                         </div>
+                        {row.quarantineRecommended && onQuarantineFeed && (
+                          <button
+                            type="button"
+                            onClick={() => onQuarantineFeed(row.url)}
+                            className="mt-2 inline-flex items-center justify-end gap-1 rounded-full bg-[rgba(var(--color-warning),0.12)] px-2.5 py-1 text-[10px] font-bold text-[rgb(var(--color-warning))] transition hover:bg-[rgba(var(--color-warning),0.18)]"
+                          >
+                            <ShieldAlert className="h-3 w-3" />
+                            Quarentena
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

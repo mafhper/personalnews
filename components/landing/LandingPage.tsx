@@ -36,7 +36,7 @@ const PROMO_HASH_TO_PAGE = Object.entries(PROMO_PAGE_HASHES).reduce(
 
 type PromoHashTarget =
   | { kind: "page"; page: PromoPageId }
-  | { kind: "element"; elementId: string };
+  | { kind: "element"; elementId: string; activePage: PromoPageId };
 
 const PROMO_UI_TEXT: Record<
   Language,
@@ -87,7 +87,11 @@ const getPromoHashTarget = (hash: string): PromoHashTarget | undefined => {
   const page = PROMO_HASH_TO_PAGE[normalizedHash];
   if (page) return { kind: "page", page };
   if (normalizedHash === VERSIONS_SECTION_HASH) {
-    return { kind: "element", elementId: VERSIONS_SECTION_ID };
+    return {
+      kind: "element",
+      elementId: VERSIONS_SECTION_ID,
+      activePage: "experience",
+    };
   }
   return undefined;
 };
@@ -95,7 +99,8 @@ const getPromoHashTarget = (hash: string): PromoHashTarget | undefined => {
 const getActiveSectionFromHash = (): PromoPageId => {
   if (typeof window === "undefined") return "home";
   const target = getPromoHashTarget(window.location.hash);
-  return target?.kind === "page" ? target.page : "home";
+  if (!target) return "home";
+  return target.kind === "page" ? target.page : target.activePage;
 };
 
 const scrollToElementId = (elementId: string, behavior: ScrollBehavior) => {
@@ -116,17 +121,16 @@ const scrollToPromoSection = (
 };
 
 const getInstallPlatformLabel = () => {
-  if (typeof navigator === "undefined") return "Desktop";
+  if (typeof navigator === "undefined") return null;
 
   const signature = `${navigator.platform || ""} ${navigator.userAgent || ""}`;
   const isTouchMac =
     /mac/i.test(navigator.platform || "") && (navigator.maxTouchPoints || 0) > 1;
-  if (/(iphone|ipad|ipod)/i.test(signature) || isTouchMac) return "iOS";
-  if (/android/i.test(signature)) return "Android";
+  if (/(iphone|ipad|ipod|android)/i.test(signature) || isTouchMac) return null;
   if (/win/i.test(signature)) return "Windows";
   if (/mac/i.test(signature)) return "macOS";
   if (/linux/i.test(signature)) return "Linux";
-  return "Desktop";
+  return null;
 };
 
 const ArrowIcon = ({ className = "" }: IconProps) => (
@@ -304,9 +308,13 @@ const ProductFrame = ({
   );
 
   React.useEffect(() => {
-    setOrder(images.map((_, index) => index));
-    setIsExiting(false);
-    isAnimatingRef.current = false;
+    const rafId = window.requestAnimationFrame(() => {
+      setOrder(images.map((_, index) => index));
+      setIsExiting(false);
+      isAnimatingRef.current = false;
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
   }, [images]);
 
   React.useEffect(() => {
@@ -402,7 +410,10 @@ const LandingPage = ({
   const secondaryVersions = content.versions.items.filter(
     (version) => !version.featured,
   );
-  const installPlatformLabel = React.useMemo(getInstallPlatformLabel, []);
+  const installPlatformLabel = React.useMemo(
+    () => getInstallPlatformLabel(),
+    [],
+  );
 
   const scrollToSection = React.useCallback((section: PromoPageId) => {
     if (typeof window === "undefined") return;
@@ -430,6 +441,7 @@ const LandingPage = ({
         return true;
       }
 
+      setActiveSection(target.activePage);
       scrollToElementId(target.elementId, behavior);
       return true;
     },
@@ -443,8 +455,14 @@ const LandingPage = ({
 
   React.useEffect(() => {
     window.addEventListener("hashchange", handleHashNavigation);
-    handleHashNavigation();
-    return () => window.removeEventListener("hashchange", handleHashNavigation);
+    const rafId = window.requestAnimationFrame(() => {
+      handleHashNavigation();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("hashchange", handleHashNavigation);
+    };
   }, [handleHashNavigation]);
 
   React.useEffect(() => {
@@ -631,7 +649,7 @@ const LandingPage = ({
               >
                 <Download className="promo-install-button__icon" />
                 <span>{content.hero.installCta}</span>
-                <small>{installPlatformLabel}</small>
+                {installPlatformLabel && <small>{installPlatformLabel}</small>}
               </a>
             </div>
             <dl

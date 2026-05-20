@@ -61,6 +61,7 @@ const BackgroundLayer = lazy(() =>
 );
 import { useLogger } from "../services/logger";
 import { areUrlsEqual } from "../utils/urlUtils";
+import { isFeedActive } from "../utils/feedQuarantine";
 import type { FeedLoadRequest } from "../types";
 
 // Lazy load non-critical components
@@ -369,7 +370,7 @@ const AppContent: React.FC = () => {
           );
           // If no feed found, show it anyway in 'all' to avoid blackout
           if (!feed) return true;
-          return !feed.hideFromAll;
+          return isFeedActive(feed) && !feed.hideFromAll;
         });
       } else {
         const selectedCategoryObj = categories.find(
@@ -385,7 +386,7 @@ const AppContent: React.FC = () => {
             );
 
             if (feed) {
-              return feed.categoryId === selectedCategory;
+              return isFeedActive(feed) && feed.categoryId === selectedCategory;
             }
 
             if (selectedCategoryObj.autoDiscovery === false) {

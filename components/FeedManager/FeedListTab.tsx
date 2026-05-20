@@ -16,6 +16,8 @@ interface FeedListTabProps {
   onShowError: (url: string, validation?: FeedValidationResult) => void;
   onMoveCategory: (feedUrl: string, categoryId: string) => void;
   onToggleHideFromAll?: (url: string) => void;
+  onQuarantineFeed?: (url: string) => void;
+  quarantineRecommendedUrls?: Set<string>;
   onRefreshAll?: () => void;
   onConfirmRefreshAll?: () => void | Promise<void>;
   articles?: Article[];
@@ -61,6 +63,8 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   onShowError,
   onMoveCategory,
   onToggleHideFromAll,
+  onQuarantineFeed,
+  quarantineRecommendedUrls = new Set(),
   onRefreshAll,
   onConfirmRefreshAll,
   articles = [],
@@ -359,8 +363,8 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
         ) : (
           <div className="space-y-6">
             {issueFeeds.length > 0 && (
-              <FeedGroup 
-                title="Atenção Necessária" 
+              <FeedGroup
+                title="Atenção Necessária"
                 count={issueFeeds.length}
                 tone="danger"
                 expanded={expandedGroups.issues}
@@ -381,14 +385,16 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                     categories={categories}
                     onMoveCategory={(catId) => onMoveCategory(feed.url, catId)}
                     onToggleHideFromAll={onToggleHideFromAll}
+                    onQuarantine={onQuarantineFeed}
+                    quarantineRecommended={quarantineRecommendedUrls.has(feed.url)}
                   />
                 ))}
               </FeedGroup>
             )}
 
             {uncheckedFeeds.length > 0 && (
-              <FeedGroup 
-                title="Pendentes de Validação" 
+              <FeedGroup
+                title="Pendentes de Validação"
                 count={uncheckedFeeds.length}
                 tone="warning"
                 expanded={expandedGroups.pending}
@@ -411,14 +417,16 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                       onMoveCategory(feed.url, catId)
                     }
                     onToggleHideFromAll={onToggleHideFromAll}
+                    onQuarantine={onQuarantineFeed}
+                    quarantineRecommended={quarantineRecommendedUrls.has(feed.url)}
                   />
                 ))}
               </FeedGroup>
             )}
 
             {validFeeds.length > 0 && (
-              <FeedGroup 
-                title="Coleção Válida" 
+              <FeedGroup
+                title="Coleção Válida"
                 count={validFeeds.length}
                 tone="success"
                 expanded={expandedGroups.healthy}
@@ -441,6 +449,8 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
                       onMoveCategory(feed.url, catId)
                     }
                     onToggleHideFromAll={onToggleHideFromAll}
+                    onQuarantine={onQuarantineFeed}
+                    quarantineRecommended={quarantineRecommendedUrls.has(feed.url)}
                   />
                 ))}
               </FeedGroup>
@@ -505,7 +515,7 @@ const FeedGroup: React.FC<{
             {count}
           </span>
         </div>
-        
+
         {count > 5 && (
           <button
             type="button"
@@ -517,9 +527,9 @@ const FeedGroup: React.FC<{
         )}
       </div>
       <div className="space-y-2.5">{children}</div>
-      
+
       {!expanded && count > 5 && (
-        <div 
+        <div
           onClick={onToggle}
           className="mt-3 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[rgba(var(--color-border),0.15)] py-2 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-60 hover:opacity-100 transition-opacity"
         >

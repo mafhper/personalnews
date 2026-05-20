@@ -1,5 +1,5 @@
 import React from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LandingPage } from "../components/landing/LandingPage";
 import type { Language } from "../types";
@@ -38,6 +38,11 @@ const setNavigatorPlatform = ({
     value: maxTouchPoints,
   });
 };
+
+const getPromoNavLink = (name: string) =>
+  within(
+    screen.getByRole("navigation", { name: "Navegação promocional" }),
+  ).getByRole("link", { name });
 
 describe("LandingPage promo structure", () => {
   beforeEach(() => {
@@ -105,6 +110,10 @@ describe("LandingPage promo structure", () => {
     fireEvent.click(screen.getByRole("link", { name: "Instalar app" }));
 
     expect(pushStateMock).toHaveBeenCalledWith(null, "", "#versions");
+    expect(getPromoNavLink("Experiência")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
     expect(scrollToMock).toHaveBeenCalled();
   });
@@ -118,7 +127,22 @@ describe("LandingPage promo structure", () => {
     });
 
     expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
+    expect(getPromoNavLink("Experiência")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(scrollToMock).toHaveBeenCalled();
+  });
+
+  it("marks the related nav item active when opening a shared versions URL", () => {
+    window.location.hash = "#versions";
+
+    render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    expect(getPromoNavLink("Experiência")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("does not add duplicate history entries for repeated install CTA clicks", () => {
@@ -132,7 +156,28 @@ describe("LandingPage promo structure", () => {
     expect(pushStateMock).toHaveBeenCalledTimes(1);
   });
 
-  it("labels iOS users before matching macOS user agent fragments", () => {
+  it("labels supported desktop platforms in the install CTA", () => {
+    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    const installHint = container.querySelector(".promo-install-button small");
+    expect(installHint).toHaveTextContent("Windows");
+  });
+
+  it("hides unsupported mobile platform labels in the install CTA", () => {
+    setNavigatorPlatform({
+      platform: "Linux armv8l",
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile",
+      maxTouchPoints: 5,
+    });
+
+    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    expect(container.querySelector(".promo-install-button small")).toBeNull();
+    expect(screen.getByRole("link", { name: "Instalar app" })).toBeInTheDocument();
+  });
+
+  it("does not label touch iOS devices as macOS in the install CTA", () => {
     setNavigatorPlatform({
       platform: "iPhone",
       userAgent:
@@ -142,8 +187,7 @@ describe("LandingPage promo structure", () => {
 
     const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
 
-    const installHint = container.querySelector(".promo-install-button small");
-    expect(installHint).toHaveTextContent("iOS");
+    expect(container.querySelector(".promo-install-button small")).toBeNull();
   });
 
   it("uses the liquid WebGL hero backdrop with a product screenshot signal", () => {

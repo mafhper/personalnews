@@ -5466,8 +5466,9 @@ html {
   }
 
   .promo-layout-preview {
-    height: 176px;
-    min-height: 176px;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 0;
   }
 
   .promo-mode-card > span,

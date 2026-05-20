@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   Info,
+  ShieldAlert,
   Trash2,
 } from "lucide-react";
 import type { FeedSource, FeedCategory } from "../types";
@@ -22,6 +23,8 @@ interface FeedItemProps {
   onEditTitle?: (url: string) => void;
   onShowError?: (url: string) => void;
   onToggleHideFromAll?: (url: string) => void;
+  onQuarantine?: (url: string) => void;
+  quarantineRecommended?: boolean;
   categories: FeedCategory[];
   onMoveCategory: (categoryId: string) => void;
 }
@@ -59,6 +62,8 @@ export const FeedItem: React.FC<FeedItemProps> = ({
   onEditTitle,
   onShowError,
   onToggleHideFromAll,
+  onQuarantine,
+  quarantineRecommended = false,
   categories,
   onMoveCategory,
 }) => {
@@ -83,6 +88,11 @@ export const FeedItem: React.FC<FeedItemProps> = ({
               </span>
               {feed.hideFromAll && (
                 <EyeOff className="h-3 w-3 text-[rgb(var(--color-accent))] opacity-60" />
+              )}
+              {quarantineRecommended && (
+                <span className="rounded-full bg-[rgba(var(--color-warning),0.12)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[rgb(var(--color-warning))]">
+                  quarentena sugerida
+                </span>
               )}
             </div>
             <p className="mt-0.5 truncate font-mono text-[10px] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] opacity-60">
@@ -163,6 +173,16 @@ export const FeedItem: React.FC<FeedItemProps> = ({
                         }}
                         icon={feed.hideFromAll ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                         label={feed.hideFromAll ? "Mostrar em Todos" : "Ocultar em Todos"}
+                      />
+                    )}
+                    {onQuarantine && (
+                      <MenuAction
+                        onClick={() => {
+                          onQuarantine(feed.url);
+                          setShowMenu(false);
+                        }}
+                        icon={<ShieldAlert className="h-3.5 w-3.5" />}
+                        label="Colocar em quarentena"
                       />
                     )}
                     <div className="my-1 border-t border-[rgba(var(--color-border),0.08)]" />
