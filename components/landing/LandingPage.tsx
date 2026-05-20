@@ -1,4 +1,5 @@
 import React from "react";
+import { Download } from "lucide-react";
 import Logo from "../Logo";
 import { useLanguage } from "../../hooks/useLanguage";
 import {
@@ -74,22 +75,38 @@ const PROMO_UI_TEXT: Record<
   },
 };
 
+const VERSIONS_SECTION_ID = "versions";
+
 const getActiveSectionFromHash = (): PromoPageId => {
   if (typeof window === "undefined") return "home";
   return PROMO_HASH_TO_PAGE[window.location.hash.toLowerCase()] ?? "home";
+};
+
+const scrollToElementId = (elementId: string, behavior: ScrollBehavior) => {
+  if (typeof window === "undefined") return;
+
+  const target = document.getElementById(elementId);
+  if (!target) return;
+
+  const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - 92);
+  window.scrollTo({ top, behavior });
 };
 
 const scrollToPromoSection = (
   section: PromoPageId,
   behavior: ScrollBehavior,
 ) => {
-  if (typeof window === "undefined") return;
+  scrollToElementId(section, behavior);
+};
 
-  const target = document.getElementById(section);
-  if (!target) return;
+const getInstallPlatformLabel = () => {
+  if (typeof navigator === "undefined") return "Desktop";
 
-  const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - 92);
-  window.scrollTo({ top, behavior });
+  const signature = `${navigator.platform || ""} ${navigator.userAgent || ""}`;
+  if (/win/i.test(signature)) return "Windows";
+  if (/mac/i.test(signature)) return "macOS";
+  if (/linux/i.test(signature)) return "Linux";
+  return "Desktop";
 };
 
 const ArrowIcon = ({ className = "" }: IconProps) => (
@@ -365,6 +382,7 @@ const LandingPage = ({
   const secondaryVersions = content.versions.items.filter(
     (version) => !version.featured,
   );
+  const installPlatformLabel = React.useMemo(getInstallPlatformLabel, []);
 
   const scrollToSection = React.useCallback((section: PromoPageId) => {
     if (typeof window === "undefined") return;
@@ -556,6 +574,24 @@ const LandingPage = ({
               >
                 {content.hero.secondaryCta}
               </a>
+              <a
+                href="#versions"
+                className="promo-secondary-button promo-install-button"
+                aria-label={
+                  content.hero.installCtaAriaLabel || content.hero.installCta
+                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (typeof window !== "undefined") {
+                    window.history.pushState(null, "", "#versions");
+                  }
+                  scrollToElementId(VERSIONS_SECTION_ID, "smooth");
+                }}
+              >
+                <Download className="promo-install-button__icon" />
+                <span>{content.hero.installCta}</span>
+                <small>{installPlatformLabel}</small>
+              </a>
             </div>
             <dl
               className="promo-hero__stats"
@@ -681,7 +717,11 @@ const LandingPage = ({
           </div>
         </section>
 
-        <section className="promo-section promo-versions">
+        <section
+          id={VERSIONS_SECTION_ID}
+          className="promo-section promo-versions"
+          data-testid="promo-section-versions"
+        >
           <div className="promo-shell">
             <SectionIntro
               eyebrow={content.versions.eyebrow}

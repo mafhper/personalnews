@@ -4129,6 +4129,13 @@ html {
   border-color: var(--promo-accent-border);
 }
 
+.promo-install-button small {
+  color: var(--promo-text-muted);
+  font-family: var(--promo-font-mono);
+  font-size: 11px;
+  line-height: 1;
+}
+
 .promo-header__cta:hover svg,
 .promo-primary-button:hover svg,
 .promo-secondary-button:hover svg,
