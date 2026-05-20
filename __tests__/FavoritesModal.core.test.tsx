@@ -127,4 +127,29 @@ describe("FavoritesModal", () => {
     expect(screen.queryByText("Article favorite")).not.toBeInTheDocument();
     expect(screen.queryByText("Video favorite")).not.toBeInTheDocument();
   });
+
+  it("respects persisted media type before inferring from audio fields", () => {
+    setupFavorites([
+      makeFavorite({
+        id: "video-with-audio",
+        title: "Video favorite with audio",
+        audioUrl: "https://cdn.example.com/video-audio.mp3",
+        mediaType: "video",
+      }),
+      makeFavorite({
+        id: "podcast",
+        title: "Podcast favorite",
+        audioUrl: "https://cdn.example.com/podcast.mp3",
+      }),
+    ]);
+
+    render(<FavoritesModal isOpen onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText("Tipo de favorito"), {
+      target: { value: "video" },
+    });
+
+    expect(screen.getByText("Video favorite with audio")).toBeInTheDocument();
+    expect(screen.queryByText("Podcast favorite")).not.toBeInTheDocument();
+  });
 });
