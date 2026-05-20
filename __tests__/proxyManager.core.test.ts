@@ -13,12 +13,30 @@ const setImportMetaEnv = (patch: Record<string, string | undefined>) => {
   };
 };
 
+const resetRuntimeProxyStates = () => {
+  [
+    "LocalProxy",
+    "AllOrigins",
+    "CodeTabs",
+    "WhateverOrigin",
+    "TextProxy",
+    "CorsProxy.io",
+    "RSS2JSON",
+    "CORS Anywhere",
+  ].forEach((proxyName) => proxyManager.enableProxy(proxyName));
+  proxyManager.resetStats();
+};
+
 describe("ProxyManager preference loading", () => {
   beforeEach(() => {
     localStorage.clear();
+    resetRuntimeProxyStates();
     ProxyManager.setRss2jsonApiKey("");
     ProxyManager.setCorsproxyCIOApiKey("");
     ProxyManager.setPreferLocalProxy(false);
+    localStorage.removeItem("prefer_local_proxy");
+    localStorage.removeItem("proxy_route_mode_v1");
+    localStorage.removeItem("proxy_route_order_v1");
     delete (window as Window & { __TAURI__?: unknown }).__TAURI__;
     delete (window as Window & { __TAURI_INTERNALS__?: unknown })
       .__TAURI_INTERNALS__;
@@ -56,6 +74,7 @@ describe("ProxyManager preference loading", () => {
     ProxyManager.loadPreferences();
 
     expect(ProxyManager.getPreferLocalProxy()).toBe(true);
+    expect(ProxyManager.getRoutingMode()).toBe("full-local");
   });
 
   it("defaults dev local runs to prefer the backend route when backend mode is on", () => {
@@ -72,7 +91,7 @@ describe("ProxyManager preference loading", () => {
     expect(ProxyManager.getPreferLocalProxy()).toBe(true);
   });
 
-  it("forces the local route on dev local even when a stale saved preference was false", () => {
+  it("migrates a stale saved false preference to full external proxy mode", () => {
     vi.stubEnv("VITE_BACKEND_ENABLED", "true");
     vi.stubEnv("VITE_BACKEND_DEFAULT_MODE", "on");
     setImportMetaEnv({
@@ -83,11 +102,12 @@ describe("ProxyManager preference loading", () => {
 
     ProxyManager.loadPreferences();
 
-    expect(ProxyManager.getPreferLocalProxy()).toBe(true);
-    expect(localStorage.getItem("prefer_local_proxy")).toBe("true");
+    expect(ProxyManager.getPreferLocalProxy()).toBe(false);
+    expect(ProxyManager.getRoutingMode()).toBe("full-external-proxies");
+    expect(localStorage.getItem("prefer_local_proxy")).toBe("false");
   });
 
-  it("forces the local route in backend auto mode even when a stale saved preference was false", () => {
+  it("respects a saved mixed route mode over the legacy boolean preference", () => {
     vi.stubEnv("VITE_BACKEND_ENABLED", "true");
     vi.stubEnv("VITE_BACKEND_DEFAULT_MODE", "auto");
     setImportMetaEnv({
@@ -95,10 +115,12 @@ describe("ProxyManager preference loading", () => {
       VITE_BACKEND_DEFAULT_MODE: "auto",
     });
     localStorage.setItem("prefer_local_proxy", "false");
+    localStorage.setItem("proxy_route_mode_v1", "mixed");
 
     ProxyManager.loadPreferences();
 
     expect(ProxyManager.getPreferLocalProxy()).toBe(true);
+    expect(ProxyManager.getRoutingMode()).toBe("mixed");
     expect(localStorage.getItem("prefer_local_proxy")).toBe("true");
   });
 
@@ -115,6 +137,7 @@ describe("ProxyManager preference loading", () => {
 
     expect(ProxyManager.getPreferLocalProxy()).toBe(false);
     expect(localStorage.getItem("prefer_local_proxy")).toBe("false");
+    expect(ProxyManager.getRoutingMode()).toBe("full-external-proxies");
   });
 
   it("respects explicit local preference and persists both API keys with the correct names", () => {
@@ -125,7 +148,36 @@ describe("ProxyManager preference loading", () => {
     expect(localStorage.getItem("rss2json_api_key")).toBe("rss-key");
     expect(localStorage.getItem("corsproxy_cio_api_key")).toBe("cors-key");
     expect(localStorage.getItem("prefer_local_proxy")).toBe("true");
+    expect(localStorage.getItem("proxy_route_mode_v1")).toBe("full-local");
     expect(ProxyManager.hasConfiguredApiKeys()).toBe(true);
+  });
+
+  it("persists and applies a manual cloud proxy order", () => {
+    proxyManager.setClientProxyOrder([
+      "AllOrigins",
+      "CodeTabs",
+      "CorsProxy.io",
+      "RSS2JSON",
+    ]);
+
+    expect(JSON.parse(localStorage.getItem("proxy_route_order_v1") || "[]")).toEqual([
+      "AllOrigins",
+      "CodeTabs",
+      "CorsProxy.io",
+      "RSS2JSON",
+    ]);
+    expect(proxyManager.getClientProxyOrder()).toEqual([
+      "AllOrigins",
+      "CodeTabs",
+      "CorsProxy.io",
+      "RSS2JSON",
+    ]);
+    expect(proxyManager.getAvailableProxies().map((config) => config.name)).toEqual([
+      "AllOrigins",
+      "CodeTabs",
+      "CorsProxy.io",
+      "RSS2JSON",
+    ]);
   });
 
   it("persists disabled proxies across preference reloads", () => {
@@ -240,6 +292,25 @@ describe("ProxyManager preference loading", () => {
         .getAvailableProxies()
         .some((config) => config.name !== "LocalProxy"),
     ).toBe(true);
+  });
+
+  it("enables the recommended fallback chain when desktop users switch out of local-only mode", () => {
+    Object.defineProperty(window, "__TAURI__", {
+      value: {},
+      configurable: true,
+    });
+    localStorage.removeItem("disabled_proxies");
+
+    ProxyManager.loadPreferences();
+    expect(proxyManager.getAvailableProxies()).toHaveLength(0);
+
+    ProxyManager.setRoutingMode("mixed");
+
+    const availableProxyNames = proxyManager
+      .getAvailableProxies()
+      .map((config) => config.name);
+    expect(availableProxyNames).toEqual(proxyManager.getClientProxyOrder());
+    expect(localStorage.getItem("disabled_proxies")).not.toContain("CodeTabs");
   });
 
   it("uses Tauri supervisor status when testing LocalProxy in desktop runtime", async () => {

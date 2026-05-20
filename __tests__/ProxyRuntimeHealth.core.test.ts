@@ -31,6 +31,7 @@ describe("ProxyManager runtime health behavior", () => {
   beforeEach(() => {
     localStorage.clear();
     resetRuntimeProxyStates();
+    ProxyManager.setRoutingMode("full-external-proxies");
     delete (window as Window & { __TAURI__?: unknown }).__TAURI__;
     delete (window as Window & { __TAURI_INTERNALS__?: unknown })
       .__TAURI_INTERNALS__;

@@ -6,7 +6,11 @@ import {
   type FeedDiagnosticInfo,
   type FeedRouteInfo,
 } from "./feedDiagnostics";
-import { ProxyManager } from "./proxyManager";
+import {
+  ProxyManager,
+  proxyManager,
+  type ProxyRouteMode,
+} from "./proxyManager";
 import { parseRssUrlDetailed } from "./rssParser";
 
 export interface FeedRuntimeResult {
@@ -19,7 +23,15 @@ export interface FeedRuntimeResult {
 }
 
 export interface FeedRuntimeState {
-  activeMode: "desktop-local" | "cloud-fallback" | "web-client" | "unknown";
+  activeMode:
+    | "desktop-local"
+    | "cloud-fallback"
+    | "external-proxies"
+    | "web-client"
+    | "unknown";
+  proxyRouteMode?: ProxyRouteMode;
+  primaryRoute?: string;
+  fallbackOrder?: string[];
   lastRoute?: FeedRouteInfo;
   lastWarning?: FeedDiagnosticInfo;
   backendAvailable?: boolean;
@@ -146,23 +158,33 @@ export async function loadFeedWithRuntime(
 ): Promise<FeedRuntimeResult> {
   const env = detectEnvironment();
   const hasBackendRuntime = desktopBackendClient.isEnabled();
-  const preferLocalProxy = ProxyManager.getPreferLocalProxy();
-  const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
+  const proxyRouteMode = ProxyManager.getRoutingMode();
+  const fallbackOrder = proxyManager.getClientProxyOrder();
+  const allowClientProxyFallback = proxyRouteMode === "mixed";
   const { forceRefresh = false, signal, skipCache = false } = options;
 
-  if (hasBackendRuntime && !preferLocalProxy) {
+  if (hasBackendRuntime && proxyRouteMode === "full-external-proxies") {
     const result = await parseRssUrlDetailed(url, {
       signal,
       skipCache,
+      forceClientFallback: true,
+      externalOnly: true,
+      routeMode: "full-external-proxies",
     });
     updateRuntimeState({
-      activeMode: "cloud-fallback",
+      activeMode: "external-proxies",
+      proxyRouteMode,
+      primaryRoute: fallbackOrder[0],
+      fallbackOrder,
       lastRoute: result.route,
       lastWarning: undefined,
       backendAvailable: false,
     });
     desktopBackendClient.setRuntimeState({
-      activeMode: "cloud-fallback",
+      activeMode: "external-proxies",
+      proxyRouteMode,
+      primaryRoute: fallbackOrder[0],
+      fallbackOrder,
       lastRoute: result.route.routeName,
       lastWarning: undefined,
       backendAvailable: false,
@@ -173,7 +195,7 @@ export async function loadFeedWithRuntime(
       articles: result.articles,
       route: {
         ...result.route,
-        viaFallback: true,
+        viaFallback: false,
       },
       cached: result.cached,
       source: "client",
@@ -195,12 +217,18 @@ export async function loadFeedWithRuntime(
         const route = buildBackendRoute(response.meta.cached);
         updateRuntimeState({
           activeMode: "desktop-local",
+          proxyRouteMode,
+          primaryRoute: "LocalBackend",
+          fallbackOrder,
           lastRoute: route,
           lastWarning: undefined,
           backendAvailable: true,
         });
         desktopBackendClient.setRuntimeState({
           activeMode: "desktop-local",
+          proxyRouteMode,
+          primaryRoute: "LocalBackend",
+          fallbackOrder,
           lastRoute: "LocalBackend",
           lastWarning: undefined,
           backendAvailable: true,
@@ -227,6 +255,9 @@ export async function loadFeedWithRuntime(
         if (!isBackendReachabilityError(error)) {
           updateRuntimeState({
             activeMode: "desktop-local",
+            proxyRouteMode,
+            primaryRoute: "LocalBackend",
+            fallbackOrder,
             lastRoute: backendRoute,
             lastWarning: buildFeedDiagnosticInfo(
               message,
@@ -237,6 +268,9 @@ export async function loadFeedWithRuntime(
           });
           desktopBackendClient.setRuntimeState({
             activeMode: "desktop-local",
+            proxyRouteMode,
+            primaryRoute: "LocalBackend",
+            fallbackOrder,
             lastRoute: "LocalBackend",
             lastWarning: undefined,
             backendAvailable: true,
@@ -257,12 +291,18 @@ export async function loadFeedWithRuntime(
         if (!allowClientProxyFallback) {
           updateRuntimeState({
             activeMode: "desktop-local",
+            proxyRouteMode,
+            primaryRoute: "LocalBackend",
+            fallbackOrder,
             lastRoute: backendRoute,
             lastWarning: warning,
             backendAvailable: false,
           });
           desktopBackendClient.setRuntimeState({
             activeMode: "desktop-local",
+            proxyRouteMode,
+            primaryRoute: "LocalBackend",
+            fallbackOrder,
             lastRoute: "LocalBackend",
             lastWarning: JSON.stringify(warning),
             backendAvailable: false,
@@ -274,16 +314,25 @@ export async function loadFeedWithRuntime(
         const fallback = await parseRssUrlDetailed(url, {
           signal,
           skipCache,
+          forceClientFallback: true,
+          externalOnly: true,
+          routeMode: "full-external-proxies",
         });
 
         updateRuntimeState({
           activeMode: "cloud-fallback",
+          proxyRouteMode,
+          primaryRoute: "LocalBackend",
+          fallbackOrder,
           lastRoute: fallback.route,
           lastWarning: warning,
           backendAvailable: false,
         });
         desktopBackendClient.setRuntimeState({
           activeMode: "cloud-fallback",
+          proxyRouteMode,
+          primaryRoute: "LocalBackend",
+          fallbackOrder,
           lastRoute: fallback.route.routeName,
           lastWarning: JSON.stringify(warning),
           backendAvailable: false,
@@ -323,12 +372,18 @@ export async function loadFeedWithRuntime(
     if (!allowClientProxyFallback) {
       updateRuntimeState({
         activeMode: "desktop-local",
+        proxyRouteMode,
+        primaryRoute: "LocalBackend",
+        fallbackOrder,
         lastRoute: warning.route,
         lastWarning: warning,
         backendAvailable: false,
       });
       desktopBackendClient.setRuntimeState({
         activeMode: "desktop-local",
+        proxyRouteMode,
+        primaryRoute: "LocalBackend",
+        fallbackOrder,
         lastRoute: "LocalBackend",
         lastWarning: JSON.stringify(warning),
         backendAvailable: false,
@@ -341,16 +396,25 @@ export async function loadFeedWithRuntime(
     const fallback = await parseRssUrlDetailed(url, {
       signal,
       skipCache,
+      forceClientFallback: true,
+      externalOnly: true,
+      routeMode: "full-external-proxies",
     });
 
     updateRuntimeState({
       activeMode: "cloud-fallback",
+      proxyRouteMode,
+      primaryRoute: "LocalBackend",
+      fallbackOrder,
       lastRoute: fallback.route,
       lastWarning: warning,
       backendAvailable: false,
     });
     desktopBackendClient.setRuntimeState({
       activeMode: "cloud-fallback",
+      proxyRouteMode,
+      primaryRoute: "LocalBackend",
+      fallbackOrder,
       lastRoute: fallback.route.routeName,
       lastWarning: JSON.stringify(warning),
       backendAvailable: false,
@@ -373,9 +437,15 @@ export async function loadFeedWithRuntime(
   const result = await parseRssUrlDetailed(url, {
     signal,
     skipCache,
+    forceClientFallback: true,
+    externalOnly: !env.isTauri,
+    routeMode: env.isTauri ? proxyRouteMode : "full-external-proxies",
   });
   updateRuntimeState({
     activeMode: env.isTauri ? "desktop-local" : "web-client",
+    proxyRouteMode,
+    primaryRoute: env.isTauri ? "LocalBackend" : fallbackOrder[0],
+    fallbackOrder,
     lastRoute: result.route,
     lastWarning: undefined,
     backendAvailable: false,

@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { desktopBackendClient } from "../services/desktopBackendClient";
 import { type FeedDiagnosticInfo } from "../services/feedDiagnostics";
-import { ProxyManager, proxyManager } from "../services/proxyManager";
+import {
+  ProxyManager,
+  proxyManager,
+  type ProxyRouteMode,
+} from "../services/proxyManager";
 
 type RouteStatus = "healthy" | "degraded" | "offline" | "idle" | "disabled";
 
@@ -20,12 +24,21 @@ export interface ProxyDashboardRoute {
   avgResponseTime: number;
   consecutiveFailures: number;
   lastUsedAt?: number;
+  routeOrder: number | null;
   detail: string;
 }
 
 export interface ProxyDashboardSnapshot {
   runtime: {
-    activeMode: "desktop-local" | "cloud-fallback" | "web-client" | "unknown";
+    activeMode:
+      | "desktop-local"
+      | "cloud-fallback"
+      | "external-proxies"
+      | "web-client"
+      | "unknown";
+    proxyRouteMode: ProxyRouteMode;
+    primaryRoute?: string;
+    fallbackOrder: string[];
     lastRoute?: string;
     lastWarning?: string;
     warningDetails?: FeedDiagnosticInfo;
@@ -89,6 +102,8 @@ const formatWarningDetails = (
 const buildInitialSnapshot = (): ProxyDashboardSnapshot => ({
   runtime: {
     activeMode: "unknown",
+    proxyRouteMode: ProxyManager.getRoutingMode(),
+    fallbackOrder: proxyManager.getClientProxyOrder(),
     backendAvailable: false,
   },
   backend: {
@@ -110,6 +125,10 @@ const buildInitialSnapshot = (): ProxyDashboardSnapshot => ({
 
 const buildClientRoutes = (): ProxyDashboardRoute[] => {
   const statsByName = proxyManager.getProxyStats();
+  const routeOrder = proxyManager.getClientProxyOrder();
+  const routeOrderIndex = new Map(
+    routeOrder.map((proxyName, index) => [proxyName, index]),
+  );
   const runtimeConfigs = new Map(
     proxyManager.getProxyConfigs().map((config) => [config.name, config]),
   );
@@ -139,6 +158,7 @@ const buildClientRoutes = (): ProxyDashboardRoute[] => {
         avgResponseTime: stats.avgResponseTime,
         consecutiveFailures: stats.consecutiveFailures,
         lastUsedAt: stats.lastUsed || undefined,
+        routeOrder: routeOrderIndex.get(name) ?? null,
         detail:
           !enabled
             ? "Desativado. Não entra no cálculo de saúde agregada."
@@ -152,9 +172,11 @@ const buildClientRoutes = (): ProxyDashboardRoute[] => {
       if (a.transport !== b.transport) {
         return a.transport === "desktop-backend" ? -1 : 1;
       }
-      if (a.healthScore !== b.healthScore) {
-        return b.healthScore - a.healthScore;
+      if (a.routeOrder !== null && b.routeOrder !== null) {
+        return a.routeOrder - b.routeOrder;
       }
+      if (a.routeOrder !== null) return -1;
+      if (b.routeOrder !== null) return 1;
       return a.name.localeCompare(b.name);
     });
 };
@@ -220,6 +242,7 @@ export const buildProxyDashboardSnapshot =
               lastUsedAt: stats.lastUsedAt
                 ? new Date(stats.lastUsedAt).getTime()
                 : undefined,
+              routeOrder: null,
               detail:
                 stats.totalRequests > 0
                   ? `${stats.successes}/${stats.totalRequests} sucesso no backend local`
@@ -243,6 +266,7 @@ export const buildProxyDashboardSnapshot =
               failureCount: 0,
               avgResponseTime: 0,
               consecutiveFailures: 0,
+              routeOrder: null,
               detail:
                 error instanceof Error
                   ? `Backend local ativo, mas sem estatisticas: ${error.message}`
@@ -267,6 +291,7 @@ export const buildProxyDashboardSnapshot =
             failureCount: 0,
             avgResponseTime: 0,
             consecutiveFailures: 0,
+            routeOrder: null,
             detail: health.initializing
               ? "Backend local inicializando"
               : backendError || "Backend local indisponível",
@@ -310,6 +335,11 @@ export const buildProxyDashboardSnapshot =
     return {
       runtime: {
         activeMode: runtimeState.activeMode,
+        proxyRouteMode:
+          runtimeState.proxyRouteMode || ProxyManager.getRoutingMode(),
+        primaryRoute: runtimeState.primaryRoute,
+        fallbackOrder:
+          runtimeState.fallbackOrder || proxyManager.getClientProxyOrder(),
         lastRoute: runtimeState.lastRoute,
         lastWarning: runtimeLastWarning,
         warningDetails: runtimeWarningDetails,

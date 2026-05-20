@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { FeedAnalytics } from "../components/FeedAnalytics";
 import type { Article, FeedSource } from "../types";
 import type { FeedValidationResult } from "../services/feedValidator";
@@ -9,6 +9,9 @@ import type { FeedValidationResult } from "../services/feedValidator";
 const createProxySnapshot = (overrides: Record<string, unknown> = {}) => ({
   runtime: {
     activeMode: "cloud-fallback",
+    proxyRouteMode: "mixed",
+    primaryRoute: "LocalBackend",
+    fallbackOrder: ["CodeTabs", "RSS2JSON"],
     lastRoute: "CodeTabs",
     lastWarning: JSON.stringify({
       cause: "backend_unavailable",
@@ -41,6 +44,7 @@ const createProxySnapshot = (overrides: Record<string, unknown> = {}) => ({
       failureCount: 0,
       avgResponseTime: 0,
       consecutiveFailures: 0,
+      routeOrder: null,
       detail: "Backend local indisponível",
     },
   ],
@@ -58,6 +62,10 @@ const createProxySnapshot = (overrides: Record<string, unknown> = {}) => ({
 });
 
 let proxyDashboardSnapshot = createProxySnapshot();
+
+beforeAll(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+});
 
 vi.mock("../hooks/useProxyDashboard", () => ({
   useProxyDashboard: () => ({
@@ -119,7 +127,9 @@ describe("FeedAnalytics dashboard", () => {
 
     expect(screen.getByText("Diagnóstico")).toBeInTheDocument();
     expect(screen.queryByText("Exportar relatório")).not.toBeInTheDocument();
-    expect(screen.getByText("Backend local indisponível")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Backend local indisponível").length,
+    ).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: /Detalhes/i }));
 
@@ -136,6 +146,9 @@ describe("FeedAnalytics dashboard", () => {
     proxyDashboardSnapshot = createProxySnapshot({
       runtime: {
         activeMode: "desktop-local",
+        proxyRouteMode: "full-local",
+        primaryRoute: "LocalBackend",
+        fallbackOrder: ["CodeTabs", "RSS2JSON"],
         lastRoute: "LocalBackend",
         warningDetails: null,
         backendAvailable: true,
@@ -194,7 +207,7 @@ describe("FeedAnalytics dashboard", () => {
       screen.queryByText("Backend local indisponível"),
     ).not.toBeInTheDocument();
 
-    expect(await screen.findByText("Proxies")).toBeInTheDocument();
+    expect(await screen.findByText("Backend, proxies e rotas")).toBeInTheDocument();
     expect(screen.getByText("Exportar relatório")).toBeInTheDocument();
   });
 
@@ -202,6 +215,9 @@ describe("FeedAnalytics dashboard", () => {
     proxyDashboardSnapshot = createProxySnapshot({
       runtime: {
         activeMode: "web-client",
+        proxyRouteMode: "full-external-proxies",
+        primaryRoute: "CodeTabs",
+        fallbackOrder: ["CodeTabs", "AllOrigins"],
         warningDetails: null,
         backendAvailable: false,
       },
@@ -224,6 +240,7 @@ describe("FeedAnalytics dashboard", () => {
           failureCount: 0,
           avgResponseTime: 0,
           consecutiveFailures: 6,
+          routeOrder: 0,
           detail: "Desativado. Não entra no cálculo de saúde agregada.",
         },
         {
@@ -240,6 +257,7 @@ describe("FeedAnalytics dashboard", () => {
           failureCount: 0,
           avgResponseTime: 0,
           consecutiveFailures: 0,
+          routeOrder: 1,
           detail: "Ainda sem uso nesta sessao",
         },
       ],
@@ -264,8 +282,7 @@ describe("FeedAnalytics dashboard", () => {
       />,
     );
 
-    expect(await screen.findByText("Proxies")).toBeInTheDocument();
-    expect(screen.getByText("Desativado")).toBeInTheDocument();
+    expect(await screen.findByText("Backend, proxies e rotas")).toBeInTheDocument();
     expect(screen.getByText("2/2")).toBeInTheDocument();
   });
 });

@@ -9,6 +9,8 @@ const {
   mockParseRssUrlDetailed,
   mockGetPreferLocalProxy,
   mockShouldUseClientProxyFallback,
+  mockGetRoutingMode,
+  mockGetClientProxyOrder,
 } = vi.hoisted(() => ({
   mockDetectEnvironment: vi.fn(),
   mockIsEnabled: vi.fn(),
@@ -18,6 +20,8 @@ const {
   mockParseRssUrlDetailed: vi.fn(),
   mockGetPreferLocalProxy: vi.fn(),
   mockShouldUseClientProxyFallback: vi.fn(),
+  mockGetRoutingMode: vi.fn(),
+  mockGetClientProxyOrder: vi.fn(),
 }));
 
 vi.mock("../services/environmentDetector", () => ({
@@ -41,6 +45,10 @@ vi.mock("../services/proxyManager", () => ({
   ProxyManager: {
     getPreferLocalProxy: mockGetPreferLocalProxy,
     shouldUseClientProxyFallback: mockShouldUseClientProxyFallback,
+    getRoutingMode: mockGetRoutingMode,
+  },
+  proxyManager: {
+    getClientProxyOrder: mockGetClientProxyOrder,
   },
 }));
 
@@ -52,6 +60,13 @@ describe("feedRuntime", () => {
     mockIsEnabled.mockReturnValue(true);
     mockGetPreferLocalProxy.mockReturnValue(true);
     mockShouldUseClientProxyFallback.mockReturnValue(false);
+    mockGetRoutingMode.mockReturnValue("full-local");
+    mockGetClientProxyOrder.mockReturnValue([
+      "CorsProxy.io",
+      "RSS2JSON",
+      "CodeTabs",
+      "AllOrigins",
+    ]);
   });
 
   it("uses the desktop backend first when the backend is healthy", async () => {
@@ -131,9 +146,10 @@ describe("feedRuntime", () => {
     );
   });
 
-  it("uses client proxies when the desktop local route is not preferred", async () => {
+  it("uses client proxies in full external proxy mode", async () => {
     mockGetPreferLocalProxy.mockReturnValue(false);
     mockShouldUseClientProxyFallback.mockReturnValue(true);
+    mockGetRoutingMode.mockReturnValue("full-external-proxies");
     mockDetectEnvironment.mockReturnValue({
       isDevelopment: false,
       isProduction: true,
@@ -161,10 +177,70 @@ describe("feedRuntime", () => {
     const result = await loadFeedWithRuntime("https://example.com/rss.xml");
 
     expect(mockCheckHealth).not.toHaveBeenCalled();
-    expect(mockParseRssUrlDetailed).toHaveBeenCalled();
+    expect(mockParseRssUrlDetailed).toHaveBeenCalledWith(
+      "https://example.com/rss.xml",
+      expect.objectContaining({
+        forceClientFallback: true,
+        externalOnly: true,
+        routeMode: "full-external-proxies",
+      }),
+    );
     expect(result.source).toBe("client");
     expect(result.route.routeName).toBe("CodeTabs");
+    expect(result.route.viaFallback).toBe(false);
+  });
+
+  it("falls back to cloud proxies in mixed mode when the backend is unavailable", async () => {
+    mockGetRoutingMode.mockReturnValue("mixed");
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: false,
+      isLocalhost: false,
+      isTauri: true,
+      proxyUrl: null,
+      useProductionParser: false,
+      corsMode: "public-apis",
+    });
+    mockCheckHealth.mockResolvedValue({
+      available: false,
+      checkedAt: Date.now(),
+      error: "connect ECONNREFUSED 127.0.0.1:3001",
+    });
+    mockParseRssUrlDetailed.mockResolvedValue({
+      title: "Fallback Feed",
+      articles: [],
+      route: {
+        transport: "client",
+        routeKind: "proxy",
+        routeName: "RSS2JSON",
+        viaFallback: false,
+        checkedAt: Date.now(),
+      },
+      cached: false,
+      attempts: [],
+    });
+
+    const result = await loadFeedWithRuntime("https://example.com/rss.xml");
+
+    expect(mockParseRssUrlDetailed).toHaveBeenCalledWith(
+      "https://example.com/rss.xml",
+      expect.objectContaining({
+        forceClientFallback: true,
+        externalOnly: true,
+        routeMode: "full-external-proxies",
+      }),
+    );
+    expect(result.source).toBe("client-fallback");
     expect(result.route.viaFallback).toBe(true);
+    expect(mockSetRuntimeState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeMode: "cloud-fallback",
+        proxyRouteMode: "mixed",
+        primaryRoute: "LocalBackend",
+        fallbackOrder: ["CorsProxy.io", "RSS2JSON", "CodeTabs", "AllOrigins"],
+      }),
+    );
   });
 
   it("does not fall back to cloud proxies in desktop local mode when backend fetch loses reachability", async () => {

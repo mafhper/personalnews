@@ -43,15 +43,26 @@
     "windows": {
       "nsis": {
         "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "headerImage": "windows/installer/personalnews-nsis-header.bmp",
+        "sidebarImage": "windows/installer/personalnews-nsis-sidebar.bmp",
+        "uninstallerHeaderImage": "windows/installer/personalnews-nsis-header.bmp",
         "installMode": "currentUser",
         "startMenuFolder": "PersonalNews",
+        "languages": [
+          "PortugueseBR",
+          "English"
+        ],
+        "displayLanguageSelector": false,
         "installerHooks": "windows/hooks.nsh"
       },
       "wix": {
         "language": [
           "pt-BR",
           "en-US"
-        ]
+        ],
+        "bannerPath": "windows/installer/personalnews-wix-banner.bmp",
+        "dialogImagePath": "windows/installer/personalnews-wix-dialog.bmp"
       }
     },
     "icon": [
