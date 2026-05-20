@@ -1,8 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { ArticleReaderModal } from "../components/ArticleReaderModal";
-import { openExternalLink } from "../utils/openExternalLink";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Article } from "../types";
+
+type FetchFullContentFn = typeof import("../services/articleFetcher").fetchFullContent;
+type OpenExternalLinkFn = typeof import("../utils/openExternalLink").openExternalLink;
+
+let fetchFullContentMock: ReturnType<typeof vi.fn<FetchFullContentFn>>;
+let openExternalLinkMock: ReturnType<typeof vi.fn<OpenExternalLinkFn>>;
 
 vi.mock("../services/environmentDetector", () => ({
   detectEnvironment: () => ({ isTauri: false }),
@@ -28,16 +32,43 @@ vi.mock("../hooks/useModal", () => ({
   }),
 }));
 
-vi.mock("../utils/openExternalLink", () => ({
-  openExternalLink: vi.fn(async () => {}),
-}));
-
-vi.mock("../services/articleFetcher", () => ({
-  fetchFullContent: vi.fn(async () => ({ content: "" })),
-}));
-
 describe("ArticleReaderModal", () => {
+  beforeEach(async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        text: async () => "<html><body></body></html>",
+      })),
+    );
+
+    const articleFetcher = await import("../services/articleFetcher");
+    const externalLink = await import("../utils/openExternalLink");
+
+    fetchFullContentMock = vi
+      .spyOn(articleFetcher, "fetchFullContent")
+      .mockResolvedValue({
+        content: "",
+        blocked: false,
+        usedFallback: false,
+      });
+    openExternalLinkMock = vi
+      .spyOn(externalLink, "openExternalLink")
+      .mockResolvedValue(undefined);
+  });
+
+  const mockFullContent = (content: string) => {
+    fetchFullContentMock.mockResolvedValue({
+      content,
+      blocked: false,
+      usedFallback: false,
+    });
+  };
+
   it("routes article body links through the external opener", async () => {
+    const { ArticleReaderModal } = await import(
+      "../components/ArticleReaderModal"
+    );
     const article: Article = {
       title: "Apple TV horror series",
       link: "https://www.theverge.com/entertainment/919634/widows-bay-apple-tv-cast-interview",
@@ -46,6 +77,7 @@ describe("ArticleReaderModal", () => {
       content:
         '<p>Partial story.</p><p><a href="https://www.theverge.com/entertainment/919634/widows-bay-apple-tv-cast-interview">Read the full story at The Verge.</a></p>',
     };
+    mockFullContent(article.content);
 
     render(
       <ArticleReaderModal
@@ -64,11 +96,17 @@ describe("ArticleReaderModal", () => {
     fireEvent.click(fullStoryLink);
 
     await waitFor(() => {
-      expect(openExternalLink).toHaveBeenCalledWith(article.link);
+      expect(openExternalLinkMock).toHaveBeenCalledWith(article.link);
+    });
+    await waitFor(() => {
+      expect(fetchFullContentMock).toHaveBeenCalledWith(article.link);
     });
   });
 
   it("resolves relative article body links against the article URL", async () => {
+    const { ArticleReaderModal } = await import(
+      "../components/ArticleReaderModal"
+    );
     const article: Article = {
       title: "Relative link story",
       link: "https://example.com/news/story",
@@ -76,6 +114,7 @@ describe("ArticleReaderModal", () => {
       sourceTitle: "Example",
       content: '<p><a href="/news/story/full">Read more</a></p>',
     };
+    mockFullContent(article.content);
 
     render(
       <ArticleReaderModal
@@ -91,13 +130,19 @@ describe("ArticleReaderModal", () => {
     fireEvent.click(await screen.findByRole("link", { name: /read more/i }));
 
     await waitFor(() => {
-      expect(openExternalLink).toHaveBeenCalledWith(
+      expect(openExternalLinkMock).toHaveBeenCalledWith(
         "https://example.com/news/story/full",
       );
+    });
+    await waitFor(() => {
+      expect(fetchFullContentMock).toHaveBeenCalledWith(article.link);
     });
   });
 
   it("sanitizes article HTML before injecting it into the modal", async () => {
+    const { ArticleReaderModal } = await import(
+      "../components/ArticleReaderModal"
+    );
     const article: Article = {
       title: "Hostile story",
       link: "https://example.com/news/story",
@@ -106,6 +151,7 @@ describe("ArticleReaderModal", () => {
       content:
         '<p onclick="alert(1)">Safe text</p><img src="data:image/svg+xml;base64,PHN2Zz4=" onerror="alert(1)"><a href="javascript:alert(1)">bad</a>',
     };
+    mockFullContent(article.content);
 
     const { container } = render(
       <ArticleReaderModal
@@ -123,5 +169,8 @@ describe("ArticleReaderModal", () => {
     expect(container.innerHTML).not.toContain("onerror");
     expect(container.innerHTML).not.toContain("javascript:");
     expect(container.innerHTML).not.toContain("data:image/svg+xml");
+    await waitFor(() => {
+      expect(fetchFullContentMock).toHaveBeenCalledWith(article.link);
+    });
   });
 });
