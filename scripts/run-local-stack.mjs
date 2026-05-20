@@ -6,9 +6,16 @@ import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
-const modeArg = process.argv[2];
+const args = process.argv.slice(2);
+const isSilent = args.includes("--silent") || args.includes("-s");
+const isQuiet =
+  args.includes("--quiet") ||
+  args.includes("-q") ||
+  (!isSilent && process.env.CI === "true");
+const positionalArgs = args.filter((arg) => !arg.startsWith("-"));
+const modeArg = positionalArgs[0];
 const mode = modeArg === "preview" ? "preview" : "dev";
-const startViewArg = (process.argv[3] || "").toLowerCase();
+const startViewArg = (positionalArgs[1] || "").toLowerCase();
 const startView = startViewArg === "home" ? "home" : "feed";
 const BACKEND_HOST = "127.0.0.1";
 const BACKEND_PREFERRED_PORT = 3001;
@@ -20,6 +27,21 @@ const repoRoot = process.cwd();
 
 let shuttingDown = false;
 const children = [];
+
+function log(message, { quiet = false } = {}) {
+  if (isSilent) return;
+  if (isQuiet && !quiet) return;
+  console.log(message);
+}
+
+function warn(message) {
+  if (isSilent) return;
+  console.warn(message);
+}
+
+function logError(message) {
+  console.error(message);
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -141,7 +163,7 @@ function shutdownAndExit(code = 0) {
 
 function spawnScript(name, script, envOverrides = {}) {
   const child = spawn("bun", ["run", script], {
-    stdio: "inherit",
+    stdio: isSilent ? ["ignore", "ignore", "inherit"] : "inherit",
     env: {
       ...process.env,
       ...envOverrides,
@@ -149,8 +171,8 @@ function spawnScript(name, script, envOverrides = {}) {
     windowsHide: false,
   });
 
-  child.on("error", (error) => {
-    console.error(`[local-stack] falha ao iniciar ${name}: ${String(error)}`);
+  child.on("error", (err) => {
+    logError(`[local-stack] falha ao iniciar ${name}: ${String(err)}`);
     shutdownAndExit(1);
   });
 
@@ -166,8 +188,9 @@ function clearViteOptimizeCache() {
     force: true,
     recursive: true,
   });
-  console.log(
+  log(
     "[local-stack] cache node_modules/.vite limpo para evitar bundles desatualizados.",
+    { quiet: true },
   );
 }
 
@@ -193,28 +216,32 @@ async function main() {
     DEV_PORT: String(frontendPort),
   };
 
-  console.log(
+  log(
     `[local-stack] start view: ${startView === "home" ? "home (/)" : "feed (/#feed)"}.`,
+    { quiet: true },
   );
   if (frontendPort !== FRONTEND_PREFERRED_PORT) {
-    console.log(
+    log(
       `[local-stack] porta ${FRONTEND_PREFERRED_PORT} em uso; usando ${frontendPort}.`,
+      { quiet: true },
     );
   }
   if (ALLOW_BACKEND_REUSE) {
-    console.log(
+    log(
       `[local-stack] backend reuse enabled (set LOCAL_STACK_REUSE_BACKEND=false to force a new backend).`,
     );
   } else {
-    console.log(
+    log(
       `[local-stack] backend reuse disabled by LOCAL_STACK_REUSE_BACKEND=false.`,
+      { quiet: true },
     );
   }
 
   let backend = null;
   if (useExistingBackend) {
-    console.log(
+    log(
       `[local-stack] reutilizando backend ja ativo em ${backendBaseUrl}.`,
+      { quiet: true },
     );
   } else {
     backend = spawnScript("backend", "backend:start", {
@@ -240,7 +267,7 @@ async function main() {
   if (backend) {
     backend.on("exit", (code, signal) => {
       if (shuttingDown) return;
-      console.error(
+      logError(
         `[local-stack] backend finalizou inesperadamente (${signal ?? code ?? 1}).`,
       );
       shutdownAndExit(typeof code === "number" ? code : 1);
@@ -249,7 +276,7 @@ async function main() {
 
   frontend.on("exit", (code, signal) => {
     if (shuttingDown) return;
-    console.error(
+    warn(
       `[local-stack] frontend finalizou (${signal ?? code ?? 0}). Encerrando backend...`,
     );
     shutdownAndExit(typeof code === "number" ? code : 0);

@@ -8,7 +8,7 @@ const UI = require('../cli/ui-helpers.cjs');
 const History = require('../cli/history.cjs');
 const args = process.argv.slice(2);
 const isSilent = args.includes('--silent') || args.includes('-s');
-const isQuiet = args.includes('--quiet') || args.includes('-q');
+const isQuiet = args.includes('--quiet') || args.includes('-q') || (!isSilent && process.env.CI === 'true');
 const modeLabel = [
   isSilent ? 'silent' : isQuiet ? 'quiet' : 'default',
 ].join('-');
