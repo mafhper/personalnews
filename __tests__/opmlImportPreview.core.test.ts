@@ -132,4 +132,31 @@ describe("opmlImportPreview", () => {
     ]);
     expect(secondPass.skipped).toHaveLength(1);
   });
+
+  it("honors clearing a suggested category during commit", () => {
+    const [candidate] = buildImportCandidates({
+      opmlFeeds: [
+        {
+          url: "https://uncategorized.example.com/feed",
+          title: "Uncategorized",
+          category: "Tecnologia",
+        },
+      ],
+      currentFeeds: [],
+      categories,
+    });
+
+    const result = commitImportCandidates({
+      candidates: [{ ...candidate, categoryOverrideCleared: true }],
+      currentFeeds: [],
+      categories,
+    });
+
+    expect(result.categoriesToCreate).toEqual([]);
+    expect(result.feedsToAdd[0]).toMatchObject({
+      url: "https://uncategorized.example.com/feed",
+      customTitle: "Uncategorized",
+      categoryId: undefined,
+    });
+  });
 });

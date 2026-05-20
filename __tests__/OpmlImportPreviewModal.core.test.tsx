@@ -91,6 +91,63 @@ describe("OpmlImportPreviewModal", () => {
     expect(onConfirm.mock.calls[0][0][0]).toMatchObject({
       id: "ready",
       categoryOverrideId: "design",
+      categoryOverrideCleared: false,
     });
+  });
+
+  it("keeps Sem categoria as an explicit override for suggested categories", () => {
+    const onConfirm = vi.fn();
+    render(
+      <OpmlImportPreviewModal
+        isOpen
+        candidates={[makeCandidate({ id: "ready" })]}
+        categories={categories}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const [, candidateCategorySelect] = screen.getAllByRole("combobox");
+    expect(candidateCategorySelect).toHaveValue("id:tech");
+
+    fireEvent.change(candidateCategorySelect, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
+
+    expect(onConfirm.mock.calls[0][0][0]).toMatchObject({
+      id: "ready",
+      categoryOverrideCleared: true,
+      categoryOverrideId: undefined,
+      categoryOverrideName: undefined,
+    });
+  });
+
+  it("guards import confirmation while a submit is pending", () => {
+    let resolveImport: (() => void) | undefined;
+    const onConfirm = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveImport = resolve;
+        }),
+    );
+    render(
+      <OpmlImportPreviewModal
+        isOpen
+        candidates={[makeCandidate({ id: "ready" })]}
+        categories={categories}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const confirmButton = screen.getByRole("button", {
+      name: "Importar selecionados",
+    });
+    fireEvent.click(confirmButton);
+    fireEvent.click(confirmButton);
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(confirmButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Importando..." })).toBeDisabled();
+    resolveImport?.();
   });
 });
