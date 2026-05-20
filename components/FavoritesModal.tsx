@@ -82,7 +82,7 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
 
     if (selectedMediaType !== "all") {
       filtered = filtered.filter(
-        (fav) => inferFavoriteMediaType(fav) === selectedMediaType,
+        (fav) => (fav.mediaType || inferFavoriteMediaType(fav)) === selectedMediaType,
       );
     }
 
