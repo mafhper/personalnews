@@ -441,6 +441,17 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               </p>
             </div>
           </div>
+
+          {routingMode !== "full-local" && (
+            <div className="mt-3 flex items-start gap-3 rounded-[18px] border border-[rgba(var(--color-warning),0.22)] bg-[rgba(var(--color-warning),0.1)] p-4 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(var(--color-warning))]" />
+              <p>
+                URLs dos feeds podem passar por proxies externos neste modo.
+                Use Somente local quando quiser manter as requisições restritas
+                ao backend do desktop.
+              </p>
+            </div>
+          )}
       </section>
       )}
 
