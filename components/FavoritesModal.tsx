@@ -1,7 +1,12 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Modal } from "./Modal";
 import { LazyImage } from "./LazyImage";
-import { useFavorites, favoriteToArticle, FavoriteArticle } from "../hooks/useFavorites";
+import type { FavoriteArticle, FavoriteMediaType } from "../hooks/useFavorites";
+import {
+  favoriteToArticle,
+  inferFavoriteMediaType,
+  useFavorites,
+} from "../hooks/useFavorites";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { ActionIcons, StatusIcons } from "./icons";
 import { sanitizeArticleDescription } from "../utils/sanitization";
@@ -21,8 +26,6 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
     clearAllFavorites,
     exportFavorites,
     importFavorites,
-    getFavoritesByCategory,
-    getFavoritesBySource,
   } = useFavorites();
 
   // Hook para notificações integradas
@@ -31,6 +34,9 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedSource, setSelectedSource] = useState<string>("All");
+  const [selectedMediaType, setSelectedMediaType] = useState<
+    "all" | FavoriteMediaType
+  >("all");
   const [sortBy, setSortBy] = useState<"recent" | "title" | "source">("recent");
   const [showConfirmClear, setShowConfirmClear] = useState(false);
 
@@ -58,12 +64,26 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
 
     // Apply category filter
     if (selectedCategory !== "All") {
-      filtered = getFavoritesByCategory(selectedCategory);
+      filtered = filtered.filter((fav) =>
+        fav.categories?.some(
+          (cat) => cat.toLowerCase() === selectedCategory.toLowerCase(),
+        ),
+      );
     }
 
     // Apply source filter
     if (selectedSource && selectedSource !== "All") {
-      filtered = getFavoritesBySource(selectedSource);
+      filtered = filtered.filter(
+        (fav) =>
+          fav.sourceTitle.toLowerCase().includes(selectedSource.toLowerCase()) ||
+          fav.author?.toLowerCase().includes(selectedSource.toLowerCase()),
+      );
+    }
+
+    if (selectedMediaType !== "all") {
+      filtered = filtered.filter(
+        (fav) => inferFavoriteMediaType(fav) === selectedMediaType,
+      );
     }
 
     // Apply search filter
@@ -99,10 +119,9 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
     favorites,
     selectedCategory,
     selectedSource,
+    selectedMediaType,
     searchQuery,
     sortBy,
-    getFavoritesByCategory,
-    getFavoritesBySource,
   ]);
 
   const handleExport = useCallback(() => {
@@ -230,7 +249,7 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1.35fr)_1fr_1fr_1fr]">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1.35fr)_1fr_1fr_1fr_1fr]">
             <label className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-textSecondary))]">
                 <ActionIcons.Search />
@@ -266,6 +285,20 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
                   {source === "All" ? "Todas as fontes" : source}
                 </option>
               ))}
+            </select>
+
+            <select
+              value={selectedMediaType}
+              onChange={(e) =>
+                setSelectedMediaType(e.target.value as "all" | FavoriteMediaType)
+              }
+              className={controlClass}
+              aria-label="Tipo de favorito"
+            >
+              <option value="all">Todos os tipos</option>
+              <option value="article">Artigos</option>
+              <option value="podcast">Podcasts</option>
+              <option value="video">Vídeos</option>
             </select>
 
             <select
