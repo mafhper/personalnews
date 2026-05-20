@@ -34,6 +34,10 @@ const PROMO_HASH_TO_PAGE = Object.entries(PROMO_PAGE_HASHES).reduce(
   {} as Record<string, PromoPageId>,
 );
 
+type PromoHashTarget =
+  | { kind: "page"; page: PromoPageId }
+  | { kind: "element"; elementId: string };
+
 const PROMO_UI_TEXT: Record<
   Language,
   {
@@ -76,10 +80,22 @@ const PROMO_UI_TEXT: Record<
 };
 
 const VERSIONS_SECTION_ID = "versions";
+const VERSIONS_SECTION_HASH = "#versions";
+
+const getPromoHashTarget = (hash: string): PromoHashTarget | undefined => {
+  const normalizedHash = hash.toLowerCase();
+  const page = PROMO_HASH_TO_PAGE[normalizedHash];
+  if (page) return { kind: "page", page };
+  if (normalizedHash === VERSIONS_SECTION_HASH) {
+    return { kind: "element", elementId: VERSIONS_SECTION_ID };
+  }
+  return undefined;
+};
 
 const getActiveSectionFromHash = (): PromoPageId => {
   if (typeof window === "undefined") return "home";
-  return PROMO_HASH_TO_PAGE[window.location.hash.toLowerCase()] ?? "home";
+  const target = getPromoHashTarget(window.location.hash);
+  return target?.kind === "page" ? target.page : "home";
 };
 
 const scrollToElementId = (elementId: string, behavior: ScrollBehavior) => {
@@ -103,6 +119,10 @@ const getInstallPlatformLabel = () => {
   if (typeof navigator === "undefined") return "Desktop";
 
   const signature = `${navigator.platform || ""} ${navigator.userAgent || ""}`;
+  const isTouchMac =
+    /mac/i.test(navigator.platform || "") && (navigator.maxTouchPoints || 0) > 1;
+  if (/(iphone|ipad|ipod)/i.test(signature) || isTouchMac) return "iOS";
+  if (/android/i.test(signature)) return "Android";
   if (/win/i.test(signature)) return "Windows";
   if (/mac/i.test(signature)) return "macOS";
   if (/linux/i.test(signature)) return "Linux";
@@ -397,13 +417,29 @@ const LandingPage = ({
     scrollToPromoSection(section, "smooth");
   }, []);
 
+  const scrollToHashTarget = React.useCallback(
+    (hash: string, behavior: ScrollBehavior) => {
+      if (typeof window === "undefined") return false;
+
+      const target = getPromoHashTarget(hash);
+      if (!target) return false;
+
+      if (target.kind === "page") {
+        setActiveSection(target.page);
+        scrollToPromoSection(target.page, behavior);
+        return true;
+      }
+
+      scrollToElementId(target.elementId, behavior);
+      return true;
+    },
+    [],
+  );
+
   const handleHashNavigation = React.useCallback(() => {
     if (typeof window === "undefined") return;
-    const page = PROMO_HASH_TO_PAGE[window.location.hash.toLowerCase()];
-    if (!page) return;
-    setActiveSection(page);
-    scrollToPromoSection(page, "auto");
-  }, []);
+    scrollToHashTarget(window.location.hash, "auto");
+  }, [scrollToHashTarget]);
 
   React.useEffect(() => {
     window.addEventListener("hashchange", handleHashNavigation);
@@ -583,9 +619,14 @@ const LandingPage = ({
                 onClick={(event) => {
                   event.preventDefault();
                   if (typeof window !== "undefined") {
-                    window.history.pushState(null, "", "#versions");
+                    if (
+                      window.location.hash.toLowerCase() !==
+                      VERSIONS_SECTION_HASH
+                    ) {
+                      window.history.pushState(null, "", VERSIONS_SECTION_HASH);
+                    }
                   }
-                  scrollToElementId(VERSIONS_SECTION_ID, "smooth");
+                  scrollToHashTarget(VERSIONS_SECTION_HASH, "smooth");
                 }}
               >
                 <Download className="promo-install-button__icon" />
