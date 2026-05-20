@@ -14,6 +14,30 @@ vi.mock("../hooks/useLanguage", () => ({
 
 const scrollIntoViewMock = vi.fn();
 const scrollToMock = vi.fn();
+const pushStateMock = vi.fn();
+
+const setNavigatorPlatform = ({
+  platform,
+  userAgent,
+  maxTouchPoints = 0,
+}: {
+  platform: string;
+  userAgent: string;
+  maxTouchPoints?: number;
+}) => {
+  Object.defineProperty(window.navigator, "platform", {
+    configurable: true,
+    value: platform,
+  });
+  Object.defineProperty(window.navigator, "userAgent", {
+    configurable: true,
+    value: userAgent,
+  });
+  Object.defineProperty(window.navigator, "maxTouchPoints", {
+    configurable: true,
+    value: maxTouchPoints,
+  });
+};
 
 describe("LandingPage promo structure", () => {
   beforeEach(() => {
@@ -22,8 +46,19 @@ describe("LandingPage promo structure", () => {
     window.localStorage.removeItem("appearance-background");
     scrollIntoViewMock.mockClear();
     scrollToMock.mockClear();
+    pushStateMock.mockClear();
+    pushStateMock.mockImplementation((_state, _title, url) => {
+      if (typeof url === "string" && url.startsWith("#")) {
+        window.location.hash = url;
+      }
+    });
     window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
     window.scrollTo = scrollToMock;
+    window.history.pushState = pushStateMock;
+    setNavigatorPlatform({
+      platform: "Win32",
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    });
   });
 
   it("renders the promo as one continuous editorial landing", () => {
@@ -69,9 +104,46 @@ describe("LandingPage promo structure", () => {
 
     fireEvent.click(screen.getByRole("link", { name: "Instalar app" }));
 
-    expect(window.location.hash).toBe("#versions");
+    expect(pushStateMock).toHaveBeenCalledWith(null, "", "#versions");
     expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
     expect(scrollToMock).toHaveBeenCalled();
+  });
+
+  it("handles shared versions hashes through the promo hash router", async () => {
+    render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    await act(async () => {
+      window.location.hash = "#versions";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
+    expect(scrollToMock).toHaveBeenCalled();
+  });
+
+  it("does not add duplicate history entries for repeated install CTA clicks", () => {
+    render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    const installCta = screen.getByRole("link", { name: "Instalar app" });
+    fireEvent.click(installCta);
+    window.location.hash = "#versions";
+    fireEvent.click(installCta);
+
+    expect(pushStateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("labels iOS users before matching macOS user agent fragments", () => {
+    setNavigatorPlatform({
+      platform: "iPhone",
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+      maxTouchPoints: 5,
+    });
+
+    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    const installHint = container.querySelector(".promo-install-button small");
+    expect(installHint).toHaveTextContent("iOS");
   });
 
   it("uses the liquid WebGL hero backdrop with a product screenshot signal", () => {
