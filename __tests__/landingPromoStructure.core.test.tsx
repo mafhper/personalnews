@@ -27,10 +27,11 @@ describe("LandingPage promo structure", () => {
   });
 
   it("renders the promo as one continuous editorial landing", () => {
-    render(<LandingPage onOpenFeed={vi.fn()} />);
+    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
 
     expect(screen.getByTestId("promo-section-home")).toBeInTheDocument();
     expect(screen.getByTestId("promo-section-experience")).toBeInTheDocument();
+    expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
     expect(screen.getByTestId("promo-section-project")).toBeInTheDocument();
     expect(screen.getByTestId("promo-section-faq")).toBeInTheDocument();
     expect(
@@ -38,6 +39,14 @@ describe("LandingPage promo structure", () => {
         name: "Notícias no seu ritmo.",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Teste a demonstração online funcional; instale no desktop para a experiência completa.",
+      ),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".promo-hero__actions > *")).toHaveLength(
+      3,
+    );
   });
 
   it("keeps the feed CTA functional in both hero and header", () => {
@@ -53,6 +62,16 @@ describe("LandingPage promo structure", () => {
     expect(onOpenFeed).toHaveBeenCalledTimes(2);
     expect(screen.getAllByText("Personal News").length).toBeGreaterThan(0);
     expect(document.body.textContent).not.toContain("PersonalNews");
+  });
+
+  it("routes the install hero CTA to the versions section", () => {
+    render(<LandingPage onOpenFeed={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("link", { name: "Instalar app" }));
+
+    expect(window.location.hash).toBe("#versions");
+    expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
+    expect(scrollToMock).toHaveBeenCalled();
   });
 
   it("uses the liquid WebGL hero backdrop with a product screenshot signal", () => {
