@@ -8,6 +8,10 @@ vi.mock("../hooks/useProxyConfig", () => ({
     apiKeys: {},
     validationErrors: {},
     isLoading: false,
+    routingMode: "full-local",
+    clientProxyOrder: ["rss2json"],
+    setRoutingMode: vi.fn(),
+    moveClientProxy: vi.fn(),
     setProxyEnabled: vi.fn(),
     setApiKey: vi.fn(),
     clearApiKey: vi.fn(),
@@ -46,7 +50,12 @@ vi.mock("../hooks/useProxyConfig", () => ({
 vi.mock("../hooks/useProxyDashboard", () => ({
   useProxyDashboard: () => ({
     snapshot: {
-      runtime: { activeMode: "web-client", backendAvailable: false },
+      runtime: {
+        activeMode: "web-client",
+        proxyRouteMode: "full-external-proxies",
+        fallbackOrder: ["RSS2JSON"],
+        backendAvailable: false,
+      },
       backend: { enabled: false, available: false },
       routes: [],
       summary: {
@@ -67,6 +76,8 @@ vi.mock("../hooks/useProxyDashboard", () => ({
 const makeSnapshot = (localStatus: "healthy" | "offline" = "healthy"): ProxyDashboardSnapshot => ({
   runtime: {
     activeMode: "web-client",
+    proxyRouteMode: "full-external-proxies",
+    fallbackOrder: ["RSS2JSON"],
     backendAvailable: false,
   },
   backend: {
@@ -88,6 +99,7 @@ const makeSnapshot = (localStatus: "healthy" | "offline" = "healthy"): ProxyDash
       failureCount: 0,
       avgResponseTime: 0,
       consecutiveFailures: localStatus === "healthy" ? 0 : 3,
+      routeOrder: null,
       detail: "Local backend",
     },
     {
@@ -104,6 +116,7 @@ const makeSnapshot = (localStatus: "healthy" | "offline" = "healthy"): ProxyDash
       failureCount: 0,
       avgResponseTime: 0,
       consecutiveFailures: 0,
+      routeOrder: 0,
       detail: "RSS2JSON route",
     },
   ],

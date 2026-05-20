@@ -59,7 +59,7 @@
     "ci:preflight": "node scripts/run-github-preflight.mjs --all",
     "ci:preflight:pages": "node scripts/run-github-preflight.mjs --pages",
     "ci:preflight:desktop": "node scripts/run-github-preflight.mjs --desktop",
-    "deploy": "bun run build && git add dist/ && git commit -m \"Deploy: Update build\" && git push origin main",
+    "deploy": "bun run build && node -e \"console.log('Deploy is handled by .github/workflows/deploy.yml after pushing main.')\"",
     "promo": "bun vite build && node scripts/serve-promo.cjs",
     "promo:changelog": "node quality-core/scripts/generate-changelog.cjs",
     "quality:ui": "bun quality-core/scripts/run-ui-gate.ts",
@@ -121,6 +121,8 @@
     "quality:ci": "node -e \"console.log('[quality:ci] quality:full:silent')\" && bun run quality:full:silent && node -e \"console.log('[quality:ci] quality:reports:all:silent')\" && bun run quality:reports:all:silent",
     "quality:ci:quick-silent": "node -e \"console.log('[quality:ci:quick-silent] build')\" && bun run build && node -e \"console.log('[quality:ci:quick-silent] quality:gate --quick --silent')\" && node quality-core/cli/run.cjs --quick --silent && node -e \"console.log('[quality:ci:quick-silent] quality:core --quick --silent --fail-on-error')\" && node quality-core/cli/quality.cjs --quick --silent --fail-on-error && node -e \"console.log('[quality:ci:quick-silent] quality:lighthouse:silent')\" && node quality-core/cli/run-lighthouse.cjs --silent && node -e \"console.log('[quality:ci:quick-silent] analysis:silent')\" && node quality-core/cli/run-analysis.cjs --silent",
     "tauri": "tauri",
+    "desktop:installer-assets:check": "node scripts/validate-tauri-installer-assets.mjs --repo .",
+    "desktop:installer-assets:check:strict": "node scripts/validate-tauri-installer-assets.mjs --repo . --strict",
     "desktop:build": "cd apps/desktop && bunx tauri build"
   },
   "devDependencies": {
@@ -128,7 +130,7 @@
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4.2.1",
     "@tailwindcss/vite": "^4.2.2",
-    "@tauri-apps/cli": "^2.1.0",
+    "@tauri-apps/cli": "^2.11.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.2",
