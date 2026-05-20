@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import type { FeedCategory } from "../../types";
 import type { ImportCandidate } from "../../services/opmlImportPreview";
 import { normalizeCategoryName } from "../../services/opmlImportPreview";
@@ -38,11 +38,17 @@ const statusClass = (status: ImportCandidate["status"]) => {
 };
 
 const candidateCategoryValue = (candidate: ImportCandidate) => {
+  if (candidate.categoryOverrideCleared) return "";
   if (candidate.categoryOverrideId) return `id:${candidate.categoryOverrideId}`;
   if (candidate.categoryOverrideName) return `new:${candidate.categoryOverrideName}`;
   if (candidate.suggestedCategoryId) return `id:${candidate.suggestedCategoryId}`;
   if (candidate.suggestedCategoryName) return `new:${candidate.suggestedCategoryName}`;
   return "";
+};
+
+const candidateCategoryName = (candidate: ImportCandidate) => {
+  if (candidate.categoryOverrideCleared) return undefined;
+  return candidate.categoryOverrideName || candidate.suggestedCategoryName;
 };
 
 export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
@@ -62,6 +68,8 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       ),
   );
   const [categoryToApply, setCategoryToApply] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -74,6 +82,8 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       ),
     );
     setCategoryToApply("");
+    setIsSubmitting(false);
+    isSubmittingRef.current = false;
   }, [candidates, isOpen]);
 
   const summary = useMemo(() => {
@@ -94,10 +104,7 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       newCategories: new Set(
         draftCandidates
           .filter((candidate) => candidate.decision === "import")
-          .map(
-            (candidate) =>
-              candidate.categoryOverrideName || candidate.suggestedCategoryName,
-          )
+          .map(candidateCategoryName)
           .filter((name): name is string => Boolean(name?.trim()))
           .filter((name) => {
             const normalized = normalizeCategoryName(name);
@@ -144,6 +151,7 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
         selectedIds.has(candidate.id)
           ? {
               ...candidate,
+              categoryOverrideCleared: false,
               categoryOverrideId: categoryToApply,
               categoryOverrideName: undefined,
             }
@@ -196,6 +204,7 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       updateCandidate(candidateId, {
         categoryOverrideId: undefined,
         categoryOverrideName: undefined,
+        categoryOverrideCleared: true,
       });
       return;
     }
@@ -204,6 +213,7 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       updateCandidate(candidateId, {
         categoryOverrideId: value.slice(3),
         categoryOverrideName: undefined,
+        categoryOverrideCleared: false,
       });
       return;
     }
@@ -211,7 +221,21 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
     updateCandidate(candidateId, {
       categoryOverrideId: undefined,
       categoryOverrideName: value.slice(4),
+      categoryOverrideCleared: false,
     });
+  };
+
+  const handleConfirm = async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      await onConfirm(draftCandidates);
+    } catch (error) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+      throw error;
+    }
   };
 
   return (
@@ -232,16 +256,18 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="rounded-lg border border-[rgba(var(--color-border),0.24)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
             >
               Cancelar
             </button>
             <button
               type="button"
-              onClick={() => void onConfirm(draftCandidates)}
-              className="rounded-lg border border-[rgb(var(--color-accentSurface))] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
+              onClick={() => void handleConfirm()}
+              disabled={isSubmitting || summary.importing === 0}
+              className="rounded-lg border border-[rgb(var(--color-accentSurface))] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Importar selecionados
+              {isSubmitting ? "Importando..." : "Importar selecionados"}
             </button>
           </div>
         </div>

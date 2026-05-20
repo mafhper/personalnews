@@ -20,6 +20,7 @@ export interface ImportCandidate {
   titleOverride?: string;
   suggestedCategoryName?: string;
   suggestedCategoryId?: string;
+  categoryOverrideCleared?: boolean;
   categoryOverrideId?: string;
   categoryOverrideName?: string;
   hideFromAll?: boolean;
@@ -122,6 +123,7 @@ export function buildImportCandidates({
       suggestedTitle: feed.title?.trim() || undefined,
       suggestedCategoryName: feed.category?.trim() || undefined,
       suggestedCategoryId: category?.id,
+      categoryOverrideCleared: false,
       hideFromAll: false,
       isDuplicate: Boolean(existingFeed),
       duplicateOfUrl: existingFeed?.url,
@@ -212,13 +214,15 @@ export function commitImportCandidates({
       continue;
     }
 
-    const categoryName =
-      candidate.categoryOverrideName || candidate.suggestedCategoryName;
+    const categoryName = candidate.categoryOverrideCleared
+      ? undefined
+      : candidate.categoryOverrideName || candidate.suggestedCategoryName;
     const normalizedCategoryName = normalizeCategoryName(categoryName);
-    const categoryId =
-      candidate.categoryOverrideId ||
-      candidate.suggestedCategoryId ||
-      categoryIdsByName[normalizedCategoryName];
+    const categoryId = candidate.categoryOverrideCleared
+      ? undefined
+      : candidate.categoryOverrideId ||
+        candidate.suggestedCategoryId ||
+        categoryIdsByName[normalizedCategoryName];
 
     if (
       normalizedCategoryName &&
