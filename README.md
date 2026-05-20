@@ -89,9 +89,10 @@ Use this when you want the app and its local support stack to start together.
 
 ## Release model
 
-- Pushes to `main` update the GitHub Pages deployment.
+- Pushes to `main` update the GitHub Pages deployment through a clean workflow build artifact.
 - GitHub Releases and desktop installers are created only when a version tag like `vX.Y.Z` is pushed.
 - If you bump the app version, keep the root package version and desktop metadata aligned before pushing the matching `v*` tag.
+- Local build output such as `dist/` is not a source of truth and should not be committed for deployment.
 
 ## Contributing
 

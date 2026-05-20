@@ -52,6 +52,14 @@ Before pushing a release tag, keep the root package version and desktop metadata
 | `bun run quality:reports:all` | Generates the heavier reporting pipeline. | Quality review and regression analysis. |
 | `bun run quality:ci` | Simulates the fuller CI-style validation flow. | Final local verification when you want maximum confidence. |
 
+The canonical Playwright config for these scripts is `playwright.config.cjs`. If `playwright.config.ts` remains in the repo, keep it aligned with the CJS config and do not introduce divergent test targets.
+
+## Lockfiles and generated output
+
+Use `bun.lock` as the operational lockfile. The npm lockfile is present for supply-chain validation (`npm ci --ignore-scripts`, `npm audit signatures`, and `npm audit --audit-level=high`) and should not be refreshed outside dependency or audit work.
+
+Generated output from `dist/`, `test-results/`, `playwright-report/`, and `coverage/` is local or CI output. It must not be committed.
+
 ## Performance and analysis
 
 | Script | What it does | When to use it |
