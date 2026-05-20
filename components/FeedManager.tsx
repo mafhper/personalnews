@@ -13,6 +13,12 @@ import {
 import { type DiscoveredFeed } from "../services/feedDiscoveryService";
 import { OPMLExportService } from "../services/opmlExportService";
 import {
+  buildImportCandidates,
+  commitImportCandidates,
+  normalizeCategoryName,
+  type ImportCandidate,
+} from "../services/opmlImportPreview";
+import {
   feedDuplicateDetector,
   type DuplicateDetectionResult,
 } from "../services/feedDuplicateDetector";
@@ -29,6 +35,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
 import { FeedAddTab } from "./FeedManager/FeedAddTab";
 import { FeedListTab } from "./FeedManager/FeedListTab";
+import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
 import { FeedAnalytics } from "./FeedAnalytics";
 import { Modal } from "./Modal";
@@ -236,6 +243,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   } | null>(null);
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showOpmlPreview, setShowOpmlPreview] = useState(false);
+  const [opmlPreviewCandidates, setOpmlPreviewCandidates] = useState<
+    ImportCandidate[]
+  >([]);
   const [selectedListType, setSelectedListType] = useState<string>("");
   const [duplicateWarning, setDuplicateWarning] = useState<{
     show: boolean;
@@ -487,38 +498,55 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     const content = await file.text();
     try {
       const opmlFeeds = parseOpml(content);
-      const newFeeds: FeedSource[] = [];
-      const categoriesToCreate = new Set<string>();
+      if (opmlFeeds.length === 0) {
+        await alertError("Nenhum feed encontrado neste arquivo OPML.");
+        return;
+      }
 
-      opmlFeeds.forEach((feed) => {
-        if (!currentFeeds.some((f) => f.url === feed.url)) {
-          const newFeed: FeedSource = {
-            url: feed.url,
-            customTitle: feed.title,
-          };
-          if (feed.category) {
-            const categoryId = feed.category
-              .toLowerCase()
-              .replace(/[^a-z0-9]/g, "-");
-            newFeed.categoryId = categoryId;
-            if (!categories.some((c) => c.id === categoryId)) {
-              categoriesToCreate.add(feed.category);
-            }
-          }
-          newFeeds.push(newFeed);
-        }
+      const candidates = buildImportCandidates({
+        opmlFeeds,
+        currentFeeds,
+        categories,
       });
-
-      categoriesToCreate.forEach((catName) =>
-        createCategory(catName, "#6B7280"),
-      );
-      if (newFeeds.length > 0) setFeeds((prev) => [...prev, ...newFeeds]);
-      await alertSuccess(`${newFeeds.length} feeds importados!`);
+      setOpmlPreviewCandidates(candidates);
+      setShowOpmlPreview(true);
     } catch {
       await alertError("Falha ao processar arquivo OPML");
     } finally {
       if (e.target) e.target.value = "";
     }
+  };
+
+  const handleConfirmOpmlImport = async (candidates: ImportCandidate[]) => {
+    const firstPass = commitImportCandidates({
+      candidates,
+      currentFeeds,
+      categories,
+    });
+    const categoryIdsByName: Record<string, string> = {};
+
+    firstPass.categoriesToCreate.forEach((categoryName) => {
+      const createdCategory = createCategory(categoryName, "#6B7280");
+      categoryIdsByName[normalizeCategoryName(categoryName)] =
+        createdCategory.id;
+    });
+
+    const result = commitImportCandidates({
+      candidates,
+      currentFeeds,
+      categories,
+      categoryIdsByName,
+    });
+
+    if (result.feedsToAdd.length > 0) {
+      setFeeds((prev) => [...prev, ...result.feedsToAdd]);
+    }
+
+    setShowOpmlPreview(false);
+    setOpmlPreviewCandidates([]);
+    await alertSuccess(
+      `${result.feedsToAdd.length} feeds importados. ${result.skipped.length} ignorados. ${result.failed.length} falharam.`,
+    );
   };
 
   const checkForDuplicates = async (
@@ -953,6 +981,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         existingFeed={duplicateWarning?.result.duplicateOf || null}
         newFeedUrl={duplicateWarning?.newUrl || ""}
         confidence={duplicateWarning?.result.confidence || 0}
+      />
+
+      <OpmlImportPreviewModal
+        isOpen={showOpmlPreview}
+        candidates={opmlPreviewCandidates}
+        categories={categories}
+        onClose={() => {
+          setShowOpmlPreview(false);
+          setOpmlPreviewCandidates([]);
+        }}
+        onConfirm={(candidates) => void handleConfirmOpmlImport(candidates)}
       />
 
       {showDiscoveryModal && currentDiscoveryResult && (
