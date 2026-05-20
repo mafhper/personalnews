@@ -53,6 +53,31 @@ export interface CommitImportCandidatesResult {
   failed: ImportCandidate[];
 }
 
+export interface OpmlImportConfirmationFeed {
+  id: string;
+  title: string;
+  url: string;
+  categoryLabel: string;
+}
+
+export interface OpmlImportConfirmationGroup {
+  categoryLabel: string;
+  feeds: OpmlImportConfirmationFeed[];
+}
+
+export interface OpmlImportConfirmationSummary {
+  importCount: number;
+  ignoredCount: number;
+  duplicateCount: number;
+  duplicateInFileCount: number;
+  invalidCount: number;
+  newCategories: string[];
+  groupsByCategory: OpmlImportConfirmationGroup[];
+  isLargeImport: boolean;
+}
+
+export const OPML_LARGE_IMPORT_THRESHOLD = 50;
+
 export const normalizeCategoryName = (value?: string) =>
   (value || "").trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -173,6 +198,86 @@ const canCommitCandidate = (candidate: ImportCandidate) =>
   candidate.status !== "invalid-url" &&
   candidate.status !== "duplicate-in-file";
 
+const getCandidateCategoryName = (candidate: ImportCandidate) => {
+  if (candidate.categoryOverrideCleared) return undefined;
+  return candidate.categoryOverrideName || candidate.suggestedCategoryName;
+};
+
+const getCandidateCategoryId = (candidate: ImportCandidate) => {
+  if (candidate.categoryOverrideCleared) return undefined;
+  return candidate.categoryOverrideId || candidate.suggestedCategoryId;
+};
+
+export function buildOpmlImportConfirmationSummary(
+  candidates: ImportCandidate[],
+  categories: FeedCategory[],
+  threshold = OPML_LARGE_IMPORT_THRESHOLD,
+): OpmlImportConfirmationSummary {
+  const categoryById = new Map(
+    categories.map((category) => [category.id, category] as const),
+  );
+  const existingCategoryNames = new Set(
+    categories.map((category) => normalizeCategoryName(category.name)),
+  );
+  const newCategories = new Map<string, string>();
+  const groupsByCategory = new Map<string, OpmlImportConfirmationFeed[]>();
+
+  const importable = candidates.filter(canCommitCandidate);
+
+  for (const candidate of importable) {
+    const categoryId = getCandidateCategoryId(candidate);
+    const categoryName = getCandidateCategoryName(candidate);
+    const normalizedCategoryName = normalizeCategoryName(categoryName);
+    const existingCategory = categoryId
+      ? categoryById.get(categoryId)
+      : undefined;
+
+    let categoryLabel = "Sem categoria";
+    if (existingCategory) {
+      categoryLabel = existingCategory.name;
+    } else if (categoryName?.trim()) {
+      categoryLabel = categoryName.trim();
+      if (!existingCategoryNames.has(normalizedCategoryName)) {
+        newCategories.set(normalizedCategoryName, categoryName.trim());
+      }
+    }
+
+    const feeds = groupsByCategory.get(categoryLabel) || [];
+    feeds.push({
+      id: candidate.id,
+      title:
+        candidate.titleOverride?.trim() ||
+        candidate.suggestedTitle ||
+        candidate.url,
+      url: candidate.url,
+      categoryLabel,
+    });
+    groupsByCategory.set(categoryLabel, feeds);
+  }
+
+  return {
+    importCount: importable.length,
+    ignoredCount: candidates.filter((candidate) => candidate.decision === "ignore")
+      .length,
+    duplicateCount: candidates.filter((candidate) => candidate.isDuplicate)
+      .length,
+    duplicateInFileCount: candidates.filter(
+      (candidate) => candidate.isDuplicateInFile,
+    ).length,
+    invalidCount: candidates.filter(
+      (candidate) => candidate.status === "invalid-url",
+    ).length,
+    newCategories: Array.from(newCategories.values()),
+    groupsByCategory: Array.from(groupsByCategory.entries()).map(
+      ([categoryLabel, feeds]) => ({
+        categoryLabel,
+        feeds,
+      }),
+    ),
+    isLargeImport: importable.length > threshold,
+  };
+}
+
 export function commitImportCandidates({
   candidates,
   currentFeeds,
@@ -214,15 +319,10 @@ export function commitImportCandidates({
       continue;
     }
 
-    const categoryName = candidate.categoryOverrideCleared
-      ? undefined
-      : candidate.categoryOverrideName || candidate.suggestedCategoryName;
+    const categoryName = getCandidateCategoryName(candidate);
     const normalizedCategoryName = normalizeCategoryName(categoryName);
-    const categoryId = candidate.categoryOverrideCleared
-      ? undefined
-      : candidate.categoryOverrideId ||
-        candidate.suggestedCategoryId ||
-        categoryIdsByName[normalizedCategoryName];
+    const categoryId =
+      getCandidateCategoryId(candidate) || categoryIdsByName[normalizedCategoryName];
 
     if (
       normalizedCategoryName &&

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildOpmlImportConfirmationSummary,
   buildImportCandidates,
   commitImportCandidates,
   normalizeImportUrl,
@@ -158,5 +159,76 @@ describe("opmlImportPreview", () => {
       customTitle: "Uncategorized",
       categoryId: undefined,
     });
+  });
+
+  it("builds a final confirmation summary grouped by destination category", () => {
+    const candidates = buildImportCandidates({
+      opmlFeeds: [
+        {
+          url: "https://new.example.com/feed",
+          title: "New",
+          category: "Tecnologia",
+        },
+        {
+          url: "https://research.example.com/feed",
+          title: "Research",
+          category: "Research",
+        },
+        {
+          url: "not a url",
+          title: "Broken",
+        },
+      ],
+      currentFeeds: [],
+      categories,
+    });
+
+    const summary = buildOpmlImportConfirmationSummary(candidates, categories);
+
+    expect(summary.importCount).toBe(2);
+    expect(summary.invalidCount).toBe(1);
+    expect(summary.newCategories).toEqual(["Research"]);
+    expect(summary.groupsByCategory).toEqual([
+      {
+        categoryLabel: "Tecnologia",
+        feeds: [
+          {
+            id: candidates[0].id,
+            title: "New",
+            url: "https://new.example.com/feed",
+            categoryLabel: "Tecnologia",
+          },
+        ],
+      },
+      {
+        categoryLabel: "Research",
+        feeds: [
+          {
+            id: candidates[1].id,
+            title: "Research",
+            url: "https://research.example.com/feed",
+            categoryLabel: "Research",
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("marks confirmation summaries as large only above the configured threshold", () => {
+    const candidates = buildImportCandidates({
+      opmlFeeds: Array.from({ length: 3 }, (_, index) => ({
+        url: `https://bulk.example.com/${index}.xml`,
+        title: `Bulk ${index}`,
+      })),
+      currentFeeds: [],
+      categories,
+    });
+
+    expect(buildOpmlImportConfirmationSummary(candidates, categories, 3).isLargeImport).toBe(
+      false,
+    );
+    expect(buildOpmlImportConfirmationSummary(candidates, categories, 2).isLargeImport).toBe(
+      true,
+    );
   });
 });
