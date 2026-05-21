@@ -559,6 +559,7 @@ describe("AppContent cache-first rendering", () => {
       await Promise.resolve();
     });
 
+    expect(mockLoadFeeds).toHaveBeenCalledTimes(1);
     expect(mockLoadFeeds).toHaveBeenCalledWith(
       expect.objectContaining({
         categoryId: "tech",
