@@ -619,16 +619,6 @@ const LandingPage = ({
                 <ArrowIcon />
               </button>
               <a
-                href={PROMO_PAGE_HASHES.experience}
-                className="promo-secondary-button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  scrollToSection("experience");
-                }}
-              >
-                {content.hero.secondaryCta}
-              </a>
-              <a
                 href="#versions"
                 className="promo-secondary-button promo-install-button"
                 aria-label={

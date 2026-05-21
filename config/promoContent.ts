@@ -103,7 +103,6 @@ type PromoContent = {
     title: string;
     lead: string;
     primaryCta: string;
-    secondaryCta: string;
     installCta: string;
     installCtaAriaLabel?: string;
     imageAlt: string;
@@ -179,7 +178,6 @@ const ptBR: PromoContent = {
     lead:
       "Teste a demonstração online funcional; instale no desktop para a experiência completa.",
     primaryCta: "Abrir feed",
-    secondaryCta: "Ver experiência",
     installCta: "Instalar app",
     installCtaAriaLabel: "Instalar app",
     imageAlt:
@@ -467,7 +465,6 @@ const enUS: PromoContent = {
     lead:
       "Try the working online demo; install the desktop app for the complete experience.",
     primaryCta: "Open feed",
-    secondaryCta: "See experience",
     installCta: "Install app",
     installCtaAriaLabel: "Install app",
     imageAlt:
@@ -754,7 +751,6 @@ const es: PromoContent = {
     lead:
       "Prueba la demo online funcional; instala la app de escritorio para la experiencia completa.",
     primaryCta: "Abrir feed",
-    secondaryCta: "Ver experiencia",
     installCta: "Instalar app",
     installCtaAriaLabel: "Instalar app",
     imageAlt:
