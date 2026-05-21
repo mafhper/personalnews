@@ -12,6 +12,7 @@ import {
   ListPlus,
   Menu,
   Plus,
+  RefreshCw,
   ServerCog,
   Settings2,
   ShieldAlert,
@@ -91,7 +92,6 @@ interface FeedManagerProps {
   onRefreshFeeds?: () => void;
 }
 
-type CollectionView = "feeds" | "categories" | "add" | "quarantine";
 type FeedManagerArea = "feeds" | "operations" | "diagnostics";
 type FeedManagerRoute =
   | "feeds:overview"
@@ -126,13 +126,81 @@ const routeAreaMap: Record<FeedManagerRoute, FeedManagerArea> = {
   "diagnostics:reports": "diagnostics",
 };
 
-const routeCollectionViewMap: Partial<Record<FeedManagerRoute, CollectionView>> =
-  {
-    "feeds:list": "feeds",
-    "feeds:add": "add",
-    "feeds:categories": "categories",
-    "feeds:quarantine": "quarantine",
-  };
+const routeContentMap: Record<
+  FeedManagerRoute,
+  { area: string; title: string; description: string }
+> = {
+  "feeds:overview": {
+    area: "Coleção",
+    title: "Painel da coleção",
+    description: "Resumo e atalhos para cuidar das fontes salvas.",
+  },
+  "feeds:list": {
+    area: "Coleção",
+    title: "Feeds cadastrados",
+    description: "Busca, status, categoria e correções por fonte.",
+  },
+  "feeds:add": {
+    area: "Coleção",
+    title: "Adicionar feed",
+    description: "Inclua uma fonte, importe OPML ou abra listas prontas.",
+  },
+  "feeds:categories": {
+    area: "Coleção",
+    title: "Categorias",
+    description: "Organização visual das fontes da coleção.",
+  },
+  "feeds:quarantine": {
+    area: "Coleção",
+    title: "Quarentena",
+    description: "Feeds preservados fora da carga principal.",
+  },
+  "operations:overview": {
+    area: "Operações",
+    title: "Intervenções da coleção",
+    description: "Escolha uma tarefa antes de alterar a biblioteca.",
+  },
+  "operations:io": {
+    area: "Operações",
+    title: "Importar e exportar",
+    description: "OPML, backups e transporte da coleção.",
+  },
+  "operations:curated": {
+    area: "Operações",
+    title: "Listas curadas",
+    description: "Coleções prontas para acelerar a montagem.",
+  },
+  "operations:maintenance": {
+    area: "Operações",
+    title: "Manutenção",
+    description: "Reparos controlados e limpeza assistida.",
+  },
+  "operations:risk": {
+    area: "Operações",
+    title: "Zona de risco",
+    description: "Ações destrutivas com confirmação explícita.",
+  },
+  "diagnostics:overview": {
+    area: "Diagnóstico",
+    title: "Diagnóstico em camadas",
+    description: "Saúde, infraestrutura e relatórios da coleção.",
+  },
+  "diagnostics:health": {
+    area: "Diagnóstico",
+    title: "Saúde dos feeds",
+    description: "Erros, impacto e status das fontes.",
+  },
+  "diagnostics:infra": {
+    area: "Diagnóstico",
+    title: "Backend, proxies e rotas",
+    description: "Estado operacional das rotas de carregamento.",
+  },
+  "diagnostics:reports": {
+    area: "Diagnóstico",
+    title: "Relatórios",
+    description: "Exportação de diagnóstico para suporte e auditoria.",
+  },
+};
 
 const routesByArea: Record<FeedManagerArea, FeedManagerRoute[]> = {
   feeds: [
@@ -297,35 +365,138 @@ const EditFeedDialog: React.FC<{
   );
 };
 
-const FeedManagerHeaderMetric: React.FC<{
+const FeedManagerOperationalMetric: React.FC<{
   label: string;
   value: number;
   icon: React.ReactNode;
-  tone?: "neutral" | "success" | "danger";
+  tone?: "neutral" | "success" | "warning" | "danger";
 }> = ({ label, value, icon, tone = "neutral" }) => {
   const toneClass =
     tone === "success"
       ? "text-[rgb(var(--color-success))]"
+      : tone === "warning"
+        ? "text-[rgb(var(--color-warning))]"
       : tone === "danger"
         ? "text-[rgb(var(--color-error))]"
         : "text-[rgb(var(--theme-text-readable))]";
 
   return (
-    <div className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-secondary-readable))]">
+    <div className="feed-manager-operational-metric">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-secondary-readable))]">
         {icon}
       </span>
-      <span className="flex items-baseline gap-1.5">
-        <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
+      <span className="min-w-0">
+        <span className="block truncate text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
           {label}
         </span>
-        <span className={`text-sm font-black leading-none ${toneClass}`}>
+        <span className={`mt-1 block text-2xl font-black leading-none ${toneClass}`}>
           {value}
         </span>
       </span>
     </div>
   );
 };
+
+const FeedManagerTopbar: React.FC<{
+  closeModal: () => void;
+  onToggleSidebar: () => void;
+  routeContent: { area: string; title: string; description: string };
+  sidebarCollapsed: boolean;
+}> = ({ closeModal, onToggleSidebar, routeContent, sidebarCollapsed }) => (
+  <header className="feed-manager-header">
+    <div className="feed-manager-header-main">
+      <button
+        type="button"
+        onClick={onToggleSidebar}
+        className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex"
+        aria-label={
+          sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"
+        }
+        title={
+          sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"
+        }
+      >
+        <Menu className="h-4.5 w-4.5" />
+      </button>
+      <div className="min-w-0">
+        <h2 className="truncate text-xl font-black text-[rgb(var(--theme-text-readable))] sm:text-2xl">
+          Gerenciar Feeds
+        </h2>
+      </div>
+    </div>
+
+    <div className="feed-manager-header-context order-3 col-span-2 lg:order-none lg:col-span-1">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-65">
+        {routeContent.area}
+      </p>
+      <p className="truncate text-sm font-bold text-[rgb(var(--theme-text-readable))]">
+        {routeContent.title}
+      </p>
+      <p className="hidden truncate text-xs opacity-78 sm:block">
+        {routeContent.description}
+      </p>
+    </div>
+
+    <button
+      onClick={closeModal}
+      className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] transition hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-95"
+      aria-label="Fechar gerenciador de feeds"
+      title="Fechar gerenciador de feeds"
+      type="button"
+    >
+      <X className="h-4.5 w-4.5" />
+    </button>
+  </header>
+);
+
+const FeedManagerOperationalHero: React.FC<{
+  metrics: React.ReactNode;
+  onAddFeed: () => void;
+  onRefreshFeeds?: () => void;
+}> = ({ metrics, onAddFeed, onRefreshFeeds }) => (
+  <section
+    className="feed-manager-operational-hero"
+    aria-labelledby="feed-manager-operational-title"
+  >
+    <div className="min-w-0">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
+        Operação
+      </p>
+      <h3
+        id="feed-manager-operational-title"
+        className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]"
+      >
+        Estado da coleção
+      </h3>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
+        Acompanhe a saúde geral dos feeds e acesse as ações mais usadas sem
+        disputar espaço com a navegação.
+      </p>
+      <div className="feed-manager-hero-metrics mt-4">{metrics}</div>
+    </div>
+
+    <div className="feed-manager-hero-actions">
+      <button
+        type="button"
+        onClick={onAddFeed}
+        className={`${managerPrimaryButtonClass} w-full sm:w-auto`}
+      >
+        <Plus className="h-4 w-4" />
+        Adicionar feed
+      </button>
+      {onRefreshFeeds && (
+        <button
+          type="button"
+          onClick={onRefreshFeeds}
+          className={`${managerSecondaryButtonClass} w-full sm:w-auto`}
+        >
+          <RefreshCw className="h-4 w-4" />
+          Revalidar feeds
+        </button>
+      )}
+    </div>
+  </section>
+);
 
 const CollectionModeButton: React.FC<{
   active: boolean;
@@ -488,7 +659,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     [currentFeeds],
   );
   const activeArea = routeAreaMap[activeRoute];
-  const collectionView = routeCollectionViewMap[activeRoute] || "feeds";
+  const activeRouteContent = routeContentMap[activeRoute];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
@@ -1288,26 +1459,27 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   ];
   const headerMetrics = (
     <>
-      <FeedManagerHeaderMetric
+      <FeedManagerOperationalMetric
         icon={<Boxes className="h-4 w-4" />}
         label="Total"
         value={currentFeeds.length}
       />
-      <FeedManagerHeaderMetric
+      <FeedManagerOperationalMetric
         icon={<CircleCheck className="h-4 w-4" />}
         label="Válidos"
         tone="success"
         value={validCount}
       />
-      <FeedManagerHeaderMetric
+      <FeedManagerOperationalMetric
         icon={<AlertTriangle className="h-4 w-4" />}
         label="Erros"
         tone="danger"
         value={invalidCount}
       />
-      <FeedManagerHeaderMetric
+      <FeedManagerOperationalMetric
         icon={<ShieldAlert className="h-4 w-4" />}
         label="Quarentena"
+        tone={quarantineCount > 0 ? "warning" : "neutral"}
         value={quarantineCount}
       />
     </>
@@ -1333,55 +1505,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }));
   };
 
-  const headerActions = (
-    <>
-      {activeArea === "feeds" && activeRoute !== "feeds:add" && (
-        <CollectionModeButton
-          active={false}
-          onClick={() => navigateToRoute("feeds:add")}
-        >
-          Adicionar feed
-        </CollectionModeButton>
-      )}
-      {activeArea === "feeds" && collectionView === "feeds" && onRefreshFeeds && (
-        <CollectionModeButton active={false} onClick={handleConfirmRefreshAll}>
-          Revalidar
-        </CollectionModeButton>
-      )}
-      {activeRoute === "feeds:categories" && (
-        <CollectionModeButton
-          active={false}
-          onClick={() => navigateToRoute("feeds:overview")}
-        >
-          Voltar ao painel
-        </CollectionModeButton>
-      )}
-      {activeArea === "operations" &&
-        (activeRoute === "operations:overview" ||
-          activeRoute === "operations:io") && (
-          <>
-            <CollectionModeButton active={false} onClick={handleExportOPML}>
-              Exportar OPML
-            </CollectionModeButton>
-            <CollectionModeButton
-              active={false}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Importar OPML
-            </CollectionModeButton>
-          </>
-        )}
-      {activeArea === "diagnostics" && (
-        <CollectionModeButton
-          active={false}
-          onClick={() => void validateAllFeeds()}
-        >
-          Revalidar feeds
-        </CollectionModeButton>
-      )}
-    </>
-  );
-
   return (
     <div
       className="feed-manager-shell"
@@ -1401,45 +1524,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         } as React.CSSProperties
       }
     >
-      <header className="feed-manager-topbar flex min-h-[60px] shrink-0 flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed((current) => !current)}
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex"
-            aria-label={
-              sidebarCollapsed
-                ? "Expandir barra lateral"
-                : "Recolher barra lateral"
-            }
-            title={
-              sidebarCollapsed
-                ? "Expandir barra lateral"
-                : "Recolher barra lateral"
-            }
-          >
-            <Menu className="h-4.5 w-4.5" />
-          </button>
-          <h2 className="truncate text-xl font-black text-[rgb(var(--theme-text-readable))] sm:text-2xl">
-            Gerenciar Feeds
-          </h2>
-        </div>
-        <div className="order-3 flex w-full gap-1.5 overflow-x-auto pb-1 sm:order-none sm:w-auto sm:pb-0">
-          {headerMetrics}
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <div className="hidden items-center gap-1.5 md:flex">{headerActions}</div>
-          <button
-            onClick={closeModal}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] transition hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-95"
-            aria-label="Fechar gerenciador de feeds"
-            title="Fechar gerenciador de feeds"
-            type="button"
-          >
-            <X className="h-4.5 w-4.5" />
-          </button>
-        </div>
-      </header>
+      <FeedManagerTopbar
+        closeModal={closeModal}
+        onToggleSidebar={() => setSidebarCollapsed((current) => !current)}
+        routeContent={activeRouteContent}
+        sidebarCollapsed={sidebarCollapsed}
+      />
 
         <div
           className={`feed-manager-layout ${
@@ -1574,6 +1664,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           className="feed-manager-workspace custom-scrollbar"
         >
           <div className="mx-auto w-full max-w-[1480px] space-y-5">
+            <FeedManagerOperationalHero
+              metrics={headerMetrics}
+              onAddFeed={() => navigateToRoute("feeds:add")}
+              onRefreshFeeds={onRefreshFeeds ? handleConfirmRefreshAll : undefined}
+            />
+
             {activeArea === "feeds" && (
               <>
                 <section
@@ -1589,7 +1685,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                         Painel da coleção
                       </h3>
                       <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
-                        Um resumo rápido da circulação. As funções completas aparecem logo abaixo e a navegação apenas desloca para cada trecho.
+                        Use esta entrada para revisar fontes, adicionar novos
+                        endereços e organizar categorias sem sair do gerenciador.
                       </p>
                       <div className="mt-5 flex flex-wrap gap-2">
                         <CollectionModeButton
@@ -1614,26 +1711,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <FeedManagerInsight
-                        label="Cobertura"
-                        value={`${activeFeeds.length}/${currentFeeds.length}`}
-                        description="feeds ativos em relação ao total salvo."
-                      />
-                      <FeedManagerInsight
                         label="Organização"
                         value={categories.length}
                         description="categorias disponíveis para roteamento."
                       />
                       <FeedManagerInsight
-                        label="Atenção"
-                        value={invalidCount}
-                        description="feeds com validação problemática."
-                        tone={invalidCount > 0 ? "danger" : "success"}
-                      />
-                      <FeedManagerInsight
-                        label="Fora da carga"
-                        value={quarantineCount}
-                        description="feeds preservados em quarentena."
-                        tone={quarantineCount > 0 ? "warning" : "neutral"}
+                        label="Fluxo recomendado"
+                        value="Revisar"
+                        description="comece pela lista de feeds quando houver alerta no painel operacional."
                       />
                     </div>
                   </div>

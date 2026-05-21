@@ -124,6 +124,7 @@ describe("Feed danger zone flows", () => {
         currentFeeds={testFeeds}
         setFeeds={vi.fn()}
         closeModal={vi.fn()}
+        onRefreshFeeds={vi.fn()}
       />,
     );
 
@@ -141,7 +142,20 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("heading", { name: "Painel da coleção" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/funções completas aparecem logo abaixo/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Estado da coleção" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Total").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Válidos").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Erros").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Quarentena").length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("button", { name: "Adicionar feed" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Revalidar feeds" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Use esta entrada para revisar fontes/)).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
