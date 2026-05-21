@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
     { url: "https://one.example/rss", customTitle: "One", categoryId: "tech" },
     { url: "https://two.example/rss", customTitle: "Two", categoryId: "tech" },
   ],
+  translations: {} as Record<string, string>,
   updateCategory: vi.fn(),
   validateFeeds: vi.fn(),
   validateFeed: vi.fn(),
@@ -37,20 +38,7 @@ vi.mock("../hooks/useLanguage", () => ({
     language: "pt-BR",
     setLanguage: vi.fn(),
     t: (key: string) =>
-      ({
-        "action.export": "Exportar",
-        "action.import": "Importar",
-        "action.reset": "Resetar",
-        "feeds.action.add_anyway": "Adicionar mesmo assim",
-        "feeds.action.cancel_dont_add": "Cancelar",
-        "feeds.action.replace": "Substituir existente",
-        "feeds.duplicate.confidence": "Confiança",
-        "feeds.duplicate.existing": "Existente",
-        "feeds.duplicate.message": "Este feed parece ser uma duplicata.",
-        "feeds.duplicate.new": "Novo",
-        "feeds.duplicate.title": "Feed duplicado",
-        "feeds.title": "Feeds",
-      })[key] || key,
+      mocks.translations[key] || key,
   }),
 }));
 
@@ -96,6 +84,20 @@ const testFeeds = mocks.testFeeds as FeedSource[];
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
+  mocks.translations = {
+    "action.export": "Exportar",
+    "action.import": "Importar",
+    "action.reset": "Resetar",
+    "feeds.action.add_anyway": "Adicionar mesmo assim",
+    "feeds.action.cancel_dont_add": "Cancelar",
+    "feeds.action.replace": "Substituir existente",
+    "feeds.duplicate.confidence": "Confiança",
+    "feeds.duplicate.existing": "Existente",
+    "feeds.duplicate.message": "Este feed parece ser uma duplicata.",
+    "feeds.duplicate.new": "Novo",
+    "feeds.duplicate.title": "Feed duplicado",
+    "feeds.title": "Feeds",
+  };
   mocks.confirm.mockResolvedValue(false);
   mocks.confirmDanger.mockResolvedValue(false);
   mocks.confirmWarning.mockResolvedValue(false);
@@ -240,8 +242,8 @@ describe("Feed danger zone flows", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Substituir feed" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Manter existente" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Substituir existente" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument();
     expect(
       screen.getByText(
         "O feed existente será removido antes de adicionar o novo endereço.",
@@ -249,5 +251,27 @@ describe("Feed danger zone flows", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Atual: https://one.example/rss")).toBeInTheDocument();
     expect(screen.getByText("Novo: https://new.example/rss")).toBeInTheDocument();
+  });
+
+  it("keeps localized duplicate action labels when replacement copy exists", () => {
+    mocks.translations["feeds.action.cancel_dont_add"] = "Cancel - Do Not Add";
+    mocks.translations["feeds.action.replace"] = "Replace Existing";
+
+    render(
+      <FeedDuplicateModal
+        isOpen
+        onAddAnyway={vi.fn()}
+        onClose={vi.fn()}
+        onReplace={vi.fn()}
+        existingFeed={testFeeds[0]}
+        newFeedUrl="https://new.example/rss"
+        confidence={0.95}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Replace Existing" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel - Do Not Add" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Substituir feed" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Manter existente" })).not.toBeInTheDocument();
   });
 });

@@ -44,7 +44,7 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
             className="rounded-lg px-5 py-2.5 text-sm font-medium text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition-colors hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-manager-text,var(--color-text)))]"
             type="button"
           >
-            {replacementConfirmation?.cancelText || t('feeds.action.cancel_dont_add') || 'Cancelar'}
+            {t('feeds.action.cancel_dont_add') || replacementConfirmation?.cancelText || 'Cancelar'}
           </button>
           <button
             onClick={onAddAnyway}
@@ -58,7 +58,7 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
             className="rounded-lg bg-[rgb(var(--color-warning))] px-5 py-2.5 text-sm font-bold text-black shadow-lg transition-all hover:brightness-110"
             type="button"
           >
-            {replacementConfirmation?.confirmText || t('feeds.action.replace') || 'Substituir Existente'}
+            {t('feeds.action.replace') || replacementConfirmation?.confirmText || 'Substituir Existente'}
           </button>
         </div>
       }
