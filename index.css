@@ -262,6 +262,42 @@ body {
   color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
 }
 
+.feed-manager-icon-button {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.feed-manager-icon-button:hover {
+  background: rgb(var(--theme-manager-soft, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text, var(--color-text)));
+}
+
+.feed-manager-icon-button--desktop {
+  display: none;
+}
+
+.feed-manager-icon-button:active {
+  transform: scale(0.96);
+}
+
+.feed-manager-icon-button:focus-visible,
+.feed-manager-sidebar-nav-item:focus-visible {
+  outline: 2px solid rgba(var(--color-accent), 0.62);
+  outline-offset: 2px;
+}
+
 .feed-manager-layout {
   display: grid;
   flex: 1 1 auto;
@@ -313,6 +349,70 @@ body {
   border-radius: var(--radius-2xl);
   background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
   box-shadow: var(--feed-manager-shadow-control);
+}
+
+.feed-manager-sidebar-nav-item {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-xl);
+  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  opacity: 0.84;
+  text-align: left;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.feed-manager-sidebar-nav-item--expanded {
+  padding: var(--space-1) var(--space-2);
+}
+
+.feed-manager-sidebar-nav-item--collapsed {
+  justify-content: center;
+  padding: var(--space-2) var(--space-2);
+}
+
+.feed-manager-sidebar-nav-item:hover {
+  background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text, var(--color-text)));
+  opacity: 1;
+}
+
+.feed-manager-sidebar-nav-item--active {
+  background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text, var(--color-text)));
+  opacity: 1;
+  box-shadow: inset 2px 0 0 rgb(var(--color-accent));
+}
+
+.feed-manager-sidebar-nav-icon {
+  display: flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text, var(--color-text)));
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.feed-manager-sidebar-nav-icon--area {
+  height: 2rem;
+  width: 2rem;
+}
+
+.feed-manager-sidebar-nav-icon--active {
+  background: rgb(var(--color-accentSurface));
+  color: rgb(var(--color-onAccent));
 }
 
 .feed-manager-workspace {
@@ -511,6 +611,14 @@ body {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: var(--space-3);
+  }
+
+  .feed-manager-icon-button--desktop {
+    display: flex;
+  }
+
+  .feed-manager-icon-button--mobile {
+    display: none;
   }
 
   .feed-manager-operational-hero {

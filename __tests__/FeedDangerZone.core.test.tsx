@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FeedCategoryManager } from "../components/FeedCategoryManager";
 import { FeedCleanupModal } from "../components/FeedCleanupModal";
@@ -158,18 +158,65 @@ describe("Feed danger zone flows", () => {
     expect(screen.getByText(/Use esta entrada para revisar fontes/)).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Abrir menu de navegação" })[0],
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu de navegação" }));
     expect(
-      screen.getAllByRole("button", { name: "Fechar menu de navegação" }).length,
-    ).toBeGreaterThan(0);
+      screen.getByRole("dialog", {
+        name: "Menu de navegação do gerenciador de feeds",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("dialog", {
+          name: "Menu de navegação do gerenciador de feeds",
+        }),
+      ).getByRole("button", { name: "Fechar menu de navegação" }),
+    ).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
     await waitFor(() =>
       expect(
-        screen.queryByRole("button", { name: "Fechar menu de navegação" }),
+        screen.queryByRole("dialog", {
+          name: "Menu de navegação do gerenciador de feeds",
+        }),
       ).not.toBeInTheDocument(),
     );
+    expect(
+      screen.getByRole("heading", { name: "Gerenciar Feeds" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu de navegação" }));
+    fireEvent.click(
+      within(
+        screen.getByRole("dialog", {
+          name: "Menu de navegação do gerenciador de feeds",
+        }),
+      ).getByRole("button", { name: "Fechar menu de navegação" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", {
+          name: "Menu de navegação do gerenciador de feeds",
+        }),
+      ).not.toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu de navegação" }));
+    fireEvent.click(
+      within(
+        screen.getByRole("dialog", {
+          name: "Menu de navegação do gerenciador de feeds",
+        }),
+      ).getByRole("button", { name: "Adicionar. Novo feed e OPML" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", {
+          name: "Menu de navegação do gerenciador de feeds",
+        }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Adicionar feed" }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
     expect(
@@ -182,13 +229,6 @@ describe("Feed danger zone flows", () => {
     );
     expect(
       screen.getByRole("button", { name: /Recolher Diagnóstico/ }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Adicionar. Novo feed e OPML" }),
-    );
-    expect(
-      screen.getByRole("heading", { name: "Adicionar feed" }),
     ).toBeInTheDocument();
 
     fireEvent.click(
