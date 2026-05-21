@@ -1,6 +1,5 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { FeedAnalytics } from "../components/FeedAnalytics";
 import type { Article, FeedSource } from "../types";
@@ -75,7 +74,7 @@ vi.mock("../hooks/useProxyDashboard", () => ({
 }));
 
 describe("FeedAnalytics dashboard", () => {
-  it("keeps details collapsed until explicitly opened when diagnostics exist", async () => {
+  it("keeps report controls out of overview and renders them in reports view", () => {
     proxyDashboardSnapshot = createProxySnapshot();
     const feeds: FeedSource[] = [
       {
@@ -115,9 +114,7 @@ describe("FeedAnalytics dashboard", () => {
       ],
     ]);
 
-    const user = userEvent.setup();
-
-    render(
+    const { rerender } = render(
       <FeedAnalytics
         feeds={feeds}
         articles={articles}
@@ -125,21 +122,25 @@ describe("FeedAnalytics dashboard", () => {
       />,
     );
 
-    expect(screen.getByText("Diagnóstico")).toBeInTheDocument();
+    expect(screen.getByText("Diagnóstico em camadas")).toBeInTheDocument();
     expect(screen.queryByText("Exportar relatório")).not.toBeInTheDocument();
     expect(
       screen.getAllByText("Backend local indisponível").length,
     ).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole("button", { name: /Detalhes/i }));
+    rerender(
+      <FeedAnalytics
+        feeds={feeds}
+        articles={articles}
+        feedValidations={feedValidations}
+        view="reports"
+      />,
+    );
 
     expect(screen.getByText("Exportar relatório")).toBeInTheDocument();
     expect(screen.getAllByText("Exportar relatório")).toHaveLength(1);
     expect(screen.queryByText("Exportar JSON")).not.toBeInTheDocument();
     expect(screen.queryByText("Exportar Markdown")).not.toBeInTheDocument();
-    expect(
-      screen.getAllByText("Backend local indisponível").length,
-    ).toBeGreaterThan(0);
   });
 
   it("starts compact in a healthy state and opens the focused diagnostics section", async () => {
@@ -199,6 +200,7 @@ describe("FeedAnalytics dashboard", () => {
         feeds={feeds}
         articles={[]}
         feedValidations={feedValidations}
+        view="infra"
         focusSection="proxy-health"
       />,
     );
@@ -208,7 +210,7 @@ describe("FeedAnalytics dashboard", () => {
     ).not.toBeInTheDocument();
 
     expect(await screen.findByText("Backend, proxies e rotas")).toBeInTheDocument();
-    expect(screen.getByText("Exportar relatório")).toBeInTheDocument();
+    expect(screen.queryByText("Exportar relatório")).not.toBeInTheDocument();
   });
 
   it("shows disabled proxies as neutral in aggregate health", async () => {
@@ -278,6 +280,7 @@ describe("FeedAnalytics dashboard", () => {
         feeds={[]}
         articles={[]}
         feedValidations={new Map()}
+        view="infra"
         focusSection="proxy-health"
       />,
     );

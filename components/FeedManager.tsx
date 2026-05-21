@@ -1,5 +1,24 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Activity, Library, Settings2 } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Boxes,
+  ChevronDown,
+  CircleCheck,
+  FileText,
+  FileUp,
+  Library,
+  ListPlus,
+  Menu,
+  Plus,
+  ServerCog,
+  Settings2,
+  ShieldAlert,
+  Tags,
+  Wrench,
+  X,
+} from "lucide-react";
 import type { FeedSource, Article } from "../types";
 import { parseOpml } from "../services/rssParser";
 import { FeedCategoryManager } from "./FeedCategoryManager";
@@ -37,13 +56,20 @@ import {
 } from "../utils/feedDangerConfirmation";
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
-import { useLanguage } from "../hooks/useLanguage";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
 import { FeedAddTab } from "./FeedManager/FeedAddTab";
 import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedQuarantineTab } from "./FeedManager/FeedQuarantineTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
+import {
+  managerControlSurfaceClass,
+  managerFieldClass,
+  managerInfoSurfaceClass,
+  managerPrimaryButtonClass,
+  managerSecondaryButtonClass,
+  managerDangerButtonClass,
+} from "./FeedManager/feedManagerStyles";
 import { FeedAnalytics } from "./FeedAnalytics";
 import { Modal } from "./Modal";
 import {
@@ -65,35 +91,125 @@ interface FeedManagerProps {
   onRefreshFeeds?: () => void;
 }
 
-type FeedManagerTab = "feeds" | "operations" | "diagnostics";
 type CollectionView = "feeds" | "categories" | "add" | "quarantine";
+type FeedManagerArea = "feeds" | "operations" | "diagnostics";
+type FeedManagerRoute =
+  | "feeds:overview"
+  | "feeds:list"
+  | "feeds:add"
+  | "feeds:categories"
+  | "feeds:quarantine"
+  | "operations:overview"
+  | "operations:io"
+  | "operations:curated"
+  | "operations:maintenance"
+  | "operations:risk"
+  | "diagnostics:overview"
+  | "diagnostics:health"
+  | "diagnostics:infra"
+  | "diagnostics:reports";
 
-const normalizePersistedTab = (value?: string): FeedManagerTab => {
-  if (value === "diagnostics") return "diagnostics";
+const routeAreaMap: Record<FeedManagerRoute, FeedManagerArea> = {
+  "feeds:overview": "feeds",
+  "feeds:list": "feeds",
+  "feeds:add": "feeds",
+  "feeds:categories": "feeds",
+  "feeds:quarantine": "feeds",
+  "operations:overview": "operations",
+  "operations:io": "operations",
+  "operations:curated": "operations",
+  "operations:maintenance": "operations",
+  "operations:risk": "operations",
+  "diagnostics:overview": "diagnostics",
+  "diagnostics:health": "diagnostics",
+  "diagnostics:infra": "diagnostics",
+  "diagnostics:reports": "diagnostics",
+};
+
+const routeCollectionViewMap: Partial<Record<FeedManagerRoute, CollectionView>> =
+  {
+    "feeds:list": "feeds",
+    "feeds:add": "add",
+    "feeds:categories": "categories",
+    "feeds:quarantine": "quarantine",
+  };
+
+const routesByArea: Record<FeedManagerArea, FeedManagerRoute[]> = {
+  feeds: [
+    "feeds:overview",
+    "feeds:list",
+    "feeds:add",
+    "feeds:categories",
+    "feeds:quarantine",
+  ],
+  operations: [
+    "operations:overview",
+    "operations:io",
+    "operations:curated",
+    "operations:maintenance",
+    "operations:risk",
+  ],
+  diagnostics: [
+    "diagnostics:overview",
+    "diagnostics:health",
+    "diagnostics:infra",
+    "diagnostics:reports",
+  ],
+};
+
+const getFeedManagerSectionId = (route: FeedManagerRoute) =>
+  `feed-manager-section-${route.replace(":", "-")}`;
+
+const normalizePersistedRoute = (
+  value?: string,
+  section?: string,
+  openProxySettings?: boolean,
+): FeedManagerRoute => {
+  if (openProxySettings || section === "proxy-health") {
+    return "diagnostics:infra";
+  }
+  if (section === "feed-reports") return "diagnostics:reports";
+  if (
+    section === "diagnostics" ||
+    section === "feed-status" ||
+    section === "diagnosis" ||
+    section === "affected"
+  ) {
+    return "diagnostics:health";
+  }
+
+  if (
+    value === "feeds:overview" ||
+    value === "feeds:list" ||
+    value === "feeds:add" ||
+    value === "feeds:categories" ||
+    value === "feeds:quarantine" ||
+    value === "operations:overview" ||
+    value === "operations:io" ||
+    value === "operations:curated" ||
+    value === "operations:maintenance" ||
+    value === "operations:risk" ||
+    value === "diagnostics:overview" ||
+    value === "diagnostics:health" ||
+    value === "diagnostics:infra" ||
+    value === "diagnostics:reports"
+  ) {
+    return value;
+  }
+
+  if (value === "diagnostics") return "diagnostics:health";
   if (
     value === "operations" ||
     value === "statistics" ||
     value === "functions"
   ) {
-    return "operations";
+    return "operations:overview";
   }
-  return "feeds";
-};
+  if (value === "add") return "feeds:add";
+  if (value === "categories") return "feeds:categories";
+  if (value === "quarantine") return "feeds:quarantine";
 
-const shouldOpenDiagnostics = (
-  section?: string,
-  openProxySettings?: boolean,
-): boolean => {
-  if (openProxySettings) return true;
-  if (
-    section === "diagnostics" ||
-    section === "proxy-health" ||
-    section === "feed-status" ||
-    section === "feed-reports"
-  ) {
-    return true;
-  }
-  return false;
+  return "feeds:overview";
 };
 
 const readFeedErrorHistory = (): FeedErrorHistoryItem[] => {
@@ -155,7 +271,7 @@ const EditFeedDialog: React.FC<{
         <div className="px-5 py-5">
           <input
             autoFocus
-            className="w-full rounded-lg border border-[rgba(var(--color-border),0.18)] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))] outline-none transition focus:border-[rgb(var(--color-accentSurface))] focus:ring-2 focus:ring-[rgba(var(--color-accent),0.22)]"
+            className={`${managerFieldClass} px-3 py-2`}
             onChange={(event) => onChange(event.target.value)}
             placeholder={placeholder}
             value={value}
@@ -163,14 +279,14 @@ const EditFeedDialog: React.FC<{
         </div>
         <div className="flex justify-end gap-2 px-5 pb-5">
           <button
-            className="rounded-lg border border-[rgba(var(--color-border),0.28)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+            className={managerSecondaryButtonClass}
             onClick={onClose}
             type="button"
           >
             Cancelar
           </button>
           <button
-            className="rounded-lg border border-[rgb(var(--color-accentSurface))] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
+            className={managerPrimaryButtonClass}
             type="submit"
           >
             {submitLabel}
@@ -181,11 +297,12 @@ const EditFeedDialog: React.FC<{
   );
 };
 
-const FeedManagerStat: React.FC<{
+const FeedManagerHeaderMetric: React.FC<{
   label: string;
   value: number;
+  icon: React.ReactNode;
   tone?: "neutral" | "success" | "danger";
-}> = ({ label, value, tone = "neutral" }) => {
+}> = ({ label, value, icon, tone = "neutral" }) => {
   const toneClass =
     tone === "success"
       ? "text-[rgb(var(--color-success))]"
@@ -194,11 +311,18 @@ const FeedManagerStat: React.FC<{
         : "text-[rgb(var(--theme-text-readable))]";
 
   return (
-    <div className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
-        {label}
-      </div>
-      <div className={`mt-1 text-lg font-black ${toneClass}`}>{value}</div>
+    <div className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-secondary-readable))]">
+        {icon}
+      </span>
+      <span className="flex items-baseline gap-1.5">
+        <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
+          {label}
+        </span>
+        <span className={`text-sm font-black leading-none ${toneClass}`}>
+          {value}
+        </span>
+      </span>
     </div>
   );
 };
@@ -214,36 +338,89 @@ const CollectionModeButton: React.FC<{
     className={`rounded-full px-4 py-2 text-sm font-black transition ${
       active
         ? "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))] ring-1 ring-[rgba(var(--color-accent),0.28)]"
-        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))]"
+        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))]"
     }`}
   >
     {children}
   </button>
 );
 
-const ManagerAreaHeader: React.FC<{
-  eyebrow: string;
-  title: string;
+const FeedManagerSidebarButton: React.FC<{
+  active: boolean;
+  badge?: number;
+  collapsed: boolean;
   description: string;
-  actions?: React.ReactNode;
-}> = ({ eyebrow, title, description, actions }) => (
-  <div className="bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.08)] sm:px-6">
-    <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
-          {eyebrow}
-        </p>
-        <h3 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
-          {title}
-        </h3>
-        <p className="text-xs text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
-          {description}
-        </p>
-      </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
-    </div>
-  </div>
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}> = ({ active, badge, collapsed, description, icon, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={collapsed ? `${label}: ${description}` : undefined}
+    aria-label={`${label}. ${description}`}
+    className={`group flex w-full min-w-0 items-center gap-2.5 rounded-xl text-left transition-all ${
+      collapsed ? "justify-center px-2 py-2.5" : "px-2 py-1.5"
+    } ${
+      active
+        ? "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] shadow-[inset_2px_0_0_rgb(var(--color-accent))]"
+        : "text-[rgb(var(--theme-text-secondary-readable))] opacity-84 hover:bg-[rgb(var(--theme-manager-control))] hover:text-[rgb(var(--theme-text-readable))] hover:opacity-100"
+    }`}
+  >
+    <span
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition ${
+        active
+          ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
+          : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))]"
+      }`}
+    >
+      {icon}
+    </span>
+    <span className={`min-w-0 flex-1 ${collapsed ? "sr-only" : ""}`}>
+      <span className="flex items-center justify-between gap-2">
+        <span className="truncate text-[13px] font-bold">{label}</span>
+        {typeof badge !== "undefined" && badge > 0 && (
+          <span className="rounded-full bg-[rgba(var(--color-accent),0.14)] px-2 py-0.5 text-[10px] font-black text-[rgb(var(--color-accent))]">
+            {badge}
+          </span>
+        )}
+      </span>
+      <span className="mt-0.5 block text-[11px] leading-snug opacity-70">
+        {description}
+      </span>
+    </span>
+  </button>
 );
+
+const FeedManagerInsight: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  description: string;
+  tone?: "neutral" | "success" | "warning" | "danger";
+}> = ({ label, value, description, tone = "neutral" }) => {
+  const toneClass =
+    tone === "success"
+      ? "text-[rgb(var(--color-success))]"
+      : tone === "warning"
+        ? "text-[rgb(var(--color-warning))]"
+        : tone === "danger"
+          ? "text-[rgb(var(--color-error))]"
+          : "text-[rgb(var(--theme-text-readable))]";
+
+  return (
+    <div className={`${managerControlSurfaceClass} p-4`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
+        {label}
+      </p>
+      <p className={`mt-2 text-2xl font-black leading-none ${toneClass}`}>
+        {value}
+      </p>
+      <p className="mt-2 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
+        {description}
+      </p>
+    </div>
+  );
+};
 
 export const FeedManager: React.FC<FeedManagerProps> = ({
   currentFeeds,
@@ -255,12 +432,19 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const logger = useLogger("FeedManager");
   const { categories, createCategory, resetToDefaults } = useFeedCategories();
   const { refreshAppearance } = useAppearance();
-  const { t } = useLanguage();
   const { confirm, alertSuccess, alertError, confirmDanger, confirmWarning } =
     useNotificationReplacements();
 
-  const [activeTab, setActiveTab] = useState<FeedManagerTab>("feeds");
-  const [collectionView, setCollectionView] = useState<CollectionView>("feeds");
+  const [activeRoute, setActiveRoute] =
+    useState<FeedManagerRoute>("feeds:overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [expandedAreas, setExpandedAreas] = useState<
+    Record<FeedManagerArea, boolean>
+  >({
+    feeds: true,
+    operations: false,
+    diagnostics: false,
+  });
   const [diagnosticsFocus, setDiagnosticsFocus] = useState<string | null>(null);
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedTitle, setNewFeedTitle] = useState("");
@@ -303,8 +487,104 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     () => currentFeeds.filter(isFeedActive),
     [currentFeeds],
   );
+  const activeArea = routeAreaMap[activeRoute];
+  const collectionView = routeCollectionViewMap[activeRoute] || "feeds";
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const contentScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollToRoute = React.useCallback((route: FeedManagerRoute) => {
+    if (typeof window === "undefined") return;
+    window.setTimeout(() => {
+      document
+        .getElementById(getFeedManagerSectionId(route))
+        ?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  }, []);
+
+  const navigateToRoute = React.useCallback(
+    (route: FeedManagerRoute, focusSection?: string) => {
+      const nextArea = routeAreaMap[route];
+      setActiveRoute(route);
+      setDiagnosticsFocus(focusSection || null);
+      setExpandedAreas((current) => ({
+        ...current,
+        [nextArea]: true,
+      }));
+      scrollToRoute(route);
+    },
+    [scrollToRoute],
+  );
+
+  useEffect(() => {
+    setExpandedAreas((current) =>
+      current[activeArea]
+        ? current
+        : {
+            ...current,
+            [activeArea]: true,
+          },
+    );
+  }, [activeArea]);
+
+  useEffect(() => {
+    const root = contentScrollRef.current;
+    if (!root) return;
+
+    let ticking = false;
+    const updateActiveRouteFromScroll = () => {
+      ticking = false;
+      if (root.clientHeight === 0) return;
+      const rootTop = root.getBoundingClientRect().top;
+      const marker = rootTop + 160;
+      const measuredSections = routesByArea[activeArea]
+        .map((route) => {
+          const section = document.getElementById(getFeedManagerSectionId(route));
+          if (!section) return null;
+          const rect = section.getBoundingClientRect();
+          return rect.height > 0 ? { route, rect } : null;
+        })
+        .filter(
+          (section): section is { route: FeedManagerRoute; rect: DOMRect } =>
+          Boolean(section),
+        );
+      const distinctTops = new Set(
+        measuredSections.map(({ rect }) => Math.round(rect.top)),
+      );
+      if (distinctTops.size <= 1) return;
+
+      const visibleRoute =
+        measuredSections.find(
+          ({ rect }) => rect.top <= marker && rect.bottom > marker,
+        )?.route ||
+        measuredSections
+          .filter(({ rect }) => rect.top <= marker)
+          .sort((a, b) => b.rect.top - a.rect.top)[0]?.route ||
+        measuredSections[0]?.route;
+
+      if (!visibleRoute) return;
+      setActiveRoute((current) =>
+        current === visibleRoute ? current : visibleRoute,
+      );
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(updateActiveRouteFromScroll);
+    };
+
+    updateActiveRouteFromScroll();
+    const settleTimer = window.setTimeout(updateActiveRouteFromScroll, 140);
+    root.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.clearTimeout(settleTimer);
+      root.removeEventListener("scroll", onScroll);
+    };
+  }, [activeArea]);
 
   useEffect(() => {
     if (showImportModal && !selectedListType) {
@@ -330,11 +610,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       };
 
       const frameId = requestAnimationFrame(() => {
-        const nextTab = normalizePersistedTab(parsed.tab);
-        setActiveTab(
-          shouldOpenDiagnostics(parsed.section, parsed.openProxySettings)
-            ? "diagnostics"
-            : nextTab,
+        setActiveRoute(
+          normalizePersistedRoute(
+            parsed.tab,
+            parsed.section,
+            parsed.openProxySettings,
+          ),
         );
         if (parsed.openProxySettings) {
           setDiagnosticsFocus("proxy-health");
@@ -370,14 +651,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   useEffect(() => {
     if (
       activeFeeds.length > 0 &&
-      (activeTab === "feeds" || activeTab === "diagnostics")
+      (activeArea === "feeds" || activeArea === "diagnostics")
     ) {
       const frameId = requestAnimationFrame(() => {
         void validateAllFeeds();
       });
       return () => cancelAnimationFrame(frameId);
     }
-  }, [activeFeeds.length, activeTab, validateAllFeeds]);
+  }, [activeArea, activeFeeds.length, validateAllFeeds]);
 
   const validateSingleFeed = async (url: string) => {
     try {
@@ -861,8 +1142,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   };
 
   const navigateToDiagnostics = (sectionId?: string) => {
-    setActiveTab("diagnostics");
-    if (sectionId) setDiagnosticsFocus(sectionId);
+    if (sectionId === "proxy-health") {
+      setActiveRoute("diagnostics:infra");
+    } else if (sectionId === "feed-reports") {
+      setActiveRoute("diagnostics:reports");
+    } else {
+      setActiveRoute("diagnostics:health");
+    }
+    if (sectionId) {
+      setDiagnosticsFocus(sectionId);
+    }
   };
 
   const validCount = Array.from(feedValidations.values()).filter(
@@ -883,38 +1172,219 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       )
       .map((feed) => feed.url),
   );
-  const tabs: Array<{
-    id: FeedManagerTab;
+  const navigationGroups: Array<{
+    id: FeedManagerArea;
     label: string;
     description: string;
+    overviewRoute: FeedManagerRoute;
     icon: React.ReactNode;
-    badge?: number;
+    items: Array<{
+      route: FeedManagerRoute;
+      label: string;
+      description: string;
+      icon: React.ReactNode;
+      badge?: number;
+      focusSection?: string;
+    }>;
   }> = [
     {
       id: "feeds",
       label: "Coleção",
-      description: "Feeds, adicionar, categorias e quarentena",
+      description: "Fontes, entrada e organização",
+      overviewRoute: "feeds:overview",
       icon: <Library className="h-4 w-4" />,
-      badge: quarantineCount > 0 ? quarantineCount : undefined,
+      items: [
+        {
+          route: "feeds:list",
+          label: "Feeds",
+          description: "Lista, busca e status",
+          icon: <Library className="h-4 w-4" />,
+        },
+        {
+          route: "feeds:add",
+          label: "Adicionar",
+          description: "Novo feed e OPML",
+          icon: <Plus className="h-4 w-4" />,
+        },
+        {
+          route: "feeds:categories",
+          label: "Categorias",
+          description: "Organização visual",
+          icon: <Tags className="h-4 w-4" />,
+        },
+        {
+          route: "feeds:quarantine",
+          label: "Quarentena",
+          description: "Feeds preservados fora da carga",
+          icon: <ShieldAlert className="h-4 w-4" />,
+          badge: quarantineCount > 0 ? quarantineCount : undefined,
+        },
+      ],
     },
     {
       id: "operations",
       label: "Operações",
-      description: "Importação, manutenção e risco",
+      description: "Intercâmbio, reparos e risco",
+      overviewRoute: "operations:overview",
       icon: <Settings2 className="h-4 w-4" />,
+      items: [
+        {
+          route: "operations:io",
+          label: "Importar/Exportar",
+          description: "OPML e backups de coleção",
+          icon: <FileUp className="h-4 w-4" />,
+        },
+        {
+          route: "operations:curated",
+          label: "Listas curadas",
+          description: "Coleções prontas",
+          icon: <ListPlus className="h-4 w-4" />,
+        },
+        {
+          route: "operations:maintenance",
+          label: "Manutenção",
+          description: "Reparos controlados",
+          icon: <Wrench className="h-4 w-4" />,
+        },
+        {
+          route: "operations:risk",
+          label: "Zona de risco",
+          description: "Ações destrutivas",
+          icon: <AlertTriangle className="h-4 w-4" />,
+        },
+      ],
     },
     {
       id: "diagnostics",
       label: "Diagnóstico",
-      description: "Saúde de feeds, proxies e backend",
-      icon: <Activity className="h-4 w-4" />,
-      badge: invalidCount > 0 ? invalidCount : undefined,
+      description: "Saúde, infraestrutura e relatórios",
+      overviewRoute: "diagnostics:overview",
+      icon: <BarChart3 className="h-4 w-4" />,
+      items: [
+        {
+          route: "diagnostics:health",
+          label: "Saúde dos feeds",
+          description: "Erros, impacto e status",
+          icon: <Activity className="h-4 w-4" />,
+          badge: invalidCount > 0 ? invalidCount : undefined,
+          focusSection: "feed-status",
+        },
+        {
+          route: "diagnostics:infra",
+          label: "Infraestrutura",
+          description: "Backend, proxies e rotas",
+          icon: <ServerCog className="h-4 w-4" />,
+          focusSection: "proxy-health",
+        },
+        {
+          route: "diagnostics:reports",
+          label: "Relatórios",
+          description: "Exportação de diagnóstico",
+          icon: <FileText className="h-4 w-4" />,
+          focusSection: "feed-reports",
+        },
+      ],
     },
   ];
+  const headerMetrics = (
+    <>
+      <FeedManagerHeaderMetric
+        icon={<Boxes className="h-4 w-4" />}
+        label="Total"
+        value={currentFeeds.length}
+      />
+      <FeedManagerHeaderMetric
+        icon={<CircleCheck className="h-4 w-4" />}
+        label="Válidos"
+        tone="success"
+        value={validCount}
+      />
+      <FeedManagerHeaderMetric
+        icon={<AlertTriangle className="h-4 w-4" />}
+        label="Erros"
+        tone="danger"
+        value={invalidCount}
+      />
+      <FeedManagerHeaderMetric
+        icon={<ShieldAlert className="h-4 w-4" />}
+        label="Quarentena"
+        value={quarantineCount}
+      />
+    </>
+  );
+
+  const selectAreaOverview = (group: {
+    id: FeedManagerArea;
+    overviewRoute: FeedManagerRoute;
+  }) => {
+    setExpandedAreas({
+      feeds: false,
+      operations: false,
+      diagnostics: false,
+      [group.id]: true,
+    });
+    navigateToRoute(group.overviewRoute);
+  };
+
+  const toggleArea = (area: FeedManagerArea) => {
+    setExpandedAreas((current) => ({
+      ...current,
+      [area]: !current[area],
+    }));
+  };
+
+  const headerActions = (
+    <>
+      {activeArea === "feeds" && activeRoute !== "feeds:add" && (
+        <CollectionModeButton
+          active={false}
+          onClick={() => navigateToRoute("feeds:add")}
+        >
+          Adicionar feed
+        </CollectionModeButton>
+      )}
+      {activeArea === "feeds" && collectionView === "feeds" && onRefreshFeeds && (
+        <CollectionModeButton active={false} onClick={handleConfirmRefreshAll}>
+          Revalidar
+        </CollectionModeButton>
+      )}
+      {activeRoute === "feeds:categories" && (
+        <CollectionModeButton
+          active={false}
+          onClick={() => navigateToRoute("feeds:overview")}
+        >
+          Voltar ao painel
+        </CollectionModeButton>
+      )}
+      {activeArea === "operations" &&
+        (activeRoute === "operations:overview" ||
+          activeRoute === "operations:io") && (
+          <>
+            <CollectionModeButton active={false} onClick={handleExportOPML}>
+              Exportar OPML
+            </CollectionModeButton>
+            <CollectionModeButton
+              active={false}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Importar OPML
+            </CollectionModeButton>
+          </>
+        )}
+      {activeArea === "diagnostics" && (
+        <CollectionModeButton
+          active={false}
+          onClick={() => void validateAllFeeds()}
+        >
+          Revalidar feeds
+        </CollectionModeButton>
+      )}
+    </>
+  );
 
   return (
     <div
-      className="relative flex min-h-full w-full flex-col overflow-visible bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-manager-text,var(--color-text)))] lg:h-full lg:overflow-hidden"
+      className="feed-manager-shell"
       style={
         {
           "--theme-surface-readable": "var(--theme-manager-surface)",
@@ -931,251 +1401,350 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         } as React.CSSProperties
       }
     >
-      <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:flex-row">
-        <aside className="bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] shadow-[0_18px_44px_rgba(0,0,0,0.12)] lg:w-[292px]">
-          <div className="flex h-full flex-col gap-5 p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
-                  Feed Manager
-                </p>
-                <h2 className="mt-1 text-xl font-bold tracking-tight text-[rgb(var(--theme-text-readable))]">
-                  {t("feeds.title")}
-                </h2>
-                <p className="mt-1 text-xs leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
-                  Gerencie coleção, entrada, organização e infraestrutura em áreas separadas.
+      <header className="feed-manager-topbar flex min-h-[60px] shrink-0 flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex"
+            aria-label={
+              sidebarCollapsed
+                ? "Expandir barra lateral"
+                : "Recolher barra lateral"
+            }
+            title={
+              sidebarCollapsed
+                ? "Expandir barra lateral"
+                : "Recolher barra lateral"
+            }
+          >
+            <Menu className="h-4.5 w-4.5" />
+          </button>
+          <h2 className="truncate text-xl font-black text-[rgb(var(--theme-text-readable))] sm:text-2xl">
+            Gerenciar Feeds
+          </h2>
+        </div>
+        <div className="order-3 flex w-full gap-1.5 overflow-x-auto pb-1 sm:order-none sm:w-auto sm:pb-0">
+          {headerMetrics}
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="hidden items-center gap-1.5 md:flex">{headerActions}</div>
+          <button
+            onClick={closeModal}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] transition hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-95"
+            aria-label="Fechar gerenciador de feeds"
+            title="Fechar gerenciador de feeds"
+            type="button"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+      </header>
+
+        <div
+          className={`feed-manager-layout ${
+            sidebarCollapsed
+              ? "feed-manager-layout--collapsed"
+              : "feed-manager-layout--expanded"
+          }`}
+        >
+        <aside className="feed-manager-sidebar">
+          <div
+            className={`flex h-full flex-col gap-3 overflow-y-auto custom-scrollbar ${
+              sidebarCollapsed ? "p-3" : "p-3 sm:p-4"
+            }`}
+          >
+            <div
+              className={`feed-manager-sidebar-header flex items-center gap-2 p-2 ${
+                sidebarCollapsed ? "justify-center" : "justify-between"
+              }`}
+            >
+              <div className={sidebarCollapsed ? "sr-only" : "min-w-0"}>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
+                  Navegação
                 </p>
               </div>
               <button
-                onClick={closeModal}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] shadow-md transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-90"
-                aria-label="Fechar"
                 type="button"
+                onClick={() => setSidebarCollapsed((current) => !current)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:hidden"
+                aria-label={
+                  sidebarCollapsed
+                    ? "Expandir barra lateral"
+                    : "Recolher barra lateral"
+                }
+                title={
+                  sidebarCollapsed
+                    ? "Expandir barra lateral"
+                    : "Recolher barra lateral"
+                }
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <Menu className="h-4.5 w-4.5" />
               </button>
             </div>
-
-            <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
-              <FeedManagerStat label="Total" value={currentFeeds.length} />
-              <FeedManagerStat label="Válidos" value={validCount} tone="success" />
-              <FeedManagerStat label="Erros" value={invalidCount} tone="danger" />
-            </div>
-
-            <nav className="grid grid-cols-3 gap-2 lg:flex lg:flex-col" aria-label="Áreas do gerenciador de feeds">
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      if (tab.id !== "diagnostics") setDiagnosticsFocus(null);
-                      if (tab.id === "feeds") setCollectionView("feeds");
-                    }}
-                    className={`group relative flex min-w-0 flex-col items-start gap-2 rounded-[22px] p-3 text-left transition-all sm:flex-row sm:gap-3 lg:min-w-0 ${
-                      isActive
-                        ? "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))] shadow-[0_18px_46px_rgba(0,0,0,0.2)] ring-1 ring-[rgba(var(--color-accent),0.28)]"
-                        : "text-[rgb(var(--theme-text-secondary-readable))] opacity-75 hover:bg-[rgb(var(--theme-manager-control))] hover:opacity-100"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl transition sm:mt-0.5 ${
-                        isActive
-                          ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
-                          : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))]"
+            <nav
+              className="flex flex-col gap-2"
+              aria-label="Navegação do gerenciador de feeds"
+            >
+              {navigationGroups.map((group) => (
+                <section key={group.id} className={sidebarCollapsed ? "" : "py-1"}>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => selectAreaOverview(group)}
+                      title={
+                        sidebarCollapsed
+                          ? `${group.label}: ${group.description}`
+                          : undefined
+                      }
+                      className={`group flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
+                        activeArea === group.id
+                          ? "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] shadow-[inset_2px_0_0_rgb(var(--color-accent))]"
+                          : "text-[rgb(var(--theme-text-secondary-readable))] opacity-84 hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] hover:opacity-100"
+                      } ${sidebarCollapsed ? "justify-center" : ""}`}
+                      aria-label={`${group.label}. ${group.description}`}
+                    >
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                          activeArea === group.id
+                            ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
+                            : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+                        }`}
+                      >
+                        {group.icon}
+                      </span>
+                      <span
+                        className={`min-w-0 flex-1 ${
+                          sidebarCollapsed ? "sr-only" : ""
+                        }`}
+                      >
+                        <span className="block text-[11px] font-black uppercase tracking-[0.16em]">
+                          {group.label}
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleArea(group.id)}
+                      className={`hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex ${
+                        sidebarCollapsed ? "sr-only" : ""
+                      }`}
+                      aria-expanded={expandedAreas[group.id]}
+                      aria-label={`${
+                        expandedAreas[group.id] ? "Recolher" : "Expandir"
+                      } ${group.label}`}
+                    >
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${
+                          expandedAreas[group.id] ? "rotate-0" : "-rotate-90"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {expandedAreas[group.id] && (
+                    <div
+                      className={`mt-1 grid gap-1 ${
+                        sidebarCollapsed ? "grid-cols-1" : "grid-cols-1 pl-3"
                       }`}
                     >
-                      {tab.icon}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-3">
-                        <span className="truncate text-sm font-black">{tab.label}</span>
-                        {typeof tab.badge !== "undefined" && (
-                          <span className="rounded-full bg-[rgba(var(--color-accent),0.14)] px-2 py-0.5 text-[10px] font-black text-[rgb(var(--color-accent))]">
-                            {tab.badge}
-                          </span>
-                        )}
-                      </span>
-                      <span className="mt-0.5 block text-xs leading-snug opacity-75">
-                        {tab.description}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+                      {group.items.map((item) => (
+                        <FeedManagerSidebarButton
+                          key={item.route}
+                          active={activeRoute === item.route}
+                          badge={item.badge}
+                          collapsed={sidebarCollapsed}
+                          description={item.description}
+                          icon={item.icon}
+                          label={item.label}
+                          onClick={() => {
+                            navigateToRoute(item.route, item.focusSection);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              ))}
             </nav>
           </div>
         </aside>
 
-        <main className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
-        {activeTab === "feeds" && (
-          <div className="flex flex-col lg:h-full lg:overflow-hidden">
-            <ManagerAreaHeader
-              eyebrow="Coleção"
-              title="Gestão da coleção"
-              description="Fontes, categorias e organização do feed."
-              actions={
-                <>
-                  <CollectionModeButton
-                    active={collectionView === "feeds"}
-                    onClick={() => setCollectionView("feeds")}
-                  >
-                    Feeds
-                  </CollectionModeButton>
-                  <CollectionModeButton
-                    active={collectionView === "categories"}
-                    onClick={() => setCollectionView("categories")}
-                  >
-                    Categorias
-                  </CollectionModeButton>
-                  <CollectionModeButton
-                    active={collectionView === "quarantine"}
-                    onClick={() => setCollectionView("quarantine")}
-                  >
-                    Quarentena{quarantineCount > 0 ? ` (${quarantineCount})` : ""}
-                  </CollectionModeButton>
-                  <button
-                    type="button"
-                    onClick={() => setCollectionView("add")}
-                    className={`rounded-full px-4 py-2 text-sm font-black transition ${
-                      collectionView === "add"
-                        ? "bg-[rgb(var(--color-accentSurface))] text-slate-950 shadow-[0_14px_34px_rgba(0,0,0,0.2)]"
-                        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))]"
-                    }`}
-                  >
-                    + Adicionar
-                  </button>
-                </>
-              }
-            />
-
-            <div className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
-              {collectionView === "feeds" && (
-                <FeedListTab
-                  feeds={activeFeeds}
-                  validations={feedValidations}
-                  categories={categories}
-                  onRemove={handleRemoveFeed}
-                  onRetry={validateSingleFeed}
-                  onEdit={handleEditFeed}
-                  onEditTitle={handleEditFeedTitle}
-                  onShowError={handleShowError}
-                  onMoveCategory={moveFeedToCategory}
-                  onToggleHideFromAll={handleToggleHideFromAll}
-                  onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
-                  quarantineRecommendedUrls={quarantineRecommendedUrls}
-                  onRefreshAll={onRefreshFeeds}
-                  onConfirmRefreshAll={handleConfirmRefreshAll}
-                  articles={articles}
-                />
-              )}
-
-              {collectionView === "add" && (
-                <FeedAddTab
-                  categories={categories}
-                  newFeedUrl={newFeedUrl}
-                  setNewFeedUrl={setNewFeedUrl}
-                  newFeedTitle={newFeedTitle}
-                  setNewFeedTitle={setNewFeedTitle}
-                  newFeedCategory={newFeedCategory}
-                  setNewFeedCategory={setNewFeedCategory}
-                  processingUrl={processingUrl}
-                  onSubmit={handleAddFeed}
-                  onImportOPML={() => fileInputRef.current?.click()}
-                  onShowImportModal={() => setShowImportModal(true)}
-                  feedCount={currentFeeds.length}
-                />
-              )}
-
-              {collectionView === "categories" && (
-                <div className="overflow-visible p-4 sm:p-6 lg:h-full lg:overflow-y-auto custom-scrollbar">
-                  <div className="mx-auto w-full max-w-[1480px]">
-              <FeedCategoryManager
-                feeds={currentFeeds}
-                setFeeds={setFeeds}
-                onClose={() => setCollectionView("feeds")}
-              />
+        <main
+          ref={contentScrollRef}
+          className="feed-manager-workspace custom-scrollbar"
+        >
+          <div className="mx-auto w-full max-w-[1480px] space-y-5">
+            {activeArea === "feeds" && (
+              <>
+                <section
+                  id={getFeedManagerSectionId("feeds:overview")}
+                  className={`${managerInfoSurfaceClass} scroll-mt-4 sm:p-6`}
+                >
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] xl:items-stretch">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
+                        Coleção
+                      </p>
+                      <h3 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
+                        Painel da coleção
+                      </h3>
+                      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
+                        Um resumo rápido da circulação. As funções completas aparecem logo abaixo e a navegação apenas desloca para cada trecho.
+                      </p>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <CollectionModeButton
+                          active={false}
+                          onClick={() => navigateToRoute("feeds:list")}
+                        >
+                          Revisar feeds
+                        </CollectionModeButton>
+                        <CollectionModeButton
+                          active={false}
+                          onClick={() => navigateToRoute("feeds:add")}
+                        >
+                          Adicionar fonte
+                        </CollectionModeButton>
+                        <CollectionModeButton
+                          active={false}
+                          onClick={() => navigateToRoute("feeds:categories")}
+                        >
+                          Organizar categorias
+                        </CollectionModeButton>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <FeedManagerInsight
+                        label="Cobertura"
+                        value={`${activeFeeds.length}/${currentFeeds.length}`}
+                        description="feeds ativos em relação ao total salvo."
+                      />
+                      <FeedManagerInsight
+                        label="Organização"
+                        value={categories.length}
+                        description="categorias disponíveis para roteamento."
+                      />
+                      <FeedManagerInsight
+                        label="Atenção"
+                        value={invalidCount}
+                        description="feeds com validação problemática."
+                        tone={invalidCount > 0 ? "danger" : "success"}
+                      />
+                      <FeedManagerInsight
+                        label="Fora da carga"
+                        value={quarantineCount}
+                        description="feeds preservados em quarentena."
+                        tone={quarantineCount > 0 ? "warning" : "neutral"}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                </section>
 
-              {collectionView === "quarantine" && (
-                <FeedQuarantineTab
-                  feeds={currentFeeds}
-                  onValidate={(url) => void handleValidateQuarantinedFeed(url)}
-                  onRestore={(url) => void handleRestoreQuarantinedFeed(url)}
-                  onMarkInactive={(url) => void handleMarkFeedInactive(url)}
-                  onRemove={(url) => void handleRemoveFeed(url)}
-                />
-              )}
-            </div>
-          </div>
-        )}
+                <section
+                  id={getFeedManagerSectionId("feeds:list")}
+                  className="scroll-mt-4"
+                >
+                  <FeedListTab
+                    embedded
+                    feeds={activeFeeds}
+                    validations={feedValidations}
+                    categories={categories}
+                    onRemove={handleRemoveFeed}
+                    onRetry={validateSingleFeed}
+                    onEdit={handleEditFeed}
+                    onEditTitle={handleEditFeedTitle}
+                    onShowError={handleShowError}
+                    onMoveCategory={moveFeedToCategory}
+                    onToggleHideFromAll={handleToggleHideFromAll}
+                    onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
+                    quarantineRecommendedUrls={quarantineRecommendedUrls}
+                    onRefreshAll={onRefreshFeeds}
+                    onConfirmRefreshAll={handleConfirmRefreshAll}
+                    articles={articles}
+                  />
+                </section>
 
-        {activeTab === "operations" && (
-          <div className="flex flex-col lg:h-full lg:overflow-hidden">
-            <ManagerAreaHeader
-              eyebrow="Operações"
-              title="Manutenção e intercâmbio"
-              description="Importação, exportação e manutenção."
-              actions={
-                <>
-                  <CollectionModeButton active={false} onClick={handleExportOPML}>
-                    Exportar OPML
-                  </CollectionModeButton>
-                  <CollectionModeButton active={false} onClick={() => fileInputRef.current?.click()}>
-                    Importar OPML
-                  </CollectionModeButton>
-                </>
-              }
-            />
-            <div className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
+                <section
+                  id={getFeedManagerSectionId("feeds:add")}
+                  className="scroll-mt-4"
+                >
+                  <FeedAddTab
+                    embedded
+                    categories={categories}
+                    newFeedUrl={newFeedUrl}
+                    setNewFeedUrl={setNewFeedUrl}
+                    newFeedTitle={newFeedTitle}
+                    setNewFeedTitle={setNewFeedTitle}
+                    newFeedCategory={newFeedCategory}
+                    setNewFeedCategory={setNewFeedCategory}
+                    processingUrl={processingUrl}
+                    onSubmit={handleAddFeed}
+                    onImportOPML={() => fileInputRef.current?.click()}
+                    onShowImportModal={() => setShowImportModal(true)}
+                    feedCount={currentFeeds.length}
+                  />
+                </section>
+
+                <section
+                  id={getFeedManagerSectionId("feeds:categories")}
+                  className="scroll-mt-4"
+                >
+                  <FeedCategoryManager
+                    feeds={currentFeeds}
+                    setFeeds={setFeeds}
+                    onClose={() => navigateToRoute("feeds:overview")}
+                  />
+                </section>
+
+                <section
+                  id={getFeedManagerSectionId("feeds:quarantine")}
+                  className="scroll-mt-4"
+                >
+                  <FeedQuarantineTab
+                    embedded
+                    feeds={currentFeeds}
+                    onValidate={(url) => void handleValidateQuarantinedFeed(url)}
+                    onRestore={(url) => void handleRestoreQuarantinedFeed(url)}
+                    onMarkInactive={(url) => void handleMarkFeedInactive(url)}
+                    onRemove={(url) => void handleRemoveFeed(url)}
+                  />
+                </section>
+              </>
+            )}
+
+            {activeArea === "operations" && (
               <FeedToolsTab
+                embedded
+                view="all"
                 onExportOPML={handleExportOPML}
                 onImportOPML={() => fileInputRef.current?.click()}
                 onShowImportModal={() => setShowImportModal(true)}
                 onResetDefaults={handleResetToDefaults}
                 onCleanupErrors={() => setShowCleanupModal(true)}
                 onDeleteAll={handleDeleteAll}
+                onOpenIo={() => navigateToRoute("operations:io")}
+                onOpenCurated={() => navigateToRoute("operations:curated")}
+                onOpenMaintenance={() => navigateToRoute("operations:maintenance")}
+                onOpenRisk={() => navigateToRoute("operations:risk")}
                 feedCount={currentFeeds.length}
                 validCount={validCount}
                 invalidCount={invalidCount}
               />
-            </div>
-          </div>
-        )}
+            )}
 
-        {activeTab === "diagnostics" && (
-          <div className="flex flex-col lg:h-full lg:overflow-hidden">
-            <ManagerAreaHeader
-              eyebrow="Diagnóstico"
-              title="Saúde, impacto e infraestrutura"
-              description="Feeds, relatórios e rotas de conexão."
-              actions={
-                <CollectionModeButton active={false} onClick={() => void validateAllFeeds()}>
-                  Revalidar feeds
-                </CollectionModeButton>
-              }
-            />
-            <div className="flex-1 overflow-visible custom-scrollbar p-4 sm:p-6 lg:min-h-0 lg:overflow-y-auto">
-              <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6">
-                <FeedAnalytics
-                  feeds={activeFeeds}
-                  articles={articles}
-                  feedValidations={feedValidations}
-                  focusSection={diagnosticsFocus || undefined}
-                  onFocusConsumed={() => setDiagnosticsFocus(null)}
-                  quarantineRecommendedUrls={quarantineRecommendedUrls}
-                  onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
-                />
-              </div>
-            </div>
+            {activeArea === "diagnostics" && (
+              <FeedAnalytics
+                embedded
+                feeds={activeFeeds}
+                articles={articles}
+                feedValidations={feedValidations}
+                view="all"
+                focusSection={diagnosticsFocus || undefined}
+                onFocusConsumed={() => setDiagnosticsFocus(null)}
+                quarantineRecommendedUrls={quarantineRecommendedUrls}
+                onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
+              />
+            )}
           </div>
-        )}
         </main>
       </div>
 
@@ -1279,21 +1848,21 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button
               onClick={() => setShowImportModal(false)}
-              className="rounded-lg border border-[rgba(var(--color-border),0.24)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+              className={managerSecondaryButtonClass}
               type="button"
             >
               Cancelar
             </button>
             <button
               onClick={() => void handleImportCurated("merge")}
-              className="rounded-lg border border-[rgba(var(--color-accent),0.32)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
+              className={managerPrimaryButtonClass}
               type="button"
             >
               Mesclar
             </button>
             <button
               onClick={() => void handleImportCurated("replace")}
-              className="rounded-lg border border-rose-500/30 bg-rose-600/15 px-4 py-2 text-sm font-bold text-rose-300 transition hover:bg-rose-600/20"
+              className={managerDangerButtonClass}
               type="button"
             >
               Substituir tudo
@@ -1308,7 +1877,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           <select
             value={selectedListType}
             onChange={(e) => setSelectedListType(e.target.value)}
-            className="w-full rounded-lg border border-[rgba(var(--color-border),0.24)] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))] outline-none transition focus:border-[rgb(var(--color-accentSurface))] focus:ring-2 focus:ring-[rgba(var(--color-accent),0.22)]"
+            className={`${managerFieldClass} p-3`}
           >
             {Object.keys(DEFAULT_CURATED_LISTS).map((k) => (
               <option key={k} value={k}>
@@ -1332,7 +1901,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <button
               type="button"
               onClick={() => navigateToDiagnostics("feed-status")}
-              className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-onAccent))]"
+              className={managerPrimaryButtonClass}
             >
               Abrir diagnóstico completo
             </button>
@@ -1341,7 +1910,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       >
         {selectedErrorFeed && (
           <div className="space-y-4">
-            <p className="font-mono text-sm text-red-400">
+            <p className="font-mono text-sm text-[rgb(var(--color-error))]">
               {selectedErrorFeed.validation.error}
             </p>
             <div className="rounded-lg bg-[rgb(var(--color-background))]/40 p-4 font-mono text-sm break-all text-[rgb(var(--color-textSecondary))]">

@@ -9,16 +9,24 @@ import {
 } from "../services/feedDiagnostics";
 import { type FeedValidationResult } from "../services/feedValidator";
 import { HealthReportExporter } from "./HealthReportExporter";
+import {
+  managerControlSurfaceClass,
+  managerInfoSurfaceClass,
+  managerSecondaryButtonClass,
+  managerSurfaceClass,
+} from "./FeedManager/feedManagerStyles";
 import { ProxySettings } from "./ProxySettings";
 
 interface FeedAnalyticsProps {
   feeds: FeedSource[];
   articles: Article[];
   feedValidations: Map<string, FeedValidationResult>;
+  view?: "overview" | "health" | "infra" | "reports" | "all";
   focusSection?: string;
   onFocusConsumed?: () => void;
   quarantineRecommendedUrls?: Set<string>;
   onQuarantineFeed?: (url: string) => void;
+  embedded?: boolean;
 }
 
 type AnalyticsAccordionSection =
@@ -43,14 +51,10 @@ type AffectedFeedRow = {
   quarantineRecommended: boolean;
 };
 
-const SURFACE_CLASS =
-  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.025)]";
-const INFO_SURFACE_CLASS =
-  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)]";
-const MANAGER_CONTROL_CLASS =
-  "rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]";
-const MANAGER_SURFACE_CARD_CLASS =
-  "rounded-[18px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-4";
+const SURFACE_CLASS = `${managerSurfaceClass} p-5`;
+const INFO_SURFACE_CLASS = managerInfoSurfaceClass;
+const MANAGER_CONTROL_CLASS = managerSecondaryButtonClass;
+const MANAGER_SURFACE_CARD_CLASS = `${managerControlSurfaceClass} p-4`;
 
 const normalizeLabel = (value?: string) =>
   (value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -174,10 +178,12 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   feeds,
   articles,
   feedValidations,
+  view = "overview",
   focusSection,
   onFocusConsumed,
   quarantineRecommendedUrls = new Set(),
   onQuarantineFeed,
+  embedded = false,
 }) => {
   const { snapshot, refresh } = useProxyDashboard();
   const [showAllRows, setShowAllRows] = useState(false);
@@ -496,7 +502,15 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             ? true
             : current.details,
       }));
-      document.getElementById(focusSection)?.scrollIntoView({
+      const focusTarget =
+        focusSection === "proxy-health"
+          ? "feed-manager-section-diagnostics-infra"
+          : focusSection === "feed-reports"
+            ? "feed-manager-section-diagnostics-reports"
+            : focusSection === "feed-status"
+              ? "feed-manager-section-diagnostics-health"
+              : focusSection;
+      document.getElementById(focusTarget)?.scrollIntoView?.({
         behavior: "smooth",
         block: "start",
       });
@@ -506,39 +520,78 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     return () => window.clearTimeout(timer);
   }, [focusSection, onFocusConsumed]);
 
+  const showAll = view === "all";
+  const showOverview = showAll || view === "overview";
+  const showHealth = showAll || view === "health";
+  const showInfra = showAll || view === "infra";
+  const showReports = showAll || view === "reports";
+
   return (
-    <div className="space-y-5">
-      <section id="diagnostics-overview" className={INFO_SURFACE_CLASS}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h3 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
-              Diagnóstico
-            </h3>
+    <div className={embedded ? "space-y-5" : "space-y-5"}>
+      {showOverview && (
+        <section
+          id="feed-manager-section-diagnostics-overview"
+          className={`${INFO_SURFACE_CLASS} scroll-mt-4`}
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
+                Síntese
+              </p>
+              <h3 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
+                Diagnóstico em camadas
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
+                Esta visão resume onde investigar primeiro. As páginas de saúde,
+                infraestrutura e relatórios ficam separadas na navegação.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className={MANAGER_CONTROL_CLASS}
+            >
+              Atualizar
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            className={MANAGER_CONTROL_CLASS}
-          >
-            Atualizar
-          </button>
-        </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            <DiagnosticOverviewCard
+              icon={<AlertCircle className="h-5 w-5" />}
+              label="Saúde dos feeds"
+              title={hasAttentionItems ? diagnosis.label : "Sem alerta ativo"}
+              description={
+                hasAttentionItems
+                  ? diagnosis.detail || `${actionItems.length} ação sugerida para revisão.`
+                  : "As fontes carregadas não pedem intervenção imediata."
+              }
+              tone={hasAttentionItems ? "warning" : "success"}
+            />
+            <DiagnosticOverviewCard
+              icon={<Layers3 className="h-5 w-5" />}
+              label="Infraestrutura"
+              title={infraStatusLabel}
+              description={`${snapshot.summary.healthyRoutes}/${Math.max(
+                1,
+                snapshot.summary.totalRoutes,
+              )} rotas saudáveis com ${snapshot.summary.successRate}% de sucesso na sessão.`}
+            />
+            <DiagnosticOverviewCard
+              icon={<CheckCircle2 className="h-5 w-5" />}
+              label="Relatórios"
+              title="Exportação disponível"
+              description={`${activityStats.matchedArticles} artigos associados aos feeds atuais podem compor o relatório.`}
+            />
+          </div>
+        </section>
+      )}
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Feeds" value={feeds.length} />
-          <StatCard label="Com erro" value={invalidRows.length} tone="danger" />
-          <StatCard
-            label="Pendentes"
-            value={uncheckedRows.length}
-            tone="warning"
-          />
-          <StatCard label="Artigos" value={activityStats.matchedArticles} />
-        </div>
-      </section>
-
-      {hasAttentionItems && (
-        <section id="feed-health" className={SURFACE_CLASS}>
+      {showHealth && hasAttentionItems && (
+        <section
+          id="feed-manager-section-diagnostics-health"
+          className={`${SURFACE_CLASS} scroll-mt-4`}
+        >
           <SectionTitle
             eyebrow="Saúde dos feeds"
             title={diagnosis.label}
@@ -546,13 +599,13 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           />
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <div className="rounded-[20px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+            <div className={`${managerControlSurfaceClass} p-5`}>
               <p className="text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
                 {diagnosis.detail}
               </p>
             </div>
 
-            <div className="rounded-[20px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+            <div className={`${managerControlSurfaceClass} p-5`}>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[rgb(var(--color-success))]" />
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-58">
@@ -563,7 +616,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 {actionItems.map((item, idx) => (
                   <div
                     key={item}
-                    className="flex items-center gap-3 rounded-[16px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
+                    className="flex items-center gap-3 rounded-xl bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
                   >
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.12)] text-[10px] text-[rgb(var(--color-accent))]">
                       {idx + 1}
@@ -577,7 +630,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 
           <AccordionSection
             sectionId="feed-status"
-            sectionClassName="mt-5 rounded-[22px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]"
+            sectionClassName={`${managerControlSurfaceClass} mt-5 p-4`}
             title="Feeds afetados"
             isOpen={openSections.affected}
             onToggle={() => toggleSection("affected")}
@@ -606,7 +659,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 {visibleRows.map((row) => (
                   <div
                     key={row.url}
-                    className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4"
+                    className={`${managerControlSurfaceClass} p-4`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -625,7 +678,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div className="rounded-[14px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
+                      <div className="rounded-xl bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
                           Rota
                         </p>
@@ -633,7 +686,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                           {row.route}
                         </p>
                       </div>
-                      <div className="rounded-[14px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
+                      <div className="rounded-xl bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
                           Status
                         </p>
@@ -749,7 +802,27 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         </section>
       )}
 
-      <section id="proxy-health" className={SURFACE_CLASS}>
+      {showHealth && !hasAttentionItems && (view === "health" || showAll) && (
+        <section
+          id="feed-manager-section-diagnostics-health"
+          className={`${SURFACE_CLASS} scroll-mt-4`}
+        >
+          <SectionTitle
+            eyebrow="Saúde dos feeds"
+            title="Nenhuma ação necessária"
+            icon={<CheckCircle2 className="h-5 w-5" />}
+          />
+          <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+            Os feeds validados não apresentam falhas no momento.
+          </p>
+        </section>
+      )}
+
+      {showInfra && (
+      <section
+        id="feed-manager-section-diagnostics-infra"
+        className={`${SURFACE_CLASS} scroll-mt-4`}
+      >
         <SectionTitle
           eyebrow="Infraestrutura"
           title="Backend, proxies e rotas"
@@ -770,10 +843,14 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           <ProxySettings detailed embedded snapshot={snapshot} onRefresh={refresh} />
         </div>
       </section>
+      )}
 
+      {showReports && (
       <AccordionSection
+        sectionId="feed-manager-section-diagnostics-reports"
+        sectionClassName={`${SURFACE_CLASS} scroll-mt-4`}
         title="Detalhes"
-        isOpen={openSections.details}
+        isOpen={view === "reports" || showAll ? true : openSections.details}
         onToggle={() => toggleSection("details")}
       >
         <div className="space-y-4">
@@ -791,6 +868,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           </section>
         </div>
       </AccordionSection>
+      )}
     </div>
   );
 };
@@ -868,18 +946,56 @@ const SectionTitle: React.FC<{
   </div>
 );
 
+const DiagnosticOverviewCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  title: string;
+  description: string;
+  tone?: "default" | "success" | "warning";
+}> = ({ icon, label, title, description, tone = "default" }) => {
+  const iconTone =
+    tone === "success"
+      ? "bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]"
+      : tone === "warning"
+        ? "bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]"
+        : "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))]";
+
+  return (
+    <div className={`${managerControlSurfaceClass} p-5`}>
+      <div className="flex items-start gap-4">
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconTone}`}
+        >
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
+            {label}
+          </p>
+          <h4 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
+            {title}
+          </h4>
+        </div>
+      </div>
+      <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
+        {description}
+      </p>
+    </div>
+  );
+};
+
 const StatCard: React.FC<{
   label: string;
   value: React.ReactNode;
   tone?: "default" | "warning" | "danger";
 }> = ({ label, value, tone = "default" }) => (
   <div
-    className={`rounded-[18px] p-4 ${
+    className={`rounded-2xl p-4 ${
       tone === "danger"
         ? "bg-[rgba(var(--color-error),0.1)]"
         : tone === "warning"
           ? "bg-[rgba(var(--color-warning),0.1)]"
-          : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))]"
+          : managerControlSurfaceClass
     }`}
   >
     <p className="text-[11px] uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">

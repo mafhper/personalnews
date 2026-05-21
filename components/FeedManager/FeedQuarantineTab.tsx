@@ -2,6 +2,10 @@ import React from "react";
 import { CheckCircle2, RefreshCw, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import type { FeedSource } from "../../types";
 import { isFeedInactive, isFeedQuarantined, isQuarantineRecovered } from "../../utils/feedQuarantine";
+import {
+  managerControlSurfaceClass,
+  managerInfoSurfaceClass,
+} from "./feedManagerStyles";
 
 interface FeedQuarantineTabProps {
   feeds: FeedSource[];
@@ -9,10 +13,10 @@ interface FeedQuarantineTabProps {
   onRestore: (url: string) => void | Promise<void>;
   onMarkInactive: (url: string) => void | Promise<void>;
   onRemove: (url: string) => void | Promise<void>;
+  embedded?: boolean;
 }
 
-const SURFACE_CLASS =
-  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const SURFACE_CLASS = managerInfoSurfaceClass;
 
 const formatDate = (value?: string) => {
   if (!value) return "—";
@@ -28,6 +32,7 @@ export const FeedQuarantineTab: React.FC<FeedQuarantineTabProps> = ({
   onRestore,
   onMarkInactive,
   onRemove,
+  embedded = false,
 }) => {
   const trackedFeeds = feeds.filter(
     (feed) => isFeedQuarantined(feed) || isFeedInactive(feed),
@@ -36,7 +41,7 @@ export const FeedQuarantineTab: React.FC<FeedQuarantineTabProps> = ({
   const inactiveCount = feeds.filter(isFeedInactive).length;
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+    <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
       <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
         <section className={SURFACE_CLASS}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -81,7 +86,7 @@ export const FeedQuarantineTab: React.FC<FeedQuarantineTabProps> = ({
               return (
                 <article
                   key={feed.url}
-                  className="rounded-[24px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-4 shadow-[0_14px_36px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.025)]"
+                  className="feed-manager-surface p-4"
                 >
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="min-w-0">
@@ -152,7 +157,7 @@ export const FeedQuarantineTab: React.FC<FeedQuarantineTabProps> = ({
 };
 
 const Metric: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-  <div className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-4 py-3">
+  <div className={`${managerControlSurfaceClass} px-4 py-3`}>
     <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
       {label}
     </div>
@@ -163,7 +168,7 @@ const Metric: React.FC<{ label: string; value: number }> = ({ label, value }) =>
 );
 
 const InfoPill: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="rounded-[16px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2">
+  <div className={`${managerControlSurfaceClass} px-3 py-2`}>
     <div className="text-[10px] font-black uppercase tracking-[0.14em] opacity-55">
       {label}
     </div>

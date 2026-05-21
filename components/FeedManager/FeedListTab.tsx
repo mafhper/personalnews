@@ -4,6 +4,11 @@ import { FeedItem } from "../FeedItem";
 import type { Article, FeedSource, FeedCategory } from "../../types";
 import type { FeedValidationResult } from "../../services/feedValidator";
 import { getFeedSortKey } from "../../utils/feedDisplay";
+import {
+  managerControlSurfaceClass,
+  managerFieldClass,
+  managerInfoSurfaceClass,
+} from "./feedManagerStyles";
 
 interface FeedListTabProps {
   feeds: FeedSource[];
@@ -21,13 +26,12 @@ interface FeedListTabProps {
   onRefreshAll?: () => void;
   onConfirmRefreshAll?: () => void | Promise<void>;
   articles?: Article[];
+  embedded?: boolean;
 }
 
-const INFO_SURFACE_CLASS =
-  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const INFO_SURFACE_CLASS = managerInfoSurfaceClass;
 
-const CONTROL_CLASS =
-  "w-full rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-sm text-[rgb(var(--theme-control-text,var(--theme-text-on-surface,var(--color-text))))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] outline-none transition-all placeholder:text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] focus:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] focus:ring-1 focus:ring-[rgba(var(--color-accent),0.35)]";
+const CONTROL_CLASS = managerFieldClass;
 
 const normalizeLabel = (value?: string) =>
   (value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -68,6 +72,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   onRefreshAll,
   onConfirmRefreshAll,
   articles = [],
+  embedded = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -216,7 +221,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   };
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+    <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
       <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
         <section className="flex flex-col gap-4">
           <section className={INFO_SURFACE_CLASS}>
@@ -466,7 +471,7 @@ const ActivityTile: React.FC<{
   label: string;
   value: number;
 }> = ({ label, value }) => (
-  <div className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+  <div className={`${managerControlSurfaceClass} px-4 py-3`}>
     <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
       {label}
     </div>
@@ -480,7 +485,7 @@ const ActivityRow: React.FC<{
   label: string;
   value: string;
 }> = ({ label, value }) => (
-  <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-3 py-2 text-sm">
+  <div className={`${managerControlSurfaceClass} flex items-center justify-between gap-3 px-3 py-2 text-sm`}>
     <span className="truncate font-semibold text-[rgb(var(--theme-text-readable))]">
       {label}
     </span>
@@ -505,7 +510,7 @@ const FeedGroup: React.FC<{
   };
 
   return (
-    <section className={`rounded-[26px] p-5 shadow-[0_14px_36px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.025)] transition-all ${toneStyles[tone]}`}>
+    <section className={`feed-manager-surface p-5 transition-all ${toneStyles[tone]}`}>
       <div className="mb-4 flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
           <h3 className="text-base font-bold text-[rgb(var(--theme-text-readable))]">

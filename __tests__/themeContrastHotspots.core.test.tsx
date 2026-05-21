@@ -2,6 +2,7 @@ import React from "react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { FeedAddTab } from "../components/FeedManager/FeedAddTab";
 import { SettingsSidebar } from "../components/SettingsSidebar";
@@ -244,6 +245,12 @@ describe("theme contrast hotspots", () => {
   });
 
   it("uses semantic CTA tokens in feed manager add flow", () => {
+    const cssSource = readFileSync(resolve(process.cwd(), "index.css"), "utf8");
+
+    expect(cssSource).toContain(".feed-manager-primary-button");
+    expect(cssSource).toContain("background: rgb(var(--color-accentSurface));");
+    expect(cssSource).toContain("color: rgb(var(--color-onAccent));");
+
     render(
       <FeedAddTab
         categories={[{ id: "general", name: "General", color: "0 0 0", order: 0 }]}
@@ -262,20 +269,10 @@ describe("theme contrast hotspots", () => {
     );
 
     const newFeedButton = screen.getByRole("button", { name: /Abrir listas/i });
-    expect(newFeedButton.className).toContain(
-      "bg-[rgb(var(--color-accentSurface))]",
-    );
-    expect(newFeedButton.className).toContain(
-      "text-[rgb(var(--color-onAccent))]",
-    );
+    expect(newFeedButton.className).toContain("feed-manager-primary-button");
 
     const saveFeedButton = screen.getByRole("button", { name: /^Adicionar$/i });
-    expect(saveFeedButton.className).toContain(
-      "bg-[rgb(var(--color-accentSurface))]",
-    );
-    expect(saveFeedButton.className).toContain(
-      "text-[rgb(var(--color-onAccent))]",
-    );
+    expect(saveFeedButton.className).toContain("feed-manager-primary-button");
   });
 
   it("keeps category manager accent CTAs on explicit high-contrast foreground tokens", () => {
@@ -329,7 +326,9 @@ describe("theme contrast hotspots", () => {
     expect(settingsSidebarSource).toContain("w-full h-9 rounded-xl");
   });
 
-  it("routes sidebar theme mode changes through presets with semantic tokens", () => {
+  it("routes sidebar theme mode changes through presets with semantic tokens", async () => {
+    const user = userEvent.setup();
+
     render(
       <SettingsSidebar
         isOpen={true}
@@ -341,8 +340,8 @@ describe("theme contrast hotspots", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Aparência").closest("button")!);
-    fireEvent.click(screen.getByRole("button", { name: "Escuro" }));
+    await user.click(screen.getByText("Aparência").closest("button")!);
+    await user.click(screen.getByRole("button", { name: "Escuro" }));
 
     expect(setCurrentThemeMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -356,7 +355,9 @@ describe("theme contrast hotspots", () => {
     );
   });
 
-  it("applies seed color presets as complete semantic light and dark themes", () => {
+  it("applies seed color presets as complete semantic light and dark themes", async () => {
+    const user = userEvent.setup();
+
     render(
       <SettingsSidebar
         isOpen={true}
@@ -368,8 +369,8 @@ describe("theme contrast hotspots", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Aparência").closest("button")!);
-    fireEvent.click(
+    await user.click(screen.getByText("Aparência").closest("button")!);
+    await user.click(
       screen.getByRole("button", { name: "Aplicar cor-semente Esmeralda" }),
     );
 
@@ -399,7 +400,8 @@ describe("theme contrast hotspots", () => {
     );
   });
 
-  it("preserves the active seed pair when switching between light and dark modes", () => {
+  it("preserves the active seed pair when switching between light and dark modes", async () => {
+    const user = userEvent.setup();
     const seedPair = createThemeSeedPair("5 150 105", "Esmeralda", "seed-emerald");
     themeState.currentTheme = seedPair.dark;
     themeState.customThemes = [seedPair.light, seedPair.dark];
@@ -422,13 +424,13 @@ describe("theme contrast hotspots", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    await user.click(screen.getByText("Aparência").closest("button")!);
 
     expect(
       screen.getByText("Cor-semente ativa: Esmeralda (Escuro)"),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Claro" }));
+    await user.click(screen.getByRole("button", { name: "Claro" }));
 
     expect(setCurrentThemeMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -447,7 +449,9 @@ describe("theme contrast hotspots", () => {
     });
   });
 
-  it("renders seed preview coverage for CTA, outline, pagination, chips, and elevated cards", () => {
+  it("renders seed preview coverage for CTA, outline, pagination, chips, and elevated cards", async () => {
+    const user = userEvent.setup();
+
     render(
       <SettingsSidebar
         isOpen={true}
@@ -459,7 +463,7 @@ describe("theme contrast hotspots", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    await user.click(screen.getByText("Aparência").closest("button")!);
 
     expect(
       screen.getByRole("button", { name: "Aplicar cor-semente Azul" }),
@@ -471,7 +475,9 @@ describe("theme contrast hotspots", () => {
     expect(screen.getAllByText("Azul").length).toBeGreaterThan(0);
   });
 
-  it("syncs the custom seed swatch with the selected preset color", () => {
+  it("syncs the custom seed swatch with the selected preset color", async () => {
+    const user = userEvent.setup();
+
     render(
       <SettingsSidebar
         isOpen={true}
@@ -483,8 +489,8 @@ describe("theme contrast hotspots", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Aparência").closest("button")!);
-    fireEvent.click(
+    await user.click(screen.getByText("Aparência").closest("button")!);
+    await user.click(
       screen.getByRole("button", { name: "Aplicar cor-semente Âmbar" }),
     );
 
@@ -515,10 +521,11 @@ describe("theme contrast hotspots", () => {
       "utf8",
     );
 
-    expect(toolsSource).toContain("Bancada");
-    expect(toolsSource).toContain("Fluxos principais");
+    expect(toolsSource).toContain("Síntese operacional");
+    expect(toolsSource).toContain("Escolha o tipo de intervenção");
     expect(toolsSource).toContain("Zona de risco");
-    expect(toolsSource).toContain("bg-red-500 px-4 py-3 text-sm font-black text-white");
+    expect(toolsSource).toContain("bg-[rgb(var(--color-error))]");
+    expect(toolsSource).toContain("text-[rgb(var(--color-onAccent))]");
     expect(toolsSource).not.toContain("useProxyDashboard");
   });
 });
