@@ -1,12 +1,13 @@
 import { useNotification } from "../hooks/useNotification";
-import type { ConfirmDialogOptions } from "../types";
+import type { ConfirmDialogOptions, ConfirmDialogResult } from "../types";
 
 /**
  * Hook que fornece substitutos para window.alert, window.confirm, etc.
  * usando o sistema de notificação integrado
  */
 export const useNotificationReplacements = () => {
-  const { showAlert, showConfirm, showNotification } = useNotification();
+  const { showAlert, showConfirm, showScopedConfirm, showNotification } =
+    useNotification();
 
   // Substituto para window.alert()
   const alert = async (message: string) => {
@@ -58,6 +59,18 @@ export const useNotificationReplacements = () => {
     });
   };
 
+  const confirmDangerScopes = async (
+    options: ConfirmDialogOptions,
+  ): Promise<ConfirmDialogResult> => {
+    return await showScopedConfirm({
+      ...options,
+      title: options.title || "Atenção",
+      type: "danger",
+      confirmText: options.confirmText || "Confirmar",
+      cancelText: options.cancelText || "Cancelar",
+    });
+  };
+
   const confirmWarning = async (
     input: string | ConfirmDialogOptions,
     title?: string,
@@ -96,6 +109,7 @@ export const useNotificationReplacements = () => {
     alertError,
     alertWarning,
     confirmDanger,
+    confirmDangerScopes,
     confirmWarning,
     toast,
   };

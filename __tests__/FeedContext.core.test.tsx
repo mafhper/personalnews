@@ -15,6 +15,7 @@ vi.mock('../hooks/useNotification', () => ({
     removeNotification: vi.fn(),
     clearAllNotifications: vi.fn(),
     showConfirm: vi.fn(() => Promise.resolve(true)),
+    showScopedConfirm: vi.fn(() => Promise.resolve({ confirmed: true, selectedScopeIds: [] })),
     showAlert: vi.fn(() => Promise.resolve()),
   })
 }));
