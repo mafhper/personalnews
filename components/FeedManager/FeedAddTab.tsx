@@ -15,6 +15,7 @@ interface FeedAddTabProps {
   onImportOPML: () => void;
   onShowImportModal: () => void;
   feedCount: number;
+  embedded?: boolean;
 }
 
 const PANEL_CLASS =
@@ -36,11 +37,12 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
   onImportOPML,
   onShowImportModal,
   feedCount,
+  embedded = false,
 }) => {
   const isProcessing = processingUrl !== null;
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+    <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
       <div className="mx-auto grid w-full max-w-[1480px] gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <section className={`${PANEL_CLASS} overflow-hidden`}>
           <div className="border-b border-[rgba(var(--color-border),0.12)] bg-[rgb(var(--theme-manager-bg,var(--color-background)))] px-6 py-5">

@@ -128,7 +128,7 @@ describe("Feed danger zone flows", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Gerenciador de feeds" }),
+      screen.getByRole("heading", { name: "Gerenciar Feeds" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Fechar gerenciador de feeds" }),
@@ -141,42 +141,40 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("heading", { name: "Painel da coleção" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Coleção em circulação")).toBeInTheDocument();
+    expect(screen.getByText(/funções completas aparecem logo abaixo/)).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Recolher barra lateral" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
     expect(
-      screen.getByRole("button", { name: "Expandir barra lateral" }),
+      screen.getAllByRole("button", { name: "Expandir barra lateral" })[0],
     ).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Expandir barra lateral" })[0]);
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Recolher Diagnóstico/ }),
+      screen.getByRole("button", { name: /Expandir Diagnóstico/ }),
     );
     expect(
-      screen.getByRole("button", { name: /Expandir Diagnóstico/ }),
+      screen.getByRole("button", { name: /Recolher Diagnóstico/ }),
     ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Adicionar. Novo feed e OPML" }),
     );
     expect(
-      screen.getByRole("heading", { name: "Adicionar fonte" }),
+      screen.getByRole("heading", { name: "Adicionar feed" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Expandir Diagnóstico" }),
-    );
     fireEvent.click(
       screen.getByRole("button", {
         name: "Infraestrutura. Backend, proxies e rotas",
       }),
     );
     expect(
-      screen.getByRole("heading", { name: "Infraestrutura" }),
+      screen.getByRole("heading", { name: "Backend, proxies e rotas" }),
     ).toBeInTheDocument();
   });
 
-  it("opens operation overview and dedicated submenu pages", async () => {
+  it("opens operation overview and anchors submenu sections", async () => {
     render(
       <FeedManager
         currentFeeds={testFeeds}
@@ -191,19 +189,16 @@ describe("Feed danger zone flows", () => {
       }),
     );
     expect(
-      screen.getByRole("heading", { name: "Painel de operações" }),
+      screen.getByRole("heading", { name: "Escolha o tipo de intervenção" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Escolha o tipo de intervenção"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Intercâmbio da coleção")).toBeInTheDocument();
 
     fireEvent.click(
       screen.getAllByRole("button", { name: /Importar\/Exportar/ })[0],
     );
     expect(
-      screen.getByRole("heading", { name: "Importação e exportação" }),
+      screen.getByRole("heading", { name: "Intercâmbio da coleção" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Intercâmbio da coleção")).toBeInTheDocument();
   });
 
   it("maps persisted proxy focus to the infrastructure route", async () => {
@@ -222,7 +217,7 @@ describe("Feed danger zone flows", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Infraestrutura" }),
+        screen.getByRole("heading", { name: "Backend, proxies e rotas" }),
       ).toBeInTheDocument(),
     );
   });
@@ -238,7 +233,14 @@ describe("Feed danger zone flows", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Zona de risco/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Operações. Intercâmbio, reparos e risco",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Zona de risco. Ações destrutivas" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 
     await waitFor(() => expect(mocks.confirmDanger).toHaveBeenCalledTimes(1));
@@ -264,7 +266,14 @@ describe("Feed danger zone flows", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Zona de risco/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Operações. Intercâmbio, reparos e risco",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Zona de risco. Ações destrutivas" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 
     await waitFor(() => expect(setFeeds).toHaveBeenCalledTimes(1));

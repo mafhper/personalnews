@@ -7,9 +7,9 @@ import { FeedSource, FeedCategory } from "../types";
 
 export const INITIAL_APP_CONFIG = {
   "theme": "dark",
-  "layout": "magazine",
+  "layout": "masonry",
   "timeFormat": "24h",
-  "headerHeight": "compact",
+  "headerHeight": "tiny",
   "headerOpacity": 0.6,
   "headerBlur": 20,
   "logoSize": "md",
@@ -37,7 +37,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Tecnologia",
     "id": "tech",
     "color": "#0078D7",
-    "layoutMode": "masonry",
+    "layoutMode": "minimal",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
@@ -48,7 +48,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Design",
     "id": "design",
     "color": "#663399",
-    "layoutMode": "immersive",
+    "layoutMode": "gallery",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Inspiração visual, UX/UI e tendências de design."
@@ -70,7 +70,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Política",
     "id": "politics",
     "color": "#E13111",
-    "layoutMode": "magazine",
+    "layoutMode": "newspaper",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Cobertura política nacional e internacional."

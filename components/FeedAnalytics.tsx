@@ -15,11 +15,12 @@ interface FeedAnalyticsProps {
   feeds: FeedSource[];
   articles: Article[];
   feedValidations: Map<string, FeedValidationResult>;
-  view?: "overview" | "health" | "infra" | "reports";
+  view?: "overview" | "health" | "infra" | "reports" | "all";
   focusSection?: string;
   onFocusConsumed?: () => void;
   quarantineRecommendedUrls?: Set<string>;
   onQuarantineFeed?: (url: string) => void;
+  embedded?: boolean;
 }
 
 type AnalyticsAccordionSection =
@@ -180,6 +181,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   onFocusConsumed,
   quarantineRecommendedUrls = new Set(),
   onQuarantineFeed,
+  embedded = false,
 }) => {
   const { snapshot, refresh } = useProxyDashboard();
   const [showAllRows, setShowAllRows] = useState(false);
@@ -498,7 +500,15 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             ? true
             : current.details,
       }));
-      document.getElementById(focusSection)?.scrollIntoView({
+      const focusTarget =
+        focusSection === "proxy-health"
+          ? "feed-manager-section-diagnostics-infra"
+          : focusSection === "feed-reports"
+            ? "feed-manager-section-diagnostics-reports"
+            : focusSection === "feed-status"
+              ? "feed-manager-section-diagnostics-health"
+              : focusSection;
+      document.getElementById(focusTarget)?.scrollIntoView?.({
         behavior: "smooth",
         block: "start",
       });
@@ -508,24 +518,28 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     return () => window.clearTimeout(timer);
   }, [focusSection, onFocusConsumed]);
 
-  const showOverview = view === "overview";
-  const showHealth = view === "health";
-  const showInfra = view === "infra";
-  const showReports = view === "reports";
+  const showAll = view === "all";
+  const showOverview = showAll || view === "overview";
+  const showHealth = showAll || view === "health";
+  const showInfra = showAll || view === "infra";
+  const showReports = showAll || view === "reports";
 
   return (
-    <div className="space-y-5">
+    <div className={embedded ? "space-y-5" : "space-y-5"}>
       {showOverview && (
-        <section id="diagnostics-overview" className={INFO_SURFACE_CLASS}>
+        <section
+          id="feed-manager-section-diagnostics-overview"
+          className={`${INFO_SURFACE_CLASS} scroll-mt-4`}
+        >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
                 Síntese
               </p>
               <h3 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
                 Diagnóstico em camadas
               </h3>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
                 Esta visão resume onde investigar primeiro. As páginas de saúde,
                 infraestrutura e relatórios ficam separadas na navegação.
               </p>
@@ -572,7 +586,10 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       )}
 
       {showHealth && hasAttentionItems && (
-        <section id="feed-health" className={SURFACE_CLASS}>
+        <section
+          id="feed-manager-section-diagnostics-health"
+          className={`${SURFACE_CLASS} scroll-mt-4`}
+        >
           <SectionTitle
             eyebrow="Saúde dos feeds"
             title={diagnosis.label}
@@ -783,8 +800,11 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         </section>
       )}
 
-      {showHealth && !hasAttentionItems && view === "health" && (
-        <section id="feed-health" className={SURFACE_CLASS}>
+      {showHealth && !hasAttentionItems && (view === "health" || showAll) && (
+        <section
+          id="feed-manager-section-diagnostics-health"
+          className={`${SURFACE_CLASS} scroll-mt-4`}
+        >
           <SectionTitle
             eyebrow="Saúde dos feeds"
             title="Nenhuma ação necessária"
@@ -797,7 +817,10 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       )}
 
       {showInfra && (
-      <section id="proxy-health" className={SURFACE_CLASS}>
+      <section
+        id="feed-manager-section-diagnostics-infra"
+        className={`${SURFACE_CLASS} scroll-mt-4`}
+      >
         <SectionTitle
           eyebrow="Infraestrutura"
           title="Backend, proxies e rotas"
@@ -822,8 +845,10 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 
       {showReports && (
       <AccordionSection
+        sectionId="feed-manager-section-diagnostics-reports"
+        sectionClassName="scroll-mt-4 rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.025)]"
         title="Detalhes"
-        isOpen={view === "reports" ? true : openSections.details}
+        isOpen={view === "reports" || showAll ? true : openSections.details}
         onToggle={() => toggleSection("details")}
       >
         <div className="space-y-4">
@@ -942,7 +967,7 @@ const DiagnosticOverviewCard: React.FC<{
           {icon}
         </span>
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
             {label}
           </p>
           <h4 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
@@ -950,7 +975,7 @@ const DiagnosticOverviewCard: React.FC<{
           </h4>
         </div>
       </div>
-      <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+      <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
         {description}
       </p>
     </div>

@@ -9,6 +9,7 @@ interface FeedQuarantineTabProps {
   onRestore: (url: string) => void | Promise<void>;
   onMarkInactive: (url: string) => void | Promise<void>;
   onRemove: (url: string) => void | Promise<void>;
+  embedded?: boolean;
 }
 
 const SURFACE_CLASS =
@@ -28,6 +29,7 @@ export const FeedQuarantineTab: React.FC<FeedQuarantineTabProps> = ({
   onRestore,
   onMarkInactive,
   onRemove,
+  embedded = false,
 }) => {
   const trackedFeeds = feeds.filter(
     (feed) => isFeedQuarantined(feed) || isFeedInactive(feed),
@@ -36,7 +38,7 @@ export const FeedQuarantineTab: React.FC<FeedQuarantineTabProps> = ({
   const inactiveCount = feeds.filter(isFeedInactive).length;
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+    <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
       <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
         <section className={SURFACE_CLASS}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

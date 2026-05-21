@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 interface FeedToolsTabProps {
-  view?: "overview" | "io" | "curated" | "maintenance" | "risk";
+  view?: "overview" | "io" | "curated" | "maintenance" | "risk" | "all";
   onExportOPML: () => void;
   onImportOPML: () => void;
   onShowImportModal: () => void;
@@ -24,12 +24,13 @@ interface FeedToolsTabProps {
   feedCount: number;
   validCount: number;
   invalidCount: number;
+  embedded?: boolean;
 }
 
 const WORKBENCH_CLASS =
-  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6";
+  "rounded-[28px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_20px_48px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6";
 const GROUP_CLASS =
-  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6";
+  "rounded-[28px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_20px_48px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6";
 
 export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   view = "overview",
@@ -46,18 +47,20 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   feedCount,
   validCount,
   invalidCount,
+  embedded = false,
 }) => {
-  const showOverview = view === "overview";
-  const showIo = view === "io";
-  const showCurated = view === "curated";
-  const showMaintenance = view === "maintenance";
-  const showRisk = view === "risk";
+  const showAll = view === "all";
+  const showOverview = showAll || view === "overview";
+  const showIo = showAll || view === "io";
+  const showCurated = showAll || view === "curated";
+  const showMaintenance = showAll || view === "maintenance";
+  const showRisk = showAll || view === "risk";
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+    <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
       <div className="mx-auto w-full max-w-[1480px] space-y-5">
         {showOverview && (
-          <section className={WORKBENCH_CLASS}>
+          <section id="feed-manager-section-operations-overview" className={`${WORKBENCH_CLASS} scroll-mt-4`}>
             <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.72fr)_minmax(0,1.28fr)] xl:items-stretch">
               <div className="flex flex-col justify-between gap-5">
                 <SectionHeader
@@ -66,13 +69,17 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                   description="Operações ficam separadas por intenção: trocar dados com arquivos, abrir coleções prontas, reparar a base ou executar ações destrutivas."
                 />
 
-                <div className="rounded-[22px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))]">
+                <div className="rounded-[22px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-86 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
                   <strong className="text-[rgb(var(--theme-text-readable))]">
-                    Estado atual:
+                    Próximo passo:
                   </strong>{" "}
                   {invalidCount > 0
-                    ? `${invalidCount} feed(s) pedem revisão antes de manutenção pesada.`
-                    : `${validCount} feed(s) validados; backup e importação podem seguir sem alerta ativo.`}
+                    ? "revise a saúde dos feeds antes de manutenção pesada."
+                    : feedCount === 0
+                      ? "adicione ou importe fontes antes de configurar reparos."
+                      : validCount > 0
+                        ? "faça backup antes de alterações em lote."
+                        : "revalide as fontes antes de ações em lote."}
                 </div>
               </div>
 
@@ -108,7 +115,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         )}
 
         {showIo && (
-          <section className={GROUP_CLASS}>
+          <section id="feed-manager-section-operations-io" className={`${GROUP_CLASS} scroll-mt-4`}>
             <SectionHeader
               eyebrow="Importar/Exportar"
               title="Intercâmbio da coleção"
@@ -132,7 +139,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         )}
 
         {showCurated && (
-          <section className={GROUP_CLASS}>
+          <section id="feed-manager-section-operations-curated" className={`${GROUP_CLASS} scroll-mt-4`}>
             <SectionHeader
               eyebrow="Listas curadas"
               title="Coleções prontas"
@@ -152,7 +159,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         {(showMaintenance || showRisk) && (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.46fr)]">
           {showMaintenance && (
-          <section className={GROUP_CLASS}>
+          <section id="feed-manager-section-operations-maintenance" className={`${GROUP_CLASS} scroll-mt-4`}>
             <SectionHeader
               eyebrow="Manutenção"
               title="Reparos controlados"
@@ -178,7 +185,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
           )}
 
           {showRisk && (
-          <section className="rounded-[26px] bg-[rgba(var(--color-error),0.08)] p-5 shadow-[0_18px_42px_rgba(127,29,29,0.12),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6">
+          <section id="feed-manager-section-operations-risk" className="scroll-mt-4 rounded-[26px] bg-[rgba(var(--color-error),0.08)] p-5 shadow-[0_18px_42px_rgba(127,29,29,0.12),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6">
             <div className="flex h-full flex-col justify-between gap-5">
               <div className="flex items-start gap-4">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgba(var(--color-error),0.12)] text-[rgb(var(--color-error))]">
@@ -223,13 +230,13 @@ const SectionHeader: React.FC<{
   description: string;
 }> = ({ eyebrow, title, description }) => (
   <div>
-    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
       {eyebrow}
     </p>
     <h2 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
       {title}
     </h2>
-    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
       {description}
     </p>
   </div>
@@ -245,10 +252,10 @@ const OperationAction: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`group flex min-h-[132px] flex-col items-start justify-between rounded-[22px] border p-4 text-left transition hover:-translate-y-0.5 sm:p-5 ${
+    className={`group flex min-h-[132px] flex-col items-start justify-between rounded-[24px] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-5 ${
       warning
-        ? "border-transparent bg-[rgba(var(--color-warning),0.1)] text-[rgb(var(--theme-text-readable))] hover:bg-[rgba(var(--color-warning),0.14)]"
-        : "border-transparent bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))]"
+        ? "bg-[rgba(var(--color-warning),0.1)] text-[rgb(var(--theme-text-readable))] hover:bg-[rgba(var(--color-warning),0.14)]"
+        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))]"
     }`}
   >
     <span
@@ -262,7 +269,7 @@ const OperationAction: React.FC<{
     </span>
     <span>
       <span className="block text-base font-black">{title}</span>
-      <span className="mt-1 block text-sm leading-relaxed opacity-70">
+      <span className="mt-1 block text-sm leading-relaxed opacity-78">
         {description}
       </span>
     </span>

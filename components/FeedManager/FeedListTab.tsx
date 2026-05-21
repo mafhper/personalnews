@@ -21,6 +21,7 @@ interface FeedListTabProps {
   onRefreshAll?: () => void;
   onConfirmRefreshAll?: () => void | Promise<void>;
   articles?: Article[];
+  embedded?: boolean;
 }
 
 const INFO_SURFACE_CLASS =
@@ -68,6 +69,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   onRefreshAll,
   onConfirmRefreshAll,
   articles = [],
+  embedded = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -216,7 +218,7 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
   };
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+    <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
       <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
         <section className="flex flex-col gap-4">
           <section className={INFO_SURFACE_CLASS}>
