@@ -67,4 +67,109 @@ describe("ConfirmDialog", () => {
 
     expect(onClose).toHaveBeenCalledWith(true);
   });
+
+  it("returns selected scopes for scoped confirmations", () => {
+    const onClose = vi.fn();
+    render(
+      <ConfirmDialog
+        isOpen
+        onClose={onClose}
+        options={{
+          title: "Redefinir dados locais",
+          message: "Escolha os dados afetados.",
+          confirmText: "Redefinir selecionados",
+          type: "danger",
+          scopes: [
+            { id: "feeds", label: "Todos os feeds cadastrados" },
+            { id: "favorites", label: "Favoritos" },
+          ],
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText("Favoritos"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Redefinir selecionados" }),
+    );
+
+    expect(onClose).toHaveBeenCalledWith({
+      confirmed: true,
+      selectedScopeIds: ["feeds"],
+    });
+  });
+
+  it("blocks scoped confirmation when every optional scope is unchecked", () => {
+    const onClose = vi.fn();
+    render(
+      <ConfirmDialog
+        isOpen
+        onClose={onClose}
+        options={{
+          title: "Redefinir dados locais",
+          message: "Escolha os dados afetados.",
+          confirmText: "Redefinir selecionados",
+          type: "danger",
+          scopes: [{ id: "favorites", label: "Favoritos" }],
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText("Favoritos"));
+
+    const confirmButton = screen.getByRole("button", {
+      name: "Redefinir selecionados",
+    });
+    expect(confirmButton).toBeDisabled();
+    expect(
+      screen.getByText("Selecione pelo menos um item para continuar."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps required scopes selected", () => {
+    const onClose = vi.fn();
+    render(
+      <ConfirmDialog
+        isOpen
+        onClose={onClose}
+        options={{
+          title: "Confirmar",
+          message: "Escolha os dados afetados.",
+          confirmText: "Continuar",
+          scopes: [{ id: "feeds", label: "Todos os feeds", required: true }],
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText("Todos os feeds")).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(onClose).toHaveBeenCalledWith({
+      confirmed: true,
+      selectedScopeIds: ["feeds"],
+    });
+  });
+
+  it("can expand collapsed scope lists before editing", () => {
+    render(
+      <ConfirmDialog
+        isOpen
+        onClose={vi.fn()}
+        options={{
+          title: "Redefinir dados locais",
+          message: "Escolha os dados afetados.",
+          scopesCollapsed: true,
+          scopes: [
+            { id: "feeds", label: "Todos os feeds cadastrados" },
+            { id: "favorites", label: "Favoritos" },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.queryByLabelText("Favoritos")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Expandir lista" }));
+
+    expect(screen.getByLabelText("Favoritos")).toBeInTheDocument();
+  });
 });

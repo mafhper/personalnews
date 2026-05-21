@@ -1,5 +1,10 @@
 import { createContext } from 'react';
-import { NotificationOptions, Notification, ConfirmDialogOptions } from "../types";
+import {
+  NotificationOptions,
+  Notification,
+  ConfirmDialogOptions,
+  ConfirmDialogResult,
+} from "../types";
 
 export interface NotificationContextType {
   notifications: Notification[];
@@ -7,6 +12,7 @@ export interface NotificationContextType {
   removeNotification: (id: string) => void;
   clearAllNotifications: () => void;
   showConfirm: (options: ConfirmDialogOptions) => Promise<boolean>;
+  showScopedConfirm: (options: ConfirmDialogOptions) => Promise<ConfirmDialogResult>;
   showAlert: (message: string, options?: NotificationOptions) => Promise<void>;
 }
 

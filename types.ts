@@ -321,4 +321,25 @@ export interface ConfirmDialogOptions {
   confirmText?: string;
   cancelText?: string;
   type?: "danger" | "warning" | "info";
+  scopes?: ConfirmDialogScope[];
+  scopesTitle?: string;
+  scopesCollapsed?: boolean;
+  scopesCollapseThreshold?: number;
+  scopesSummary?: string;
 }
+
+export interface ConfirmDialogScope {
+  id: string;
+  label: string;
+  description?: string;
+  checkedByDefault?: boolean;
+  required?: boolean;
+  disabledReason?: string;
+}
+
+export interface ConfirmDialogResult {
+  confirmed: boolean;
+  selectedScopeIds?: string[];
+}
+
+export type ConfirmDialogCloseResult = boolean | ConfirmDialogResult;

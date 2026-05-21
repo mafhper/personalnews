@@ -48,5 +48,6 @@ export const createMockNotificationContext = () => ({
   removeNotification: vi.fn(),
   clearAllNotifications: vi.fn(),
   showConfirm: vi.fn().mockResolvedValue(true),
+  showScopedConfirm: vi.fn().mockResolvedValue({ confirmed: true, selectedScopeIds: [] }),
   showAlert: vi.fn().mockResolvedValue(undefined),
 });

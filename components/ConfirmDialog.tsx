@@ -1,12 +1,23 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, AlertCircle, Info, X } from "lucide-react";
-import type { ConfirmDialogOptions } from "../types";
+import { AlertTriangle, AlertCircle, Check, Info, X } from "lucide-react";
+import type {
+  ConfirmDialogCloseResult,
+  ConfirmDialogScope,
+  ConfirmDialogOptions,
+} from "../types";
+
+const EMPTY_SCOPES: ConfirmDialogScope[] = [];
+
+const getDefaultSelectedScopeIds = (scopes: ConfirmDialogScope[]) =>
+  scopes
+    .filter((scope) => scope.required || scope.checkedByDefault !== false)
+    .map((scope) => scope.id);
 
 interface ConfirmDialogProps {
   isOpen: boolean;
   options: ConfirmDialogOptions;
-  onClose: (result: boolean) => void;
+  onClose: (result: ConfirmDialogCloseResult) => void;
 }
 
 const getIcon = (type: ConfirmDialogOptions["type"]) => {
@@ -75,18 +86,72 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     confirmText = "Confirmar",
     cancelText = "Cancelar",
     type = "info",
+    scopes = EMPTY_SCOPES,
+    scopesTitle = "Dados afetados",
+    scopesCollapsed = false,
+    scopesCollapseThreshold = 5,
+    scopesSummary,
   } = options;
+  const hasScopes = scopes.length > 0;
+  const [selectedScopeIds, setSelectedScopeIds] = useState<string[]>(() =>
+    getDefaultSelectedScopeIds(scopes),
+  );
+  const [scopesExpanded, setScopesExpanded] = useState(
+    !scopesCollapsed && scopes.length <= scopesCollapseThreshold,
+  );
+  const selectedScopeIdSet = useMemo(
+    () => new Set(selectedScopeIds),
+    [selectedScopeIds],
+  );
+  const canConfirm =
+    !hasScopes ||
+    scopes.some((scope) => scope.required || selectedScopeIdSet.has(scope.id));
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setSelectedScopeIds(getDefaultSelectedScopeIds(scopes));
+    setScopesExpanded(!scopesCollapsed && scopes.length <= scopesCollapseThreshold);
+  }, [isOpen, scopes, scopesCollapsed, scopesCollapseThreshold]);
 
   const handleConfirm = () => {
+    if (!canConfirm) return;
+
+    if (hasScopes) {
+      onClose({ confirmed: true, selectedScopeIds });
+      return;
+    }
+
     onClose(true);
   };
 
   const handleCancel = () => {
+    if (hasScopes) {
+      onClose({ confirmed: false, selectedScopeIds });
+      return;
+    }
+
     onClose(false);
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    if (hasScopes) {
+      onClose({ confirmed: false, selectedScopeIds });
+      return;
+    }
+
     onClose(false);
+  }, [hasScopes, onClose, selectedScopeIds]);
+
+  const handleScopeToggle = (scopeId: string) => {
+    const scope = scopes.find((item) => item.id === scopeId);
+    if (!scope || scope.required) return;
+
+    setSelectedScopeIds((current) =>
+      current.includes(scopeId)
+        ? current.filter((id) => id !== scopeId)
+        : [...current, scopeId],
+    );
   };
 
   useEffect(() => {
@@ -97,7 +162,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     });
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose(false);
+      if (event.key === "Escape") handleClose();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -105,7 +170,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       cancelAnimationFrame(frameId);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [handleClose, isOpen]);
 
   if (!isOpen) return null;
 
@@ -158,6 +223,86 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               ))}
             </ul>
           )}
+          {hasScopes && (
+            <div className="rounded-lg bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wide text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                    {scopesTitle}
+                  </h3>
+                  {!scopesExpanded && (
+                    <p className="mt-1 text-xs leading-5 text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                      {scopesSummary ||
+                        `${selectedScopeIds.length} de ${scopes.length} itens selecionados.`}
+                    </p>
+                  )}
+                </div>
+                {!scopesExpanded && (
+                  <button
+                    className="rounded-md px-2.5 py-1.5 text-xs font-bold text-[rgb(var(--color-accent))] transition hover:bg-[rgb(var(--color-accent))]/10"
+                    onClick={() => setScopesExpanded(true)}
+                    type="button"
+                  >
+                    Expandir lista
+                  </button>
+                )}
+              </div>
+
+              {scopesExpanded && (
+                <div className="mt-3 space-y-2">
+                  {scopes.map((scope) => {
+                    const checked =
+                      scope.required || selectedScopeIdSet.has(scope.id);
+                    const disabled = scope.required || Boolean(scope.disabledReason);
+
+                    return (
+                      <label
+                        className={`flex items-start gap-3 rounded-lg px-3 py-2 text-left transition ${
+                          disabled
+                            ? "cursor-not-allowed bg-[rgb(var(--color-text))]/5 opacity-70"
+                            : "cursor-pointer hover:bg-[rgb(var(--color-accent))]/8"
+                        }`}
+                        key={scope.id}
+                      >
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border ${
+                            checked
+                              ? "border-[rgb(var(--color-accent))] bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
+                              : "border-[rgba(var(--color-border),0.42)] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]"
+                          }`}
+                        >
+                          {checked && <Check className="h-3.5 w-3.5" />}
+                        </span>
+                        <input
+                          checked={checked}
+                          className="sr-only"
+                          disabled={disabled}
+                          onChange={() => handleScopeToggle(scope.id)}
+                          type="checkbox"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                            {scope.label}
+                          </span>
+                          {(scope.description || scope.disabledReason) && (
+                            <span className="mt-0.5 block text-xs leading-5 text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                              {scope.disabledReason || scope.description}
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {!canConfirm && (
+                <p className="mt-3 rounded-md border border-[rgba(var(--color-warning),0.28)] bg-[rgba(var(--color-warning),0.1)] px-3 py-2 text-xs font-semibold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                  Selecione pelo menos um item para continuar.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <footer className="flex justify-end gap-2 px-5 pb-5">
@@ -170,7 +315,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             {cancelText}
           </button>
           <button
-            className={`${getConfirmButtonClassName(type)} ${getConfirmFocusClassName(type)} rounded-md px-4 py-2 text-sm font-semibold text-white transition focus:outline-none focus:ring-2`}
+            className={`${getConfirmButtonClassName(type)} ${getConfirmFocusClassName(type)} rounded-md px-4 py-2 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50`}
+            disabled={!canConfirm}
             onClick={handleConfirm}
             type="button"
           >
