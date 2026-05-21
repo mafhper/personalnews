@@ -399,6 +399,7 @@ const FeedManagerOperationalMetric: React.FC<{
 
 const FeedManagerTopbar: React.FC<{
   closeModal: () => void;
+  mobileMenuButtonRef: React.RefObject<HTMLButtonElement | null>;
   mobileSidebarOpen: boolean;
   onOpenMobileNavigation: () => void;
   onToggleSidebar: () => void;
@@ -406,6 +407,7 @@ const FeedManagerTopbar: React.FC<{
   sidebarCollapsed: boolean;
 }> = ({
   closeModal,
+  mobileMenuButtonRef,
   mobileSidebarOpen,
   onOpenMobileNavigation,
   onToggleSidebar,
@@ -415,9 +417,10 @@ const FeedManagerTopbar: React.FC<{
   <header className="feed-manager-header">
     <div className="feed-manager-header-main">
       <button
+        ref={mobileMenuButtonRef}
         type="button"
         onClick={onOpenMobileNavigation}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:hidden"
+        className="feed-manager-icon-button feed-manager-icon-button--mobile"
         aria-controls="feed-manager-sidebar"
         aria-expanded={mobileSidebarOpen}
         aria-label="Abrir menu de navegação"
@@ -428,7 +431,7 @@ const FeedManagerTopbar: React.FC<{
       <button
         type="button"
         onClick={onToggleSidebar}
-        className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex"
+        className="feed-manager-icon-button feed-manager-icon-button--desktop"
         aria-controls="feed-manager-sidebar"
         aria-label={
           sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"
@@ -460,7 +463,7 @@ const FeedManagerTopbar: React.FC<{
 
     <button
       onClick={closeModal}
-      className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] transition hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-95"
+      className="feed-manager-icon-button"
       aria-label="Fechar gerenciador de feeds"
       title="Fechar gerenciador de feeds"
       type="button"
@@ -551,19 +554,15 @@ const FeedManagerSidebarButton: React.FC<{
     onClick={onClick}
     title={collapsed ? `${label}: ${description}` : undefined}
     aria-label={`${label}. ${description}`}
-    className={`group flex w-full min-w-0 items-center gap-2.5 rounded-xl text-left transition-all ${
-      collapsed ? "justify-center px-2 py-2.5" : "px-2 py-1.5"
-    } ${
-      active
-        ? "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] shadow-[inset_2px_0_0_rgb(var(--color-accent))]"
-        : "text-[rgb(var(--theme-text-secondary-readable))] opacity-84 hover:bg-[rgb(var(--theme-manager-control))] hover:text-[rgb(var(--theme-text-readable))] hover:opacity-100"
-    }`}
+    className={`feed-manager-sidebar-nav-item ${
+      collapsed
+        ? "feed-manager-sidebar-nav-item--collapsed"
+        : "feed-manager-sidebar-nav-item--expanded"
+    } ${active ? "feed-manager-sidebar-nav-item--active" : ""}`}
   >
     <span
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition ${
-        active
-          ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
-          : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))]"
+      className={`feed-manager-sidebar-nav-icon ${
+        active ? "feed-manager-sidebar-nav-icon--active" : ""
       }`}
     >
       {icon}
@@ -583,6 +582,61 @@ const FeedManagerSidebarButton: React.FC<{
     </span>
   </button>
 );
+
+const FeedManagerAreaButton: React.FC<{
+  active: boolean;
+  collapsed: boolean;
+  description: string;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}> = ({ active, collapsed, description, icon, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={collapsed ? `${label}: ${description}` : undefined}
+    className={`feed-manager-sidebar-nav-item ${
+      collapsed
+        ? "feed-manager-sidebar-nav-item--collapsed"
+        : "feed-manager-sidebar-nav-item--expanded"
+    } ${active ? "feed-manager-sidebar-nav-item--active" : ""}`}
+    aria-label={`${label}. ${description}`}
+  >
+    <span
+      className={`feed-manager-sidebar-nav-icon feed-manager-sidebar-nav-icon--area ${
+        active ? "feed-manager-sidebar-nav-icon--active" : ""
+      }`}
+    >
+      {icon}
+    </span>
+    <span className={`min-w-0 flex-1 ${collapsed ? "sr-only" : ""}`}>
+      <span className="block text-[11px] font-black uppercase tracking-[0.16em]">
+        {label}
+      </span>
+    </span>
+  </button>
+);
+
+const getFeedManagerDrawerFocusableElements = (root: HTMLElement | null) => {
+  if (!root) return [];
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(
+      [
+        "a[href]",
+        "button:not([disabled])",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        '[tabindex]:not([tabindex="-1"])',
+      ].join(","),
+    ),
+  ).filter(
+    (element) =>
+      !element.hasAttribute("disabled") &&
+      element.getAttribute("aria-hidden") !== "true" &&
+      element.getAttribute("tabindex") !== "-1",
+  );
+};
 
 const FeedManagerInsight: React.FC<{
   label: string;
@@ -685,19 +739,88 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileDrawerCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  const closeMobileNavigation = React.useCallback(() => {
+    setMobileSidebarOpen(false);
+    if (typeof window === "undefined") return;
+    window.setTimeout(() => {
+      mobileMenuButtonRef.current?.focus();
+    }, 0);
+  }, []);
+
+  const openMobileNavigation = React.useCallback(() => {
+    setMobileSidebarOpen(true);
+  }, []);
 
   useEffect(() => {
     if (!mobileSidebarOpen || typeof window === "undefined") return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        closeMobileNavigation();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableElements = getFeedManagerDrawerFocusableElements(
+        sidebarRef.current,
+      );
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        event.stopPropagation();
+        lastElement.focus();
+      } else if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        event.stopPropagation();
+        firstElement.focus();
+      }
+    };
+
+    const focusTimer = window.setTimeout(() => {
+      mobileDrawerCloseButtonRef.current?.focus({ preventScroll: true });
+    }, 80);
+
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, [closeMobileNavigation, mobileSidebarOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const query = window.matchMedia("(min-width: 1024px)");
+    const closeDrawerOnDesktop = (event?: MediaQueryListEvent) => {
+      if (event ? event.matches : query.matches) {
         setMobileSidebarOpen(false);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [mobileSidebarOpen]);
+    closeDrawerOnDesktop();
+    query.addEventListener?.("change", closeDrawerOnDesktop);
+    return () => {
+      query.removeEventListener?.("change", closeDrawerOnDesktop);
+    };
+  }, []);
 
   const scrollToRoute = React.useCallback((route: FeedManagerRoute) => {
     if (typeof window === "undefined") return;
@@ -1531,7 +1654,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       [group.id]: true,
     });
     navigateToRoute(group.overviewRoute);
-    setMobileSidebarOpen(false);
+    if (mobileSidebarOpen) {
+      closeMobileNavigation();
+    }
   };
 
   const toggleArea = (area: FeedManagerArea) => {
@@ -1562,11 +1687,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     >
       <FeedManagerTopbar
         closeModal={closeModal}
+        mobileMenuButtonRef={mobileMenuButtonRef}
         mobileSidebarOpen={mobileSidebarOpen}
-        onOpenMobileNavigation={() => {
-          setSidebarCollapsed(false);
-          setMobileSidebarOpen(true);
-        }}
+        onOpenMobileNavigation={openMobileNavigation}
         onToggleSidebar={() => setSidebarCollapsed((current) => !current)}
         routeContent={activeRouteContent}
         sidebarCollapsed={sidebarCollapsed}
@@ -1577,7 +1700,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           type="button"
           className="feed-manager-mobile-backdrop"
           aria-label="Fechar menu de navegação"
-          onClick={() => setMobileSidebarOpen(false)}
+          onClick={closeMobileNavigation}
         />
       )}
 
@@ -1589,10 +1712,18 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         }`}
       >
         <aside
+          ref={sidebarRef}
           id="feed-manager-sidebar"
           className={`feed-manager-sidebar ${
             mobileSidebarOpen ? "feed-manager-sidebar--open" : ""
           }`}
+          role={mobileSidebarOpen ? "dialog" : undefined}
+          aria-modal={mobileSidebarOpen ? "true" : undefined}
+          aria-label={
+            mobileSidebarOpen
+              ? "Menu de navegação do gerenciador de feeds"
+              : undefined
+          }
         >
           <div
             className={`flex h-full flex-col gap-3 overflow-y-auto custom-scrollbar ${
@@ -1610,19 +1741,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 </p>
               </div>
               <button
+                ref={mobileDrawerCloseButtonRef}
                 type="button"
-                onClick={() => setMobileSidebarOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:hidden"
-                aria-label={
-                  mobileSidebarOpen
-                    ? "Fechar menu de navegação"
-                    : "Abrir menu de navegação"
-                }
-                title={
-                  mobileSidebarOpen
-                    ? "Fechar menu de navegação"
-                    : "Abrir menu de navegação"
-                }
+                onClick={closeMobileNavigation}
+                className="feed-manager-icon-button feed-manager-icon-button--mobile"
+                aria-hidden={mobileSidebarOpen ? undefined : true}
+                aria-label="Fechar menu de navegação"
+                tabIndex={mobileSidebarOpen ? 0 : -1}
+                title="Fechar menu de navegação"
               >
                 <X className="h-4.5 w-4.5" />
               </button>
@@ -1634,40 +1760,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               {navigationGroups.map((group) => (
                 <section key={group.id} className={sidebarCollapsed ? "" : "py-1"}>
                   <div className="flex items-center gap-1">
-                    <button
-                      type="button"
+                    <FeedManagerAreaButton
                       onClick={() => selectAreaOverview(group)}
-                      title={
-                        sidebarCollapsed
-                          ? `${group.label}: ${group.description}`
-                          : undefined
-                      }
-                      className={`group flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-all ${
-                        activeArea === group.id
-                          ? "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] shadow-[inset_2px_0_0_rgb(var(--color-accent))]"
-                          : "text-[rgb(var(--theme-text-secondary-readable))] opacity-84 hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] hover:opacity-100"
-                      } ${sidebarCollapsed ? "justify-center" : ""}`}
-                      aria-label={`${group.label}. ${group.description}`}
-                    >
-                      <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                          activeArea === group.id
-                            ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
-                            : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
-                        }`}
-                      >
-                        {group.icon}
-                      </span>
-                      <span
-                        className={`min-w-0 flex-1 ${
-                          sidebarCollapsed ? "sr-only" : ""
-                        }`}
-                      >
-                        <span className="block text-[11px] font-black uppercase tracking-[0.16em]">
-                          {group.label}
-                        </span>
-                      </span>
-                    </button>
+                      active={activeArea === group.id}
+                      collapsed={sidebarCollapsed}
+                      description={group.description}
+                      icon={group.icon}
+                      label={group.label}
+                    />
                     <button
                       type="button"
                       onClick={() => toggleArea(group.id)}
@@ -1703,7 +1803,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                           label={item.label}
                           onClick={() => {
                             navigateToRoute(item.route, item.focusSection);
-                            setMobileSidebarOpen(false);
+                            closeMobileNavigation();
                           }}
                         />
                       ))}
