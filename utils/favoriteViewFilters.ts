@@ -111,7 +111,7 @@ export const filterAndSortFavorites = (
       categoryFilter !== "all" &&
       !favorite.categories?.some(
         (category) =>
-          category.toLowerCase() === categoryFilter.toLowerCase(),
+          category.trim().toLowerCase() === categoryFilter.toLowerCase(),
       )
     ) {
       return false;
