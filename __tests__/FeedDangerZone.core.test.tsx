@@ -118,6 +118,60 @@ beforeEach(() => {
 });
 
 describe("Feed danger zone flows", () => {
+  it("renders the Portuguese shell with hierarchical sidebar navigation", async () => {
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Gerenciador de feeds" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Fechar gerenciador de feeds" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", {
+        name: "Navegação do gerenciador de feeds",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /AdicionarNovo feed/ }));
+    expect(
+      screen.getByRole("heading", { name: "Adicionar fonte" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Infraestrutura/ }));
+    expect(
+      screen.getByRole("heading", { name: "Infraestrutura" }),
+    ).toBeInTheDocument();
+  });
+
+  it("maps persisted proxy focus to the infrastructure route", async () => {
+    window.sessionStorage.setItem(
+      "feed-manager-focus",
+      JSON.stringify({ tab: "diagnostics", openProxySettings: true }),
+    );
+
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Infraestrutura" }),
+      ).toBeInTheDocument(),
+    );
+  });
+
   it("shows a strong delete-all confirmation and preserves feeds on cancel", async () => {
     const setFeeds = vi.fn();
 
@@ -129,7 +183,7 @@ describe("Feed danger zone flows", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Operações/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Zona de risco/ }));
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 
     await waitFor(() => expect(mocks.confirmDanger).toHaveBeenCalledTimes(1));
@@ -155,7 +209,7 @@ describe("Feed danger zone flows", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Operações/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Zona de risco/ }));
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 
     await waitFor(() => expect(setFeeds).toHaveBeenCalledTimes(1));
