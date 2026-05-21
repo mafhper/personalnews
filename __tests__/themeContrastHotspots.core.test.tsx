@@ -275,6 +275,24 @@ describe("theme contrast hotspots", () => {
     expect(saveFeedButton.className).toContain("feed-manager-primary-button");
   });
 
+  it("uses scoped semantic classes for the feed manager header and operational hero", () => {
+    const cssSource = readFileSync(resolve(process.cwd(), "index.css"), "utf8");
+
+    expect(cssSource).toContain(".feed-manager-header");
+    expect(cssSource).toContain(".feed-manager-header-main");
+    expect(cssSource).toContain(".feed-manager-header-context");
+    expect(cssSource).toContain(".feed-manager-operational-hero");
+    expect(cssSource).toContain(".feed-manager-hero-metrics");
+    expect(cssSource).toContain(".feed-manager-hero-actions");
+    expect(cssSource).toContain(".feed-manager-operational-metric");
+    expect(cssSource).toContain(
+      "background: rgb(var(--theme-manager-surface, var(--color-surface)))",
+    );
+    expect(cssSource).toContain(
+      "background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)))",
+    );
+  });
+
   it("keeps category manager accent CTAs on explicit high-contrast foreground tokens", () => {
     const categoryManagerSource = readFileSync(
       resolve(process.cwd(), "components/FeedCategoryManager.tsx"),
