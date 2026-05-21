@@ -298,6 +298,8 @@ vi.mock("../components/Header", () => ({
     onPrimaryViewChange?: (primaryView: "all" | "favorites") => void;
     onGoAll?: () => void;
     onRefreshClick?: () => void;
+    onSearch?: (query: string, filters: Record<string, never>) => void;
+    onSearchResultsChange?: (results: Article[]) => void;
   }) => (
     <div data-testid="header">
       <div data-testid="primary-view">{props.primaryView || "all"}</div>
@@ -314,6 +316,29 @@ vi.mock("../components/Header", () => ({
       </button>
       <button onClick={() => props.onGoAll?.()}>Go all</button>
       <button onClick={() => props.onRefreshClick?.()}>Refresh</button>
+      <button
+        onClick={() => {
+          props.onSearch?.("favorite", {});
+          props.onSearchResultsChange?.([
+            {
+              title: "Read favorite",
+              link: "https://example.com/read-favorite",
+              pubDate: new Date("2026-03-22T12:00:00.000Z"),
+              sourceTitle: "Saved Source",
+              categories: ["Tech"],
+            },
+            {
+              title: "Unread favorite",
+              link: "https://example.com/unread-favorite",
+              pubDate: new Date("2026-03-22T12:00:00.000Z"),
+              sourceTitle: "Saved Source",
+              categories: ["Tech"],
+            },
+          ]);
+        }}
+      >
+        Search favorites
+      </button>
     </div>
   ),
 }));
@@ -560,6 +585,48 @@ describe("AppContent cache-first rendering", () => {
     expect(screen.getByText("Unread favorite")).toBeInTheDocument();
     expect(mockLoadFeeds).not.toHaveBeenCalled();
     expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("keeps favorites toolbar filters applied while search is active", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Read favorite",
+        link: "https://example.com/read-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+      {
+        title: "Unread favorite",
+        link: "https://example.com/unread-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+    ];
+    mockReadLinks = new Set(["https://example.com/read-favorite"]);
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Não lidos" }));
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Search favorites"));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText("Read favorite")).not.toBeInTheDocument();
+    expect(screen.getByText("Unread favorite")).toBeInTheDocument();
   });
 
   it("shows the filtered favorites empty state when filters have no results", async () => {

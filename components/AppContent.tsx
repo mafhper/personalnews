@@ -455,7 +455,16 @@ const AppContent: React.FC = () => {
           article.sourceTitle === selectedFeedUrl,
       );
     } else if (isSearchActive && searchResults.length >= 0) {
-      filteredArticles = searchResults;
+      if (isFavoritesView) {
+        const searchResultLinks = new Set(
+          searchResults.map((article) => article.link),
+        );
+        filteredArticles = sourceArticles.filter((article) =>
+          searchResultLinks.has(article.link),
+        );
+      } else {
+        filteredArticles = searchResults;
+      }
     } else {
       if (isFavoritesView) {
         filteredArticles = sourceArticles;

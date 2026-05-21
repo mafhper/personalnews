@@ -114,6 +114,21 @@ describe("favoriteViewFilters", () => {
     expect(result).toEqual([design]);
   });
 
+  it("trims favorite categories before filtering", () => {
+    const tech = makeFavorite({
+      title: "Spaced Tech",
+      link: "https://example.com/spaced-tech",
+      categories: [" Tech "],
+    });
+
+    const result = filterAndSortFavorites([tech], {
+      ...baseOptions,
+      categoryFilter: "Tech",
+    });
+
+    expect(result).toEqual([tech]);
+  });
+
   it("filters by canonical source across favorites with and without feedUrl", () => {
     const withFeedUrl = makeFavorite({
       title: "Canonical with feed",
