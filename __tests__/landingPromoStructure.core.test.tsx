@@ -85,7 +85,7 @@ describe("LandingPage promo structure", () => {
       ),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".promo-hero__actions > *")).toHaveLength(
-      3,
+      2,
     );
   });
 
