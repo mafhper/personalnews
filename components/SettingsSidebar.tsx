@@ -7,6 +7,7 @@ import { useExtendedTheme } from '../hooks/useExtendedTheme';
 import { useAppearance, LAYOUT_PRESETS } from '../hooks/useAppearance';
 import { useFeedCategories } from '../hooks/useFeedCategories';
 import { useArticleLayout } from '../hooks/useArticleLayout';
+import type { PrimaryView } from '../hooks/usePrimaryView';
 import { Switch } from './ui/Switch';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
@@ -27,6 +28,8 @@ interface SettingsSidebarProps {
   onClose: () => void;
   timeFormat: '12h' | '24h';
   setTimeFormat: (format: '12h' | '24h') => void;
+  primaryView: PrimaryView;
+  onPrimaryViewChange: (primaryView: PrimaryView) => void;
 }
 
 const rgbStringToHex = (rgb: string): string => {
@@ -48,7 +51,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   isOpen,
   onClose,
   timeFormat,
-  setTimeFormat
+  setTimeFormat,
+  primaryView,
+  onPrimaryViewChange,
 }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [selectedSeedId, setSelectedSeedId] = useState(seedColorOptions[0].id);
@@ -139,6 +144,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         'article-layout-settings',
         'article-read-status',
         'favorites-data',
+        'personalnews-primary-view',
         'personalnews_weather_city',
         'feed-error-history',  // Clear problematic feeds history too
         'personalnews-feed-onboarding-dismissed',
@@ -571,6 +577,29 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             onToggle={() => toggleSection('display')}
           >
             <div className="space-y-3">
+              <div>
+                <label className={fieldLabelClass}>View inicial</label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'all', label: 'All' },
+                    { id: 'favorites', label: 'Favoritos' },
+                  ].map((view) => (
+                    <button
+                      key={view.id}
+                      type="button"
+                      onClick={() => onPrimaryViewChange(view.id as PrimaryView)}
+                      className={`flex-1 border ${segmentedButtonClass} ${
+                        primaryView === view.id
+                          ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] border-[rgb(var(--color-accentSurface))] shadow-sm'
+                          : mutedButtonClass
+                      }`}
+                    >
+                      {view.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                     <span className="text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Mostrar Autor</span>
                 <Switch checked={contentConfig.showAuthor} onChange={(c) => updateContentConfig({ showAuthor: c })} size="sm" />

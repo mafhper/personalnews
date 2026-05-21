@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { SearchFilters } from "./SearchBar";
 import { Article, FeedCategory, FeedSource } from "../types";
 import Logo from "./Logo";
@@ -7,6 +7,7 @@ import FeedDropdown from "./FeedDropdown";
 import { useAppearance } from "../hooks/useAppearance";
 import { useLanguage } from "../hooks/useLanguage";
 import { APP_BRAND_NAME } from "../config/brand";
+import { FAVORITES_VIEW_ID, type PrimaryView } from "../hooks/usePrimaryView";
 
 interface HeaderProps {
   onManageFeedsClick: () => void;
@@ -22,6 +23,8 @@ interface HeaderProps {
   onSearchResultsChange?: (results: Article[]) => void;
   onOpenFavorites: () => void;
   categories: FeedCategory[];
+  primaryView?: PrimaryView;
+  onPrimaryViewChange?: (primaryView: PrimaryView) => void;
   onGoHome?: () => void;
   onGoLanding?: () => void;
   onGoAll?: () => void;
@@ -97,6 +100,8 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [isHeaderVisible, setIsHeaderVisible] = useState(
     headerPosition !== 'hidden'
   );
+  const effectiveHeaderVisible =
+    headerPosition === "hidden" ? isHeaderVisible : true;
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastScrollY = useRef(0);
   const headerRef = useRef<HTMLElement | null>(null);
@@ -133,20 +138,6 @@ const Header: React.FC<HeaderProps> = (props) => {
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
   }, [headerPosition]);
-
-  useEffect(() => {
-    if (headerPosition !== 'hidden') {
-      setIsHeaderVisible(true);
-      return;
-    }
-    setIsHeaderVisible(false);
-  }, [headerPosition]);
-
-  useEffect(() => {
-    if (mobileCategoriesOpen) {
-      setMobileExpandedCategory(props.selectedCategory || 'all');
-    }
-  }, [mobileCategoriesOpen, props.selectedCategory]);
 
   // Update document title and favicon based on headerConfig
   useEffect(() => {
@@ -256,7 +247,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     static: "relative w-full",
     sticky: "fixed left-0 right-0 z-50 w-full",
     floating: "fixed left-1/2 -translate-x-1/2 w-[96%] max-w-7xl rounded-xl md:rounded-2xl border z-50",
-    hidden: `fixed left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isHeaderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`,
+    hidden: `fixed left-0 right-0 z-50 transition-all duration-500 ease-in-out ${effectiveHeaderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`,
   };
 
   const headerHeightClasses = {
@@ -281,7 +272,31 @@ const Header: React.FC<HeaderProps> = (props) => {
   const activeCategories = props.categories.filter(
     category => category.isPinned || (props.categorizedFeeds[category.id] || []).length > 0
   );
-  const hasManyCategories = activeCategories.length >= 7;
+  const visibleCategories = useMemo(() => {
+    if (props.primaryView !== "favorites") {
+      return activeCategories;
+    }
+
+    const allCategory =
+      activeCategories.find((category) => category.id === "all") ||
+      props.categories.find((category) => category.id === "all");
+    const favoritesCategory: FeedCategory = {
+      id: FAVORITES_VIEW_ID,
+      name: "Favoritos",
+      color: allCategory?.color || "rgb(var(--color-accent))",
+      description: "Favoritos",
+      order: allCategory?.order || 0,
+      isDefault: true,
+      isPinned: true,
+      layoutMode: allCategory?.layoutMode,
+    };
+
+    return [
+      favoritesCategory,
+      ...activeCategories.filter((category) => category.id !== "all"),
+    ];
+  }, [activeCategories, props.categories, props.primaryView]);
+  const hasManyCategories = visibleCategories.length >= 7;
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
   const closeDesktopActions = () => setDesktopActionsOpen(false);
@@ -441,7 +456,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     checkScroll();
     window.addEventListener('resize', checkScroll, { passive: true });
     return () => window.removeEventListener('resize', checkScroll);
-  }, [activeCategories]);
+  }, [visibleCategories]);
 
   useEffect(() => {
     if (!desktopActionsOpen) return;
@@ -523,7 +538,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     isHeaderVisible,
     mobileMenuOpen,
     mobileCategoriesOpen,
-    activeCategories.length,
+    visibleCategories.length,
     headerConfig.height,
     headerConfig.showLogo,
     headerConfig.showTitle,
@@ -619,19 +634,36 @@ const Header: React.FC<HeaderProps> = (props) => {
         className={`feed-header-category-scroll flex max-w-full items-center space-x-1 overflow-x-auto rounded-full p-1 text-xs font-medium transition-all no-scrollbar scroll-smooth ${categoryContainerClass} ${headerStyleVariant === 'minimal' ? 'px-0' : ''}`}
         style={{ ...(headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: headerBorderStyle }), scrollbarWidth: 'none' }}
       >
-        {activeCategories.map((category) => (
-          <div key={category.id} className="flex-shrink-0">
-            <FeedDropdown
-              category={category}
-              feeds={props.categorizedFeeds[category.id] || []}
-              onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
-              onSelectCategory={() => props.onNavigation(category.id)}
-              selectedCategory={props.selectedCategory}
-              onEditCategory={props.onManageFeedsClick}
-              variant={headerStyleVariant}
-            />
-          </div>
-        ))}
+              {visibleCategories.map((category) => (
+                <div key={category.id} className="flex-shrink-0">
+                  <FeedDropdown
+                    category={category}
+                    feeds={props.categorizedFeeds[category.id] || []}
+                    onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
+                    onSelectCategory={() => props.onNavigation(category.id)}
+                    selectedCategory={props.selectedCategory}
+                    onEditCategory={props.onManageFeedsClick}
+                    isVirtual={category.id === FAVORITES_VIEW_ID}
+                    primaryViewActionLabel={
+                      category.id === FAVORITES_VIEW_ID
+                        ? "Trocar por All"
+                        : category.id === "all"
+                          ? "Trocar por Favoritos"
+                          : undefined
+                    }
+                    onPrimaryViewAction={
+                      !props.onPrimaryViewChange
+                        ? undefined
+                        : category.id === FAVORITES_VIEW_ID
+                        ? () => props.onPrimaryViewChange?.("all")
+                        : category.id === "all"
+                          ? () => props.onPrimaryViewChange?.("favorites")
+                          : undefined
+                    }
+                    variant={headerStyleVariant}
+                  />
+                </div>
+              ))}
       </div>
 
       <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
@@ -839,7 +871,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               <div className="relative flex-1 min-w-0">
                 <div className="overflow-x-auto no-scrollbar w-full" style={{ scrollbarWidth: 'none' }}>
                   <div className="flex items-center gap-1.5 pr-2 snap-x snap-mandatory">
-                    {activeCategories.map((category) => {
+                    {visibleCategories.map((category) => {
                       const isActive = props.selectedCategory === category.id;
                       return (
                         <button
@@ -875,9 +907,12 @@ const Header: React.FC<HeaderProps> = (props) => {
             {mobileCategoriesOpen && (
               <div className="feed-category-sheet fixed left-2 right-2 top-[3.75rem] z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="custom-scrollbar max-h-[min(62vh,30rem)] overflow-y-auto px-2 py-2">
-                  {activeCategories.map((category) => {
+                  {visibleCategories.map((category) => {
                     const feeds = props.categorizedFeeds[category.id] || [];
-                    const isExpanded = mobileExpandedCategory === category.id;
+                    const resolvedMobileExpandedCategory =
+                      mobileExpandedCategory || props.selectedCategory || "all";
+                    const isExpanded =
+                      resolvedMobileExpandedCategory === category.id;
                     const isActive = props.selectedCategory === category.id;
                     return (
                       <div key={category.id} className="feed-category-sheet__group">

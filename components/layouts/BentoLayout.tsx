@@ -147,7 +147,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
 
                 {/* Content Layer */}
                 <div className="relative flex h-full flex-col p-5 md:p-6">
-                  {/* Top Part: Source, Date and Favorite */}
+                  {/* Top Part: Source and Date */}
                   <div className="flex w-full items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
                       <span className="feed-chip max-w-[150px] sm:max-w-[220px] self-start whitespace-nowrap shadow-lg shadow-[rgb(var(--color-accent))]/20">
@@ -157,35 +157,35 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ articles }) => {
                         {formatTimeAgo(article.pubDate)}
                       </span>
                     </div>
-
-                    <div className="flex-shrink-0">
-                      <FavoriteButton
-                        article={article}
-                        size="medium"
-                        position="inline"
-                        className="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    </div>
                   </div>
 
                   {/* Bottom Part: Content Block */}
                   <div
                     className={`mt-auto flex flex-col justify-end transform transition-all duration-500 ${bottomBlockClass}`}
                   >
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          variant="onDarkMedia"
-                          articleLink={article.link}
-                          onRead={() => setReadingArticle(article)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          className="!mt-0 mb-3"
-                        />
-                      );
-                    })()}
+                    <div className="feed-card-action-rail mb-3 justify-start">
+                      {(() => {
+                        const embedUrl = getVideoEmbed(article.link);
+                        return (
+                          <FeedInteractiveActions
+                            variant="onDarkMedia"
+                            articleLink={article.link}
+                            onRead={() => setReadingArticle(article)}
+                            showRead={!embedUrl}
+                            showWatch={!!embedUrl}
+                            showVisit={true}
+                            compact
+                            className="!mt-0"
+                          />
+                        );
+                      })()}
+                      <FavoriteButton
+                        article={article}
+                        size="small"
+                        position="inline"
+                        className="bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 shadow-lg"
+                      />
+                    </div>
 
                     {/* Title */}
                     <h3

@@ -144,12 +144,6 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                 <span className="text-xs text-white/60 font-mono tracking-widest">
                     {new Date(currentArticle.pubDate).toLocaleDateString().split('/').join('.')}
                 </span>
-                <FavoriteButton
-                  article={currentArticle}
-                  size="medium"
-                  position="inline"
-                  className="bg-black/40 hover:bg-black/70 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                />
             </div>
 
             <h2
@@ -165,20 +159,28 @@ export const FocusLayout: React.FC<FocusLayoutProps> = ({ articles }) => {
                 {currentArticle.description}
             </p>
 
-            {(() => {
-              const embedUrl = getVideoEmbed(currentArticle.link);
-              return (
-                <FeedInteractiveActions
-                  variant="onDarkMedia"
-                  articleLink={currentArticle.link}
-                  onRead={() => setReadingArticle(currentArticle)}
-                  showRead={!embedUrl}
-                  showWatch={!!embedUrl}
-                  showVisit={true}
-                  className="!mt-0 [&_.feed-btn-action]:text-sm [&_.feed-btn-action]:px-6 [&_.feed-btn-action]:py-3 [&_.feed-link-action]:text-sm"
-                />
-              );
-            })()}
+            <div className="feed-card-action-rail justify-start max-w-none">
+              {(() => {
+                const embedUrl = getVideoEmbed(currentArticle.link);
+                return (
+                  <FeedInteractiveActions
+                    variant="onDarkMedia"
+                    articleLink={currentArticle.link}
+                    onRead={() => setReadingArticle(currentArticle)}
+                    showRead={!embedUrl}
+                    showWatch={!!embedUrl}
+                    showVisit={true}
+                    className="!mt-0 [&_.feed-btn-action]:text-sm [&_.feed-btn-action]:px-6 [&_.feed-btn-action]:py-3 [&_.feed-link-action]:text-sm"
+                  />
+                );
+              })()}
+              <FavoriteButton
+                article={currentArticle}
+                size="medium"
+                position="inline"
+                className="bg-black/40 hover:bg-black/70 border border-white/10"
+              />
+            </div>
          </div>
       </div>
 
