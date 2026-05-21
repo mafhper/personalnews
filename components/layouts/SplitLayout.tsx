@@ -71,12 +71,6 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
                 <span className="feed-chip font-bold uppercase tracking-widest text-xs truncate max-w-[150px] md:max-w-[320px]">
                   {article.sourceTitle}
                 </span>
-                <FavoriteButton
-                  article={article}
-                  size="medium"
-                  position="inline"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                />
               </div>
               <h2
                 className="line-clamp-2 text-[clamp(2rem,2vw+1.2rem,4.25rem)] font-bold mb-5 text-[rgb(var(--theme-text-on-surface))] transition-colors cursor-pointer leading-[1.04] tracking-tight max-w-[16ch]"
@@ -90,19 +84,26 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({ articles }) => {
               <div className="flex items-center justify-start text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-on-surface))]">
                 {new Date(article.pubDate).toDateString()}
               </div>
-              {(() => {
-                const embedUrl = getVideoEmbed(article.link);
-                return (
-                  <FeedInteractiveActions
-                    articleLink={article.link}
-                    onRead={() => setReadingArticle(article)}
-                    showRead={!embedUrl}
-                    showWatch={!!embedUrl}
-                    showVisit={true}
-                    className="!mt-7 justify-start"
-                  />
-                );
-              })()}
+              <div className="feed-card-action-rail mt-7 justify-start max-w-none">
+                {(() => {
+                  const embedUrl = getVideoEmbed(article.link);
+                  return (
+                    <FeedInteractiveActions
+                      articleLink={article.link}
+                      onRead={() => setReadingArticle(article)}
+                      showRead={!embedUrl}
+                      showWatch={!!embedUrl}
+                      showVisit={true}
+                      className="!mt-0 justify-start"
+                    />
+                  );
+                })()}
+                <FavoriteButton
+                  article={article}
+                  size="medium"
+                  position="inline"
+                />
+              </div>
             </div>
           </div>
         </article>

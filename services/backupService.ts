@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   CATEGORIES: 'feed-categories',
   FAVORITES: 'favorites-data',
   READ_STATUS: 'article-read-status',
+  PRIMARY_VIEW: 'personalnews-primary-view',
 
   // Appearance & Settings
   HEADER: 'appearance-header',
@@ -18,7 +19,7 @@ export const STORAGE_KEYS = {
   BACKGROUND: 'appearance-background',
   ACTIVE_LAYOUT: 'appearance-active-layout',
   LAYOUT_SETTINGS: 'article-layout-settings',
-  
+
   // Theme
   THEME_SETTINGS: 'theme-settings',
   CURRENT_THEME: 'extended-theme-current',

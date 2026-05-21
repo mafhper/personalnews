@@ -336,6 +336,8 @@ describe("theme contrast hotspots", () => {
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
+        primaryView="all"
+        onPrimaryViewChange={vi.fn()}
       />,
     );
 
@@ -361,6 +363,8 @@ describe("theme contrast hotspots", () => {
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
+        primaryView="all"
+        onPrimaryViewChange={vi.fn()}
       />,
     );
 
@@ -413,6 +417,8 @@ describe("theme contrast hotspots", () => {
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
+        primaryView="all"
+        onPrimaryViewChange={vi.fn()}
       />,
     );
 
@@ -448,6 +454,8 @@ describe("theme contrast hotspots", () => {
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
+        primaryView="all"
+        onPrimaryViewChange={vi.fn()}
       />,
     );
 
@@ -470,6 +478,8 @@ describe("theme contrast hotspots", () => {
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
+        primaryView="all"
+        onPrimaryViewChange={vi.fn()}
       />,
     );
 

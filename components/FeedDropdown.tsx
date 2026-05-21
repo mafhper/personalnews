@@ -14,6 +14,9 @@ interface FeedDropdownProps {
   onSelectCategory: () => void;
   selectedCategory: string;
   onEditCategory?: (categoryId: string) => void; // Passed categoryId for specific editing
+  isVirtual?: boolean;
+  primaryViewActionLabel?: string;
+  onPrimaryViewAction?: () => void;
   variant?: 'default' | 'centered' | 'minimal';
 }
 
@@ -60,6 +63,9 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   onSelectCategory,
   selectedCategory,
   onEditCategory,
+  isVirtual = false,
+  primaryViewActionLabel,
+  onPrimaryViewAction,
   variant = 'default',
 }) => {
   const { deleteCategory, updateCategory } = useFeedCategories();
@@ -115,6 +121,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   };
 
   const handleLayoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (isVirtual) return;
     updateCategory(category.id, {
       layoutMode: e.target.value as FeedCategory["layoutMode"],
     });
@@ -191,11 +198,28 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
             <div className="p-1.5">
               <div className="px-4 py-3 border-b border-[rgb(var(--color-border))]/10 mb-1 flex items-center justify-between bg-[rgb(var(--color-background))]/30">
                 <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] uppercase tracking-widest">
-                  {t("feeds.tab.feeds")} de {category.name}
+                  {isVirtual
+                    ? `View ${category.name}`
+                    : `${t("feeds.tab.feeds")} de ${category.name}`}
                 </span>
 
                 <div className="flex items-center space-x-1">
+                  {primaryViewActionLabel && onPrimaryViewAction && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPrimaryViewAction();
+                        setIsOpen(false);
+                      }}
+                      className="rounded-lg px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[rgb(var(--color-accent))] hover:bg-[rgb(var(--color-text))]/10"
+                    >
+                      {primaryViewActionLabel}
+                    </button>
+                  )}
+
                   {/* Layout Selector */}
+                  {!isVirtual && (
                   <div className="relative group/layout">
                     <button
                       onClick={(e) => e.stopPropagation()}
@@ -234,7 +258,9 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                       ))}
                     </select>
                   </div>
+                  )}
 
+                  {!isVirtual && (
                   <button
                     onClick={handlePin}
                     className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.isPinned ? "text-[rgb(var(--color-accent))]" : "text-[rgb(var(--color-textSecondary))]"}`}
@@ -263,8 +289,9 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                       />
                     </svg>
                   </button>
+                  )}
 
-                  {onEditCategory && (
+                  {!isVirtual && onEditCategory && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -291,7 +318,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     </button>
                   )}
 
-                  {!category.isDefault && (
+                  {!isVirtual && !category.isDefault && (
                     <button
                       onClick={handleDelete}
                       className="p-2 rounded hover:bg-red-500/20 text-[rgb(var(--color-textSecondary))] hover:text-red-400 min-w-[32px] min-h-[32px]"
@@ -343,7 +370,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                   </button>
                 ))}
 
-                {feeds.length === 0 && (
+                {feeds.length === 0 && !isVirtual && (
                   <div className="px-4 py-8 text-center">
                     <div className="text-[rgb(var(--color-textSecondary))]/70 mb-2">
                       <svg

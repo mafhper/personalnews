@@ -45,4 +45,23 @@ describe("Header responsive navigation rules", () => {
 
     expect(source).toContain("default: 'px-5 py-2.5 rounded-full min-h-[44px]'");
   });
+
+  it("replaces All with the virtual Favorites slot instead of rendering both", () => {
+    const source = readProjectFile("components/Header.tsx");
+
+    expect(source).toContain('props.primaryView !== "favorites"');
+    expect(source).toContain('id: FAVORITES_VIEW_ID');
+    expect(source).toContain(
+      '...activeCategories.filter((category) => category.id !== "all")',
+    );
+    expect(source).toContain("visibleCategories.map");
+  });
+
+  it("keeps category-only actions hidden for the virtual Favorites dropdown", () => {
+    const source = readProjectFile("components/FeedDropdown.tsx");
+
+    expect(source).toContain("isVirtual = false");
+    expect(source).toContain("!isVirtual && onEditCategory");
+    expect(source).toContain("!isVirtual && !category.isDefault");
+  });
 });

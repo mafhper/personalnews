@@ -4276,18 +4276,18 @@ html {
   position: relative;
   z-index: 2;
   scroll-margin-top: 92px;
-  padding-block: 112px;
+  padding-block: clamp(72px, 7vw, 112px);
 }
 
 .promo-hero {
   position: relative;
   z-index: 3;
-  min-height: calc(100vh - 72px);
+  min-height: min(calc(100svh - 72px), 920px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.76fr);
   align-items: center;
   gap: 52px;
-  padding-block: 80px 112px;
+  padding-block: clamp(64px, 6vh, 88px) clamp(72px, 7vh, 104px);
 }
 
 .promo-hero__copy {
@@ -5402,6 +5402,18 @@ html {
 
   .promo-stack-strip ul {
     justify-content: flex-start;
+  }
+}
+
+@media (min-width: 981px) and (orientation: portrait) {
+  .promo-section {
+    padding-block: 88px;
+  }
+
+  .promo-hero {
+    min-height: min(calc(100svh - 72px), 860px);
+    gap: 44px;
+    padding-block: 64px 88px;
   }
 }
 

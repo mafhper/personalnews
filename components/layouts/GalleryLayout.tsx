@@ -66,34 +66,34 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({ articles }) => {
                   className="text-white/82 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
                 />
               </div>
-              <div className="feed-card-action-rail">
-                {(() => {
-                  const embedUrl = getVideoEmbed(article.link);
-                  return (
-                    <FeedInteractiveActions
-                      variant="onDarkMedia"
-                      articleLink={article.link}
-                      onRead={() => setReadingArticle(article)}
-                      showRead={!embedUrl}
-                      showWatch={!!embedUrl}
-                      showVisit={true}
-                      compact
-                      className="!mt-0"
-                    />
-                  );
-                })()}
-                <FavoriteButton
-                  article={article}
-                  size="small"
-                  position="inline"
-                  className="bg-black/40 hover:bg-black/60 border border-white/10 shadow-md"
-                />
-              </div>
             </div>
 
             {/* Post info at bottom-left */}
             <div className="feed-image-story-bottom-copy !p-4">
               <div className="feed-image-story-shell !px-0 !py-0">
+                <div className="feed-card-action-rail mb-2 justify-start">
+                  {(() => {
+                    const embedUrl = getVideoEmbed(article.link);
+                    return (
+                      <FeedInteractiveActions
+                        variant="onDarkMedia"
+                        articleLink={article.link}
+                        onRead={() => setReadingArticle(article)}
+                        showRead={!embedUrl}
+                        showWatch={!!embedUrl}
+                        showVisit={true}
+                        compact
+                        className="!mt-0"
+                      />
+                    );
+                  })()}
+                  <FavoriteButton
+                    article={article}
+                    size="small"
+                    position="inline"
+                    className="bg-black/40 hover:bg-black/60 border border-white/10 shadow-md"
+                  />
+                </div>
                 <h3 className="feed-title feed-title-card feed-image-story-title feed-card-title-clamp text-base leading-tight transition-colors">
                   {article.title}
                 </h3>

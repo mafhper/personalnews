@@ -219,7 +219,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.18)_0%,rgba(3,5,9,0.28)_20%,rgba(3,5,9,0.74)_64%,rgba(3,5,9,0.97)_100%)]" />
 
           <div className="feed-image-story-top-rail justify-start text-left">
-            <div className="feed-card-meta-stack max-w-[18rem] text-xs font-semibold text-white/86">
+            <div className="feed-card-meta-stack max-w-[calc(100%-10rem)] text-xs font-semibold text-white/86">
               <span className="inline-flex w-fit max-w-full whitespace-normal break-words rounded-full bg-black/34 px-3 py-1 text-left leading-tight text-white/88 backdrop-blur-md">
                 {heroArticle.sourceTitle}
               </span>
@@ -229,7 +229,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
               />
             </div>
           </div>
-          <div className="feed-card-action-rail absolute bottom-5 right-5 z-20 max-w-[calc(100%-2.5rem)] justify-end">
+          <div className="feed-card-action-rail absolute right-5 top-5 z-20 max-w-[calc(100%-2.5rem)] justify-end">
             {(() => {
               const embedUrl = getVideoEmbed(heroArticle.link);
               return (
@@ -290,7 +290,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
               />
               <div className="feed-image-story-overlay absolute inset-0" />
               <div className="feed-image-story-top-rail justify-start text-left">
-                <div className="feed-image-story-meta feed-card-meta-stack max-w-[calc(100%-1.5rem)] text-[10px] font-semibold text-white/82 sm:text-xs">
+                <div className="feed-image-story-meta feed-card-meta-stack max-w-[calc(100%-8.5rem)] text-[10px] font-semibold text-white/82 sm:text-xs">
                   <span className="inline-flex w-fit max-w-full whitespace-normal break-words rounded-full bg-black/40 px-2.5 py-1 text-left leading-tight text-white/88 backdrop-blur-md">
                     {article.sourceTitle}
                   </span>
@@ -300,7 +300,7 @@ export const ModernPortalLayout: React.FC<ModernPortalLayoutProps> = ({
                   />
                 </div>
               </div>
-              <div className="feed-card-action-rail absolute bottom-3 right-3 z-20 max-w-[calc(100%-1.5rem)] justify-end">
+              <div className="feed-card-action-rail absolute right-3 top-3 z-20 max-w-[calc(100%-1.5rem)] justify-end">
                 {(() => {
                   const embedUrl = getVideoEmbed(article.link);
                   return (
