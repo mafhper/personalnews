@@ -376,7 +376,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     aria-label={`Select feed ${getFeedDisplayName(feed)}`}
                   >
                     <img
-                      src={getFaviconUrl(feed.url)}
+                      src={getFaviconUrl(feed.faviconUrl || feed.url)}
                       alt=""
                       className="w-4 h-4 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity"
                       onError={(e) => {

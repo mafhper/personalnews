@@ -8,6 +8,7 @@ import { useAppearance } from "../hooks/useAppearance";
 import { useLanguage } from "../hooks/useLanguage";
 import { APP_BRAND_NAME } from "../config/brand";
 import { FAVORITES_VIEW_ID, type PrimaryView } from "../hooks/usePrimaryView";
+import { buildFavoriteSourceKey } from "../utils/favoriteSource";
 
 interface HeaderProps {
   onManageFeedsClick: () => void;
@@ -18,7 +19,7 @@ interface HeaderProps {
   onNavigation: (category: string, feedUrl?: string) => void;
   categorizedFeeds: Record<string, FeedSource[]>;
   onOpenSettings: () => void;
-  articles: Article[];
+  favoriteArticles: Article[];
   onSearch: (query: string, filters: SearchFilters) => void;
   onSearchResultsChange?: (results: Article[]) => void;
   onOpenFavorites: () => void;
@@ -304,19 +305,20 @@ const Header: React.FC<HeaderProps> = (props) => {
     if (props.primaryView !== "favorites") return [];
 
     const feedsBySource = new Map<string, FeedSource>();
-    props.articles.forEach((article) => {
-      const sourceKey = (article.feedUrl || article.sourceTitle || "").trim();
+    props.favoriteArticles.forEach((article) => {
+      const sourceKey = buildFavoriteSourceKey(article);
       if (!sourceKey || feedsBySource.has(sourceKey)) return;
 
       feedsBySource.set(sourceKey, {
         url: sourceKey,
         categoryId: FAVORITES_VIEW_ID,
-        customTitle: article.sourceTitle,
+        customTitle: article.sourceTitle || article.feedUrl || sourceKey,
+        faviconUrl: article.feedUrl,
       });
     });
 
     return Array.from(feedsBySource.values());
-  }, [props.articles, props.primaryView]);
+  }, [props.favoriteArticles, props.primaryView]);
   const hasManyCategories = visibleCategories.length >= 7;
 
   const closeMobileMenu = () => setMobileMenuOpen(false);

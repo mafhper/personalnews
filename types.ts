@@ -67,6 +67,7 @@ export interface FeedSource {
   url: string;
   categoryId?: string;
   customTitle?: string;
+  faviconUrl?: string;
   hideFromAll?: boolean;
   status?: "active" | "quarantined" | "inactive";
   quarantine?: {
