@@ -8,6 +8,10 @@ type OpenExternalLinkFn = typeof import("../utils/openExternalLink").openExterna
 let fetchFullContentMock: ReturnType<typeof vi.fn<FetchFullContentFn>>;
 let openExternalLinkMock: ReturnType<typeof vi.fn<OpenExternalLinkFn>>;
 
+const readStatusMocks = vi.hoisted(() => ({
+  markAsRead: vi.fn(),
+}));
+
 vi.mock("../services/environmentDetector", () => ({
   detectEnvironment: () => ({ isTauri: false }),
 }));
@@ -32,8 +36,15 @@ vi.mock("../hooks/useModal", () => ({
   }),
 }));
 
+vi.mock("../hooks/useReadStatus", () => ({
+  useReadStatus: () => ({
+    markAsRead: readStatusMocks.markAsRead,
+  }),
+}));
+
 describe("ArticleReaderModal", () => {
   beforeEach(async () => {
+    readStatusMocks.markAsRead.mockClear();
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -64,6 +75,86 @@ describe("ArticleReaderModal", () => {
       usedFallback: false,
     });
   };
+
+  it("marks the active article as read when the modal opens", async () => {
+    const { ArticleReaderModal } = await import(
+      "../components/ArticleReaderModal"
+    );
+    const article: Article = {
+      title: "Saved favorite",
+      link: "https://example.com/saved-favorite",
+      pubDate: new Date("2026-04-29T10:00:00.000Z"),
+      sourceTitle: "Example",
+      content: "<p>Favorite body.</p>",
+    };
+    mockFullContent(article.content);
+
+    render(
+      <ArticleReaderModal
+        article={article}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+        onPrev={vi.fn()}
+        hasNext={false}
+        hasPrev={false}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(readStatusMocks.markAsRead).toHaveBeenCalledWith(article);
+    });
+  });
+
+  it("marks the next active article as read when modal navigation changes it", async () => {
+    const { ArticleReaderModal } = await import(
+      "../components/ArticleReaderModal"
+    );
+    const firstArticle: Article = {
+      title: "First favorite",
+      link: "https://example.com/first-favorite",
+      pubDate: new Date("2026-04-29T10:00:00.000Z"),
+      sourceTitle: "Example",
+      content: "<p>First body.</p>",
+    };
+    const nextArticle: Article = {
+      title: "Next favorite",
+      link: "https://example.com/next-favorite",
+      pubDate: new Date("2026-04-30T10:00:00.000Z"),
+      sourceTitle: "Example",
+      content: "<p>Next body.</p>",
+    };
+    mockFullContent(firstArticle.content || "");
+
+    const { rerender } = render(
+      <ArticleReaderModal
+        article={firstArticle}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+        onPrev={vi.fn()}
+        hasNext={true}
+        hasPrev={false}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(readStatusMocks.markAsRead).toHaveBeenCalledWith(firstArticle);
+    });
+
+    rerender(
+      <ArticleReaderModal
+        article={nextArticle}
+        onClose={vi.fn()}
+        onNext={vi.fn()}
+        onPrev={vi.fn()}
+        hasNext={false}
+        hasPrev={true}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(readStatusMocks.markAsRead).toHaveBeenCalledWith(nextArticle);
+    });
+  });
 
   it("routes article body links through the external opener", async () => {
     const { ArticleReaderModal } = await import(
