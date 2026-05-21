@@ -44,11 +44,13 @@ vi.mock('../services/logger', () => {
 describe('FeedContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
+    window.localStorage.setItem('rss-feeds', JSON.stringify([]));
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <NotificationProvider>
-      <FeedProvider>{children}</FeedProvider>
+      <FeedProvider autoStart={false}>{children}</FeedProvider>
     </NotificationProvider>
   );
 
@@ -64,7 +66,7 @@ describe('FeedContext', () => {
   it('runs migration on mount', () => {
     render(
       <NotificationProvider>
-        <FeedProvider>
+        <FeedProvider autoStart={false}>
           <div>Test</div>
         </FeedProvider>
       </NotificationProvider>
