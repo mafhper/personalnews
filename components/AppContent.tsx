@@ -53,6 +53,7 @@ import { useAppearance } from "../hooks/useAppearance";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { favoriteToArticle, useFavorites } from "../hooks/useFavorites";
 import { usePagination } from "../hooks/usePagination";
+import { useReadStatus } from "../hooks/useReadStatus";
 import {
   FAVORITES_VIEW_ID,
   type PrimaryView,
@@ -63,11 +64,18 @@ import { useSwipeGestures } from "../hooks/useSwipeGestures";
 import { useArticleLayout } from "../hooks/useArticleLayout";
 import type { Article, FeedCategory } from "../types";
 import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
+import { FavoritesViewToolbar } from "./FavoritesViewToolbar";
 const BackgroundLayer = lazy(() =>
   import("./BackgroundLayer").then((m) => ({ default: m.BackgroundLayer })),
 );
 import { useLogger } from "../services/logger";
-import { matchesFavoriteSourceKey } from "../utils/favoriteSource";
+import {
+  filterAndSortFavorites,
+  getFavoriteToolbarOptions,
+  type FavoriteMediaFilter,
+  type FavoriteReadFilter,
+  type FavoriteSortMode,
+} from "../utils/favoriteViewFilters";
 import { areUrlsEqual } from "../utils/urlUtils";
 import { isFeedActive } from "../utils/feedQuarantine";
 import type { FeedLoadRequest } from "../types";
@@ -193,12 +201,60 @@ const AppContent: React.FC = () => {
   >(null);
   const [primaryView, setPrimaryView] = usePrimaryViewPreference();
   const { favorites } = useFavorites();
+  const { getUnreadCount, isArticleRead } = useReadStatus();
+  const [favoriteReadFilter, setFavoriteReadFilter] =
+    useState<FavoriteReadFilter>("all");
+  const [favoriteMediaFilter, setFavoriteMediaFilter] =
+    useState<FavoriteMediaFilter>("all");
+  const [favoriteCategoryFilter, setFavoriteCategoryFilter] =
+    useState<string>("all");
+  const [favoriteSortMode, setFavoriteSortMode] =
+    useState<FavoriteSortMode>("saved-desc");
   const favoriteArticles = useMemo(
     () => favorites.map(favoriteToArticle),
     [favorites],
   );
+  const favoriteToolbarOptions = useMemo(
+    () => getFavoriteToolbarOptions(favorites),
+    [favorites],
+  );
+  const filteredFavorites = useMemo(
+    () =>
+      filterAndSortFavorites(favorites, {
+        readFilter: favoriteReadFilter,
+        mediaFilter: favoriteMediaFilter,
+        categoryFilter: favoriteCategoryFilter,
+        sourceKey: selectedFavoriteSourceKey,
+        sortMode: favoriteSortMode,
+        isArticleRead,
+      }),
+    [
+      favorites,
+      favoriteReadFilter,
+      favoriteMediaFilter,
+      favoriteCategoryFilter,
+      selectedFavoriteSourceKey,
+      favoriteSortMode,
+      isArticleRead,
+    ],
+  );
+  const filteredFavoriteArticles = useMemo(
+    () => filteredFavorites.map(favoriteToArticle),
+    [filteredFavorites],
+  );
+  const favoriteUnreadCount = useMemo(
+    () => getUnreadCount(favoriteArticles),
+    [favoriteArticles, getUnreadCount],
+  );
+  const hasActiveFavoriteFilters =
+    favoriteReadFilter !== "all" ||
+    favoriteMediaFilter !== "all" ||
+    favoriteCategoryFilter !== "all" ||
+    selectedFavoriteSourceKey !== null;
   const isFavoritesView = selectedCategory === FAVORITES_VIEW_ID;
-  const sourceArticlesForView = isFavoritesView ? favoriteArticles : articles;
+  const sourceArticlesForView = isFavoritesView
+    ? filteredFavoriteArticles
+    : articles;
 
   // Extended theme system
   const {
@@ -392,11 +448,7 @@ const AppContent: React.FC = () => {
 
     let filteredArticles: Article[];
 
-    if (isFavoritesView && selectedFavoriteSourceKey) {
-      filteredArticles = sourceArticles.filter((article) =>
-        matchesFavoriteSourceKey(article, selectedFavoriteSourceKey),
-      );
-    } else if (selectedFeedUrl) {
+    if (selectedFeedUrl) {
       filteredArticles = sourceArticles.filter(
         (article) =>
           (article.feedUrl && areUrlsEqual(article.feedUrl, selectedFeedUrl)) ||
@@ -486,7 +538,6 @@ const AppContent: React.FC = () => {
     sourceArticlesForView,
     isFavoritesView,
     selectedCategory,
-    selectedFavoriteSourceKey,
     categories,
     feeds,
     selectedFeedUrl,
@@ -630,6 +681,11 @@ const AppContent: React.FC = () => {
       persistInUrl: true,
       resetTriggers: [
         selectedCategory,
+        selectedFavoriteSourceKey,
+        favoriteReadFilter,
+        favoriteMediaFilter,
+        favoriteCategoryFilter,
+        favoriteSortMode,
         isSearchActive,
         searchQuery,
         contentConfig.paginationType,
@@ -810,6 +866,14 @@ const AppContent: React.FC = () => {
     },
     [handleNavigation, handleTitleNavigation, setPrimaryView],
   );
+
+  const clearFavoriteFilters = useCallback(() => {
+    setFavoriteReadFilter("all");
+    setFavoriteMediaFilter("all");
+    setFavoriteCategoryFilter("all");
+    setSelectedFavoriteSourceKey(null);
+    setFavoriteSortMode("saved-desc");
+  }, []);
 
   const handleCategoryNavigation = useCallback(
     (categoryIndex: number) => {
@@ -1093,6 +1157,28 @@ const AppContent: React.FC = () => {
             </div>
           )}
 
+          {isFavoritesView && favorites.length > 0 && !showSkeleton && (
+            <FavoritesViewToolbar
+              totalCount={favorites.length}
+              visibleCount={filteredFavorites.length}
+              unreadCount={favoriteUnreadCount}
+              readFilter={favoriteReadFilter}
+              mediaFilter={favoriteMediaFilter}
+              categoryFilter={favoriteCategoryFilter}
+              sourceKey={selectedFavoriteSourceKey}
+              sortMode={favoriteSortMode}
+              categoryOptions={favoriteToolbarOptions.categories}
+              sourceOptions={favoriteToolbarOptions.sources}
+              hasActiveFilters={hasActiveFavoriteFilters}
+              onReadFilterChange={setFavoriteReadFilter}
+              onMediaFilterChange={setFavoriteMediaFilter}
+              onCategoryFilterChange={setFavoriteCategoryFilter}
+              onSourceKeyChange={setSelectedFavoriteSourceKey}
+              onSortModeChange={setFavoriteSortMode}
+              onClearFilters={clearFavoriteFilters}
+            />
+          )}
+
           {showSkeleton ? (
             <div className={contentContainerClass}>
               <FeedSkeleton
@@ -1127,22 +1213,41 @@ const AppContent: React.FC = () => {
               ) : (
                 <div className="feed-page-frame">
                   {isFavoritesView ? (
-                    <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.04)] px-6 py-10 text-center">
-                      <h3 className="text-xl font-semibold text-[rgb(var(--color-text))]">
-                        Favoritos vazio
-                      </h3>
-                      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
-                        Favorite noticias, videos ou episodios para transformar
-                        esta tela na sua fila pessoal.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handlePrimaryViewChange("all")}
-                        className="mt-6 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition hover:bg-[rgba(var(--color-primary),0.18)]"
-                      >
-                        Usar All como inicio
-                      </button>
-                    </div>
+                    favorites.length === 0 ? (
+                      <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.04)] px-6 py-10 text-center">
+                        <h3 className="text-xl font-semibold text-[rgb(var(--color-text))]">
+                          Favoritos vazio
+                        </h3>
+                        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          Favorite noticias, videos ou episodios para
+                          transformar esta tela na sua fila pessoal.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handlePrimaryViewChange("all")}
+                          className="mt-6 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition hover:bg-[rgba(var(--color-primary),0.18)]"
+                        >
+                          Usar All como inicio
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.04)] px-6 py-10 text-center">
+                        <h3 className="text-xl font-semibold text-[rgb(var(--color-text))]">
+                          Nenhum favorito encontrado
+                        </h3>
+                        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          Ajuste ou limpe os filtros para ver novamente seus
+                          favoritos salvos.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={clearFavoriteFilters}
+                          className="mt-6 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition hover:bg-[rgba(var(--color-primary),0.18)]"
+                        >
+                          Limpar filtros
+                        </button>
+                      </div>
+                    )
                   ) : isSearchActive ? (
                     <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
                       <div className="mb-4">

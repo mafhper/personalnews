@@ -91,10 +91,13 @@ describe("Header responsive navigation rules", () => {
   });
 
   it("keeps Favorites source filtering separate from real feed URL selection", () => {
-    const source = readProjectFile("components/AppContent.tsx");
+    const appContent = readProjectFile("components/AppContent.tsx");
+    const filters = readProjectFile("utils/favoriteViewFilters.ts");
 
-    expect(source).toContain("selectedFavoriteSourceKey");
-    expect(source).toContain("setSelectedFeedUrl(null)");
-    expect(source).toContain("matchesFavoriteSourceKey");
+    expect(appContent).toContain("selectedFavoriteSourceKey");
+    expect(appContent).toContain("setSelectedFeedUrl(null)");
+    expect(appContent).toContain("filterAndSortFavorites");
+    expect(appContent).toContain("sourceKey: selectedFavoriteSourceKey");
+    expect(filters).toContain("matchesFavoriteSourceKey");
   });
 });

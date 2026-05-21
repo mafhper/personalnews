@@ -102,9 +102,12 @@ let mockFavorites: Array<{
   sourceTitle: string;
   feedUrl?: string;
   content?: string;
+  categories?: string[];
+  mediaType?: "article" | "podcast" | "video" | "unknown";
   audioUrl?: string;
   audioDuration?: string;
 }> = [];
+let mockReadLinks = new Set<string>();
 const mockApplyLayoutPreset = vi.fn();
 const mockRefreshAppearance = vi.fn();
 const mockResolveBaseLayoutMode = vi.fn();
@@ -211,6 +214,11 @@ vi.mock("../hooks/useFavorites", () => ({
   useFavorites: () => ({
     favorites: mockFavorites,
   }),
+  inferFavoriteMediaType: (favorite: (typeof mockFavorites)[number]) => {
+    if (favorite.audioUrl) return "podcast";
+    if (favorite.mediaType) return favorite.mediaType;
+    return "article";
+  },
   favoriteToArticle: (favorite: (typeof mockFavorites)[number]) => ({
     title: favorite.title,
     link: favorite.link,
@@ -218,8 +226,17 @@ vi.mock("../hooks/useFavorites", () => ({
     sourceTitle: favorite.sourceTitle,
     feedUrl: favorite.feedUrl,
     content: favorite.content,
+    categories: favorite.categories,
     audioUrl: favorite.audioUrl,
     audioDuration: favorite.audioDuration,
+  }),
+}));
+
+vi.mock("../hooks/useReadStatus", () => ({
+  useReadStatus: () => ({
+    isArticleRead: (article: Article) => mockReadLinks.has(article.link),
+    getUnreadCount: (articles: Article[]) =>
+      articles.filter((article) => !mockReadLinks.has(article.link)).length,
   }),
 }));
 
@@ -403,6 +420,7 @@ describe("AppContent cache-first rendering", () => {
     });
     mockPrimaryView = "all";
     mockFavorites = [];
+    mockReadLinks = new Set<string>();
 
     mockFeedState = {
       feeds: [techFeed, designFeed, videoFeed],
@@ -500,6 +518,85 @@ describe("AppContent cache-first rendering", () => {
     expect(screen.queryByText("Tech One")).not.toBeInTheDocument();
     expect(mockLoadFeeds).not.toHaveBeenCalled();
     expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("filters unread favorites without loading feeds", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Read favorite",
+        link: "https://example.com/read-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+      {
+        title: "Unread favorite",
+        link: "https://example.com/unread-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+    ];
+    mockReadLinks = new Set(["https://example.com/read-favorite"]);
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Read favorite")).toBeInTheDocument();
+    expect(screen.getByText("Unread favorite")).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Não lidos" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText("Read favorite")).not.toBeInTheDocument();
+    expect(screen.getByText("Unread favorite")).toBeInTheDocument();
+    expect(mockLoadFeeds).not.toHaveBeenCalled();
+    expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("shows the filtered favorites empty state when filters have no results", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Article favorite",
+        link: "https://example.com/article-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+    ];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Tipo de favorito"), {
+        target: { value: "podcast" },
+      });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Nenhum favorito encontrado")).toBeInTheDocument();
+    expect(screen.queryByText("Favoritos vazio")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Article favorite")).toBeInTheDocument();
   });
 
   it("does not refresh feeds while the favorites view is active", async () => {
