@@ -546,10 +546,13 @@ describe("AppContent cache-first rendering", () => {
       await Promise.resolve();
     });
 
-    const keyboardOptions = vi.mocked(useKeyboardNavigation).mock.calls.at(-1)?.[0];
+    const keyboardOptions = vi.mocked(useKeyboardNavigation).mock.calls.at(-1)
+      ?.[0];
     const techShortcut = keyboardOptions?.shortcuts?.find(
       (shortcut) => shortcut.key === "2",
     );
+
+    expect(techShortcut).toBeDefined();
 
     await act(async () => {
       techShortcut?.action();
@@ -564,6 +567,42 @@ describe("AppContent cache-first rendering", () => {
         cacheTtlMinutes: 10,
       }),
     );
+    expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("keeps keyboard navigation to favorites local without loading feeds", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Saved article",
+        link: "https://example.com/saved-article",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+      },
+    ];
+    mockFeedState.articles = [techArticle];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    const keyboardOptions = vi.mocked(useKeyboardNavigation).mock.calls.at(-1)
+      ?.[0];
+    const favoritesShortcut = keyboardOptions?.shortcuts?.find(
+      (shortcut) => shortcut.key === "1",
+    );
+
+    expect(favoritesShortcut).toBeDefined();
+
+    await act(async () => {
+      favoritesShortcut?.action();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Saved article")).toBeInTheDocument();
+    expect(mockLoadFeeds).not.toHaveBeenCalled();
     expect(mockRefreshFeeds).not.toHaveBeenCalled();
   });
 
