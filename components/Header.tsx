@@ -8,6 +8,7 @@ import { useAppearance } from "../hooks/useAppearance";
 import { useLanguage } from "../hooks/useLanguage";
 import { APP_BRAND_NAME } from "../config/brand";
 import { FAVORITES_VIEW_ID, type PrimaryView } from "../hooks/usePrimaryView";
+import { buildFavoriteSourceKey } from "../utils/favoriteSource";
 
 interface HeaderProps {
   onManageFeedsClick: () => void;
@@ -18,13 +19,17 @@ interface HeaderProps {
   onNavigation: (category: string, feedUrl?: string) => void;
   categorizedFeeds: Record<string, FeedSource[]>;
   onOpenSettings: () => void;
-  articles: Article[];
+  favoriteArticles: Article[];
   onSearch: (query: string, filters: SearchFilters) => void;
   onSearchResultsChange?: (results: Article[]) => void;
   onOpenFavorites: () => void;
   categories: FeedCategory[];
   primaryView?: PrimaryView;
   onPrimaryViewChange?: (primaryView: PrimaryView) => void;
+  onCategoryLayoutChange?: (
+    categoryId: string,
+    layoutMode: FeedCategory["layoutMode"] | undefined,
+  ) => void;
   onGoHome?: () => void;
   onGoLanding?: () => void;
   onGoAll?: () => void;
@@ -296,6 +301,24 @@ const Header: React.FC<HeaderProps> = (props) => {
       ...activeCategories.filter((category) => category.id !== "all"),
     ];
   }, [activeCategories, props.categories, props.primaryView]);
+  const favoriteDropdownFeeds = useMemo<FeedSource[]>(() => {
+    if (props.primaryView !== "favorites") return [];
+
+    const feedsBySource = new Map<string, FeedSource>();
+    props.favoriteArticles.forEach((article) => {
+      const sourceKey = buildFavoriteSourceKey(article);
+      if (!sourceKey || feedsBySource.has(sourceKey)) return;
+
+      feedsBySource.set(sourceKey, {
+        url: sourceKey,
+        categoryId: FAVORITES_VIEW_ID,
+        customTitle: article.sourceTitle || article.feedUrl || sourceKey,
+        faviconUrl: article.feedUrl,
+      });
+    });
+
+    return Array.from(feedsBySource.values());
+  }, [props.favoriteArticles, props.primaryView]);
   const hasManyCategories = visibleCategories.length >= 7;
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -634,36 +657,60 @@ const Header: React.FC<HeaderProps> = (props) => {
         className={`feed-header-category-scroll flex max-w-full items-center space-x-1 overflow-x-auto rounded-full p-1 text-xs font-medium transition-all no-scrollbar scroll-smooth ${categoryContainerClass} ${headerStyleVariant === 'minimal' ? 'px-0' : ''}`}
         style={{ ...(headerStyleVariant === 'minimal' ? {} : { backgroundColor: categoryBgStyle, borderColor: headerBorderStyle }), scrollbarWidth: 'none' }}
       >
-              {visibleCategories.map((category) => (
-                <div key={category.id} className="flex-shrink-0">
-                  <FeedDropdown
-                    category={category}
-                    feeds={props.categorizedFeeds[category.id] || []}
-                    onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
-                    onSelectCategory={() => props.onNavigation(category.id)}
-                    selectedCategory={props.selectedCategory}
-                    onEditCategory={props.onManageFeedsClick}
-                    isVirtual={category.id === FAVORITES_VIEW_ID}
-                    primaryViewActionLabel={
-                      category.id === FAVORITES_VIEW_ID
-                        ? "Trocar por All"
-                        : category.id === "all"
-                          ? "Trocar por Favoritos"
+              {visibleCategories.map((category) => {
+                const isFavoritesSlot = category.id === FAVORITES_VIEW_ID;
+                const dropdownFeeds = isFavoritesSlot
+                  ? favoriteDropdownFeeds
+                  : props.categorizedFeeds[category.id] || [];
+                const layoutCategoryId = isFavoritesSlot ? "all" : category.id;
+
+                return (
+                  <div key={category.id} className="flex-shrink-0">
+                    <FeedDropdown
+                      category={category}
+                      feeds={dropdownFeeds}
+                      onSelectFeed={(feedUrl: string) => props.onNavigation(category.id, feedUrl)}
+                      onSelectCategory={() => props.onNavigation(category.id)}
+                      selectedCategory={props.selectedCategory}
+                      onEditCategory={props.onManageFeedsClick}
+                      isVirtual={isFavoritesSlot}
+                      primaryViewActionLabel={
+                        isFavoritesSlot
+                          ? "Trocar por All"
+                          : category.id === "all"
+                            ? "Trocar por Favoritos"
+                            : undefined
+                      }
+                      primaryViewActionIcon={
+                        isFavoritesSlot
+                          ? "feeds"
+                          : category.id === "all"
+                            ? "favorites"
+                            : undefined
+                      }
+                      onPrimaryViewAction={
+                        !props.onPrimaryViewChange
+                          ? undefined
+                          : isFavoritesSlot
+                            ? () => props.onPrimaryViewChange?.("all")
+                            : category.id === "all"
+                              ? () => props.onPrimaryViewChange?.("favorites")
+                              : undefined
+                      }
+                      onLayoutChange={
+                        props.onCategoryLayoutChange
+                          ? (layoutMode) =>
+                              props.onCategoryLayoutChange?.(
+                                layoutCategoryId,
+                                layoutMode,
+                              )
                           : undefined
-                    }
-                    onPrimaryViewAction={
-                      !props.onPrimaryViewChange
-                        ? undefined
-                        : category.id === FAVORITES_VIEW_ID
-                        ? () => props.onPrimaryViewChange?.("all")
-                        : category.id === "all"
-                          ? () => props.onPrimaryViewChange?.("favorites")
-                          : undefined
-                    }
-                    variant={headerStyleVariant}
-                  />
-                </div>
-              ))}
+                      }
+                      variant={headerStyleVariant}
+                    />
+                  </div>
+                );
+              })}
       </div>
 
       <div className={`absolute right-0 z-10 transition-all duration-300 ${canScrollRight ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'}`}>
@@ -908,7 +955,10 @@ const Header: React.FC<HeaderProps> = (props) => {
               <div className="feed-category-sheet fixed left-2 right-2 top-[3.75rem] z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="custom-scrollbar max-h-[min(62vh,30rem)] overflow-y-auto px-2 py-2">
                   {visibleCategories.map((category) => {
-                    const feeds = props.categorizedFeeds[category.id] || [];
+                    const isFavoritesSlot = category.id === FAVORITES_VIEW_ID;
+                    const feeds = isFavoritesSlot
+                      ? favoriteDropdownFeeds
+                      : props.categorizedFeeds[category.id] || [];
                     const resolvedMobileExpandedCategory =
                       mobileExpandedCategory || props.selectedCategory || "all";
                     const isExpanded =

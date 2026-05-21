@@ -61,12 +61,13 @@ import {
 } from "../hooks/usePrimaryView";
 import { useSwipeGestures } from "../hooks/useSwipeGestures";
 import { useArticleLayout } from "../hooks/useArticleLayout";
-import type { Article } from "../types";
+import type { Article, FeedCategory } from "../types";
 import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
 const BackgroundLayer = lazy(() =>
   import("./BackgroundLayer").then((m) => ({ default: m.BackgroundLayer })),
 );
 import { useLogger } from "../services/logger";
+import { matchesFavoriteSourceKey } from "../utils/favoriteSource";
 import { areUrlsEqual } from "../utils/urlUtils";
 import { isFeedActive } from "../utils/feedQuarantine";
 import type { FeedLoadRequest } from "../types";
@@ -187,6 +188,9 @@ const AppContent: React.FC = () => {
       : "all";
   });
   const [selectedFeedUrl, setSelectedFeedUrl] = useState<string | null>(null);
+  const [selectedFavoriteSourceKey, setSelectedFavoriteSourceKey] = useState<
+    string | null
+  >(null);
   const [primaryView, setPrimaryView] = usePrimaryViewPreference();
   const { favorites } = useFavorites();
   const favoriteArticles = useMemo(
@@ -208,7 +212,8 @@ const AppContent: React.FC = () => {
   } = useAppearance();
 
   // Feed categories system
-  const { categories, getCategorizedFeeds } = useFeedCategories();
+  const { categories, getCategorizedFeeds, updateCategory } =
+    useFeedCategories();
   const categorizedFeeds = getCategorizedFeeds(feeds);
 
   // T35: SMART LAYOUT DETECTION - ATOMIC & EQUALITARIAN
@@ -387,7 +392,11 @@ const AppContent: React.FC = () => {
 
     let filteredArticles: Article[];
 
-    if (selectedFeedUrl) {
+    if (isFavoritesView && selectedFavoriteSourceKey) {
+      filteredArticles = sourceArticles.filter((article) =>
+        matchesFavoriteSourceKey(article, selectedFavoriteSourceKey),
+      );
+    } else if (selectedFeedUrl) {
       filteredArticles = sourceArticles.filter(
         (article) =>
           (article.feedUrl && areUrlsEqual(article.feedUrl, selectedFeedUrl)) ||
@@ -477,6 +486,7 @@ const AppContent: React.FC = () => {
     sourceArticlesForView,
     isFavoritesView,
     selectedCategory,
+    selectedFavoriteSourceKey,
     categories,
     feeds,
     selectedFeedUrl,
@@ -661,17 +671,22 @@ const AppContent: React.FC = () => {
 
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
+      const nextFeedUrl = feedUrl || null;
+
       if (category === FAVORITES_VIEW_ID) {
-        setActiveTransitionLayout(resolveBaseLayoutMode());
+        const allCategory = categories.find((item) => item.id === "all");
+        setActiveTransitionLayout(
+          allCategory?.layoutMode || resolveBaseLayoutMode(),
+        );
         setSelectedCategory(FAVORITES_VIEW_ID);
         setSelectedFeedUrl(null);
+        setSelectedFavoriteSourceKey(nextFeedUrl);
         clearSearch();
         pagination.resetPagination();
         window.scrollTo({ top: 0, behavior: "auto" });
         return;
       }
 
-      const nextFeedUrl = feedUrl || null;
       const isSameFeedSelection =
         (selectedFeedUrl === null && nextFeedUrl === null) ||
         (!!selectedFeedUrl &&
@@ -701,6 +716,7 @@ const AppContent: React.FC = () => {
 
       setSelectedCategory(category);
       setSelectedFeedUrl(nextFeedUrl);
+      setSelectedFavoriteSourceKey(null);
 
       // TRIGGER CONTENT LOAD
       loadFeeds(buildLoadRequest(category, feedUrl));
@@ -753,6 +769,7 @@ const AppContent: React.FC = () => {
     setActiveTransitionLayout(targetMode);
     setSelectedCategory(category);
     setSelectedFeedUrl(null);
+    setSelectedFavoriteSourceKey(null);
     loadFeeds(buildLoadRequest(category));
 
     if (categoryObj && categoryObj.layoutMode) {
@@ -812,6 +829,16 @@ const AppContent: React.FC = () => {
       window.location.hash = "";
     }
   }, []);
+
+  const handleCategoryLayoutChange = useCallback(
+    (
+      categoryId: string,
+      layoutMode: FeedCategory["layoutMode"] | undefined,
+    ) => {
+      updateCategory(categoryId, { layoutMode });
+    },
+    [updateCategory],
+  );
 
   // Keyboard shortcuts configuration
   const keyboardShortcuts = useMemo(
@@ -975,12 +1002,13 @@ const AppContent: React.FC = () => {
               categorizedFeeds={categorizedFeeds}
               onOpenSettings={openSettings}
               onOpenFavorites={openFavorites}
-              articles={sourceArticlesForView}
+              favoriteArticles={favoriteArticles}
               onSearch={handleSearch}
               onSearchResultsChange={handleSearchResultsChange}
               categories={categories}
               primaryView={primaryView}
               onPrimaryViewChange={handlePrimaryViewChange}
+              onCategoryLayoutChange={handleCategoryLayoutChange}
               onGoAll={handleTitleNavigation}
               onGoLanding={handleLogoToLanding}
             />
@@ -1087,7 +1115,7 @@ const AppContent: React.FC = () => {
                     }
                   >
                     <FeedContent
-                      key={`${renderedCategory}-${selectedFeedUrl || "all"}-${renderedLayoutMode}`}
+                      key={`${renderedCategory}-${selectedFavoriteSourceKey || selectedFeedUrl || "all"}-${renderedLayoutMode}`}
                       articles={renderedArticles}
                       timeFormat={timeFormat}
                       selectedCategory={renderedCategory}

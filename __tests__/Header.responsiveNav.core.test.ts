@@ -64,4 +64,37 @@ describe("Header responsive navigation rules", () => {
     expect(source).toContain("!isVirtual && onEditCategory");
     expect(source).toContain("!isVirtual && !category.isDefault");
   });
+
+  it("renders Favorites dropdown feeds from favorited articles", () => {
+    const source = readProjectFile("components/Header.tsx");
+
+    expect(source).toContain("favoriteDropdownFeeds");
+    expect(source).toContain("props.favoriteArticles.forEach");
+    expect(source).toContain("buildFavoriteSourceKey");
+    expect(source).toContain("categoryId: FAVORITES_VIEW_ID");
+    expect(source).toContain(
+      "isFavoritesSlot\n                  ? favoriteDropdownFeeds",
+    );
+  });
+
+  it("keeps dropdown headers category-agnostic and primary actions icon-only", () => {
+    const source = readProjectFile("components/FeedDropdown.tsx");
+
+    expect(source).not.toContain('`View ${category.name}`');
+    expect(source).not.toContain(
+      '`${t("feeds.tab.feeds")} de ${category.name}`',
+    );
+    expect(source).toContain("primaryViewActionIcon");
+    expect(source).toContain(
+      '<PrimaryViewIcon showBackground={false} size="sm" />',
+    );
+  });
+
+  it("keeps Favorites source filtering separate from real feed URL selection", () => {
+    const source = readProjectFile("components/AppContent.tsx");
+
+    expect(source).toContain("selectedFavoriteSourceKey");
+    expect(source).toContain("setSelectedFeedUrl(null)");
+    expect(source).toContain("matchesFavoriteSourceKey");
+  });
 });
