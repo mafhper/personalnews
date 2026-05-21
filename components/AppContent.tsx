@@ -346,22 +346,6 @@ const AppContent: React.FC = () => {
     return categoryIds;
   }, [categories, primaryView]);
 
-  const handleCategoryNavigation = useCallback(
-    (categoryIndex: number) => {
-      const categoryId = keyboardCategoryIds[categoryIndex];
-      if (!categoryId) return;
-
-      if (categoryId === FAVORITES_VIEW_ID) {
-        setSelectedCategory(FAVORITES_VIEW_ID);
-        setSelectedFeedUrl(null);
-        return;
-      }
-
-      setSelectedCategory(categoryId);
-    },
-    [keyboardCategoryIds],
-  );
-
   // Focus search input
   const focusSearch = useCallback(() => {
     const searchInput = document.querySelector(
@@ -808,6 +792,16 @@ const AppContent: React.FC = () => {
       handleTitleNavigation();
     },
     [handleNavigation, handleTitleNavigation, setPrimaryView],
+  );
+
+  const handleCategoryNavigation = useCallback(
+    (categoryIndex: number) => {
+      const categoryId = keyboardCategoryIds[categoryIndex];
+      if (!categoryId) return;
+
+      handleNavigation(categoryId);
+    },
+    [handleNavigation, keyboardCategoryIds],
   );
 
   const handleLogoToLanding = useCallback(() => {
