@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { FeedSource } from '../types';
 import { Modal } from './Modal';
+import { buildReplaceDuplicateFeedConfirmation } from '../utils/feedDangerConfirmation';
 
 interface FeedDuplicateModalProps {
   isOpen: boolean;
@@ -23,6 +24,9 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
   confidence
 }) => {
   const { t } = useLanguage();
+  const replacementConfirmation = existingFeed
+    ? buildReplaceDuplicateFeedConfirmation({ existingFeed, newFeedUrl })
+    : null;
 
   return (
     <Modal
@@ -40,7 +44,7 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
             className="rounded-lg px-5 py-2.5 text-sm font-medium text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition-colors hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-manager-text,var(--color-text)))]"
             type="button"
           >
-            {t('feeds.action.cancel_dont_add') || 'Cancelar'}
+            {replacementConfirmation?.cancelText || t('feeds.action.cancel_dont_add') || 'Cancelar'}
           </button>
           <button
             onClick={onAddAnyway}
@@ -54,13 +58,13 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
             className="rounded-lg bg-[rgb(var(--color-warning))] px-5 py-2.5 text-sm font-bold text-black shadow-lg transition-all hover:brightness-110"
             type="button"
           >
-            {t('feeds.action.replace') || 'Substituir Existente'}
+            {replacementConfirmation?.confirmText || t('feeds.action.replace') || 'Substituir Existente'}
           </button>
         </div>
       }
     >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-            
+
             {/* Desktop Divider Icon */}
             <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] rounded-full p-2 border border-[rgba(var(--color-border),0.16)] z-10 shadow-lg">
               <svg className="w-5 h-5 text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +77,7 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
               <div className="absolute top-3 right-3 text-xs font-bold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] uppercase tracking-wider bg-black/10 px-2 py-1 rounded">
                 {t('feeds.duplicate.existing') || 'Existente'}
               </div>
-              
+
               <div className="mt-4 flex-1">
                 <h4 className="text-[rgb(var(--theme-manager-text,var(--color-text)))] font-medium text-lg mb-2 line-clamp-2" title={existingFeed?.customTitle || existingFeed?.url}>
                   {existingFeed?.customTitle || 'Sem Título'}
@@ -116,6 +120,24 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
                 </span>
              </div>
           </div>
+
+          {replacementConfirmation && (
+            <div className="mt-5 rounded-xl border border-[rgba(var(--color-warning),0.22)] bg-[rgba(var(--color-warning),0.08)] p-4">
+              <p className="text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                {replacementConfirmation.impact}
+              </p>
+              <ul className="mt-3 space-y-1">
+                {replacementConfirmation.details?.map((detail) => (
+                  <li
+                    className="break-words text-xs font-mono text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]"
+                    key={detail}
+                  >
+                    {detail}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
     </Modal>
   );
 };

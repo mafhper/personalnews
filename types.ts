@@ -315,6 +315,8 @@ export interface Notification {
 export interface ConfirmDialogOptions {
   title?: string;
   message: string;
+  impact?: string;
+  details?: string[];
   confirmText?: string;
   cancelText?: string;
   type?: "danger" | "warning" | "info";
