@@ -15,6 +15,7 @@ interface FeedAnalyticsProps {
   feeds: FeedSource[];
   articles: Article[];
   feedValidations: Map<string, FeedValidationResult>;
+  view?: "overview" | "health" | "infra" | "reports";
   focusSection?: string;
   onFocusConsumed?: () => void;
   quarantineRecommendedUrls?: Set<string>;
@@ -174,6 +175,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   feeds,
   articles,
   feedValidations,
+  view = "overview",
   focusSection,
   onFocusConsumed,
   quarantineRecommendedUrls = new Set(),
@@ -506,38 +508,70 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     return () => window.clearTimeout(timer);
   }, [focusSection, onFocusConsumed]);
 
+  const showOverview = view === "overview";
+  const showHealth = view === "health";
+  const showInfra = view === "infra";
+  const showReports = view === "reports";
+
   return (
     <div className="space-y-5">
-      <section id="diagnostics-overview" className={INFO_SURFACE_CLASS}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h3 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
-              Diagnóstico
-            </h3>
+      {showOverview && (
+        <section id="diagnostics-overview" className={INFO_SURFACE_CLASS}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+                Síntese
+              </p>
+              <h3 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
+                Diagnóstico em camadas
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+                Esta visão resume onde investigar primeiro. As páginas de saúde,
+                infraestrutura e relatórios ficam separadas na navegação.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className={MANAGER_CONTROL_CLASS}
+            >
+              Atualizar
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            className={MANAGER_CONTROL_CLASS}
-          >
-            Atualizar
-          </button>
-        </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            <DiagnosticOverviewCard
+              icon={<AlertCircle className="h-5 w-5" />}
+              label="Saúde dos feeds"
+              title={hasAttentionItems ? diagnosis.label : "Sem alerta ativo"}
+              description={
+                hasAttentionItems
+                  ? diagnosis.detail || `${actionItems.length} ação sugerida para revisão.`
+                  : "As fontes carregadas não pedem intervenção imediata."
+              }
+              tone={hasAttentionItems ? "warning" : "success"}
+            />
+            <DiagnosticOverviewCard
+              icon={<Layers3 className="h-5 w-5" />}
+              label="Infraestrutura"
+              title={infraStatusLabel}
+              description={`${snapshot.summary.healthyRoutes}/${Math.max(
+                1,
+                snapshot.summary.totalRoutes,
+              )} rotas saudáveis com ${snapshot.summary.successRate}% de sucesso na sessão.`}
+            />
+            <DiagnosticOverviewCard
+              icon={<CheckCircle2 className="h-5 w-5" />}
+              label="Relatórios"
+              title="Exportação disponível"
+              description={`${activityStats.matchedArticles} artigos associados aos feeds atuais podem compor o relatório.`}
+            />
+          </div>
+        </section>
+      )}
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Feeds" value={feeds.length} />
-          <StatCard label="Com erro" value={invalidRows.length} tone="danger" />
-          <StatCard
-            label="Pendentes"
-            value={uncheckedRows.length}
-            tone="warning"
-          />
-          <StatCard label="Artigos" value={activityStats.matchedArticles} />
-        </div>
-      </section>
-
-      {hasAttentionItems && (
+      {showHealth && hasAttentionItems && (
         <section id="feed-health" className={SURFACE_CLASS}>
           <SectionTitle
             eyebrow="Saúde dos feeds"
@@ -749,6 +783,20 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         </section>
       )}
 
+      {showHealth && !hasAttentionItems && view === "health" && (
+        <section id="feed-health" className={SURFACE_CLASS}>
+          <SectionTitle
+            eyebrow="Saúde dos feeds"
+            title="Nenhuma ação necessária"
+            icon={<CheckCircle2 className="h-5 w-5" />}
+          />
+          <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+            Os feeds validados não apresentam falhas no momento.
+          </p>
+        </section>
+      )}
+
+      {showInfra && (
       <section id="proxy-health" className={SURFACE_CLASS}>
         <SectionTitle
           eyebrow="Infraestrutura"
@@ -770,10 +818,12 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           <ProxySettings detailed embedded snapshot={snapshot} onRefresh={refresh} />
         </div>
       </section>
+      )}
 
+      {showReports && (
       <AccordionSection
         title="Detalhes"
-        isOpen={openSections.details}
+        isOpen={view === "reports" ? true : openSections.details}
         onToggle={() => toggleSection("details")}
       >
         <div className="space-y-4">
@@ -791,6 +841,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           </section>
         </div>
       </AccordionSection>
+      )}
     </div>
   );
 };
@@ -867,6 +918,44 @@ const SectionTitle: React.FC<{
     </div>
   </div>
 );
+
+const DiagnosticOverviewCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  title: string;
+  description: string;
+  tone?: "default" | "success" | "warning";
+}> = ({ icon, label, title, description, tone = "default" }) => {
+  const iconTone =
+    tone === "success"
+      ? "bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]"
+      : tone === "warning"
+        ? "bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]"
+        : "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))]";
+
+  return (
+    <div className="rounded-[22px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+      <div className="flex items-start gap-4">
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconTone}`}
+        >
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+            {label}
+          </p>
+          <h4 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
+            {title}
+          </h4>
+        </div>
+      </div>
+      <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+        {description}
+      </p>
+    </div>
+  );
+};
 
 const StatCard: React.FC<{
   label: string;

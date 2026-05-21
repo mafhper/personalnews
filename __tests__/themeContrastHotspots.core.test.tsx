@@ -515,10 +515,11 @@ describe("theme contrast hotspots", () => {
       "utf8",
     );
 
-    expect(toolsSource).toContain("Bancada");
-    expect(toolsSource).toContain("Fluxos principais");
+    expect(toolsSource).toContain("Síntese operacional");
+    expect(toolsSource).toContain("Escolha o tipo de intervenção");
     expect(toolsSource).toContain("Zona de risco");
-    expect(toolsSource).toContain("bg-red-500 px-4 py-3 text-sm font-black text-white");
+    expect(toolsSource).toContain("bg-[rgb(var(--color-error))]");
+    expect(toolsSource).toContain("text-[rgb(var(--color-onAccent))]");
     expect(toolsSource).not.toContain("useProxyDashboard");
   });
 });

@@ -138,17 +138,72 @@ describe("Feed danger zone flows", () => {
         name: "Navegação do gerenciador de feeds",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Painel da coleção" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Coleção em circulação")).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /AdicionarNovo feed/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Recolher barra lateral" }));
+    expect(
+      screen.getByRole("button", { name: "Expandir barra lateral" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Recolher Diagnóstico/ }),
+    );
+    expect(
+      screen.getByRole("button", { name: /Expandir Diagnóstico/ }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Adicionar. Novo feed e OPML" }),
+    );
     expect(
       screen.getByRole("heading", { name: "Adicionar fonte" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Infraestrutura/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Expandir Diagnóstico" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Infraestrutura. Backend, proxies e rotas",
+      }),
+    );
     expect(
       screen.getByRole("heading", { name: "Infraestrutura" }),
     ).toBeInTheDocument();
+  });
+
+  it("opens operation overview and dedicated submenu pages", async () => {
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Operações. Intercâmbio, reparos e risco",
+      }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Painel de operações" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Escolha o tipo de intervenção"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Importar\/Exportar/ })[0],
+    );
+    expect(
+      screen.getByRole("heading", { name: "Importação e exportação" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Intercâmbio da coleção")).toBeInTheDocument();
   });
 
   it("maps persisted proxy focus to the infrastructure route", async () => {

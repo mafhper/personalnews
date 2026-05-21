@@ -3,10 +3,14 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Boxes,
+  ChevronDown,
+  CircleCheck,
   FileText,
   FileUp,
   Library,
   ListPlus,
+  Menu,
   Plus,
   ServerCog,
   Settings2,
@@ -82,27 +86,33 @@ interface FeedManagerProps {
 type CollectionView = "feeds" | "categories" | "add" | "quarantine";
 type FeedManagerArea = "feeds" | "operations" | "diagnostics";
 type FeedManagerRoute =
+  | "feeds:overview"
   | "feeds:list"
   | "feeds:add"
   | "feeds:categories"
   | "feeds:quarantine"
+  | "operations:overview"
   | "operations:io"
   | "operations:curated"
   | "operations:maintenance"
   | "operations:risk"
+  | "diagnostics:overview"
   | "diagnostics:health"
   | "diagnostics:infra"
   | "diagnostics:reports";
 
 const routeAreaMap: Record<FeedManagerRoute, FeedManagerArea> = {
+  "feeds:overview": "feeds",
   "feeds:list": "feeds",
   "feeds:add": "feeds",
   "feeds:categories": "feeds",
   "feeds:quarantine": "feeds",
+  "operations:overview": "operations",
   "operations:io": "operations",
   "operations:curated": "operations",
   "operations:maintenance": "operations",
   "operations:risk": "operations",
+  "diagnostics:overview": "diagnostics",
   "diagnostics:health": "diagnostics",
   "diagnostics:infra": "diagnostics",
   "diagnostics:reports": "diagnostics",
@@ -135,14 +145,17 @@ const normalizePersistedRoute = (
   }
 
   if (
+    value === "feeds:overview" ||
     value === "feeds:list" ||
     value === "feeds:add" ||
     value === "feeds:categories" ||
     value === "feeds:quarantine" ||
+    value === "operations:overview" ||
     value === "operations:io" ||
     value === "operations:curated" ||
     value === "operations:maintenance" ||
     value === "operations:risk" ||
+    value === "diagnostics:overview" ||
     value === "diagnostics:health" ||
     value === "diagnostics:infra" ||
     value === "diagnostics:reports"
@@ -156,13 +169,13 @@ const normalizePersistedRoute = (
     value === "statistics" ||
     value === "functions"
   ) {
-    return "operations:io";
+    return "operations:overview";
   }
   if (value === "add") return "feeds:add";
   if (value === "categories") return "feeds:categories";
   if (value === "quarantine") return "feeds:quarantine";
 
-  return "feeds:list";
+  return "feeds:overview";
 };
 
 const readFeedErrorHistory = (): FeedErrorHistoryItem[] => {
@@ -250,11 +263,12 @@ const EditFeedDialog: React.FC<{
   );
 };
 
-const FeedManagerStat: React.FC<{
+const FeedManagerHeaderMetric: React.FC<{
   label: string;
   value: number;
+  icon: React.ReactNode;
   tone?: "neutral" | "success" | "danger";
-}> = ({ label, value, tone = "neutral" }) => {
+}> = ({ label, value, icon, tone = "neutral" }) => {
   const toneClass =
     tone === "success"
       ? "text-[rgb(var(--color-success))]"
@@ -263,11 +277,18 @@ const FeedManagerStat: React.FC<{
         : "text-[rgb(var(--theme-text-readable))]";
 
   return (
-    <div className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
-        {label}
-      </div>
-      <div className={`mt-1 text-lg font-black ${toneClass}`}>{value}</div>
+    <div className="flex min-w-[8.5rem] items-center gap-3 rounded-2xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-secondary-readable))]">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-60">
+          {label}
+        </span>
+        <span className={`block text-lg font-black leading-tight ${toneClass}`}>
+          {value}
+        </span>
+      </span>
     </div>
   );
 };
@@ -295,10 +316,11 @@ const ManagerAreaHeader: React.FC<{
   title: string;
   description: string;
   actions?: React.ReactNode;
-}> = ({ eyebrow, title, description, actions }) => (
-  <div className="bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.08)] sm:px-6">
-    <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-      <div>
+  metrics?: React.ReactNode;
+}> = ({ eyebrow, title, description, actions, metrics }) => (
+  <div className="sticky top-0 z-20 bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]/95 px-4 py-3 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+      <div className="min-w-0">
         <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
           {eyebrow}
         </p>
@@ -309,7 +331,12 @@ const ManagerAreaHeader: React.FC<{
           {description}
         </p>
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        {metrics && (
+          <div className="flex gap-2 overflow-x-auto pb-1 xl:pb-0">{metrics}</div>
+        )}
+        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      </div>
     </div>
   </div>
 );
@@ -317,22 +344,27 @@ const ManagerAreaHeader: React.FC<{
 const FeedManagerSidebarButton: React.FC<{
   active: boolean;
   badge?: number;
+  collapsed: boolean;
   description: string;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
-}> = ({ active, badge, description, icon, label, onClick }) => (
+}> = ({ active, badge, collapsed, description, icon, label, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`group flex w-full min-w-0 items-start gap-3 rounded-[18px] px-3 py-2.5 text-left transition-all ${
+    title={collapsed ? `${label}: ${description}` : undefined}
+    aria-label={`${label}. ${description}`}
+    className={`group flex w-full min-w-0 items-center gap-2.5 rounded-2xl text-left transition-all ${
+      collapsed ? "justify-center px-2 py-2.5" : "px-2.5 py-2"
+    } ${
       active
-        ? "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))] shadow-[0_14px_34px_rgba(0,0,0,0.16)] ring-1 ring-[rgba(var(--color-accent),0.26)]"
-        : "text-[rgb(var(--theme-text-secondary-readable))] opacity-78 hover:bg-[rgb(var(--theme-manager-control))] hover:text-[rgb(var(--theme-text-readable))] hover:opacity-100"
+        ? "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))] shadow-[0_12px_28px_rgba(0,0,0,0.14)]"
+        : "text-[rgb(var(--theme-text-secondary-readable))] opacity-72 hover:bg-[rgb(var(--theme-manager-control))] hover:text-[rgb(var(--theme-text-readable))] hover:opacity-100"
     }`}
   >
     <span
-      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition ${
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition ${
         active
           ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
           : "bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-text-readable))]"
@@ -340,7 +372,7 @@ const FeedManagerSidebarButton: React.FC<{
     >
       {icon}
     </span>
-    <span className="min-w-0 flex-1">
+    <span className={`min-w-0 flex-1 ${collapsed ? "sr-only" : ""}`}>
       <span className="flex items-center justify-between gap-2">
         <span className="truncate text-sm font-black">{label}</span>
         {typeof badge !== "undefined" && badge > 0 && (
@@ -356,6 +388,36 @@ const FeedManagerSidebarButton: React.FC<{
   </button>
 );
 
+const FeedManagerInsight: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  description: string;
+  tone?: "neutral" | "success" | "warning" | "danger";
+}> = ({ label, value, description, tone = "neutral" }) => {
+  const toneClass =
+    tone === "success"
+      ? "text-[rgb(var(--color-success))]"
+      : tone === "warning"
+        ? "text-[rgb(var(--color-warning))]"
+        : tone === "danger"
+          ? "text-[rgb(var(--color-error))]"
+          : "text-[rgb(var(--theme-text-readable))]";
+
+  return (
+    <div className="rounded-[24px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+        {label}
+      </p>
+      <p className={`mt-2 text-2xl font-black leading-none ${toneClass}`}>
+        {value}
+      </p>
+      <p className="mt-2 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+        {description}
+      </p>
+    </div>
+  );
+};
+
 export const FeedManager: React.FC<FeedManagerProps> = ({
   currentFeeds,
   setFeeds,
@@ -370,7 +432,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     useNotificationReplacements();
 
   const [activeRoute, setActiveRoute] =
-    useState<FeedManagerRoute>("feeds:list");
+    useState<FeedManagerRoute>("feeds:overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [expandedAreas, setExpandedAreas] = useState<
+    Record<FeedManagerArea, boolean>
+  >({
+    feeds: true,
+    operations: true,
+    diagnostics: true,
+  });
   const [diagnosticsFocus, setDiagnosticsFocus] = useState<string | null>(null);
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedTitle, setNewFeedTitle] = useState("");
@@ -1007,6 +1077,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const navigationGroups: Array<{
     id: FeedManagerArea;
     label: string;
+    description: string;
+    overviewRoute: FeedManagerRoute;
+    icon: React.ReactNode;
     items: Array<{
       route: FeedManagerRoute;
       label: string;
@@ -1019,6 +1092,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     {
       id: "feeds",
       label: "Coleção",
+      description: "Fontes, entrada e organização",
+      overviewRoute: "feeds:overview",
+      icon: <Library className="h-4 w-4" />,
       items: [
         {
           route: "feeds:list",
@@ -1050,6 +1126,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     {
       id: "operations",
       label: "Operações",
+      description: "Intercâmbio, reparos e risco",
+      overviewRoute: "operations:overview",
+      icon: <Settings2 className="h-4 w-4" />,
       items: [
         {
           route: "operations:io",
@@ -1080,6 +1159,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     {
       id: "diagnostics",
       label: "Diagnóstico",
+      description: "Saúde, infraestrutura e relatórios",
+      overviewRoute: "diagnostics:overview",
+      icon: <BarChart3 className="h-4 w-4" />,
       items: [
         {
           route: "diagnostics:health",
@@ -1110,6 +1192,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     FeedManagerRoute,
     { eyebrow: string; title: string; description: string }
   > = {
+    "feeds:overview": {
+      eyebrow: "Coleção",
+      title: "Painel da coleção",
+      description: "Resumo dos feeds, entrada, categorias e quarentena.",
+    },
     "feeds:list": {
       eyebrow: "Coleção",
       title: "Feeds cadastrados",
@@ -1135,6 +1222,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       title: "Importação e exportação",
       description: "Intercâmbio de coleção via OPML e fluxos curados.",
     },
+    "operations:overview": {
+      eyebrow: "Operações",
+      title: "Painel de operações",
+      description: "Acesso direto aos fluxos de intercâmbio, manutenção e risco.",
+    },
     "operations:curated": {
       eyebrow: "Operações",
       title: "Listas curadas",
@@ -1155,6 +1247,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       title: "Saúde dos feeds",
       description: "Status de validação, causas prováveis e impacto.",
     },
+    "diagnostics:overview": {
+      eyebrow: "Diagnóstico",
+      title: "Painel de diagnóstico",
+      description: "Resumo de saúde, infraestrutura e relatórios de suporte.",
+    },
     "diagnostics:infra": {
       eyebrow: "Diagnóstico",
       title: "Infraestrutura",
@@ -1167,6 +1264,51 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     },
   };
   const activeRouteContent = routeContent[activeRoute];
+  const headerMetrics = (
+    <>
+      <FeedManagerHeaderMetric
+        icon={<Boxes className="h-4 w-4" />}
+        label="Total"
+        value={currentFeeds.length}
+      />
+      <FeedManagerHeaderMetric
+        icon={<CircleCheck className="h-4 w-4" />}
+        label="Válidos"
+        tone="success"
+        value={validCount}
+      />
+      <FeedManagerHeaderMetric
+        icon={<AlertTriangle className="h-4 w-4" />}
+        label="Erros"
+        tone="danger"
+        value={invalidCount}
+      />
+      <FeedManagerHeaderMetric
+        icon={<ShieldAlert className="h-4 w-4" />}
+        label="Quarentena"
+        value={quarantineCount}
+      />
+    </>
+  );
+
+  const selectAreaOverview = (group: {
+    id: FeedManagerArea;
+    overviewRoute: FeedManagerRoute;
+  }) => {
+    setActiveRoute(group.overviewRoute);
+    setDiagnosticsFocus(null);
+    setExpandedAreas((current) => ({
+      ...current,
+      [group.id]: true,
+    }));
+  };
+
+  const toggleArea = (area: FeedManagerArea) => {
+    setExpandedAreas((current) => ({
+      ...current,
+      [area]: !current[area],
+    }));
+  };
 
   return (
     <div
@@ -1187,82 +1329,35 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         } as React.CSSProperties
       }
     >
-      <header className="flex flex-col gap-3 border-b border-[rgba(var(--color-border),0.12)] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] px-4 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.08)] sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+      <header className="flex h-auto shrink-0 flex-col gap-3 bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]/95 px-4 py-3 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:px-6 lg:min-h-[76px] lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
-            Gerenciamento
+            Centro operacional
           </p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight text-[rgb(var(--theme-text-readable))]">
+          <h2 className="mt-1 truncate text-2xl font-black tracking-tight text-[rgb(var(--theme-text-readable))]">
             Gerenciador de feeds
           </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
-            Coleção, operações e diagnóstico em uma navegação única.
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+            Navegação recolhível, painéis por área e ações isoladas por tarefa.
           </p>
         </div>
-        <button
-          onClick={closeModal}
-          className="absolute right-4 top-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] shadow-md transition-all hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-95 sm:right-6 lg:static"
-          aria-label="Fechar gerenciador de feeds"
-          type="button"
-        >
-          <X className="h-5 w-5" />
-        </button>
       </header>
 
-      <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:flex-row">
-        <aside className="bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] shadow-[0_18px_44px_rgba(0,0,0,0.12)] lg:w-[320px]">
-          <div className="flex h-full flex-col gap-5 p-4 sm:p-5">
-
-            <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
-              <FeedManagerStat label="Total" value={currentFeeds.length} />
-              <FeedManagerStat label="Válidos" value={validCount} tone="success" />
-              <FeedManagerStat label="Erros" value={invalidCount} tone="danger" />
-            </div>
-
-            <nav className="flex flex-col gap-5" aria-label="Navegação do gerenciador de feeds">
-              {navigationGroups.map((group) => (
-                <section key={group.id} className="space-y-2">
-                  <div
-                    className={`flex items-center gap-2 px-1 text-[10px] font-black uppercase tracking-[0.16em] ${
-                      activeArea === group.id
-                        ? "text-[rgb(var(--color-accent))]"
-                        : "text-[rgb(var(--theme-text-secondary-readable))] opacity-55"
-                    }`}
-                  >
-                    {group.id === "feeds" && <Library className="h-3.5 w-3.5" />}
-                    {group.id === "operations" && <Settings2 className="h-3.5 w-3.5" />}
-                    {group.id === "diagnostics" && <BarChart3 className="h-3.5 w-3.5" />}
-                    {group.label}
-                  </div>
-                  <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
-                    {group.items.map((item) => (
-                      <FeedManagerSidebarButton
-                        key={item.route}
-                        active={activeRoute === item.route}
-                        badge={item.badge}
-                        description={item.description}
-                        icon={item.icon}
-                        label={item.label}
-                        onClick={() => {
-                          setActiveRoute(item.route);
-                          setDiagnosticsFocus(item.focusSection || null);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </nav>
-          </div>
-        </aside>
-
-        <main className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
+      <div
+        className={`grid flex-1 grid-cols-1 overflow-hidden transition-[grid-template-columns] duration-200 lg:min-h-0 ${
+          sidebarCollapsed
+            ? "lg:grid-cols-[minmax(0,1fr)_5.25rem]"
+            : "lg:grid-cols-[minmax(0,1fr)_22rem]"
+        }`}
+      >
+        <main className="order-2 min-h-0 min-w-0 overflow-hidden lg:order-1">
         {activeArea === "feeds" && (
           <div className="flex flex-col lg:h-full lg:overflow-hidden">
             <ManagerAreaHeader
               eyebrow={activeRouteContent.eyebrow}
               title={activeRouteContent.title}
               description={activeRouteContent.description}
+              metrics={headerMetrics}
               actions={
                 <>
                   {activeRoute !== "feeds:add" && (
@@ -1281,9 +1376,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   {collectionView === "categories" && (
                     <CollectionModeButton
                       active={false}
-                      onClick={() => setActiveRoute("feeds:list")}
+                      onClick={() => setActiveRoute("feeds:overview")}
                     >
-                      Voltar para feeds
+                      Voltar ao painel
                     </CollectionModeButton>
                   )}
                 </>
@@ -1291,7 +1386,64 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             />
 
             <div className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
-              {collectionView === "feeds" && (
+              {activeRoute === "feeds:overview" && (
+                <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
+                  <div className="mx-auto w-full max-w-[1480px] space-y-5">
+                    <section className="rounded-[28px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.13),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6">
+                      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] xl:items-stretch">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+                            Síntese
+                          </p>
+                          <h3 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
+                            Coleção em circulação
+                          </h3>
+                          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+                            A coleção está dividida entre fontes ativas, organização por categoria e uma área separada para feeds retirados da carga principal.
+                          </p>
+                          <div className="mt-5 flex flex-wrap gap-2">
+                            <CollectionModeButton active={false} onClick={() => setActiveRoute("feeds:list")}>
+                              Revisar feeds
+                            </CollectionModeButton>
+                            <CollectionModeButton active={false} onClick={() => setActiveRoute("feeds:add")}>
+                              Adicionar fonte
+                            </CollectionModeButton>
+                            <CollectionModeButton active={false} onClick={() => setActiveRoute("feeds:categories")}>
+                              Organizar categorias
+                            </CollectionModeButton>
+                          </div>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <FeedManagerInsight
+                            label="Cobertura"
+                            value={`${activeFeeds.length}/${currentFeeds.length}`}
+                            description="feeds ativos em relação ao total salvo."
+                          />
+                          <FeedManagerInsight
+                            label="Organização"
+                            value={categories.length}
+                            description="categorias disponíveis para roteamento."
+                          />
+                          <FeedManagerInsight
+                            label="Atenção"
+                            value={invalidCount}
+                            description="feeds com validação problemática."
+                            tone={invalidCount > 0 ? "danger" : "success"}
+                          />
+                          <FeedManagerInsight
+                            label="Fora da carga"
+                            value={quarantineCount}
+                            description="feeds preservados em quarentena."
+                            tone={quarantineCount > 0 ? "warning" : "neutral"}
+                          />
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              )}
+
+              {activeRoute !== "feeds:overview" && collectionView === "feeds" && (
                 <FeedListTab
                   feeds={activeFeeds}
                   validations={feedValidations}
@@ -1311,7 +1463,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 />
               )}
 
-              {collectionView === "add" && (
+              {activeRoute !== "feeds:overview" && collectionView === "add" && (
                 <FeedAddTab
                   categories={categories}
                   newFeedUrl={newFeedUrl}
@@ -1328,19 +1480,19 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 />
               )}
 
-              {collectionView === "categories" && (
+              {activeRoute !== "feeds:overview" && collectionView === "categories" && (
                 <div className="overflow-visible p-4 sm:p-6 lg:h-full lg:overflow-y-auto custom-scrollbar">
                   <div className="mx-auto w-full max-w-[1480px]">
               <FeedCategoryManager
                 feeds={currentFeeds}
                 setFeeds={setFeeds}
-                onClose={() => setActiveRoute("feeds:list")}
+                onClose={() => setActiveRoute("feeds:overview")}
               />
                   </div>
                 </div>
               )}
 
-              {collectionView === "quarantine" && (
+              {activeRoute !== "feeds:overview" && collectionView === "quarantine" && (
                 <FeedQuarantineTab
                   feeds={currentFeeds}
                   onValidate={(url) => void handleValidateQuarantinedFeed(url)}
@@ -1359,25 +1511,44 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               eyebrow={activeRouteContent.eyebrow}
               title={activeRouteContent.title}
               description={activeRouteContent.description}
+              metrics={headerMetrics}
               actions={
-                <>
+                activeRoute === "operations:overview" ||
+                activeRoute === "operations:io" ? (
+                  <>
                   <CollectionModeButton active={false} onClick={handleExportOPML}>
                     Exportar OPML
                   </CollectionModeButton>
                   <CollectionModeButton active={false} onClick={() => fileInputRef.current?.click()}>
                     Importar OPML
                   </CollectionModeButton>
-                </>
+                  </>
+                ) : null
               }
             />
             <div className="flex-1 overflow-visible lg:min-h-0 lg:overflow-hidden">
               <FeedToolsTab
+                view={
+                  activeRoute === "operations:io"
+                    ? "io"
+                    : activeRoute === "operations:curated"
+                      ? "curated"
+                      : activeRoute === "operations:maintenance"
+                        ? "maintenance"
+                        : activeRoute === "operations:risk"
+                          ? "risk"
+                          : "overview"
+                }
                 onExportOPML={handleExportOPML}
                 onImportOPML={() => fileInputRef.current?.click()}
                 onShowImportModal={() => setShowImportModal(true)}
                 onResetDefaults={handleResetToDefaults}
                 onCleanupErrors={() => setShowCleanupModal(true)}
                 onDeleteAll={handleDeleteAll}
+                onOpenIo={() => setActiveRoute("operations:io")}
+                onOpenCurated={() => setActiveRoute("operations:curated")}
+                onOpenMaintenance={() => setActiveRoute("operations:maintenance")}
+                onOpenRisk={() => setActiveRoute("operations:risk")}
                 feedCount={currentFeeds.length}
                 validCount={validCount}
                 invalidCount={invalidCount}
@@ -1392,6 +1563,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               eyebrow={activeRouteContent.eyebrow}
               title={activeRouteContent.title}
               description={activeRouteContent.description}
+              metrics={headerMetrics}
               actions={
                 <CollectionModeButton active={false} onClick={() => void validateAllFeeds()}>
                   Revalidar feeds
@@ -1404,6 +1576,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   feeds={activeFeeds}
                   articles={articles}
                   feedValidations={feedValidations}
+                  view={
+                    activeRoute === "diagnostics:health"
+                      ? "health"
+                      : activeRoute === "diagnostics:infra"
+                        ? "infra"
+                        : activeRoute === "diagnostics:reports"
+                          ? "reports"
+                          : "overview"
+                  }
                   focusSection={diagnosticsFocus || undefined}
                   onFocusConsumed={() => setDiagnosticsFocus(null)}
                   quarantineRecommendedUrls={quarantineRecommendedUrls}
@@ -1414,6 +1595,124 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           </div>
         )}
         </main>
+
+        <aside className="order-1 min-h-0 min-w-0 bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]/92 shadow-[0_18px_44px_rgba(0,0,0,0.12)] backdrop-blur-xl lg:order-2">
+          <div className={`flex h-full flex-col gap-4 overflow-y-auto custom-scrollbar ${sidebarCollapsed ? "p-3" : "p-4 sm:p-5"}`}>
+            <div className={`flex items-center gap-2 ${sidebarCollapsed ? "justify-center" : "justify-between"}`}>
+              <div className={sidebarCollapsed ? "sr-only" : "min-w-0"}>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
+                  Navegação
+                </p>
+                <p className="mt-1 truncate text-sm font-black text-[rgb(var(--theme-text-readable))]">
+                  Áreas e funções
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSidebarCollapsed((current) => !current)}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))]"
+                  aria-label={sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+                  title={sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+                >
+                  <Menu className="h-4.5 w-4.5" />
+                </button>
+                <button
+                  onClick={closeModal}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control))] text-[rgb(var(--theme-manager-text-secondary))] transition hover:bg-[rgb(var(--theme-manager-soft))] hover:text-[rgb(var(--theme-manager-text))] active:scale-95"
+                  aria-label="Fechar gerenciador de feeds"
+                  title="Fechar gerenciador de feeds"
+                  type="button"
+                >
+                  <X className="h-4.5 w-4.5" />
+                </button>
+              </div>
+            </div>
+            <nav className="flex flex-col gap-3" aria-label="Navegação do gerenciador de feeds">
+              {navigationGroups.map((group) => (
+                <section
+                  key={group.id}
+                  className={`rounded-[24px] bg-[rgb(var(--theme-manager-bg,var(--color-background)))]/55 ${
+                    sidebarCollapsed ? "p-1.5" : "p-2"
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => selectAreaOverview(group)}
+                      title={sidebarCollapsed ? `${group.label}: ${group.description}` : undefined}
+                      className={`group flex min-w-0 flex-1 items-center gap-3 rounded-[20px] px-3.5 py-3 text-left transition-all ${
+                        activeArea === group.id &&
+                        activeRoute === group.overviewRoute
+                          ? "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] shadow-[0_14px_30px_rgba(0,0,0,0.16)]"
+                          : "text-[rgb(var(--theme-text-secondary-readable))] hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))]"
+                      } ${sidebarCollapsed ? "justify-center px-2" : ""}`}
+                      aria-label={`${group.label}. ${group.description}`}
+                    >
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                          activeArea === group.id
+                            ? "bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]"
+                            : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+                        }`}
+                      >
+                        {group.icon}
+                      </span>
+                      <span className={`min-w-0 flex-1 ${sidebarCollapsed ? "sr-only" : ""}`}>
+                        <span className="block text-[11px] font-black uppercase tracking-[0.18em]">
+                          {group.label}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11px] opacity-70">
+                          {group.description}
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleArea(group.id)}
+                      className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex ${
+                        sidebarCollapsed ? "sr-only" : ""
+                      }`}
+                      aria-expanded={expandedAreas[group.id]}
+                      aria-label={`${expandedAreas[group.id] ? "Recolher" : "Expandir"} ${group.label}`}
+                    >
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${
+                          expandedAreas[group.id] ? "rotate-0" : "-rotate-90"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {expandedAreas[group.id] && (
+                    <div
+                      className={`mt-2 grid gap-1 ${
+                        sidebarCollapsed
+                          ? "grid-cols-1"
+                          : "grid-cols-1 pl-4"
+                      }`}
+                    >
+                      {group.items.map((item) => (
+                        <FeedManagerSidebarButton
+                          key={item.route}
+                          active={activeRoute === item.route}
+                          badge={item.badge}
+                          collapsed={sidebarCollapsed}
+                          description={item.description}
+                          icon={item.icon}
+                          label={item.label}
+                          onClick={() => {
+                            setActiveRoute(item.route);
+                            setDiagnosticsFocus(item.focusSection || null);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              ))}
+            </nav>
+          </div>
+        </aside>
       </div>
 
       <input
