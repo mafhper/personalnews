@@ -25,7 +25,15 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
 }) => {
   const { t } = useLanguage();
   const replacementConfirmation = existingFeed
-    ? buildReplaceDuplicateFeedConfirmation({ existingFeed, newFeedUrl })
+    ? buildReplaceDuplicateFeedConfirmation({
+        existingFeed,
+        newFeedUrl,
+        labels: {
+          impact: t('feeds.duplicate.replace_impact'),
+          current: t('feeds.duplicate.current'),
+          next: t('feeds.duplicate.replacement'),
+        },
+      })
     : null;
 
   return (

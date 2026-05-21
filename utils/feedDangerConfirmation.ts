@@ -182,14 +182,25 @@ export const buildResetCategoriesConfirmation = ({
 export const buildReplaceDuplicateFeedConfirmation = ({
   existingFeed,
   newFeedUrl,
+  labels,
 }: {
   existingFeed: Pick<FeedSource, "url" | "customTitle">;
   newFeedUrl: string;
+  labels?: {
+    impact?: string;
+    current?: string;
+    next?: string;
+  };
 }): ConfirmDialogOptions => ({
   title: "Substituir feed",
   message: `Substituir "${getFeedDangerLabel(existingFeed)}" pelo novo feed?`,
-  impact: "O feed existente será removido antes de adicionar o novo endereço.",
-  details: [`Atual: ${existingFeed.url}`, `Novo: ${newFeedUrl}`],
+  impact:
+    labels?.impact ||
+    "O feed existente será removido antes de adicionar o novo endereço.",
+  details: [
+    `${labels?.current || "Atual"}: ${existingFeed.url}`,
+    `${labels?.next || "Novo"}: ${newFeedUrl}`,
+  ],
   confirmText: "Substituir feed",
   cancelText: "Manter existente",
   type: "danger",

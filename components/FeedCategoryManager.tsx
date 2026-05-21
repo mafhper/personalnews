@@ -497,7 +497,7 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       }));
       setFeeds(resetFeeds);
     }
-  }, [resetToDefaults, feeds, setFeeds, confirmDanger, refreshAppearance]);
+  }, [categories, resetToDefaults, feeds, setFeeds, confirmDanger, refreshAppearance]);
 
   const handleDeleteFeed = useCallback(
     async (feedUrl: string, feedTitle?: string) => {

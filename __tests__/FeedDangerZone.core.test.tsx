@@ -95,6 +95,9 @@ beforeEach(() => {
     "feeds.duplicate.existing": "Existente",
     "feeds.duplicate.message": "Este feed parece ser uma duplicata.",
     "feeds.duplicate.new": "Novo",
+    "feeds.duplicate.current": "Atual",
+    "feeds.duplicate.replace_impact": "O feed existente será removido antes de adicionar o novo endereço.",
+    "feeds.duplicate.replacement": "Novo",
     "feeds.duplicate.title": "Feed duplicado",
     "feeds.title": "Feeds",
   };
@@ -256,6 +259,10 @@ describe("Feed danger zone flows", () => {
   it("keeps localized duplicate action labels when replacement copy exists", () => {
     mocks.translations["feeds.action.cancel_dont_add"] = "Cancel - Do Not Add";
     mocks.translations["feeds.action.replace"] = "Replace Existing";
+    mocks.translations["feeds.duplicate.current"] = "Current";
+    mocks.translations["feeds.duplicate.replace_impact"] =
+      "The existing feed will be removed before adding the new URL.";
+    mocks.translations["feeds.duplicate.replacement"] = "New";
 
     render(
       <FeedDuplicateModal
@@ -271,7 +278,19 @@ describe("Feed danger zone flows", () => {
 
     expect(screen.getByRole("button", { name: "Replace Existing" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel - Do Not Add" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The existing feed will be removed before adding the new URL.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Current: https://one.example/rss")).toBeInTheDocument();
+    expect(screen.getByText("New: https://new.example/rss")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Substituir feed" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Manter existente" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "O feed existente será removido antes de adicionar o novo endereço.",
+      ),
+    ).not.toBeInTheDocument();
   });
 });
