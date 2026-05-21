@@ -61,7 +61,7 @@ import {
 } from "../hooks/usePrimaryView";
 import { useSwipeGestures } from "../hooks/useSwipeGestures";
 import { useArticleLayout } from "../hooks/useArticleLayout";
-import type { Article } from "../types";
+import type { Article, FeedCategory } from "../types";
 import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
 const BackgroundLayer = lazy(() =>
   import("./BackgroundLayer").then((m) => ({ default: m.BackgroundLayer })),
@@ -208,7 +208,8 @@ const AppContent: React.FC = () => {
   } = useAppearance();
 
   // Feed categories system
-  const { categories, getCategorizedFeeds } = useFeedCategories();
+  const { categories, getCategorizedFeeds, updateCategory } =
+    useFeedCategories();
   const categorizedFeeds = getCategorizedFeeds(feeds);
 
   // T35: SMART LAYOUT DETECTION - ATOMIC & EQUALITARIAN
@@ -661,17 +662,21 @@ const AppContent: React.FC = () => {
 
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
+      const nextFeedUrl = feedUrl || null;
+
       if (category === FAVORITES_VIEW_ID) {
-        setActiveTransitionLayout(resolveBaseLayoutMode());
+        const allCategory = categories.find((item) => item.id === "all");
+        setActiveTransitionLayout(
+          allCategory?.layoutMode || resolveBaseLayoutMode(),
+        );
         setSelectedCategory(FAVORITES_VIEW_ID);
-        setSelectedFeedUrl(null);
+        setSelectedFeedUrl(nextFeedUrl);
         clearSearch();
         pagination.resetPagination();
         window.scrollTo({ top: 0, behavior: "auto" });
         return;
       }
 
-      const nextFeedUrl = feedUrl || null;
       const isSameFeedSelection =
         (selectedFeedUrl === null && nextFeedUrl === null) ||
         (!!selectedFeedUrl &&
@@ -812,6 +817,16 @@ const AppContent: React.FC = () => {
       window.location.hash = "";
     }
   }, []);
+
+  const handleCategoryLayoutChange = useCallback(
+    (
+      categoryId: string,
+      layoutMode: FeedCategory["layoutMode"] | undefined,
+    ) => {
+      updateCategory(categoryId, { layoutMode });
+    },
+    [updateCategory],
+  );
 
   // Keyboard shortcuts configuration
   const keyboardShortcuts = useMemo(
@@ -981,6 +996,7 @@ const AppContent: React.FC = () => {
               categories={categories}
               primaryView={primaryView}
               onPrimaryViewChange={handlePrimaryViewChange}
+              onCategoryLayoutChange={handleCategoryLayoutChange}
               onGoAll={handleTitleNavigation}
               onGoLanding={handleLogoToLanding}
             />
