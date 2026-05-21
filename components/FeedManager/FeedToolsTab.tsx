@@ -8,6 +8,13 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
+import {
+  managerActionCardClass,
+  managerControlSurfaceClass,
+  managerDangerSurfaceClass,
+  managerSurfaceClass,
+  managerWarningActionCardClass,
+} from "./feedManagerStyles";
 
 interface FeedToolsTabProps {
   view?: "overview" | "io" | "curated" | "maintenance" | "risk" | "all";
@@ -27,10 +34,8 @@ interface FeedToolsTabProps {
   embedded?: boolean;
 }
 
-const WORKBENCH_CLASS =
-  "rounded-[28px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_20px_48px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6";
-const GROUP_CLASS =
-  "rounded-[28px] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_20px_48px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6";
+const WORKBENCH_CLASS = `${managerSurfaceClass} p-5 sm:p-6`;
+const GROUP_CLASS = `${managerSurfaceClass} p-5 sm:p-6`;
 
 export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   view = "overview",
@@ -69,7 +74,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                   description="Operações ficam separadas por intenção: trocar dados com arquivos, abrir coleções prontas, reparar a base ou executar ações destrutivas."
                 />
 
-                <div className="rounded-[22px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-86 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+                <div className={`${managerControlSurfaceClass} p-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-86`}>
                   <strong className="text-[rgb(var(--theme-text-readable))]">
                     Próximo passo:
                   </strong>{" "}
@@ -185,7 +190,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
           )}
 
           {showRisk && (
-          <section id="feed-manager-section-operations-risk" className="scroll-mt-4 rounded-[26px] bg-[rgba(var(--color-error),0.08)] p-5 shadow-[0_18px_42px_rgba(127,29,29,0.12),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6">
+          <section id="feed-manager-section-operations-risk" className={`${managerDangerSurfaceClass} scroll-mt-4`}>
             <div className="flex h-full flex-col justify-between gap-5">
               <div className="flex items-start gap-4">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgba(var(--color-error),0.12)] text-[rgb(var(--color-error))]">
@@ -252,11 +257,7 @@ const OperationAction: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`group flex min-h-[132px] flex-col items-start justify-between rounded-[24px] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-5 ${
-      warning
-        ? "bg-[rgba(var(--color-warning),0.1)] text-[rgb(var(--theme-text-readable))] hover:bg-[rgba(var(--color-warning),0.14)]"
-        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))]"
-    }`}
+    className={warning ? managerWarningActionCardClass : managerActionCardClass}
   >
     <span
       className={`flex h-11 w-11 items-center justify-center rounded-2xl ${

@@ -62,6 +62,14 @@ import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedQuarantineTab } from "./FeedManager/FeedQuarantineTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
+import {
+  managerControlSurfaceClass,
+  managerFieldClass,
+  managerInfoSurfaceClass,
+  managerPrimaryButtonClass,
+  managerSecondaryButtonClass,
+  managerDangerButtonClass,
+} from "./FeedManager/feedManagerStyles";
 import { FeedAnalytics } from "./FeedAnalytics";
 import { Modal } from "./Modal";
 import {
@@ -263,7 +271,7 @@ const EditFeedDialog: React.FC<{
         <div className="px-5 py-5">
           <input
             autoFocus
-            className="w-full rounded-lg border border-[rgba(var(--color-border),0.18)] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))] outline-none transition focus:border-[rgb(var(--color-accentSurface))] focus:ring-2 focus:ring-[rgba(var(--color-accent),0.22)]"
+            className={`${managerFieldClass} px-3 py-2`}
             onChange={(event) => onChange(event.target.value)}
             placeholder={placeholder}
             value={value}
@@ -271,14 +279,14 @@ const EditFeedDialog: React.FC<{
         </div>
         <div className="flex justify-end gap-2 px-5 pb-5">
           <button
-            className="rounded-lg border border-[rgba(var(--color-border),0.28)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+            className={managerSecondaryButtonClass}
             onClick={onClose}
             type="button"
           >
             Cancelar
           </button>
           <button
-            className="rounded-lg border border-[rgb(var(--color-accentSurface))] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
+            className={managerPrimaryButtonClass}
             type="submit"
           >
             {submitLabel}
@@ -400,7 +408,7 @@ const FeedManagerInsight: React.FC<{
           : "text-[rgb(var(--theme-text-readable))]";
 
   return (
-    <div className="rounded-[24px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+    <div className={`${managerControlSurfaceClass} p-4`}>
       <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
         {label}
       </p>
@@ -1376,7 +1384,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   return (
     <div
-      className="relative flex min-h-full w-full flex-col overflow-visible bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-manager-text,var(--color-text)))] lg:h-full lg:overflow-hidden"
+      className="feed-manager-shell"
       style={
         {
           "--theme-surface-readable": "var(--theme-manager-surface)",
@@ -1393,7 +1401,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         } as React.CSSProperties
       }
     >
-      <header className="flex min-h-[60px] shrink-0 flex-wrap items-center gap-2 bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]/96 px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.12)] backdrop-blur-xl sm:px-4">
+      <header className="feed-manager-topbar flex min-h-[60px] shrink-0 flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
             type="button"
@@ -1433,21 +1441,21 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         </div>
       </header>
 
-      <div
-        className={`grid flex-1 grid-cols-1 overflow-hidden transition-[grid-template-columns] duration-200 lg:min-h-0 ${
-          sidebarCollapsed
-            ? "lg:grid-cols-[5.25rem_minmax(0,1fr)]"
-            : "lg:grid-cols-[18.5rem_minmax(0,1fr)]"
-        }`}
-      >
-        <aside className="order-1 max-h-[min(44vh,32rem)] min-h-0 min-w-0 bg-[rgb(var(--theme-manager-surface,var(--color-surface)))]/92 shadow-[10px_0_30px_rgba(0,0,0,0.12)] backdrop-blur-xl lg:max-h-none">
+        <div
+          className={`feed-manager-layout ${
+            sidebarCollapsed
+              ? "feed-manager-layout--collapsed"
+              : "feed-manager-layout--expanded"
+          }`}
+        >
+        <aside className="feed-manager-sidebar">
           <div
             className={`flex h-full flex-col gap-3 overflow-y-auto custom-scrollbar ${
               sidebarCollapsed ? "p-3" : "p-3 sm:p-4"
             }`}
           >
             <div
-              className={`flex items-center gap-2 ${
+              className={`feed-manager-sidebar-header flex items-center gap-2 p-2 ${
                 sidebarCollapsed ? "justify-center" : "justify-between"
               }`}
             >
@@ -1563,14 +1571,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
         <main
           ref={contentScrollRef}
-          className="order-2 min-h-0 min-w-0 overflow-y-auto custom-scrollbar p-4 sm:p-6"
+          className="feed-manager-workspace custom-scrollbar"
         >
           <div className="mx-auto w-full max-w-[1480px] space-y-5">
             {activeArea === "feeds" && (
               <>
                 <section
                   id={getFeedManagerSectionId("feeds:overview")}
-                  className="scroll-mt-4 rounded-2xl bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.13),inset_0_1px_0_rgba(255,255,255,0.025)] sm:p-6"
+                  className={`${managerInfoSurfaceClass} scroll-mt-4 sm:p-6`}
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] xl:items-stretch">
                     <div>
@@ -1840,21 +1848,21 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button
               onClick={() => setShowImportModal(false)}
-              className="rounded-lg border border-[rgba(var(--color-border),0.24)] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+              className={managerSecondaryButtonClass}
               type="button"
             >
               Cancelar
             </button>
             <button
               onClick={() => void handleImportCurated("merge")}
-              className="rounded-lg border border-[rgba(var(--color-accent),0.32)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
+              className={managerPrimaryButtonClass}
               type="button"
             >
               Mesclar
             </button>
             <button
               onClick={() => void handleImportCurated("replace")}
-              className="rounded-lg border border-rose-500/30 bg-rose-600/15 px-4 py-2 text-sm font-bold text-rose-300 transition hover:bg-rose-600/20"
+              className={managerDangerButtonClass}
               type="button"
             >
               Substituir tudo
@@ -1869,7 +1877,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           <select
             value={selectedListType}
             onChange={(e) => setSelectedListType(e.target.value)}
-            className="w-full rounded-lg border border-[rgba(var(--color-border),0.24)] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))] outline-none transition focus:border-[rgb(var(--color-accentSurface))] focus:ring-2 focus:ring-[rgba(var(--color-accent),0.22)]"
+            className={`${managerFieldClass} p-3`}
           >
             {Object.keys(DEFAULT_CURATED_LISTS).map((k) => (
               <option key={k} value={k}>
@@ -1893,7 +1901,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             <button
               type="button"
               onClick={() => navigateToDiagnostics("feed-status")}
-              className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-onAccent))]"
+              className={managerPrimaryButtonClass}
             >
               Abrir diagnóstico completo
             </button>
@@ -1902,7 +1910,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       >
         {selectedErrorFeed && (
           <div className="space-y-4">
-            <p className="font-mono text-sm text-red-400">
+            <p className="font-mono text-sm text-[rgb(var(--color-error))]">
               {selectedErrorFeed.validation.error}
             </p>
             <div className="rounded-lg bg-[rgb(var(--color-background))]/40 p-4 font-mono text-sm break-all text-[rgb(var(--color-textSecondary))]">
