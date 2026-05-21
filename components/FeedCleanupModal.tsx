@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FeedSource } from '../types';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
 import { Modal } from './Modal';
+import { buildRemoveSelectedFeedsConfirmation } from '../utils/feedDangerConfirmation';
 
 interface FeedErrorHistoryItem {
   url: string;
@@ -32,7 +33,8 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
   const [minFailures, setMinFailures] = useState<number>(1);
   const [errorTypeFilter, setErrorTypeFilter] = useState<string>('all');
 
-  const { confirmDanger, alertSuccess } = useNotificationReplacements();
+  const { confirmDanger, confirmWarning, alertSuccess } =
+    useNotificationReplacements();
 
   const loadErrorHistory = React.useCallback(() => {
     try {
@@ -102,9 +104,12 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
 
   const handleDelete = async () => {
     if (selectedUrls.size === 0) return;
+    const feedsToRemove = Array.from(selectedUrls).map((url) => {
+      return feeds.find((feed) => feed.url === url) || { url };
+    });
 
     const confirmed = await confirmDanger(
-      `Tem certeza que deseja remover ${selectedUrls.size} feeds selecionados? Esta ação não pode ser desfeita.`
+      buildRemoveSelectedFeedsConfirmation(feedsToRemove),
     );
 
     if (confirmed) {
@@ -126,9 +131,15 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
   const handleQuarantine = async () => {
     if (selectedUrls.size === 0 || !onQuarantineFeeds) return;
 
-    const confirmed = await confirmDanger(
-      `Colocar ${selectedUrls.size} feeds selecionados em quarentena? Eles sairão das categorias e do carregamento, mas poderão ser restaurados depois.`,
-    );
+    const confirmed = await confirmWarning({
+      title: `Quarentenar ${selectedUrls.size} feeds`,
+      message: `Colocar ${selectedUrls.size} feeds selecionados em quarentena?`,
+      impact:
+        "Eles sairão das categorias e do carregamento, mas poderão ser restaurados depois.",
+      confirmText: `Quarentenar ${selectedUrls.size} feeds`,
+      cancelText: "Manter ativos",
+      type: "warning",
+    });
 
     if (confirmed) {
       onQuarantineFeeds(Array.from(selectedUrls));

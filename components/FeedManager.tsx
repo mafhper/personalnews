@@ -29,6 +29,12 @@ import {
   resetToDefaultFeeds,
   addFeedsToCollection,
 } from "../utils/feedMigration";
+import {
+  buildDeleteAllFeedsConfirmation,
+  buildRemoveFeedConfirmation,
+  buildReplaceCuratedCollectionConfirmation,
+  buildRestoreDefaultFeedsConfirmation,
+} from "../utils/feedDangerConfirmation";
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { useLanguage } from "../hooks/useLanguage";
@@ -443,7 +449,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   };
 
   const handleRemoveFeed = async (urlToRemove: string) => {
-    if (await confirmDanger("Tem certeza que deseja remover este feed?")) {
+    const feed = currentFeeds.find((item) => item.url === urlToRemove) || {
+      url: urlToRemove,
+    };
+    if (await confirmDanger(buildRemoveFeedConfirmation(feed))) {
       setFeeds((prev) => prev.filter((f) => f.url !== urlToRemove));
     }
   };
@@ -489,7 +498,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     if (mode === "replace") {
       if (
         await confirmDanger(
-          "Isso substituirá todos os seus feeds atuais. Continuar?",
+          buildReplaceCuratedCollectionConfirmation({
+            currentFeeds,
+            replacementFeeds: feedsToImport,
+            listName: selectedListType,
+          }),
         )
       ) {
         setFeeds(feedsToImport);
@@ -512,12 +525,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   };
 
   const handleResetToDefaults = async () => {
+    const defaultFeeds = resetToDefaultFeeds();
     if (
       await confirmDanger(
-        "Resetar para feeds padrão? Isso apagará seus feeds atuais.",
+        buildRestoreDefaultFeedsConfirmation({
+          currentFeeds,
+          defaultFeeds,
+        }),
       )
     ) {
-      const defaultFeeds = resetToDefaultFeeds();
       setFeeds(defaultFeeds);
       refreshAppearance();
       await alertSuccess("Feeds resetados com sucesso!");
@@ -526,11 +542,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const handleDeleteAll = async () => {
     if (currentFeeds.length === 0) return;
-    if (
-      await confirmDanger(
-        `Excluir TODOS os ${currentFeeds.length} feeds? Irreversível.`,
-      )
-    ) {
+    if (await confirmDanger(buildDeleteAllFeedsConfirmation(currentFeeds))) {
       setFeeds([]);
       await alertSuccess("Todos os feeds foram removidos.");
     }
