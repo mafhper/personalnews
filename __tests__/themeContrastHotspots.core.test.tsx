@@ -281,7 +281,9 @@ describe("theme contrast hotspots", () => {
     expect(cssSource).toContain(".feed-manager-header");
     expect(cssSource).toContain(".feed-manager-header-main");
     expect(cssSource).toContain(".feed-manager-header-context");
+    expect(cssSource).toContain(".feed-manager-mobile-backdrop");
     expect(cssSource).toContain(".feed-manager-operational-hero");
+    expect(cssSource).toContain(".feed-manager-sidebar--open");
     expect(cssSource).toContain(".feed-manager-hero-metrics");
     expect(cssSource).toContain(".feed-manager-hero-actions");
     expect(cssSource).toContain(".feed-manager-operational-metric");

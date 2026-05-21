@@ -158,6 +158,19 @@ describe("Feed danger zone flows", () => {
     expect(screen.getByText(/Use esta entrada para revisar fontes/)).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Abrir menu de navegação" })[0],
+    );
+    expect(
+      screen.getAllByRole("button", { name: "Fechar menu de navegação" }).length,
+    ).toBeGreaterThan(0);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Fechar menu de navegação" }),
+      ).not.toBeInTheDocument(),
+    );
+
     fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
     expect(
       screen.getAllByRole("button", { name: "Expandir barra lateral" })[0],

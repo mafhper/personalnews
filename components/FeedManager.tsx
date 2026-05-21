@@ -399,16 +399,37 @@ const FeedManagerOperationalMetric: React.FC<{
 
 const FeedManagerTopbar: React.FC<{
   closeModal: () => void;
+  mobileSidebarOpen: boolean;
+  onOpenMobileNavigation: () => void;
   onToggleSidebar: () => void;
   routeContent: { area: string; title: string; description: string };
   sidebarCollapsed: boolean;
-}> = ({ closeModal, onToggleSidebar, routeContent, sidebarCollapsed }) => (
+}> = ({
+  closeModal,
+  mobileSidebarOpen,
+  onOpenMobileNavigation,
+  onToggleSidebar,
+  routeContent,
+  sidebarCollapsed,
+}) => (
   <header className="feed-manager-header">
     <div className="feed-manager-header-main">
       <button
         type="button"
+        onClick={onOpenMobileNavigation}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:hidden"
+        aria-controls="feed-manager-sidebar"
+        aria-expanded={mobileSidebarOpen}
+        aria-label="Abrir menu de navegação"
+        title="Abrir menu de navegação"
+      >
+        <Menu className="h-4.5 w-4.5" />
+      </button>
+      <button
+        type="button"
         onClick={onToggleSidebar}
         className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex"
+        aria-controls="feed-manager-sidebar"
         aria-label={
           sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"
         }
@@ -609,6 +630,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [activeRoute, setActiveRoute] =
     useState<FeedManagerRoute>("feeds:overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [expandedAreas, setExpandedAreas] = useState<
     Record<FeedManagerArea, boolean>
   >({
@@ -663,6 +685,19 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen || typeof window === "undefined") return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileSidebarOpen]);
 
   const scrollToRoute = React.useCallback((route: FeedManagerRoute) => {
     if (typeof window === "undefined") return;
@@ -1496,6 +1531,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       [group.id]: true,
     });
     navigateToRoute(group.overviewRoute);
+    setMobileSidebarOpen(false);
   };
 
   const toggleArea = (area: FeedManagerArea) => {
@@ -1526,19 +1562,38 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     >
       <FeedManagerTopbar
         closeModal={closeModal}
+        mobileSidebarOpen={mobileSidebarOpen}
+        onOpenMobileNavigation={() => {
+          setSidebarCollapsed(false);
+          setMobileSidebarOpen(true);
+        }}
         onToggleSidebar={() => setSidebarCollapsed((current) => !current)}
         routeContent={activeRouteContent}
         sidebarCollapsed={sidebarCollapsed}
       />
 
-        <div
-          className={`feed-manager-layout ${
-            sidebarCollapsed
-              ? "feed-manager-layout--collapsed"
-              : "feed-manager-layout--expanded"
+      {mobileSidebarOpen && (
+        <button
+          type="button"
+          className="feed-manager-mobile-backdrop"
+          aria-label="Fechar menu de navegação"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      <div
+        className={`feed-manager-layout ${
+          sidebarCollapsed
+            ? "feed-manager-layout--collapsed"
+            : "feed-manager-layout--expanded"
+        }`}
+      >
+        <aside
+          id="feed-manager-sidebar"
+          className={`feed-manager-sidebar ${
+            mobileSidebarOpen ? "feed-manager-sidebar--open" : ""
           }`}
         >
-        <aside className="feed-manager-sidebar">
           <div
             className={`flex h-full flex-col gap-3 overflow-y-auto custom-scrollbar ${
               sidebarCollapsed ? "p-3" : "p-3 sm:p-4"
@@ -1556,20 +1611,20 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setSidebarCollapsed((current) => !current)}
+                onClick={() => setMobileSidebarOpen(false)}
                 className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:hidden"
                 aria-label={
-                  sidebarCollapsed
-                    ? "Expandir barra lateral"
-                    : "Recolher barra lateral"
+                  mobileSidebarOpen
+                    ? "Fechar menu de navegação"
+                    : "Abrir menu de navegação"
                 }
                 title={
-                  sidebarCollapsed
-                    ? "Expandir barra lateral"
-                    : "Recolher barra lateral"
+                  mobileSidebarOpen
+                    ? "Fechar menu de navegação"
+                    : "Abrir menu de navegação"
                 }
               >
-                <Menu className="h-4.5 w-4.5" />
+                <X className="h-4.5 w-4.5" />
               </button>
             </div>
             <nav
@@ -1648,6 +1703,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                           label={item.label}
                           onClick={() => {
                             navigateToRoute(item.route, item.focusSection);
+                            setMobileSidebarOpen(false);
                           }}
                         />
                       ))}
