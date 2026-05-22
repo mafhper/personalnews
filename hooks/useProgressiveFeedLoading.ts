@@ -33,6 +33,7 @@ import {
   buildFeedLoadingBatches,
   limitArticlesForFeedLoad,
 } from "../services/feedLoadingQueue";
+import { CACHE_POLICY_V1 } from "../services/cachePolicy";
 import {
   getFeedDisplayName,
   resolveFeedSourceTitle,
@@ -463,7 +464,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const priorityCategoryId =
         mode === "category" ? request.categoryId : undefined;
       const forceRefresh = request.forceRefresh ?? false;
-      const cacheTtlMinutes = request.cacheTtlMinutes ?? 10;
+      const cacheTtlMinutes =
+        request.cacheTtlMinutes ?? CACHE_POLICY_V1.feeds.scopedFreshTtlMinutes;
       const cacheTtlMs = cacheTtlMinutes * 60 * 1000;
       const previousArticles = articlesRef.current;
       const previousScopeKey = visibleScopeKeyRef.current;
