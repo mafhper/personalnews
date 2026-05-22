@@ -127,7 +127,7 @@ export const Modal: React.FC<ModalProps> = ({
                         )}
                     </div>
                 )}
-                <div className={`custom-scrollbar ${title || description || footer ? 'overflow-y-auto p-5' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} ${size === 'full' ? 'h-full' : 'max-h-[calc(90vh-8rem)]'} ${bodyClassName}`}>
+                <div className={`custom-scrollbar ${size === 'full' ? 'overflow-hidden p-0' : title || description || footer ? 'overflow-y-auto p-5' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} ${size === 'full' ? 'h-full' : 'max-h-[calc(90vh-8rem)]'} ${bodyClassName}`}>
                     {children}
                 </div>
                 {footer && (

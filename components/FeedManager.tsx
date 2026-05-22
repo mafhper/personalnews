@@ -150,79 +150,29 @@ const canonicalizeFeedManagerRoute = (
   return route;
 };
 
-const routeContentMap: Record<
-  FeedManagerRoute,
-  { area: string; title: string; description: string }
+const areaContentMap: Record<
+  FeedManagerArea,
+  { title: string; description: string }
 > = {
-  "feeds:overview": {
-    area: "Visão geral",
-    title: "Resumo da coleção",
-    description: "Estado, ações recomendadas e atalhos da coleção.",
+  overview: {
+    title: "Visão geral",
+    description: "Resumo da coleção e próximos passos.",
   },
-  "feeds:list": {
-    area: "Fontes",
-    title: "Feeds cadastrados",
-    description: "Busca, status, inclusão e quarentena das fontes.",
+  sources: {
+    title: "Fontes",
+    description: "Adicione, busque e organize seus feeds.",
   },
-  "feeds:add": {
-    area: "Fontes",
-    title: "Adicionar feed",
-    description: "Inclua uma fonte, importe OPML ou abra listas prontas.",
+  organization: {
+    title: "Organização",
+    description: "Categorias e ordenação da sua biblioteca.",
   },
-  "feeds:categories": {
-    area: "Organização",
-    title: "Categorias",
-    description: "Categorias, propriedades e roteamento visual da coleção.",
+  maintenance: {
+    title: "Manutenção",
+    description: "Backup, reparos e ações destrutivas.",
   },
-  "feeds:quarantine": {
-    area: "Fontes",
-    title: "Quarentena",
-    description: "Feeds preservados fora da carga principal.",
-  },
-  "operations:overview": {
-    area: "Manutenção",
-    title: "Backup e manutenção",
-    description: "Arquivos, listas, reparos e ações críticas.",
-  },
-  "operations:io": {
-    area: "Manutenção",
-    title: "Arquivos e listas",
-    description: "OPML, backups e coleções prontas.",
-  },
-  "operations:curated": {
-    area: "Manutenção",
-    title: "Arquivos e listas",
-    description: "OPML, backups e coleções prontas.",
-  },
-  "operations:maintenance": {
-    area: "Manutenção",
-    title: "Manutenção e risco",
-    description: "Reparos, restauração e ações destrutivas.",
-  },
-  "operations:risk": {
-    area: "Manutenção",
-    title: "Manutenção e risco",
-    description: "Reparos, restauração e ações destrutivas.",
-  },
-  "diagnostics:overview": {
-    area: "Diagnóstico",
-    title: "Diagnóstico em camadas",
-    description: "Saúde, infraestrutura e relatórios da coleção.",
-  },
-  "diagnostics:health": {
-    area: "Diagnóstico",
-    title: "Saúde dos feeds",
-    description: "Erros, impacto e status das fontes.",
-  },
-  "diagnostics:infra": {
-    area: "Diagnóstico",
-    title: "Backend, proxies e rotas",
-    description: "Estado operacional das rotas de carregamento.",
-  },
-  "diagnostics:reports": {
-    area: "Diagnóstico",
-    title: "Relatórios",
-    description: "Exportação de diagnóstico para suporte e auditoria.",
+  diagnostics: {
+    title: "Diagnóstico",
+    description: "Saúde dos feeds, infraestrutura e relatórios.",
   },
 };
 
@@ -393,7 +343,6 @@ const FeedManagerTopbar: React.FC<{
   onAddSource: () => void;
   onOpenMobileNavigation: () => void;
   onRefreshFeeds?: () => void;
-  routeContent: { area: string; title: string; description: string };
 }> = ({
   closeModal,
   mobileMenuButtonRef,
@@ -401,7 +350,6 @@ const FeedManagerTopbar: React.FC<{
   onAddSource,
   onOpenMobileNavigation,
   onRefreshFeeds,
-  routeContent,
 }) => (
   <header className="feed-manager-header">
     <div className="feed-manager-header-main">
@@ -425,18 +373,6 @@ const FeedManagerTopbar: React.FC<{
           Fontes, categorias, integridade e manutenção da sua coleção de notícias.
         </p>
       </div>
-    </div>
-
-    <div className="feed-manager-header-context order-3 col-span-2 lg:order-none lg:col-span-1">
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] opacity-68">
-        {routeContent.area}
-      </p>
-      <p className="truncate text-[13px] font-semibold text-[rgb(var(--theme-text-readable))]">
-        {routeContent.title}
-      </p>
-      <p className="hidden truncate text-xs opacity-78 sm:block">
-        {routeContent.description}
-      </p>
     </div>
 
     <div className="feed-manager-header-actions">
@@ -1182,6 +1118,7 @@ const FeedManagerOrganizationPage: React.FC<{
   const [newCategoryColor, setNewCategoryColor] = React.useState(
     categories.find((category) => !category.isDefault)?.color || "#3B82F6",
   );
+  const [creatingCategory, setCreatingCategory] = React.useState(false);
 
   const visibleCategories = React.useMemo(
     () => categories.filter((category) => category.id !== "all"),
@@ -1362,37 +1299,49 @@ const FeedManagerOrganizationPage: React.FC<{
               description="Clique para expandir, ajuste propriedades e mova feeds entre categorias."
             />
           </div>
-          <form
-            className="collection-central-new-category"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const name = newCategoryName.trim();
-              if (!name) return;
-              const created = createCategory(name, newCategoryColor);
-              setExpandedCategoryId(created.id);
-              setEditingCategoryId(created.id);
-              setNewCategoryName("");
-            }}
-          >
-            <input
-              value={newCategoryName}
-              onChange={(event) => setNewCategoryName(event.target.value)}
-              className={managerFieldClass}
-              placeholder="Nova categoria"
-              aria-label="Nome da nova categoria"
-            />
-            <input
-              type="color"
-              value={newCategoryColor}
-              onChange={(event) => setNewCategoryColor(event.target.value)}
-              className="collection-central-color-input"
-              aria-label="Cor da nova categoria"
-            />
-            <button type="submit" className={`${managerPrimaryButtonClass} h-9 px-3`}>
+          {creatingCategory ? (
+            <form
+              className="collection-central-new-category"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const name = newCategoryName.trim();
+                if (!name) return;
+                const created = createCategory(name, newCategoryColor);
+                setExpandedCategoryId(created.id);
+                setEditingCategoryId(created.id);
+                setNewCategoryName("");
+                setCreatingCategory(false);
+              }}
+            >
+              <input
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+                className={managerFieldClass}
+                placeholder="Nova categoria"
+                aria-label="Nome da nova categoria"
+              />
+              <input
+                type="color"
+                value={newCategoryColor}
+                onChange={(event) => setNewCategoryColor(event.target.value)}
+                className="collection-central-color-input"
+                aria-label="Cor da nova categoria"
+              />
+              <button type="submit" className={`${managerPrimaryButtonClass} h-9 px-3`}>
+                <Plus className="h-4 w-4" />
+                Criar
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              className={`${managerPrimaryButtonClass} h-9 px-3`}
+              onClick={() => setCreatingCategory(true)}
+            >
               <Plus className="h-4 w-4" />
               Nova categoria
             </button>
-          </form>
+          )}
         </div>
 
         <FeedManagerLightCard className="overflow-hidden">
@@ -1701,7 +1650,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     [],
   );
   const activeArea = routeAreaMap[activeRoute];
-  const activeRouteContent = routeContentMap[activeRoute];
+  const activeAreaContent = areaContentMap[activeArea];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
@@ -2579,7 +2528,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         onAddSource={() => navigateToRoute("feeds:add")}
         onOpenMobileNavigation={openMobileNavigation}
         onRefreshFeeds={onRefreshFeeds ? handleConfirmRefreshAll : undefined}
-        routeContent={activeRouteContent}
       />
 
       {mobileSidebarOpen && (
@@ -2618,13 +2566,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             }`}
           >
             <div
-              className={`feed-manager-sidebar-header flex items-center gap-2 p-2 ${
+              className={`feed-manager-sidebar-header flex items-start gap-2 px-2 pb-4 pt-3 ${
                 sidebarCollapsed ? "justify-center" : "justify-between"
               }`}
             >
               <div className={sidebarCollapsed ? "sr-only" : "min-w-0"}>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-                  Navegação
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-75">
+                  Personal News
+                </p>
+                <p className="mt-1 text-[13px] font-semibold leading-tight text-[rgb(var(--theme-text-readable))]">
+                  Central da Coleção
                 </p>
               </div>
               <button
@@ -2641,7 +2592,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               </button>
             </div>
             <nav
-              className="flex flex-col gap-2"
+              className="flex flex-col gap-1"
               aria-label="Navegação do gerenciador de feeds"
             >
               {navigationGroups.map((group) => (
@@ -2657,6 +2608,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 />
               ))}
             </nav>
+            {!sidebarCollapsed && (
+              <div className="feed-manager-sidebar-footer mt-auto px-2 py-4">
+                <p className="text-[11px] text-[rgb(var(--theme-text-secondary-readable))] opacity-76">
+                  Coleção local
+                </p>
+                <p className="mt-0.5 text-[12px] font-semibold text-[rgb(var(--theme-text-readable))]">
+                  {activeFeeds.length}/{currentFeeds.length} feeds ativos
+                </p>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -2664,7 +2625,11 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           ref={contentScrollRef}
           className="feed-manager-workspace custom-scrollbar"
         >
-          <div className="mx-auto w-full max-w-[1400px] space-y-5">
+          <div className="feed-manager-workspace-inner">
+            <div className="feed-manager-workspace-heading">
+              <h2>{activeAreaContent.title}</h2>
+              <p>{activeAreaContent.description}</p>
+            </div>
             {activeArea === "overview" && (
               <FeedManagerOverviewPage
                 categoryCount={categories.length}
@@ -2784,13 +2749,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               />
             )}
 
-            <FeedManagerWorkspaceFooter
-              activeFeedCount={activeFeeds.length}
-              environmentLabel={environmentLabel}
-              invalidCount={invalidCount}
-              quarantineCount={quarantineCount}
-              totalFeedCount={currentFeeds.length}
-            />
+            <div className="sr-only">
+              <FeedManagerWorkspaceFooter
+                activeFeedCount={activeFeeds.length}
+                environmentLabel={environmentLabel}
+                invalidCount={invalidCount}
+                quarantineCount={quarantineCount}
+                totalFeedCount={currentFeeds.length}
+              />
+            </div>
           </div>
         </main>
       </div>
