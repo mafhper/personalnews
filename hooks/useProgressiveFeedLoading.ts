@@ -30,6 +30,10 @@ import {
   resolveScopeMode,
 } from "../services/feedLoadingStrategy";
 import {
+  buildFeedLoadingBatches,
+  limitArticlesForFeedLoad,
+} from "../services/feedLoadingQueue";
+import {
   getFeedDisplayName,
   resolveFeedSourceTitle,
 } from "../utils/feedDisplay";
@@ -71,7 +75,6 @@ interface FeedResult {
 
 const FEED_TIMEOUT_MS = 4000; // 4 seconds per feed (reduzido para mais velocidade inicial)
 const DESKTOP_LOCAL_FEED_TIMEOUT_MS = 30_000;
-const BATCH_SIZE = 8; // Aumentado para 8 feeds por batch
 const BATCH_DELAY_MS = 500; // Reduzido para 500ms entre batches
 const BATCH_DELAY_BACKGROUND_MS = 50; // Delay menor em abas inativas (o navegador vai limitar a 1s de qualquer forma)
 
@@ -318,7 +321,11 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         });
 
         clearTimeout(timeoutId);
-        const normalizedFetchedArticles = result.articles.map((article) =>
+        const limitedFetchedArticles = limitArticlesForFeedLoad(
+          feed,
+          result.articles,
+        );
+        const normalizedFetchedArticles = limitedFetchedArticles.map((article) =>
           normalizeArticleForFeed(feed, article, {
             preferSavedFeedUrl: result.discovery?.status === "used",
           }),
@@ -326,9 +333,10 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
         if (isUnavailablePayload(result.articles)) {
           if (cachedSnapshot && cachedSnapshot.length > 0) {
-            const normalizedCachedSnapshot = cachedSnapshot.map((article) =>
-              normalizeArticleForFeed(feed, article),
-            );
+            const normalizedCachedSnapshot = limitArticlesForFeedLoad(
+              feed,
+              cachedSnapshot,
+            ).map((article) => normalizeArticleForFeed(feed, article));
             logger.warn(
               `Revalidation failed; preserving cached articles for ${feed.url}`,
               {
@@ -489,6 +497,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
         abortControllerRef.current.abort();
       }
       abortControllerRef.current = new AbortController();
+      const loadSignal = abortControllerRef.current.signal;
 
       const cachedArticles = getCachedArticlesFromSmartCache(scopedFeeds);
       const cachedFeedResults = getCachedFeedResultsFromSmartCache(scopedFeeds);
@@ -742,18 +751,31 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           ]
         : [{ name: "default", feeds: orderedFeeds }];
 
-      const totalBatches = feedPhases.reduce(
-        (sum, phase) => sum + Math.ceil(phase.feeds.length / BATCH_SIZE),
+      const phaseQueues = feedPhases.map((phase) => ({
+        name: phase.name,
+        batches: buildFeedLoadingBatches(phase.feeds),
+      }));
+
+      const totalBatches = phaseQueues.reduce(
+        (sum, phase) => sum + phase.batches.length,
         0,
       );
 
       logger.info(
-        `Loading ${scopedFeeds.length} feeds in ${totalBatches} batches of ${BATCH_SIZE}`,
+        `Loading ${scopedFeeds.length} feeds in ${totalBatches} queued batches`,
         {
           additionalData: {
             totalFeeds: scopedFeeds.length,
             batchCount: totalBatches,
             mode,
+            queueKinds: phaseQueues.map((phase) => ({
+              phase: phase.name,
+              batches: phase.batches.map((batch) => ({
+                id: batch.id,
+                kind: batch.kind,
+                feeds: batch.feeds.length,
+              })),
+            })),
           },
         },
       );
@@ -762,24 +784,21 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       let batchCounter = 0;
 
       // Process phases sequentially with delay
-      for (const phase of feedPhases) {
-        const phaseBatches: FeedSource[][] = [];
-        for (let i = 0; i < phase.feeds.length; i += BATCH_SIZE) {
-          phaseBatches.push(phase.feeds.slice(i, i + BATCH_SIZE));
-        }
+      for (const phase of phaseQueues) {
+        if (loadSignal.aborted) return;
 
-        for (
-          let batchIndex = 0;
-          batchIndex < phaseBatches.length;
-          batchIndex++
-        ) {
-          const batch = phaseBatches[batchIndex];
+        for (let batchIndex = 0; batchIndex < phase.batches.length; batchIndex++) {
+          if (loadSignal.aborted) return;
+
+          const batch = phase.batches[batchIndex];
           batchCounter += 1;
 
           logger.debug(
-            `Processing batch ${batchCounter}/${totalBatches} with ${batch.length} feeds`,
+            `Processing batch ${batchCounter}/${totalBatches} with ${batch.feeds.length} feeds`,
             {
               phase: phase.name,
+              queueBatch: batch.id,
+              queueKind: batch.kind,
             },
           );
 
@@ -788,21 +807,23 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             ...prev,
             currentAction:
               mode === "single-feed"
-                ? `Loading ${batch[0] ? getFeedDisplayName(batch[0]) : "feed"}...`
+                ? `Loading ${batch.feeds[0] ? getFeedDisplayName(batch.feeds[0]) : "feed"}...`
                 : phase.name === "priority"
-                  ? `Carregando feeds da categoria atual (${batchIndex + 1}/${phaseBatches.length})...`
-                  : `Carregando lote ${batchCounter} de ${totalBatches}...`,
+                  ? `Carregando feeds da categoria atual (${batchIndex + 1}/${phase.batches.length})...`
+                  : batch.kind === "podcast"
+                    ? `Carregando podcasts (${batchIndex + 1}/${phase.batches.length})...`
+                    : `Carregando lote ${batchCounter} de ${totalBatches}...`,
           }));
 
           // Process feeds in current batch concurrently
-          const batchPromises = batch.map(async (feed) => {
+          const batchPromises = batch.feeds.map(async (feed) => {
             try {
               // Update granular status for single feed start (optional, might flicker too fast)
               // setLoadingState(prev => ({ ...prev, currentAction: `Contacting ${new URL(feed.url).hostname}...` }));
 
               const result = await loadSingleFeedWithTimeout(
                 feed,
-                abortControllerRef.current?.signal,
+                loadSignal,
                 shouldBypassCache,
               );
 
@@ -888,6 +909,8 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
 
           // Wait for current batch to complete before starting next batch
           await Promise.allSettled(batchPromises);
+
+          if (loadSignal.aborted) return;
 
           // Update articles AFTER the batch completes to reduce re-renders and layout shifts
           setFeedResults((prev) => {
