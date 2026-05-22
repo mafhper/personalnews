@@ -35,6 +35,12 @@ describe("FavoritesViewToolbar", () => {
 
     expect(screen.getByText("3 de 5 visíveis")).toBeInTheDocument();
     expect(screen.getByText("2 não lidos")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Filtros de favoritos"),
+    ).toHaveClass("favorites-toolbar-frame");
+    expect(
+      screen.getByLabelText("Filtros de favoritos"),
+    ).not.toHaveClass("feed-page-frame");
   });
 
   it("calls handlers when filters change", () => {

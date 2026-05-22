@@ -309,6 +309,22 @@ describe("theme contrast hotspots", () => {
     );
   });
 
+  it("uses scoped semantic classes for the favorites toolbar", () => {
+    const cssSource = readFileSync(resolve(process.cwd(), "index.css"), "utf8");
+    const toolbarSource = readFileSync(
+      resolve(process.cwd(), "components/FavoritesViewToolbar.tsx"),
+      "utf8",
+    );
+
+    expect(cssSource).toContain(".favorites-toolbar-frame");
+    expect(cssSource).toContain(".favorites-toolbar-frame + .feed-layout");
+    expect(cssSource).toContain(".favorites-toolbar__controls");
+    expect(cssSource).toContain(".favorites-toolbar__segment--active");
+    expect(cssSource).toContain("background: rgba(var(--color-accent), 0.14);");
+    expect(toolbarSource).toContain("favorites-toolbar-frame");
+    expect(toolbarSource).not.toContain("feed-page-frame");
+  });
+
   it("keeps category manager accent CTAs on explicit high-contrast foreground tokens", () => {
     const categoryManagerSource = readFileSync(
       resolve(process.cwd(), "components/FeedCategoryManager.tsx"),
