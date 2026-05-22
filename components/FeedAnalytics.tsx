@@ -15,6 +15,7 @@ import {
   managerSecondaryButtonClass,
   managerSurfaceClass,
 } from "./FeedManager/feedManagerStyles";
+import { FeedManagerAccordionSection } from "./FeedManager/FeedManagerAccordionSection";
 import { FeedManagerSectionHeader } from "./FeedManager/FeedManagerSectionHeader";
 import { ProxySettings } from "./ProxySettings";
 
@@ -23,6 +24,8 @@ interface FeedAnalyticsProps {
   articles: Article[];
   feedValidations: Map<string, FeedValidationResult>;
   view?: "overview" | "health" | "infra" | "reports" | "all";
+  expandedSections?: Partial<Record<FeedAnalyticsOuterSection, boolean>>;
+  onToggleSection?: (section: FeedAnalyticsOuterSection) => void;
   focusSection?: string;
   onFocusConsumed?: () => void;
   quarantineRecommendedUrls?: Set<string>;
@@ -35,6 +38,8 @@ type AnalyticsAccordionSection =
   | "actions"
   | "affected"
   | "details";
+
+type FeedAnalyticsOuterSection = "health" | "infra" | "reports";
 
 type AffectedFeedRow = {
   url: string;
@@ -180,6 +185,8 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   articles,
   feedValidations,
   view = "overview",
+  expandedSections,
+  onToggleSection,
   focusSection,
   onFocusConsumed,
   quarantineRecommendedUrls = new Set(),
@@ -526,6 +533,25 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   const showHealth = showAll || view === "health";
   const showInfra = showAll || view === "infra";
   const showReports = showAll || view === "reports";
+  const [localExpandedOuterSections, setLocalExpandedOuterSections] =
+    useState<Record<FeedAnalyticsOuterSection, boolean>>({
+      health: true,
+      infra: true,
+      reports: true,
+    });
+  const isOuterSectionOpen = (section: FeedAnalyticsOuterSection) =>
+    expandedSections?.[section] ?? localExpandedOuterSections[section];
+  const toggleOuterSection = (section: FeedAnalyticsOuterSection) => {
+    if (onToggleSection) {
+      onToggleSection(section);
+      return;
+    }
+
+    setLocalExpandedOuterSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  };
 
   return (
     <div className={embedded ? "space-y-5" : "space-y-5"}>
@@ -575,18 +601,18 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       )}
 
       {showHealth && hasAttentionItems && (
-        <section
+        <FeedManagerAccordionSection
           id="feed-manager-section-diagnostics-health"
-          className={`${SURFACE_CLASS} feed-manager-anchor-section`}
+          className={SURFACE_CLASS}
+          eyebrow="Saúde dos feeds"
+          title={diagnosis.label}
+          icon={<AlertCircle className="h-5 w-5" />}
+          tone="warning"
+          isOpen={isOuterSectionOpen("health")}
+          onToggle={() => toggleOuterSection("health")}
         >
-          <FeedManagerSectionHeader
-            eyebrow="Saúde dos feeds"
-            title={diagnosis.label}
-            icon={<AlertCircle className="h-5 w-5" />}
-            tone="warning"
-          />
 
-          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
             <div className={`${managerControlSurfaceClass} p-5`}>
               <p className="text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
                 {diagnosis.detail}
@@ -788,37 +814,36 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
               )}
             </div>
           </AccordionSection>
-        </section>
+        </FeedManagerAccordionSection>
       )}
 
       {showHealth && !hasAttentionItems && (view === "health" || showAll) && (
-        <section
+        <FeedManagerAccordionSection
           id="feed-manager-section-diagnostics-health"
-          className={`${SURFACE_CLASS} feed-manager-anchor-section`}
+          className={SURFACE_CLASS}
+          eyebrow="Saúde dos feeds"
+          title="Nenhuma ação necessária"
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          isOpen={isOuterSectionOpen("health")}
+          onToggle={() => toggleOuterSection("health")}
         >
-          <FeedManagerSectionHeader
-            eyebrow="Saúde dos feeds"
-            title="Nenhuma ação necessária"
-            icon={<CheckCircle2 className="h-5 w-5" />}
-          />
           <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
             Os feeds validados não apresentam falhas no momento.
           </p>
-        </section>
+        </FeedManagerAccordionSection>
       )}
 
       {showInfra && (
-      <section
+      <FeedManagerAccordionSection
         id="feed-manager-section-diagnostics-infra"
-        className={`${SURFACE_CLASS} feed-manager-anchor-section`}
+        className={SURFACE_CLASS}
+        eyebrow="Infraestrutura"
+        title="Backend, proxies e rotas"
+        icon={<Layers3 className="h-5 w-5" />}
+        isOpen={isOuterSectionOpen("infra")}
+        onToggle={() => toggleOuterSection("infra")}
       >
-        <FeedManagerSectionHeader
-          eyebrow="Infraestrutura"
-          title="Backend, proxies e rotas"
-          icon={<Layers3 className="h-5 w-5" />}
-        />
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Estado" value={infraStatusLabel} />
           <StatCard label="Sucesso" value={`${snapshot.summary.successRate}%`} />
           <StatCard
@@ -831,18 +856,19 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         <div id="proxy-settings" className="mt-5">
           <ProxySettings detailed embedded snapshot={snapshot} onRefresh={refresh} />
         </div>
-      </section>
+      </FeedManagerAccordionSection>
       )}
 
       {showReports && (
-      <AccordionSection
-        sectionId="feed-manager-section-diagnostics-reports"
-        sectionClassName={`${SURFACE_CLASS} feed-manager-anchor-section`}
+      <FeedManagerAccordionSection
+        id="feed-manager-section-diagnostics-reports"
+        className={SURFACE_CLASS}
+        eyebrow="Diagnóstico"
         title="Relatórios"
         description="Exporte um recorte técnico da saúde dos feeds e da infraestrutura atual."
         icon={<FileText className="h-5 w-5" />}
-        isOpen={view === "reports" || showAll ? true : openSections.details}
-        onToggle={() => toggleSection("details")}
+        isOpen={isOuterSectionOpen("reports")}
+        onToggle={() => toggleOuterSection("reports")}
       >
         <div className="space-y-4">
           <section id="feed-reports" className={MANAGER_SURFACE_CARD_CLASS}>
@@ -858,7 +884,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             </div>
           </section>
         </div>
-      </AccordionSection>
+      </FeedManagerAccordionSection>
       )}
     </div>
   );

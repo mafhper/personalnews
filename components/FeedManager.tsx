@@ -64,6 +64,7 @@ import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedQuarantineTab } from "./FeedManager/FeedQuarantineTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
+import { FeedManagerAccordionSection } from "./FeedManager/FeedManagerAccordionSection";
 import { FeedManagerSectionHeader } from "./FeedManager/FeedManagerSectionHeader";
 import {
   managerControlSurfaceClass,
@@ -230,6 +231,34 @@ const routesByArea: Record<FeedManagerArea, FeedManagerRoute[]> = {
     "diagnostics:reports",
   ],
 };
+
+type FeedManagerAccordionRoute =
+  | "feeds:list"
+  | "feeds:add"
+  | "feeds:categories"
+  | "feeds:quarantine"
+  | "operations:io"
+  | "operations:maintenance"
+  | "diagnostics:health"
+  | "diagnostics:infra"
+  | "diagnostics:reports";
+
+const feedManagerAccordionDefaults: Record<FeedManagerAccordionRoute, boolean> = {
+  "feeds:list": false,
+  "feeds:add": false,
+  "feeds:categories": false,
+  "feeds:quarantine": false,
+  "operations:io": false,
+  "operations:maintenance": false,
+  "diagnostics:health": false,
+  "diagnostics:infra": false,
+  "diagnostics:reports": false,
+};
+
+const isFeedManagerAccordionRoute = (
+  route: FeedManagerRoute,
+): route is FeedManagerAccordionRoute =>
+  Object.prototype.hasOwnProperty.call(feedManagerAccordionDefaults, route);
 
 const getFeedManagerSectionId = (route: FeedManagerRoute) =>
   `feed-manager-section-${canonicalizeFeedManagerRoute(route).replace(":", "-")}`;
@@ -732,6 +761,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const [activeRoute, setActiveRoute] =
     useState<FeedManagerRoute>("feeds:overview");
+  const [expandedAccordionRoutes, setExpandedAccordionRoutes] = useState<
+    Record<FeedManagerAccordionRoute, boolean>
+  >(feedManagerAccordionDefaults);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [expandedAreas, setExpandedAreas] = useState<
@@ -875,6 +907,30 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     };
   }, []);
 
+  const openAccordionRoute = React.useCallback((route: FeedManagerRoute) => {
+    const nextRoute = canonicalizeFeedManagerRoute(route);
+    if (!isFeedManagerAccordionRoute(nextRoute)) return;
+
+    setExpandedAccordionRoutes((current) =>
+      current[nextRoute]
+        ? current
+        : {
+            ...current,
+            [nextRoute]: true,
+          },
+    );
+  }, []);
+
+  const toggleAccordionRoute = React.useCallback(
+    (route: FeedManagerAccordionRoute) => {
+      setExpandedAccordionRoutes((current) => ({
+        ...current,
+        [route]: !current[route],
+      }));
+    },
+    [],
+  );
+
   const scrollToRoute = React.useCallback((route: FeedManagerRoute) => {
     if (typeof window === "undefined") return;
     const nextRoute = canonicalizeFeedManagerRoute(route);
@@ -892,6 +948,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     (route: FeedManagerRoute, focusSection?: string) => {
       const nextRoute = canonicalizeFeedManagerRoute(route);
       const nextArea = routeAreaMap[nextRoute];
+      openAccordionRoute(nextRoute);
       setActiveRoute(nextRoute);
       setDiagnosticsFocus(focusSection || null);
       setExpandedAreas((current) => ({
@@ -900,7 +957,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       }));
       scrollToRoute(nextRoute);
     },
-    [scrollToRoute],
+    [openAccordionRoute, scrollToRoute],
   );
 
   useEffect(() => {
@@ -994,13 +1051,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       };
 
       const frameId = requestAnimationFrame(() => {
-        setActiveRoute(
-          normalizePersistedRoute(
-            parsed.tab,
-            parsed.section,
-            parsed.openProxySettings,
-          ),
+        const nextRoute = normalizePersistedRoute(
+          parsed.tab,
+          parsed.section,
+          parsed.openProxySettings,
         );
+        openAccordionRoute(nextRoute);
+        setActiveRoute(nextRoute);
         if (parsed.openProxySettings) {
           setDiagnosticsFocus("proxy-health");
         } else if (parsed.section) {
@@ -1013,7 +1070,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     } finally {
       window.sessionStorage.removeItem("feed-manager-focus");
     }
-  }, []);
+  }, [openAccordionRoute]);
 
   const validateAllFeeds = React.useCallback(async () => {
     if (isValidating) return;
@@ -1527,10 +1584,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const navigateToDiagnostics = (sectionId?: string) => {
     if (sectionId === "proxy-health") {
+      openAccordionRoute("diagnostics:infra");
       setActiveRoute("diagnostics:infra");
     } else if (sectionId === "feed-reports") {
+      openAccordionRoute("diagnostics:reports");
       setActiveRoute("diagnostics:reports");
     } else {
+      openAccordionRoute("diagnostics:health");
       setActiveRoute("diagnostics:health");
     }
     if (sectionId) {
@@ -1919,18 +1979,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                   </div>
                 </section>
 
-                <section
+                <FeedManagerAccordionSection
                   id={getFeedManagerSectionId("feeds:list")}
-                  className="feed-manager-anchor-section"
+                  className={managerInfoSurfaceClass}
+                  eyebrow="Coleção"
+                  title="Revisão de feeds"
+                  description="Revise status, categorias, títulos e ações de cada fonte preservada na coleção."
+                  icon={<Library className="h-5 w-5" />}
+                  isOpen={expandedAccordionRoutes["feeds:list"]}
+                  onToggle={() => toggleAccordionRoute("feeds:list")}
                 >
-                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
-                    <FeedManagerSectionHeader
-                      eyebrow="Coleção"
-                      title="Revisão de feeds"
-                      description="Revise status, categorias, títulos e ações de cada fonte preservada na coleção."
-                      icon={<Library className="h-5 w-5" />}
-                    />
-                  </div>
                   <FeedListTab
                     embedded
                     feeds={activeFeeds}
@@ -1949,20 +2007,18 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     onConfirmRefreshAll={handleConfirmRefreshAll}
                     articles={articles}
                   />
-                </section>
+                </FeedManagerAccordionSection>
 
-                <section
+                <FeedManagerAccordionSection
                   id={getFeedManagerSectionId("feeds:add")}
-                  className="feed-manager-anchor-section"
+                  className={managerInfoSurfaceClass}
+                  eyebrow="Entrada"
+                  title="Adicionar fontes"
+                  description="Inclua um feed individual, importe OPML ou abra listas curadas sem alterar a coleção antes da confirmação."
+                  icon={<Plus className="h-5 w-5" />}
+                  isOpen={expandedAccordionRoutes["feeds:add"]}
+                  onToggle={() => toggleAccordionRoute("feeds:add")}
                 >
-                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
-                    <FeedManagerSectionHeader
-                      eyebrow="Entrada"
-                      title="Adicionar fontes"
-                      description="Inclua um feed individual, importe OPML ou abra listas curadas sem alterar a coleção antes da confirmação."
-                      icon={<Plus className="h-5 w-5" />}
-                    />
-                  </div>
                   <FeedAddTab
                     embedded
                     categories={categories}
@@ -1978,40 +2034,36 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     onShowImportModal={() => setShowImportModal(true)}
                     feedCount={currentFeeds.length}
                   />
-                </section>
+                </FeedManagerAccordionSection>
 
-                <section
+                <FeedManagerAccordionSection
                   id={getFeedManagerSectionId("feeds:categories")}
-                  className="feed-manager-anchor-section"
+                  className={managerInfoSurfaceClass}
+                  eyebrow="Organização"
+                  title="Categorias"
+                  description="Ajuste agrupamentos, cores e ordem visual das fontes sem sair do gerenciador."
+                  icon={<Tags className="h-5 w-5" />}
+                  isOpen={expandedAccordionRoutes["feeds:categories"]}
+                  onToggle={() => toggleAccordionRoute("feeds:categories")}
                 >
-                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
-                    <FeedManagerSectionHeader
-                      eyebrow="Organização"
-                      title="Categorias"
-                      description="Ajuste agrupamentos, cores e ordem visual das fontes sem sair do gerenciador."
-                      icon={<Tags className="h-5 w-5" />}
-                    />
-                  </div>
                   <FeedCategoryManager
                     feeds={currentFeeds}
                     setFeeds={setFeeds}
                     onClose={() => navigateToRoute("feeds:overview")}
                   />
-                </section>
+                </FeedManagerAccordionSection>
 
-                <section
+                <FeedManagerAccordionSection
                   id={getFeedManagerSectionId("feeds:quarantine")}
-                  className="feed-manager-anchor-section"
+                  className={managerInfoSurfaceClass}
+                  eyebrow="Proteção"
+                  title="Quarentena"
+                  description="Feeds preservados fora da carga ficam aqui até validação, restauração ou remoção."
+                  icon={<ShieldAlert className="h-5 w-5" />}
+                  tone="warning"
+                  isOpen={expandedAccordionRoutes["feeds:quarantine"]}
+                  onToggle={() => toggleAccordionRoute("feeds:quarantine")}
                 >
-                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
-                    <FeedManagerSectionHeader
-                      eyebrow="Proteção"
-                      title="Quarentena"
-                      description="Feeds preservados fora da carga ficam aqui até validação, restauração ou remoção."
-                      icon={<ShieldAlert className="h-5 w-5" />}
-                      tone="warning"
-                    />
-                  </div>
                   <FeedQuarantineTab
                     embedded
                     feeds={currentFeeds}
@@ -2020,7 +2072,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                     onMarkInactive={(url) => void handleMarkFeedInactive(url)}
                     onRemove={(url) => void handleRemoveFeed(url)}
                   />
-                </section>
+                </FeedManagerAccordionSection>
               </>
             )}
 
@@ -2038,6 +2090,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onOpenCurated={() => navigateToRoute("operations:curated")}
                 onOpenMaintenance={() => navigateToRoute("operations:maintenance")}
                 onOpenRisk={() => navigateToRoute("operations:risk")}
+                expandedSections={{
+                  io: expandedAccordionRoutes["operations:io"],
+                  maintenance: expandedAccordionRoutes["operations:maintenance"],
+                }}
+                onToggleSection={(section) =>
+                  toggleAccordionRoute(
+                    section === "io" ? "operations:io" : "operations:maintenance",
+                  )
+                }
                 feedCount={currentFeeds.length}
               />
             )}
@@ -2053,6 +2114,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onFocusConsumed={() => setDiagnosticsFocus(null)}
                 quarantineRecommendedUrls={quarantineRecommendedUrls}
                 onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
+                expandedSections={{
+                  health: expandedAccordionRoutes["diagnostics:health"],
+                  infra: expandedAccordionRoutes["diagnostics:infra"],
+                  reports: expandedAccordionRoutes["diagnostics:reports"],
+                }}
+                onToggleSection={(section) =>
+                  toggleAccordionRoute(`diagnostics:${section}`)
+                }
               />
             )}
 

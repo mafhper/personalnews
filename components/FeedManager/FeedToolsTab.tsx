@@ -9,6 +9,7 @@ import {
   Trash2,
   Wrench,
 } from "lucide-react";
+import { FeedManagerAccordionSection } from "./FeedManagerAccordionSection";
 import { FeedManagerSectionHeader } from "./FeedManagerSectionHeader";
 import {
   managerActionCardClass,
@@ -18,8 +19,11 @@ import {
   managerWarningActionCardClass,
 } from "./feedManagerStyles";
 
+type FeedToolsAccordionSection = "io" | "maintenance";
+
 interface FeedToolsTabProps {
   view?: "overview" | "io" | "curated" | "maintenance" | "risk" | "all";
+  expandedSections?: Partial<Record<FeedToolsAccordionSection, boolean>>;
   onExportOPML: () => void;
   onImportOPML: () => void;
   onShowImportModal: () => void;
@@ -30,6 +34,7 @@ interface FeedToolsTabProps {
   onOpenCurated?: () => void;
   onOpenMaintenance?: () => void;
   onOpenRisk?: () => void;
+  onToggleSection?: (section: FeedToolsAccordionSection) => void;
   feedCount: number;
   embedded?: boolean;
 }
@@ -39,6 +44,7 @@ const GROUP_CLASS = `${managerSurfaceClass} p-5 sm:p-6`;
 
 export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   view = "overview",
+  expandedSections,
   onExportOPML,
   onImportOPML,
   onShowImportModal,
@@ -47,15 +53,35 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   onDeleteAll,
   onOpenIo,
   onOpenMaintenance,
+  onToggleSection,
   feedCount,
   embedded = false,
 }) => {
+  const [localExpandedSections, setLocalExpandedSections] = React.useState<
+    Record<FeedToolsAccordionSection, boolean>
+  >({
+    io: true,
+    maintenance: true,
+  });
   const normalizedView =
     view === "curated" ? "io" : view === "risk" ? "maintenance" : view;
   const showAll = view === "all";
   const showOverview = showAll || normalizedView === "overview";
   const showIo = showAll || normalizedView === "io";
   const showMaintenance = showAll || normalizedView === "maintenance";
+  const isSectionOpen = (section: FeedToolsAccordionSection) =>
+    expandedSections?.[section] ?? localExpandedSections[section];
+  const toggleSection = (section: FeedToolsAccordionSection) => {
+    if (onToggleSection) {
+      onToggleSection(section);
+      return;
+    }
+
+    setLocalExpandedSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  };
 
   return (
     <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
@@ -103,17 +129,17 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         )}
 
         {showIo && (
-          <section
+          <FeedManagerAccordionSection
             id="feed-manager-section-operations-io"
-            className={`${GROUP_CLASS} feed-manager-anchor-section`}
+            className={GROUP_CLASS}
+            eyebrow="Arquivos e listas"
+            title="Transporte da coleção"
+            description="Backup, entrada de OPML e coleções prontas ficam em um fluxo único de arquivos e listas."
+            icon={<FileUp className="h-5 w-5" />}
+            isOpen={isSectionOpen("io")}
+            onToggle={() => toggleSection("io")}
           >
-            <FeedManagerSectionHeader
-              eyebrow="Arquivos e listas"
-              title="Transporte da coleção"
-              description="Backup, entrada de OPML e coleções prontas ficam em um fluxo único de arquivos e listas."
-              icon={<FileUp className="h-5 w-5" />}
-            />
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-3">
               <OperationAction
                 title="Exportar OPML"
                 description="Baixe a coleção atual para backup ou migração."
@@ -133,22 +159,21 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                 onClick={onShowImportModal}
               />
             </div>
-          </section>
+          </FeedManagerAccordionSection>
         )}
 
         {showMaintenance && (
-          <section
+          <FeedManagerAccordionSection
             id="feed-manager-section-operations-maintenance"
-            className={`${GROUP_CLASS} feed-manager-anchor-section`}
+            className={GROUP_CLASS}
+            eyebrow="Manutenção e risco"
+            title="Reparos e ações críticas"
+            description="Use esta área para recuperar a coleção, restaurar a base ou executar ações destrutivas com confirmação explícita."
+            icon={<RefreshCcw className="h-5 w-5" />}
+            isOpen={isSectionOpen("maintenance")}
+            onToggle={() => toggleSection("maintenance")}
           >
-            <FeedManagerSectionHeader
-              eyebrow="Manutenção e risco"
-              title="Reparos e ações críticas"
-              description="Use esta área para recuperar a coleção, restaurar a base ou executar ações destrutivas com confirmação explícita."
-              icon={<RefreshCcw className="h-5 w-5" />}
-            />
-
-            <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.46fr)]">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.46fr)]">
               <div className="grid gap-4 lg:grid-cols-2">
                 <OperationAction
                   title="Limpar feeds com erro"
@@ -187,7 +212,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                 </div>
               </div>
             </div>
-          </section>
+          </FeedManagerAccordionSection>
         )}
       </div>
     </div>
