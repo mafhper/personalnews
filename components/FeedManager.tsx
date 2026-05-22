@@ -2,24 +2,37 @@ import React, { useEffect, useRef, useState } from "react";
 import pkg from "../package.json";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   BarChart3,
-  Boxes,
+  ChevronRight,
   CircleCheck,
+  Database,
   Download,
+  Eye,
+  EyeOff,
   FileUp,
+  FolderTree,
+  GripVertical,
+  Inbox,
+  LayoutGrid,
   Library,
   Menu,
+  Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
+  Rss,
+  Search,
   ShieldAlert,
   Tags,
+  Trash2,
   Wrench,
   X,
 } from "lucide-react";
 import type { FeedSource, Article, FeedCategory } from "../types";
 import { detectEnvironment } from "../services/environmentDetector";
 import { parseOpml } from "../services/rssParser";
-import { FeedCategoryManager } from "./FeedCategoryManager";
 import { FeedDiscoveryModal } from "./FeedDiscoveryModal";
 import { FeedCleanupModal } from "./FeedCleanupModal";
 import { useLogger } from "../services/logger";
@@ -48,8 +61,10 @@ import {
 } from "../utils/feedMigration";
 import {
   buildDeleteAllFeedsConfirmation,
+  buildDeleteCategoryConfirmation,
   buildRemoveFeedConfirmation,
   buildReplaceCuratedCollectionConfirmation,
+  buildResetCategoriesConfirmation,
   buildRestoreDefaultFeedsConfirmation,
 } from "../utils/feedDangerConfirmation";
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
@@ -58,11 +73,9 @@ import { FeedDuplicateModal } from "./FeedDuplicateModal";
 import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
-import { FeedManagerSectionHeader } from "./FeedManager/FeedManagerSectionHeader";
 import {
   managerControlSurfaceClass,
   managerFieldClass,
-  managerInfoSurfaceClass,
   managerPrimaryButtonClass,
   managerSecondaryButtonClass,
   managerDangerButtonClass,
@@ -377,18 +390,18 @@ const FeedManagerTopbar: React.FC<{
   closeModal: () => void;
   mobileMenuButtonRef: React.RefObject<HTMLButtonElement | null>;
   mobileSidebarOpen: boolean;
+  onAddSource: () => void;
   onOpenMobileNavigation: () => void;
-  onToggleSidebar: () => void;
+  onRefreshFeeds?: () => void;
   routeContent: { area: string; title: string; description: string };
-  sidebarCollapsed: boolean;
 }> = ({
   closeModal,
   mobileMenuButtonRef,
   mobileSidebarOpen,
+  onAddSource,
   onOpenMobileNavigation,
-  onToggleSidebar,
+  onRefreshFeeds,
   routeContent,
-  sidebarCollapsed,
 }) => (
   <header className="feed-manager-header">
     <div className="feed-manager-header-main">
@@ -401,20 +414,6 @@ const FeedManagerTopbar: React.FC<{
         aria-expanded={mobileSidebarOpen}
         aria-label="Abrir menu de navegação"
         title="Abrir menu de navegação"
-      >
-        <Menu className="h-4.5 w-4.5" />
-      </button>
-      <button
-        type="button"
-        onClick={onToggleSidebar}
-        className="feed-manager-icon-button feed-manager-icon-button--desktop"
-        aria-controls="feed-manager-sidebar"
-        aria-label={
-          sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"
-        }
-        title={
-          sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"
-        }
       >
         <Menu className="h-4.5 w-4.5" />
       </button>
@@ -440,15 +439,35 @@ const FeedManagerTopbar: React.FC<{
       </p>
     </div>
 
-    <button
-      onClick={closeModal}
-      className="feed-manager-icon-button"
-      aria-label="Fechar gerenciador de feeds"
-      title="Fechar gerenciador de feeds"
-      type="button"
-    >
-      <X className="h-4.5 w-4.5" />
-    </button>
+    <div className="feed-manager-header-actions">
+      <button
+        type="button"
+        onClick={onAddSource}
+        className={`${managerPrimaryButtonClass} h-9 px-3 text-[12.5px]`}
+      >
+        <Plus className="h-4 w-4" />
+        <span className="hidden sm:inline">Adicionar fonte</span>
+      </button>
+      {onRefreshFeeds && (
+        <button
+          type="button"
+          onClick={onRefreshFeeds}
+          className={`${managerSecondaryButtonClass} hidden h-9 px-3 text-[12.5px] sm:inline-flex`}
+        >
+          <RefreshCw className="h-4 w-4" />
+          Revalidar
+        </button>
+      )}
+      <button
+        onClick={closeModal}
+        className="feed-manager-icon-button"
+        aria-label="Fechar gerenciador de feeds"
+        title="Fechar gerenciador de feeds"
+        type="button"
+      >
+        <X className="h-4.5 w-4.5" />
+      </button>
+    </div>
   </header>
 );
 
@@ -479,7 +498,11 @@ const FeedManagerAreaButton: React.FC<{
     >
       {icon}
     </span>
-    <span className={`min-w-0 flex-1 ${collapsed ? "sr-only" : ""}`}>
+    <span
+      className={`feed-manager-sidebar-nav-copy min-w-0 flex-1 ${
+        collapsed ? "sr-only" : ""
+      }`}
+    >
       <span className="flex items-start justify-between gap-2">
         <span className="min-w-0">
           <span className="block truncate text-[13px] font-medium leading-tight">
@@ -652,7 +675,7 @@ const FeedManagerOverviewPage: React.FC<{
       <FeedManagerPageTitle title="Estado da coleção" />
       <div className="feed-manager-metric-strip">
         <FeedManagerCompactMetric
-          icon={<Boxes className="h-4 w-4" />}
+          icon={<Database className="h-4 w-4" />}
           label="Total"
           value={totalFeedCount}
         />
@@ -991,6 +1014,577 @@ const FeedManagerSourcesPage: React.FC<{
   );
 };
 
+const layoutOptions: Array<{
+  value: NonNullable<FeedCategory["layoutMode"]>;
+  label: string;
+}> = [
+  { value: "modern", label: "Modern" },
+  { value: "newspaper", label: "Newspaper" },
+  { value: "gallery", label: "Gallery" },
+  { value: "compact", label: "Compact" },
+  { value: "timeline", label: "Timeline" },
+  { value: "pocketfeeds", label: "PocketFeeds" },
+];
+
+const getFeedManagerFeedTitle = (feed: FeedSource) => {
+  if (feed.customTitle) return feed.customTitle;
+  try {
+    return new URL(feed.url).hostname.replace(/^www\./, "");
+  } catch {
+    return feed.url;
+  }
+};
+
+const FeedManagerCategoryEditor: React.FC<{
+  category: FeedCategory;
+  onCancel: () => void;
+  onDelete: () => void;
+  onSave: (updates: Partial<FeedCategory>) => void;
+}> = ({ category, onCancel, onDelete, onSave }) => {
+  const [name, setName] = React.useState(category.name);
+  const [color, setColor] = React.useState(category.color);
+  const [description, setDescription] = React.useState(category.description || "");
+  const [layoutMode, setLayoutMode] = React.useState(category.layoutMode || "");
+  const [autoDiscovery, setAutoDiscovery] = React.useState(
+    category.autoDiscovery ?? true,
+  );
+
+  return (
+    <form
+      className="collection-central-category-editor"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave({
+          name: name.trim() || category.name,
+          color,
+          description: description.trim() || undefined,
+          layoutMode: layoutMode
+            ? (layoutMode as FeedCategory["layoutMode"])
+            : undefined,
+          autoDiscovery,
+        });
+      }}
+    >
+      <label>
+        <span>Nome</span>
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          className={managerFieldClass}
+        />
+      </label>
+      <label>
+        <span>Cor</span>
+        <input
+          type="color"
+          value={color}
+          onChange={(event) => setColor(event.target.value)}
+          className="collection-central-color-input"
+          aria-label={`Cor de ${category.name}`}
+        />
+      </label>
+      <label>
+        <span>Layout</span>
+        <select
+          value={layoutMode}
+          onChange={(event) => setLayoutMode(event.target.value)}
+          className={managerFieldClass}
+        >
+          <option value="">Usar padrão global</option>
+          {layoutOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="collection-central-category-editor__wide">
+        <span>Descrição</span>
+        <input
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          className={managerFieldClass}
+          placeholder="Descrição opcional para orientar esta categoria"
+        />
+      </label>
+      <label className="collection-central-category-toggle">
+        <input
+          type="checkbox"
+          checked={autoDiscovery}
+          onChange={(event) => setAutoDiscovery(event.target.checked)}
+        />
+        <span>Auto-descoberta de feeds ativa</span>
+      </label>
+      <div className="collection-central-category-editor__actions">
+        <button type="submit" className={`${managerPrimaryButtonClass} h-9 px-3`}>
+          Salvar
+        </button>
+        <button type="button" onClick={onCancel} className={`${managerSecondaryButtonClass} h-9 px-3`}>
+          Cancelar
+        </button>
+        {!category.isDefault && (
+          <button type="button" onClick={onDelete} className={`${managerDangerButtonClass} h-9 px-3`}>
+            Excluir
+          </button>
+        )}
+      </div>
+    </form>
+  );
+};
+
+const FeedManagerOrganizationPage: React.FC<{
+  categories: FeedCategory[];
+  createCategory: (
+    name: string,
+    color: string,
+    description?: string,
+    layoutMode?: FeedCategory["layoutMode"],
+    autoDiscovery?: boolean,
+  ) => FeedCategory;
+  currentFeeds: FeedSource[];
+  deleteCategory: (id: string) => void;
+  onEditFeed: (url: string) => void;
+  onEditFeedTitle: (url: string) => void;
+  onRemoveFeed: (url: string) => void;
+  onToggleHideFromAll: (url: string) => void;
+  reorderCategories: (categoryIds: string[]) => void;
+  resetCategoriesToDefaults: () => void;
+  setFeeds: React.Dispatch<React.SetStateAction<FeedSource[]>>;
+  updateCategory: (id: string, updates: Partial<FeedCategory>) => void;
+  confirmDanger: ReturnType<typeof useNotificationReplacements>["confirmDanger"];
+  alertSuccess: ReturnType<typeof useNotificationReplacements>["alertSuccess"];
+}> = ({
+  categories,
+  createCategory,
+  currentFeeds,
+  deleteCategory,
+  onEditFeed,
+  onEditFeedTitle,
+  onRemoveFeed,
+  onToggleHideFromAll,
+  reorderCategories,
+  resetCategoriesToDefaults,
+  setFeeds,
+  updateCategory,
+  confirmDanger,
+  alertSuccess,
+}) => {
+  const [expandedCategoryId, setExpandedCategoryId] = React.useState<string | null>(
+    categories.find((category) => !category.isDefault)?.id || categories[0]?.id || null,
+  );
+  const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(
+    null,
+  );
+  const [dragOverCategoryId, setDragOverCategoryId] = React.useState<string | null>(
+    null,
+  );
+  const [newCategoryName, setNewCategoryName] = React.useState("");
+  const [newCategoryColor, setNewCategoryColor] = React.useState(
+    categories.find((category) => !category.isDefault)?.color || "#3B82F6",
+  );
+
+  const visibleCategories = React.useMemo(
+    () => categories.filter((category) => category.id !== "all"),
+    [categories],
+  );
+  const feedsByCategory = React.useMemo(() => {
+    const result: Record<string, FeedSource[]> = { uncategorized: [] };
+    visibleCategories.forEach((category) => {
+      result[category.id] = [];
+    });
+    currentFeeds.filter(isFeedActive).forEach((feed) => {
+      const key = feed.categoryId && result[feed.categoryId] ? feed.categoryId : "uncategorized";
+      result[key].push(feed);
+    });
+    Object.values(result).forEach((items) =>
+      items.sort((a, b) =>
+        getFeedManagerFeedTitle(a).localeCompare(getFeedManagerFeedTitle(b), "pt-BR"),
+      ),
+    );
+    return result;
+  }, [currentFeeds, visibleCategories]);
+
+  const moveFeedToCategoryId = React.useCallback(
+    (feedUrl: string, categoryId: string) => {
+      setFeeds((feeds) =>
+        feeds.map((feed) =>
+          feed.url === feedUrl
+            ? {
+                ...feed,
+                categoryId: categoryId === "uncategorized" ? undefined : categoryId,
+              }
+            : feed,
+        ),
+      );
+    },
+    [setFeeds],
+  );
+
+  const moveCategory = React.useCallback(
+    (categoryId: string, direction: -1 | 1) => {
+      const ids = visibleCategories.map((category) => category.id);
+      const currentIndex = ids.indexOf(categoryId);
+      const nextIndex = currentIndex + direction;
+      if (currentIndex < 0 || nextIndex < 0 || nextIndex >= ids.length) return;
+      const nextIds = [...ids];
+      [nextIds[currentIndex], nextIds[nextIndex]] = [
+        nextIds[nextIndex],
+        nextIds[currentIndex],
+      ];
+      reorderCategories(nextIds);
+    },
+    [reorderCategories, visibleCategories],
+  );
+
+  const handleDeleteCategory = React.useCallback(
+    async (category: FeedCategory) => {
+      const feedsInCategory = feedsByCategory[category.id] || [];
+      if (
+        await confirmDanger(
+          buildDeleteCategoryConfirmation({ category, feedsInCategory }),
+        )
+      ) {
+        setFeeds((feeds) =>
+          feeds.map((feed) =>
+            feed.categoryId === category.id
+              ? { ...feed, categoryId: undefined }
+              : feed,
+          ),
+        );
+        deleteCategory(category.id);
+        setExpandedCategoryId(null);
+        setEditingCategoryId(null);
+        await alertSuccess(`Categoria "${category.name}" excluída.`);
+      }
+    },
+    [alertSuccess, confirmDanger, deleteCategory, feedsByCategory, setFeeds],
+  );
+
+  const renderFeedRow = (feed: FeedSource) => (
+    <div
+      key={feed.url}
+      className="collection-central-feed-row"
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.setData("text/feed-url", feed.url);
+        event.dataTransfer.effectAllowed = "move";
+      }}
+    >
+      <GripVertical className="h-4 w-4 text-[rgb(var(--theme-text-secondary-readable))] opacity-45" />
+      <Rss className="h-4 w-4 text-[rgb(var(--theme-text-secondary-readable))]" />
+      <span className="collection-central-status-dot" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-[13px] font-medium ${feed.hideFromAll ? "line-through opacity-60" : ""}`}>
+          {getFeedManagerFeedTitle(feed)}
+        </p>
+        <p className="truncate text-[11.5px] text-[rgb(var(--theme-text-secondary-readable))] opacity-76">
+          {feed.url}
+        </p>
+      </div>
+      <select
+        value={feed.categoryId || "uncategorized"}
+        onChange={(event) => moveFeedToCategoryId(feed.url, event.target.value)}
+        className="collection-central-feed-row__select"
+        aria-label={`Categoria de ${getFeedManagerFeedTitle(feed)}`}
+      >
+        <option value="uncategorized">Sem categoria</option>
+        {visibleCategories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+      <div className="collection-central-feed-row__actions">
+        <button
+          type="button"
+          onClick={() => onToggleHideFromAll(feed.url)}
+          aria-label={feed.hideFromAll ? "Mostrar em Todos" : "Ocultar de Todos"}
+          title={feed.hideFromAll ? "Mostrar em Todos" : "Ocultar de Todos"}
+        >
+          {feed.hideFromAll ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => onEditFeedTitle(feed.url)}
+          aria-label={`Editar nome de ${getFeedManagerFeedTitle(feed)}`}
+          title="Editar nome"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onEditFeed(feed.url)}
+          aria-label={`Editar URL de ${getFeedManagerFeedTitle(feed)}`}
+          title="Editar URL"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemoveFeed(feed.url)}
+          aria-label={`Excluir ${getFeedManagerFeedTitle(feed)}`}
+          title="Excluir feed"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDropZone = (categoryId: string, children: React.ReactNode) => (
+    <div
+      onDragOver={(event) => {
+        event.preventDefault();
+        if (dragOverCategoryId !== categoryId) setDragOverCategoryId(categoryId);
+      }}
+      onDragLeave={() => {
+        if (dragOverCategoryId === categoryId) setDragOverCategoryId(null);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        const feedUrl = event.dataTransfer.getData("text/feed-url");
+        if (feedUrl) moveFeedToCategoryId(feedUrl, categoryId);
+        setDragOverCategoryId(null);
+      }}
+      className={dragOverCategoryId === categoryId ? "collection-central-drop-target" : ""}
+    >
+      {children}
+    </div>
+  );
+
+  return (
+    <div className="feed-manager-page collection-central-page collection-central-page--organization">
+      <section>
+        <div className="collection-central-section-heading">
+          <div className="min-w-0">
+            <FeedManagerPageTitle
+              title="Categorias"
+              description="Clique para expandir, ajuste propriedades e mova feeds entre categorias."
+            />
+          </div>
+          <form
+            className="collection-central-new-category"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const name = newCategoryName.trim();
+              if (!name) return;
+              const created = createCategory(name, newCategoryColor);
+              setExpandedCategoryId(created.id);
+              setEditingCategoryId(created.id);
+              setNewCategoryName("");
+            }}
+          >
+            <input
+              value={newCategoryName}
+              onChange={(event) => setNewCategoryName(event.target.value)}
+              className={managerFieldClass}
+              placeholder="Nova categoria"
+              aria-label="Nome da nova categoria"
+            />
+            <input
+              type="color"
+              value={newCategoryColor}
+              onChange={(event) => setNewCategoryColor(event.target.value)}
+              className="collection-central-color-input"
+              aria-label="Cor da nova categoria"
+            />
+            <button type="submit" className={`${managerPrimaryButtonClass} h-9 px-3`}>
+              <Plus className="h-4 w-4" />
+              Nova categoria
+            </button>
+          </form>
+        </div>
+
+        <FeedManagerLightCard className="overflow-hidden">
+          {visibleCategories.map((category, index) => {
+            const feedsInCategory = feedsByCategory[category.id] || [];
+            const expanded = expandedCategoryId === category.id;
+            return (
+              <div key={category.id}>
+                {index > 0 && <div className="feed-manager-divider" />}
+                {renderDropZone(
+                  category.id,
+                  <>
+                    <div className="collection-central-category-row">
+                      <div className="collection-central-category-row__order">
+                        <button
+                          type="button"
+                          onClick={() => moveCategory(category.id, -1)}
+                          disabled={index === 0}
+                          aria-label={`Subir ${category.name}`}
+                          title="Subir categoria"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveCategory(category.id, 1)}
+                          disabled={index === visibleCategories.length - 1}
+                          aria-label={`Descer ${category.name}`}
+                          title="Descer categoria"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="collection-central-category-row__main"
+                        onClick={() =>
+                          setExpandedCategoryId(expanded ? null : category.id)
+                        }
+                        aria-expanded={expanded}
+                      >
+                        <ChevronRight
+                          className={`h-4 w-4 transition-transform ${
+                            expanded ? "rotate-90" : ""
+                          }`}
+                        />
+                        <span
+                          className="collection-central-category-swatch"
+                          style={{ "--category-color": category.color } as React.CSSProperties}
+                        >
+                          <FolderTree className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13.5px] font-medium">
+                            {category.name}
+                          </span>
+                          <span className="block truncate text-[11.5px] text-[rgb(var(--theme-text-secondary-readable))] opacity-76">
+                            {feedsInCategory.length} {feedsInCategory.length === 1 ? "feed" : "feeds"}
+                            {category.layoutMode ? ` · ${category.layoutMode}` : ""}
+                          </span>
+                        </span>
+                      </button>
+                      <div className="collection-central-category-row__actions">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpandedCategoryId(category.id);
+                            setEditingCategoryId(
+                              editingCategoryId === category.id ? null : category.id,
+                            );
+                          }}
+                          aria-label={`Editar ${category.name}`}
+                          title="Editar categoria"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        {!category.isDefault && (
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteCategory(category)}
+                            aria-label={`Excluir ${category.name}`}
+                            title="Excluir categoria"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {expanded && (
+                      <div className="collection-central-category-body">
+                        {(editingCategoryId === category.id || !category.isDefault) && (
+                          <FeedManagerCategoryEditor
+                            category={category}
+                            onCancel={() => setEditingCategoryId(null)}
+                            onDelete={() => void handleDeleteCategory(category)}
+                            onSave={(updates) => {
+                              updateCategory(category.id, updates);
+                              setEditingCategoryId(null);
+                            }}
+                          />
+                        )}
+                        <div className="collection-central-feed-list">
+                          {feedsInCategory.length === 0 ? (
+                            <p className="collection-central-empty-row">
+                              Sem feeds nesta categoria. Arraste uma fonte para cá ou use
+                              o seletor na lista de feeds.
+                            </p>
+                          ) : (
+                            feedsInCategory.map(renderFeedRow)
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>,
+                )}
+              </div>
+            );
+          })}
+        </FeedManagerLightCard>
+      </section>
+
+      <section>
+        <FeedManagerPageTitle
+          title="Feeds sem categoria"
+          description="Feeds sem categoria continuam na coleção, mas não têm roteamento visual definido."
+        />
+        <FeedManagerLightCard className="overflow-hidden">
+          {renderDropZone(
+            "uncategorized",
+            (feedsByCategory.uncategorized || []).length === 0 ? (
+              <div className="collection-central-empty-row">
+                <Inbox className="h-4 w-4" />
+                Nenhum feed pendente de organização.
+              </div>
+            ) : (
+              (feedsByCategory.uncategorized || []).map(renderFeedRow)
+            ),
+          )}
+        </FeedManagerLightCard>
+      </section>
+
+      <section>
+        <FeedManagerPageTitle
+          title="Restaurar organização"
+          description="Retorne às categorias padrão quando a estrutura atual deixar de representar a coleção."
+        />
+        <FeedManagerLightCard className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="feed-manager-light-row__icon">
+                <LayoutGrid className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-[13.5px] font-semibold">Categorias padrão</p>
+                <p className="text-xs opacity-72">
+                  A restauração remove categorias personalizadas e devolve os feeds para
+                  a fila sem categoria.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`${managerSecondaryButtonClass} h-9 px-3`}
+              onClick={async () => {
+                if (
+                  await confirmDanger(
+                    buildResetCategoriesConfirmation({
+                      categories: visibleCategories,
+                      feedCount: currentFeeds.length,
+                    }),
+                  )
+                ) {
+                  resetCategoriesToDefaults();
+                  setFeeds((feeds) =>
+                    feeds.map((feed) => ({ ...feed, categoryId: undefined })),
+                  );
+                  setExpandedCategoryId(null);
+                  setEditingCategoryId(null);
+                  await alertSuccess("Categorias padrão restauradas.");
+                }
+              }}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Restaurar padrão
+            </button>
+          </div>
+        </FeedManagerLightCard>
+      </section>
+    </div>
+  );
+};
+
 const FeedManagerWorkspaceFooter: React.FC<{
   activeFeedCount: number;
   environmentLabel: string;
@@ -1032,7 +1626,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   onRefreshFeeds,
 }) => {
   const logger = useLogger("FeedManager");
-  const { categories, createCategory, resetToDefaults } = useFeedCategories();
+  const {
+    categories,
+    createCategory,
+    deleteCategory,
+    reorderCategories,
+    resetToDefaults,
+    updateCategory,
+  } = useFeedCategories();
   const { refreshAppearance } = useAppearance();
   const { confirm, alertSuccess, alertError, confirmDanger, confirmWarning } =
     useNotificationReplacements();
@@ -1042,7 +1643,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [expandedAccordionRoutes, setExpandedAccordionRoutes] = useState<
     Record<FeedManagerAccordionRoute, boolean>
   >(feedManagerAccordionDefaults);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sidebarCollapsed = false;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [expandedAreas, setExpandedAreas] = useState<
     Record<FeedManagerArea, boolean>
@@ -1398,7 +1999,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const moveFeedToCategory = (feedUrl: string, categoryId: string) => {
     setFeeds((prev) =>
       prev.map((feed) =>
-        feed.url === feedUrl ? { ...feed, categoryId } : feed,
+        feed.url === feedUrl
+          ? {
+              ...feed,
+              categoryId:
+                categoryId === "uncategorized" || categoryId === ""
+                  ? undefined
+                  : categoryId,
+            }
+          : feed,
       ),
     );
     void alertSuccess("Categoria atualizada!");
@@ -1930,6 +2539,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     overviewRoute: FeedManagerRoute;
     focusSection?: string;
   }) => {
+    if (mobileSidebarOpen) {
+      setMobileSidebarOpen(false);
+    }
     setExpandedAreas({
       overview: false,
       sources: false,
@@ -1939,9 +2551,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       [group.id]: true,
     });
     navigateToRoute(group.overviewRoute, group.focusSection);
-    if (mobileSidebarOpen) {
-      closeMobileNavigation();
-    }
   };
 
   return (
@@ -1967,10 +2576,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         closeModal={closeModal}
         mobileMenuButtonRef={mobileMenuButtonRef}
         mobileSidebarOpen={mobileSidebarOpen}
+        onAddSource={() => navigateToRoute("feeds:add")}
         onOpenMobileNavigation={openMobileNavigation}
-        onToggleSidebar={() => setSidebarCollapsed((current) => !current)}
+        onRefreshFeeds={onRefreshFeeds ? handleConfirmRefreshAll : undefined}
         routeContent={activeRouteContent}
-        sidebarCollapsed={sidebarCollapsed}
       />
 
       {mobileSidebarOpen && (
@@ -2102,24 +2711,22 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             )}
 
             {activeArea === "organization" && (
-              <section
-                id={getFeedManagerSectionId("feeds:categories")}
-                className={`${managerInfoSurfaceClass} feed-manager-anchor-section sm:p-6`}
-              >
-                <FeedManagerSectionHeader
-                  eyebrow="Organização"
-                  title="Categorias"
-                  description="Ajuste agrupamentos, cores e ordem visual das fontes sem sair da Central."
-                  icon={<Tags className="h-5 w-5" />}
-                />
-                <div className="mt-5">
-                  <FeedCategoryManager
-                    feeds={currentFeeds}
-                    setFeeds={setFeeds}
-                    onClose={() => navigateToRoute("feeds:overview")}
-                  />
-                </div>
-              </section>
+              <FeedManagerOrganizationPage
+                categories={categories}
+                confirmDanger={confirmDanger}
+                alertSuccess={alertSuccess}
+                createCategory={createCategory}
+                currentFeeds={currentFeeds}
+                deleteCategory={deleteCategory}
+                onEditFeed={handleEditFeed}
+                onEditFeedTitle={handleEditFeedTitle}
+                onRemoveFeed={handleRemoveFeed}
+                onToggleHideFromAll={handleToggleHideFromAll}
+                reorderCategories={reorderCategories}
+                resetCategoriesToDefaults={resetToDefaults}
+                setFeeds={setFeeds}
+                updateCategory={updateCategory}
+              />
             )}
 
             {activeArea === "maintenance" && (

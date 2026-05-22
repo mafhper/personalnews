@@ -151,8 +151,8 @@ describe("Feed danger zone flows", () => {
     expect(screen.getAllByText("Erros").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Quarentena").length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: /Adicionar fonte/ }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /Adicionar fonte/ }).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: /Revalidar coleção/ }),
     ).toBeInTheDocument();
@@ -219,11 +219,9 @@ describe("Feed danger zone flows", () => {
       screen.getByRole("heading", { name: "Fontes da coleção" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
     expect(
-      screen.getAllByRole("button", { name: "Expandir barra lateral" })[0],
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Expandir barra lateral" })[0]);
+      screen.queryByRole("button", { name: "Recolher barra lateral" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -272,8 +270,9 @@ describe("Feed danger zone flows", () => {
       screen.getByRole("heading", { name: "Categorias" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Ajuste agrupamentos, cores e ordem visual/),
+      screen.getByText(/Clique para expandir/),
     ).toBeInTheDocument();
+    expect(screen.getByText("Feeds sem categoria")).toBeInTheDocument();
   });
 
   it("opens operation overview and anchors submenu sections", async () => {
