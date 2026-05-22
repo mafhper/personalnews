@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, FileText, Layers3, ShieldAlert } from "lucide-react";
-import { Article, FeedSource } from "../types";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileText,
+  Layers3,
+  ShieldAlert,
+} from "lucide-react";
+import { Article, FeedCategory, FeedSource } from "../types";
 import { useProxyDashboard } from "../hooks/useProxyDashboard";
 import {
   formatFeedRouteLabel,
@@ -30,6 +36,13 @@ interface FeedAnalyticsProps {
   onFocusConsumed?: () => void;
   quarantineRecommendedUrls?: Set<string>;
   onQuarantineFeed?: (url: string) => void;
+  categories?: FeedCategory[];
+  onRetryFeeds?: (urls: string[]) => void | Promise<void>;
+  onQuarantineFeeds?: (urls: string[]) => void | Promise<void>;
+  onMoveFeedsCategory?: (
+    urls: string[],
+    categoryId: string,
+  ) => void | Promise<void>;
   embedded?: boolean;
 }
 
@@ -191,10 +204,18 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   onFocusConsumed,
   quarantineRecommendedUrls = new Set(),
   onQuarantineFeed,
+  categories = [],
+  onRetryFeeds,
+  onQuarantineFeeds,
+  onMoveFeedsCategory,
   embedded = false,
 }) => {
   const { snapshot, refresh } = useProxyDashboard();
   const [showAllRows, setShowAllRows] = useState(false);
+  const [selectedAttentionUrls, setSelectedAttentionUrls] = useState<Set<string>>(
+    new Set(),
+  );
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
 
   const activityStats = useMemo(() => {
     const countByFeed = new Map<string, number>();
@@ -355,6 +376,19 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   }, [activityStats.countsByFeed, feedValidations, feeds, quarantineRecommendedUrls]);
 
   const visibleRows = showAllRows ? affectedRows : affectedRows.slice(0, 8);
+  const visibleRowUrls = visibleRows.map((row) => row.url);
+  const selectedRows = affectedRows.filter((row) =>
+    selectedAttentionUrls.has(row.url),
+  );
+  const selectedUrls = selectedRows.map((row) => row.url);
+  const selectedCount = selectedRows.length;
+  const actionableCategories = categories.filter((category) => category.id !== "all");
+  const allVisibleRowsSelected =
+    visibleRows.length > 0 &&
+    visibleRows.every((row) => selectedAttentionUrls.has(row.url));
+  const canRunBulkActions = selectedCount > 0;
+  const canMoveSelected =
+    canRunBulkActions && Boolean(bulkCategoryId) && Boolean(onMoveFeedsCategory);
   const invalidRows = affectedRows.filter(
     (row) => !row.isValid && row.status !== "unchecked",
   );
@@ -366,6 +400,17 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     uncheckedRows.length > 0 ||
     quarantineRecommendedUrls.size > 0 ||
     snapshot.summary.fallbackActive;
+
+  useEffect(() => {
+    setSelectedAttentionUrls((current) => {
+      if (current.size === 0) return current;
+      const validUrls = new Set(affectedRows.map((row) => row.url));
+      const next = new Set(
+        Array.from(current).filter((url) => validUrls.has(url)),
+      );
+      return next.size === current.size ? current : next;
+    });
+  }, [affectedRows]);
 
   const diagnosis = useMemo(() => {
     if (snapshot.summary.fallbackActive && snapshot.runtime.warningDetails) {
@@ -496,6 +541,50 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       ...current,
       [section]: !current[section],
     }));
+  };
+
+  const toggleAttentionUrl = (url: string) => {
+    setSelectedAttentionUrls((current) => {
+      const next = new Set(current);
+      if (next.has(url)) {
+        next.delete(url);
+      } else {
+        next.add(url);
+      }
+      return next;
+    });
+  };
+
+  const toggleVisibleRows = () => {
+    setSelectedAttentionUrls((current) => {
+      const next = new Set(current);
+      if (allVisibleRowsSelected) {
+        visibleRowUrls.forEach((url) => next.delete(url));
+      } else {
+        visibleRowUrls.forEach((url) => next.add(url));
+      }
+      return next;
+    });
+  };
+
+  const clearAttentionSelection = () => {
+    setSelectedAttentionUrls(new Set());
+    setBulkCategoryId("");
+  };
+
+  const handleRetrySelectedFeeds = () => {
+    if (!canRunBulkActions || !onRetryFeeds) return;
+    void onRetryFeeds(selectedUrls);
+  };
+
+  const handleQuarantineSelectedFeeds = () => {
+    if (!canRunBulkActions || !onQuarantineFeeds) return;
+    void onQuarantineFeeds(selectedUrls);
+  };
+
+  const handleMoveSelectedFeeds = () => {
+    if (!canMoveSelected || !bulkCategoryId || !onMoveFeedsCategory) return;
+    void onMoveFeedsCategory(selectedUrls, bulkCategoryId);
   };
 
   useEffect(() => {
@@ -670,6 +759,75 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             }
           >
             <div>
+              {affectedRows.length > 0 && (
+                <div className={`${managerControlSurfaceClass} mb-4 p-4`}>
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <label className="flex items-center gap-3 text-sm font-bold text-[rgb(var(--theme-text-readable))]">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleRowsSelected}
+                        onChange={toggleVisibleRows}
+                        className="h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
+                        aria-label="Selecionar feeds visíveis"
+                      />
+                      Selecionar visíveis
+                    </label>
+                    <p className="text-xs font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
+                      {selectedCount} selecionado
+                      {selectedCount === 1 ? "" : "s"}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-[auto_auto_minmax(12rem,1fr)_auto_auto]">
+                    <button
+                      type="button"
+                      onClick={handleRetrySelectedFeeds}
+                      disabled={!canRunBulkActions || !onRetryFeeds}
+                      className={`${MANAGER_CONTROL_CLASS} justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45`}
+                    >
+                      Testar selecionados
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuarantineSelectedFeeds}
+                      disabled={!canRunBulkActions || !onQuarantineFeeds}
+                      className="feed-manager-secondary-button justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      Quarentenar selecionados
+                    </button>
+                    <select
+                      value={bulkCategoryId}
+                      onChange={(event) => setBulkCategoryId(event.target.value)}
+                      className="feed-manager-field h-10 w-full px-3 text-xs font-bold"
+                      aria-label="Mover selecionados para categoria"
+                    >
+                      <option value="">Mover para categoria</option>
+                      {actionableCategories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleMoveSelectedFeeds}
+                      disabled={!canMoveSelected}
+                      className={`${MANAGER_CONTROL_CLASS} justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45`}
+                    >
+                      Mover selecionados
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearAttentionSelection}
+                      disabled={selectedCount === 0}
+                      className={`${MANAGER_CONTROL_CLASS} justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45`}
+                    >
+                      Limpar seleção
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2 md:hidden">
                 {visibleRows.map((row) => (
                   <div
@@ -677,13 +835,22 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                     className={`${managerControlSurfaceClass} p-4`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedAttentionUrls.has(row.url)}
+                          onChange={() => toggleAttentionUrl(row.url)}
+                          className="mt-1 h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
+                          aria-label={`Selecionar ${row.title}`}
+                        />
+                        <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-[rgb(var(--theme-text-readable))]">
                           {row.title}
                         </p>
                         <p className="mt-0.5 truncate text-[11px] font-mono text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
                           {row.host}
                         </p>
+                        </div>
                       </div>
                       <div
                         className={`shrink-0 text-xs font-bold uppercase tracking-widest ${impactTone(row.impact)}`}
@@ -732,6 +899,15 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 <table className="w-full border-separate border-spacing-y-1.5">
                 <thead>
                   <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
+                    <th className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleRowsSelected}
+                        onChange={toggleVisibleRows}
+                        className="h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
+                        aria-label="Selecionar feeds visíveis"
+                      />
+                    </th>
                     <th className="px-4 py-2">Feed</th>
                     <th className="px-4 py-2">Rota</th>
                     <th className="px-4 py-2">Status</th>
@@ -745,6 +921,15 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                       className="group rounded-xl bg-[rgb(var(--theme-manager-control))] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
                     >
                       <td className="rounded-l-xl px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedAttentionUrls.has(row.url)}
+                          onChange={() => toggleAttentionUrl(row.url)}
+                          className="h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
+                          aria-label={`Selecionar ${row.title}`}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-[rgb(var(--theme-text-readable))] truncate max-w-[180px]">
                             {row.title}

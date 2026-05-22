@@ -1186,6 +1186,23 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     void alertSuccess("Categoria atualizada!");
   };
 
+  const moveFeedsToCategory = React.useCallback(
+    async (feedUrls: string[], categoryId: string) => {
+      const targetCategory = categories.find((category) => category.id === categoryId);
+      if (!targetCategory || feedUrls.length === 0) return;
+      const urlSet = new Set(feedUrls);
+      setFeeds((prev) =>
+        prev.map((feed) =>
+          urlSet.has(feed.url) ? { ...feed, categoryId } : feed,
+        ),
+      );
+      await alertSuccess(
+        `${feedUrls.length} feed${feedUrls.length === 1 ? "" : "s"} movido${feedUrls.length === 1 ? "" : "s"} para ${targetCategory.name}.`,
+      );
+    },
+    [alertSuccess, categories, setFeeds],
+  );
+
   const handleToggleHideFromAll = (feedUrl: string) => {
     setFeeds((prev) =>
       prev.map((feed) =>
@@ -1337,8 +1354,18 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   );
 
   const handleQuarantineFeeds = React.useCallback(
-    (urls: string[]) => {
+    async (urls: string[]) => {
       const urlSet = new Set(urls);
+      const candidates = currentFeeds.filter(
+        (feed) => urlSet.has(feed.url) && !isFeedQuarantined(feed),
+      );
+      if (candidates.length === 0) return;
+      const confirmed = await confirmWarning(
+        `Colocar ${candidates.length} feed${candidates.length === 1 ? "" : "s"} em quarentena? Eles sairão das categorias e do carregamento, mas poderão ser testados e restaurados depois.`,
+        "Quarentenar selecionados",
+      );
+      if (!confirmed) return;
+
       setFeeds((prev) =>
         prev.map((feed) =>
           urlSet.has(feed.url) && !isFeedQuarantined(feed)
@@ -1346,8 +1373,27 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             : feed,
         ),
       );
+      await alertSuccess(
+        `${candidates.length} feed${candidates.length === 1 ? "" : "s"} enviado${candidates.length === 1 ? "" : "s"} para quarentena.`,
+      );
     },
-    [getQuarantineReason, setFeeds],
+    [alertSuccess, confirmWarning, currentFeeds, getQuarantineReason, setFeeds],
+  );
+
+  const handleValidateSelectedFeeds = React.useCallback(
+    async (urls: string[]) => {
+      if (urls.length === 0) return;
+      const results = await Promise.all(urls.map((url) => validateSingleFeed(url)));
+      const checkedCount = results.filter(Boolean).length;
+      if (checkedCount === 0) {
+        await alertError("Não foi possível testar os feeds selecionados.");
+        return;
+      }
+      await alertSuccess(
+        `${checkedCount} feed${checkedCount === 1 ? "" : "s"} testado${checkedCount === 1 ? "" : "s"}.`,
+      );
+    },
+    [alertError, alertSuccess, validateSingleFeed],
   );
 
   const handleValidateQuarantinedFeed = React.useCallback(
@@ -2112,6 +2158,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onFocusConsumed={() => setDiagnosticsFocus(null)}
                 quarantineRecommendedUrls={quarantineRecommendedUrls}
                 onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
+                categories={categories}
+                onRetryFeeds={(urls) => void handleValidateSelectedFeeds(urls)}
+                onQuarantineFeeds={(urls) => void handleQuarantineFeeds(urls)}
+                onMoveFeedsCategory={(urls, categoryId) =>
+                  void moveFeedsToCategory(urls, categoryId)
+                }
                 expandedSections={{
                   health: expandedAccordionRoutes["diagnostics:health"],
                   infra: expandedAccordionRoutes["diagnostics:infra"],

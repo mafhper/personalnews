@@ -533,6 +533,75 @@ describe("Feed danger zone flows", () => {
     expect(screen.queryByText("Feeds afetados")).not.toBeInTheDocument();
   });
 
+  it("offers bulk actions for feeds in the attention list", () => {
+    const onRetryFeeds = vi.fn();
+    const onQuarantineFeeds = vi.fn();
+    const onMoveFeedsCategory = vi.fn();
+
+    render(
+      <FeedAnalytics
+        feeds={testFeeds}
+        articles={[]}
+        view="all"
+        categories={mocks.testCategories}
+        onRetryFeeds={onRetryFeeds}
+        onQuarantineFeeds={onQuarantineFeeds}
+        onMoveFeedsCategory={onMoveFeedsCategory}
+        quarantineRecommendedUrls={new Set(["https://one.example/rss"])}
+        feedValidations={
+          new Map([
+            [
+              "https://one.example/rss",
+              {
+                url: "https://one.example/rss",
+                isValid: false,
+                status: "network_error",
+                error: "Falha de rede",
+                lastChecked: Date.now(),
+                validationAttempts: [],
+                suggestions: [],
+                totalRetries: 0,
+                totalValidationTime: 0,
+              },
+            ],
+            [
+              "https://two.example/rss",
+              {
+                url: "https://two.example/rss",
+                isValid: false,
+                status: "timeout",
+                error: "Tempo esgotado",
+                lastChecked: Date.now(),
+                validationAttempts: [],
+                suggestions: [],
+                totalRetries: 0,
+                totalValidationTime: 0,
+              },
+            ],
+          ])
+        }
+      />,
+    );
+
+    fireEvent.click(screen.getAllByLabelText("Selecionar One")[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Testar selecionados" }));
+    expect(onRetryFeeds).toHaveBeenCalledWith(["https://one.example/rss"]);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Quarentenar selecionados" }),
+    );
+    expect(onQuarantineFeeds).toHaveBeenCalledWith(["https://one.example/rss"]);
+
+    fireEvent.change(screen.getByLabelText("Mover selecionados para categoria"), {
+      target: { value: "tech" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Mover selecionados" }));
+    expect(onMoveFeedsCategory).toHaveBeenCalledWith(
+      ["https://one.example/rss"],
+      "tech",
+    );
+  });
+
   it("empties feeds after confirming delete-all", async () => {
     const setFeeds = vi.fn();
     mocks.confirmDanger.mockResolvedValueOnce(true);
