@@ -144,19 +144,19 @@ describe("Feed danger zone flows", () => {
       screen.getByRole("heading", { name: "Ações recomendadas" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Resumo da coleção" }),
+      screen.getByRole("heading", { name: "Estado da coleção" }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Total").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Válidos").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Erros").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Quarentena").length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: "Adicionar fonte" }),
+      screen.getByRole("button", { name: /Adicionar fonte/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Revalidar feeds" }),
+      screen.getByRole("button", { name: /Revalidar coleção/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Use esta entrada para escolher/)).toBeInTheDocument();
+    expect(screen.getByText(/Nenhum erro e nenhum feed/)).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu de navegação" }));
@@ -216,7 +216,7 @@ describe("Feed danger zone flows", () => {
       ).not.toBeInTheDocument(),
     );
     expect(
-      screen.getByRole("heading", { name: "Feeds cadastrados" }),
+      screen.getByRole("heading", { name: "Fontes da coleção" }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
@@ -256,19 +256,13 @@ describe("Feed danger zone flows", () => {
       }),
     );
 
-    const reviewSection = container.querySelector(
-      "#feed-manager-section-feeds-list",
-    ) as HTMLElement;
-    expect(reviewSection).not.toBeNull();
     expect(
-      within(reviewSection).getByRole("heading", { name: "Feeds cadastrados" }),
+      screen.getByRole("heading", { name: "Fontes da coleção" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Adicionar fontes" }),
+      screen.getByRole("heading", { name: "Adicionar uma fonte" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("heading", { name: "Quarentena" }).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByText("Listas curadas")).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", {
         name: "Organização. Categorias e roteamento visual",
@@ -339,7 +333,7 @@ describe("Feed danger zone flows", () => {
     expect(screen.getByRole("button", { name: "Excluir todos os feeds" })).toBeInTheDocument();
   });
 
-  it("renders standardized section headers and workspace footer", async () => {
+  it("renders standardized page titles and workspace footer", async () => {
     const { container } = render(
       <FeedManager
         currentFeeds={testFeeds}
@@ -348,7 +342,7 @@ describe("Feed danger zone flows", () => {
       />,
     );
 
-    expect(container.querySelector(".feed-manager-section-header")).not.toBeNull();
+    expect(container.querySelector(".feed-manager-page-title")).not.toBeNull();
     expect(
       screen.getByRole("contentinfo", { name: "Resumo do gerenciador" }),
     ).toBeInTheDocument();
@@ -400,9 +394,9 @@ describe("Feed danger zone flows", () => {
       }),
     );
     expect(
-      screen.getAllByRole("heading", { name: "Quarentena" }).length,
+      screen.getAllByRole("heading", { name: "Adicionar uma fonte" }).length,
     ).toBeGreaterThan(0);
-    expect(container.querySelectorAll(".feed-manager-anchor-section").length).toBeGreaterThan(
+    expect(container.querySelectorAll(".feed-manager-page-title").length).toBeGreaterThan(
       0,
     );
   });
