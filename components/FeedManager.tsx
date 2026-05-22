@@ -1,26 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import pkg from "../package.json";
 import {
-  Activity,
   AlertTriangle,
   BarChart3,
   Boxes,
-  ChevronDown,
   CircleCheck,
-  FileText,
+  Download,
   FileUp,
   Library,
   Menu,
   Plus,
   RefreshCw,
-  ServerCog,
-  Settings2,
   ShieldAlert,
   Tags,
   Wrench,
   X,
 } from "lucide-react";
-import type { FeedSource, Article } from "../types";
+import type { FeedSource, Article, FeedCategory } from "../types";
 import { detectEnvironment } from "../services/environmentDetector";
 import { parseOpml } from "../services/rssParser";
 import { FeedCategoryManager } from "./FeedCategoryManager";
@@ -59,12 +55,9 @@ import {
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
-import { FeedAddTab } from "./FeedManager/FeedAddTab";
 import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
-import { FeedQuarantineTab } from "./FeedManager/FeedQuarantineTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
-import { FeedManagerAccordionSection } from "./FeedManager/FeedManagerAccordionSection";
 import { FeedManagerSectionHeader } from "./FeedManager/FeedManagerSectionHeader";
 import {
   managerControlSurfaceClass,
@@ -97,7 +90,12 @@ interface FeedManagerProps {
   onRefreshFeeds?: () => void;
 }
 
-type FeedManagerArea = "feeds" | "operations" | "diagnostics";
+type FeedManagerArea =
+  | "overview"
+  | "sources"
+  | "organization"
+  | "maintenance"
+  | "diagnostics";
 type FeedManagerRoute =
   | "feeds:overview"
   | "feeds:list"
@@ -115,16 +113,16 @@ type FeedManagerRoute =
   | "diagnostics:reports";
 
 const routeAreaMap: Record<FeedManagerRoute, FeedManagerArea> = {
-  "feeds:overview": "feeds",
-  "feeds:list": "feeds",
-  "feeds:add": "feeds",
-  "feeds:categories": "feeds",
-  "feeds:quarantine": "feeds",
-  "operations:overview": "operations",
-  "operations:io": "operations",
-  "operations:curated": "operations",
-  "operations:maintenance": "operations",
-  "operations:risk": "operations",
+  "feeds:overview": "overview",
+  "feeds:list": "sources",
+  "feeds:add": "sources",
+  "feeds:categories": "organization",
+  "feeds:quarantine": "sources",
+  "operations:overview": "maintenance",
+  "operations:io": "maintenance",
+  "operations:curated": "maintenance",
+  "operations:maintenance": "maintenance",
+  "operations:risk": "maintenance",
   "diagnostics:overview": "diagnostics",
   "diagnostics:health": "diagnostics",
   "diagnostics:infra": "diagnostics",
@@ -144,52 +142,52 @@ const routeContentMap: Record<
   { area: string; title: string; description: string }
 > = {
   "feeds:overview": {
-    area: "Coleção",
-    title: "Painel da coleção",
-    description: "Resumo e atalhos para cuidar das fontes salvas.",
+    area: "Visão geral",
+    title: "Resumo da coleção",
+    description: "Estado, ações recomendadas e atalhos da coleção.",
   },
   "feeds:list": {
-    area: "Coleção",
+    area: "Fontes",
     title: "Feeds cadastrados",
-    description: "Busca, status, categoria e correções por fonte.",
+    description: "Busca, status, inclusão e quarentena das fontes.",
   },
   "feeds:add": {
-    area: "Coleção",
+    area: "Fontes",
     title: "Adicionar feed",
     description: "Inclua uma fonte, importe OPML ou abra listas prontas.",
   },
   "feeds:categories": {
-    area: "Coleção",
+    area: "Organização",
     title: "Categorias",
-    description: "Organização visual das fontes da coleção.",
+    description: "Categorias, propriedades e roteamento visual da coleção.",
   },
   "feeds:quarantine": {
-    area: "Coleção",
+    area: "Fontes",
     title: "Quarentena",
     description: "Feeds preservados fora da carga principal.",
   },
   "operations:overview": {
-    area: "Operações",
-    title: "Intervenções da coleção",
-    description: "Escolha uma tarefa antes de alterar a biblioteca.",
+    area: "Manutenção",
+    title: "Backup e manutenção",
+    description: "Arquivos, listas, reparos e ações críticas.",
   },
   "operations:io": {
-    area: "Operações",
+    area: "Manutenção",
     title: "Arquivos e listas",
     description: "OPML, backups e coleções prontas.",
   },
   "operations:curated": {
-    area: "Operações",
+    area: "Manutenção",
     title: "Arquivos e listas",
     description: "OPML, backups e coleções prontas.",
   },
   "operations:maintenance": {
-    area: "Operações",
+    area: "Manutenção",
     title: "Manutenção e risco",
     description: "Reparos, restauração e ações destrutivas.",
   },
   "operations:risk": {
-    area: "Operações",
+    area: "Manutenção",
     title: "Manutenção e risco",
     description: "Reparos, restauração e ações destrutivas.",
   },
@@ -215,28 +213,7 @@ const routeContentMap: Record<
   },
 };
 
-const routesByArea: Record<FeedManagerArea, FeedManagerRoute[]> = {
-  feeds: [
-    "feeds:overview",
-    "feeds:list",
-    "feeds:add",
-    "feeds:categories",
-    "feeds:quarantine",
-  ],
-  operations: ["operations:overview", "operations:io", "operations:maintenance"],
-  diagnostics: [
-    "diagnostics:overview",
-    "diagnostics:health",
-    "diagnostics:infra",
-    "diagnostics:reports",
-  ],
-};
-
 type FeedManagerAccordionRoute =
-  | "feeds:list"
-  | "feeds:add"
-  | "feeds:categories"
-  | "feeds:quarantine"
   | "operations:io"
   | "operations:maintenance"
   | "diagnostics:health"
@@ -244,10 +221,6 @@ type FeedManagerAccordionRoute =
   | "diagnostics:reports";
 
 const feedManagerAccordionDefaults: Record<FeedManagerAccordionRoute, boolean> = {
-  "feeds:list": false,
-  "feeds:add": false,
-  "feeds:categories": false,
-  "feeds:quarantine": false,
   "operations:io": false,
   "operations:maintenance": false,
   "diagnostics:health": false,
@@ -400,36 +373,6 @@ const EditFeedDialog: React.FC<{
   );
 };
 
-const FeedManagerOperationalMetric: React.FC<{
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  tone?: "neutral" | "success" | "warning" | "danger";
-}> = ({ label, value, icon, tone = "neutral" }) => {
-  const toneClass =
-    tone === "success"
-      ? "text-[rgb(var(--color-success))]"
-      : tone === "warning"
-        ? "text-[rgb(var(--color-warning))]"
-      : tone === "danger"
-        ? "text-[rgb(var(--color-error))]"
-        : "text-[rgb(var(--theme-text-readable))]";
-
-  return (
-    <div className="feed-manager-operational-metric">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-secondary-readable))]">
-        {icon}
-      </span>
-      <span className="feed-manager-operational-metric__copy">
-        <span className="feed-manager-operational-metric__label">{label}</span>
-        <span className={`mt-1 block text-2xl font-black leading-none ${toneClass}`}>
-          {value}
-        </span>
-      </span>
-    </div>
-  );
-};
-
 const FeedManagerTopbar: React.FC<{
   closeModal: () => void;
   mobileMenuButtonRef: React.RefObject<HTMLButtonElement | null>;
@@ -476,17 +419,20 @@ const FeedManagerTopbar: React.FC<{
         <Menu className="h-4.5 w-4.5" />
       </button>
       <div className="min-w-0">
-        <h2 className="truncate text-xl font-black text-[rgb(var(--theme-text-readable))] sm:text-2xl">
-          Gerenciar Feeds
+        <h2 className="truncate text-[18px] font-semibold tracking-tight text-[rgb(var(--theme-text-readable))] sm:text-[22px]">
+          Central da Coleção
         </h2>
+        <p className="hidden max-w-xl truncate text-[13px] text-[rgb(var(--theme-text-secondary-readable))] opacity-78 sm:block">
+          Fontes, categorias, integridade e manutenção da sua coleção de notícias.
+        </p>
       </div>
     </div>
 
     <div className="feed-manager-header-context order-3 col-span-2 lg:order-none lg:col-span-1">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-65">
+      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] opacity-68">
         {routeContent.area}
       </p>
-      <p className="truncate text-sm font-bold text-[rgb(var(--theme-text-readable))]">
+      <p className="truncate text-[13px] font-semibold text-[rgb(var(--theme-text-readable))]">
         {routeContent.title}
       </p>
       <p className="hidden truncate text-xs opacity-78 sm:block">
@@ -506,74 +452,7 @@ const FeedManagerTopbar: React.FC<{
   </header>
 );
 
-const FeedManagerOperationalHero: React.FC<{
-  metrics: React.ReactNode;
-  onAddFeed: () => void;
-  onRefreshFeeds?: () => void;
-}> = ({ metrics, onAddFeed, onRefreshFeeds }) => (
-  <section
-    className="feed-manager-operational-hero"
-    aria-labelledby="feed-manager-operational-title"
-  >
-    <div className="min-w-0">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-        Operação
-      </p>
-      <h3
-        id="feed-manager-operational-title"
-        className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]"
-      >
-        Estado da coleção
-      </h3>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
-        Acompanhe a saúde geral dos feeds e acesse as ações mais usadas sem
-        disputar espaço com a navegação.
-      </p>
-      <div className="feed-manager-hero-metrics mt-4">{metrics}</div>
-    </div>
-
-    <div className="feed-manager-hero-actions">
-      <button
-        type="button"
-        onClick={onAddFeed}
-        className={`${managerPrimaryButtonClass} w-full sm:w-auto`}
-      >
-        <Plus className="h-4 w-4" />
-        Adicionar feed
-      </button>
-      {onRefreshFeeds && (
-        <button
-          type="button"
-          onClick={onRefreshFeeds}
-          className={`${managerSecondaryButtonClass} w-full sm:w-auto`}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Revalidar feeds
-        </button>
-      )}
-    </div>
-  </section>
-);
-
-const CollectionModeButton: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}> = ({ active, onClick, children }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`rounded-full px-4 py-2 text-sm font-black transition ${
-      active
-        ? "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))] ring-1 ring-[rgba(var(--color-accent),0.28)]"
-        : "bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] text-[rgb(var(--theme-text-readable))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] hover:bg-[rgb(var(--theme-manager-soft,var(--color-surfaceElevated)))]"
-    }`}
-  >
-    {children}
-  </button>
-);
-
-const FeedManagerSidebarButton: React.FC<{
+const FeedManagerAreaButton: React.FC<{
   active: boolean;
   badge?: number;
   collapsed: boolean;
@@ -582,48 +461,6 @@ const FeedManagerSidebarButton: React.FC<{
   label: string;
   onClick: () => void;
 }> = ({ active, badge, collapsed, description, icon, label, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    title={collapsed ? `${label}: ${description}` : undefined}
-    aria-label={`${label}. ${description}`}
-    className={`feed-manager-sidebar-nav-item ${
-      collapsed
-        ? "feed-manager-sidebar-nav-item--collapsed"
-        : "feed-manager-sidebar-nav-item--expanded"
-    } ${active ? "feed-manager-sidebar-nav-item--active" : ""}`}
-  >
-    <span
-      className={`feed-manager-sidebar-nav-icon ${
-        active ? "feed-manager-sidebar-nav-icon--active" : ""
-      }`}
-    >
-      {icon}
-    </span>
-    <span className={`min-w-0 flex-1 ${collapsed ? "sr-only" : ""}`}>
-      <span className="flex items-center justify-between gap-2">
-        <span className="truncate text-[13px] font-bold">{label}</span>
-        {typeof badge !== "undefined" && badge > 0 && (
-          <span className="rounded-full bg-[rgba(var(--color-accent),0.14)] px-2 py-0.5 text-[10px] font-black text-[rgb(var(--color-accent))]">
-            {badge}
-          </span>
-        )}
-      </span>
-      <span className="mt-0.5 block text-[11px] leading-snug opacity-70">
-        {description}
-      </span>
-    </span>
-  </button>
-);
-
-const FeedManagerAreaButton: React.FC<{
-  active: boolean;
-  collapsed: boolean;
-  description: string;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}> = ({ active, collapsed, description, icon, label, onClick }) => (
   <button
     type="button"
     onClick={onClick}
@@ -643,8 +480,20 @@ const FeedManagerAreaButton: React.FC<{
       {icon}
     </span>
     <span className={`min-w-0 flex-1 ${collapsed ? "sr-only" : ""}`}>
-      <span className="block text-[11px] font-black uppercase tracking-[0.16em]">
-        {label}
+      <span className="flex items-start justify-between gap-2">
+        <span className="min-w-0">
+          <span className="block truncate text-[13px] font-medium leading-tight">
+            {label}
+          </span>
+          <span className="mt-0.5 block truncate text-[11px] leading-tight opacity-70">
+            {description}
+          </span>
+        </span>
+        {typeof badge !== "undefined" && badge > 0 && (
+          <span className="rounded-full bg-[rgba(var(--color-accent),0.14)] px-2 py-0.5 text-[10px] font-black text-[rgb(var(--color-accent))]">
+            {badge}
+          </span>
+        )}
       </span>
     </span>
   </button>
@@ -711,6 +560,437 @@ const FeedManagerInsight: React.FC<{
   );
 };
 
+const FeedManagerPageTitle: React.FC<{
+  title: string;
+  description?: string;
+}> = ({ title, description }) => (
+  <div className="feed-manager-page-title">
+    <h3>{title}</h3>
+    {description && <p>{description}</p>}
+  </div>
+);
+
+const FeedManagerLightCard: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  danger?: boolean;
+}> = ({ children, className = "", danger = false }) => (
+  <div
+    className={`feed-manager-light-card ${
+      danger ? "feed-manager-light-card--danger" : ""
+    } ${className}`}
+  >
+    {children}
+  </div>
+);
+
+const FeedManagerLightRow: React.FC<{
+  title: string;
+  description?: string;
+  icon?: React.ReactNode;
+  onClick?: () => void;
+  danger?: boolean;
+}> = ({ title, description, icon, onClick, danger = false }) => {
+  const Component = onClick ? "button" : "div";
+  return (
+    <Component
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`feed-manager-light-row ${
+        onClick ? "feed-manager-light-row--interactive" : ""
+      } ${danger ? "feed-manager-light-row--danger" : ""}`}
+    >
+      {icon && <span className="feed-manager-light-row__icon">{icon}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13.5px] font-semibold">{title}</span>
+        {description && (
+          <span className="mt-0.5 block truncate text-xs opacity-72">
+            {description}
+          </span>
+        )}
+      </span>
+    </Component>
+  );
+};
+
+const FeedManagerCompactMetric: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  tone?: "neutral" | "success" | "warning" | "danger";
+  value: React.ReactNode;
+}> = ({ icon, label, tone = "neutral", value }) => (
+  <div className={`feed-manager-compact-metric feed-manager-compact-metric--${tone}`}>
+    <span>{icon}</span>
+    <span className="min-w-0">
+      <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] opacity-68">
+        {label}
+      </span>
+      <strong>{value}</strong>
+    </span>
+  </div>
+);
+
+const FeedManagerOverviewPage: React.FC<{
+  categoryCount: number;
+  invalidCount: number;
+  onNavigate: (route: FeedManagerRoute) => void;
+  onRefreshFeeds?: () => void;
+  quarantineCount: number;
+  totalFeedCount: number;
+  validCount: number;
+}> = ({
+  categoryCount,
+  invalidCount,
+  onNavigate,
+  onRefreshFeeds,
+  quarantineCount,
+  totalFeedCount,
+  validCount,
+}) => (
+  <div className="feed-manager-page feed-manager-page--narrow">
+    <section>
+      <FeedManagerPageTitle title="Estado da coleção" />
+      <div className="feed-manager-metric-strip">
+        <FeedManagerCompactMetric
+          icon={<Boxes className="h-4 w-4" />}
+          label="Total"
+          value={totalFeedCount}
+        />
+        <FeedManagerCompactMetric
+          icon={<CircleCheck className="h-4 w-4" />}
+          label="Válidos"
+          tone="success"
+          value={validCount}
+        />
+        <FeedManagerCompactMetric
+          icon={<AlertTriangle className="h-4 w-4" />}
+          label="Erros"
+          tone={invalidCount > 0 ? "danger" : "neutral"}
+          value={invalidCount}
+        />
+        <FeedManagerCompactMetric
+          icon={<ShieldAlert className="h-4 w-4" />}
+          label="Quarentena"
+          tone={quarantineCount > 0 ? "warning" : "neutral"}
+          value={quarantineCount}
+        />
+        <FeedManagerCompactMetric
+          icon={<Tags className="h-4 w-4" />}
+          label="Categorias"
+          value={categoryCount}
+        />
+      </div>
+    </section>
+
+    <section>
+      <FeedManagerPageTitle title="Ações recomendadas" />
+      <FeedManagerLightCard>
+        <FeedManagerLightRow
+          icon={<CircleCheck className="h-[18px] w-[18px]" />}
+          title={
+            invalidCount > 0 || quarantineCount > 0
+              ? "A coleção precisa de revisão."
+              : "A coleção está saudável."
+          }
+          description={
+            invalidCount > 0 || quarantineCount > 0
+              ? "Há fontes com erro ou preservadas fora do carregamento."
+              : "Nenhum erro e nenhum feed em quarentena."
+          }
+          onClick={() => onNavigate("diagnostics:overview")}
+        />
+        <FeedManagerLightRow
+          icon={<Download className="h-[18px] w-[18px]" />}
+          title="Faça backup OPML da coleção."
+          description="Recomendado após adicionar, mover ou remover fontes."
+          onClick={() => onNavigate("operations:overview")}
+        />
+        <FeedManagerLightRow
+          icon={<RefreshCw className="h-[18px] w-[18px]" />}
+          title="Revalidar coleção"
+          description="Confirme a disponibilidade das fontes salvas."
+          onClick={onRefreshFeeds}
+        />
+      </FeedManagerLightCard>
+    </section>
+
+    <section>
+      <FeedManagerPageTitle title="Atalhos" />
+      <div className="feed-manager-shortcut-grid">
+        <FeedManagerLightCard>
+          <FeedManagerLightRow
+            icon={<Library className="h-[18px] w-[18px]" />}
+            title="Revisar feeds"
+            description="Lista completa e status"
+            onClick={() => onNavigate("feeds:list")}
+          />
+        </FeedManagerLightCard>
+        <FeedManagerLightCard>
+          <FeedManagerLightRow
+            icon={<Plus className="h-[18px] w-[18px]" />}
+            title="Adicionar fonte"
+            description="URL, OPML ou listas"
+            onClick={() => onNavigate("feeds:list")}
+          />
+        </FeedManagerLightCard>
+        <FeedManagerLightCard>
+          <FeedManagerLightRow
+            icon={<FileUp className="h-[18px] w-[18px]" />}
+            title="Importar OPML"
+            description="Revisar antes de aplicar"
+            onClick={() => onNavigate("operations:overview")}
+          />
+        </FeedManagerLightCard>
+        <FeedManagerLightCard>
+          <FeedManagerLightRow
+            icon={<Tags className="h-[18px] w-[18px]" />}
+            title="Organizar categorias"
+            description={`${categoryCount} categorias`}
+            onClick={() => onNavigate("feeds:categories")}
+          />
+        </FeedManagerLightCard>
+        <FeedManagerLightCard>
+          <FeedManagerLightRow
+            icon={<BarChart3 className="h-[18px] w-[18px]" />}
+            title="Abrir diagnóstico"
+            description="Saúde e infraestrutura"
+            onClick={() => onNavigate("diagnostics:overview")}
+          />
+        </FeedManagerLightCard>
+        <FeedManagerLightCard>
+          <FeedManagerLightRow
+            icon={<Download className="h-[18px] w-[18px]" />}
+            title="Exportar backup"
+            description="OPML da coleção"
+            onClick={() => onNavigate("operations:io")}
+          />
+        </FeedManagerLightCard>
+      </div>
+    </section>
+
+    <section>
+      <FeedManagerPageTitle title="Integridade" />
+      <FeedManagerLightCard className="p-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <FeedManagerInsight
+            label="Cobertura"
+            value={totalFeedCount > 0 ? `${Math.round((validCount / totalFeedCount) * 100)}%` : "0%"}
+            description="fontes validadas na última leitura."
+            tone={invalidCount > 0 ? "warning" : "success"}
+          />
+          <FeedManagerInsight
+            label="Fontes ativas"
+            value={validCount}
+            description={`de ${totalFeedCount} cadastradas.`}
+          />
+          <FeedManagerInsight
+            label="Fora da carga"
+            value={quarantineCount}
+            description="fontes em quarentena."
+            tone={quarantineCount > 0 ? "warning" : "neutral"}
+          />
+          <FeedManagerInsight
+            label="Categorias"
+            value={categoryCount}
+            description="rotas visuais disponíveis."
+          />
+        </div>
+      </FeedManagerLightCard>
+    </section>
+  </div>
+);
+
+const FeedManagerSourcesPage: React.FC<{
+  activeFeeds: FeedSource[];
+  articles: Article[];
+  categories: FeedCategory[];
+  currentFeedCount: number;
+  feedValidations: Map<string, FeedValidationResult>;
+  newFeedCategory: string;
+  newFeedTitle: string;
+  newFeedUrl: string;
+  onConfirmRefreshAll: () => void | Promise<void>;
+  onImportOPML: () => void;
+  onMoveCategory: (feedUrl: string, categoryId: string) => void;
+  onQuarantineFeed: (url: string) => void;
+  onRefreshFeeds?: () => void;
+  onRemoveFeed: (url: string) => void;
+  onRetryFeed: (url: string) => void;
+  onShowCuratedLists: () => void;
+  onShowError: (url: string, validation?: FeedValidationResult) => void;
+  onSubmitFeed: (event: React.FormEvent) => void | Promise<void>;
+  onToggleHideFromAll: (url: string) => void;
+  onEditFeed: (url: string) => void;
+  onEditFeedTitle: (url: string) => void;
+  processingUrl: string | null;
+  quarantineRecommendedUrls: Set<string>;
+  setNewFeedCategory: (id: string) => void;
+  setNewFeedTitle: (title: string) => void;
+  setNewFeedUrl: (url: string) => void;
+}> = ({
+  activeFeeds,
+  articles,
+  categories,
+  currentFeedCount,
+  feedValidations,
+  newFeedCategory,
+  newFeedTitle,
+  newFeedUrl,
+  onConfirmRefreshAll,
+  onImportOPML,
+  onMoveCategory,
+  onQuarantineFeed,
+  onRefreshFeeds,
+  onRemoveFeed,
+  onRetryFeed,
+  onShowCuratedLists,
+  onShowError,
+  onSubmitFeed,
+  onToggleHideFromAll,
+  onEditFeed,
+  onEditFeedTitle,
+  processingUrl,
+  quarantineRecommendedUrls,
+  setNewFeedCategory,
+  setNewFeedTitle,
+  setNewFeedUrl,
+}) => {
+  const isProcessing = processingUrl !== null;
+
+  return (
+    <div className="feed-manager-page">
+      <section>
+        <FeedManagerPageTitle
+          title="Adicionar uma fonte"
+          description="Três caminhos para crescer a coleção sem interromper a revisão."
+        />
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(220px,0.75fr)_minmax(220px,0.75fr)]">
+          <FeedManagerLightCard className="p-4">
+            <form
+              onSubmit={(event) => {
+                void onSubmitFeed(event);
+              }}
+              className="grid gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <span className="feed-manager-light-row__icon">
+                  <Plus className="h-4 w-4" />
+                </span>
+                <div>
+                  <h4 className="text-[13.5px] font-semibold">Por URL</h4>
+                  <p className="text-xs opacity-72">Cole RSS, Atom ou a página do site.</p>
+                </div>
+              </div>
+              <input
+                type="url"
+                required
+                placeholder="https://exemplo.com/feed"
+                value={newFeedUrl}
+                onChange={(event) => setNewFeedUrl(event.target.value)}
+                disabled={isProcessing}
+                className={managerFieldClass}
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  type="text"
+                  placeholder="Nome opcional"
+                  value={newFeedTitle}
+                  onChange={(event) => setNewFeedTitle(event.target.value)}
+                  disabled={isProcessing}
+                  className={managerFieldClass}
+                />
+                <select
+                  value={newFeedCategory}
+                  onChange={(event) => setNewFeedCategory(event.target.value)}
+                  disabled={isProcessing}
+                  className={managerFieldClass}
+                >
+                  <option value="">Sem categoria</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className={`${managerPrimaryButtonClass} w-full`}
+              >
+                {isProcessing ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                {isProcessing ? "Validando..." : "Adicionar"}
+              </button>
+            </form>
+          </FeedManagerLightCard>
+
+          <FeedManagerLightCard className="p-4">
+            <FeedManagerLightRow
+              icon={<FileUp className="h-[18px] w-[18px]" />}
+              title="Importar OPML"
+              description="Você revisa antes de confirmar."
+            />
+            <button
+              type="button"
+              onClick={onImportOPML}
+              className={`${managerSecondaryButtonClass} mt-3 w-full`}
+            >
+              Escolher arquivo
+            </button>
+            <p className="mt-2 text-[11.5px] opacity-64">
+              Coleção atual: {currentFeedCount} feeds.
+            </p>
+          </FeedManagerLightCard>
+
+          <FeedManagerLightCard className="p-4">
+            <FeedManagerLightRow
+              icon={<Library className="h-[18px] w-[18px]" />}
+              title="Listas curadas"
+              description="Mescle coleções prontas ao acervo."
+            />
+            <button
+              type="button"
+              onClick={onShowCuratedLists}
+              className={`${managerSecondaryButtonClass} mt-3 w-full`}
+            >
+              Abrir listas
+            </button>
+            <p className="mt-2 text-[11.5px] opacity-64">
+              Nada é aplicado sem confirmação.
+            </p>
+          </FeedManagerLightCard>
+        </div>
+      </section>
+
+      <section>
+        <FeedManagerPageTitle title="Fontes da coleção" />
+        <FeedListTab
+          embedded
+          feeds={activeFeeds}
+          validations={feedValidations}
+          categories={categories}
+          onRemove={onRemoveFeed}
+          onRetry={onRetryFeed}
+          onEdit={onEditFeed}
+          onEditTitle={onEditFeedTitle}
+          onShowError={onShowError}
+          onMoveCategory={onMoveCategory}
+          onToggleHideFromAll={onToggleHideFromAll}
+          onQuarantineFeed={onQuarantineFeed}
+          quarantineRecommendedUrls={quarantineRecommendedUrls}
+          onRefreshAll={onRefreshFeeds}
+          onConfirmRefreshAll={onConfirmRefreshAll}
+          articles={articles}
+        />
+      </section>
+    </div>
+  );
+};
+
 const FeedManagerWorkspaceFooter: React.FC<{
   activeFeedCount: number;
   environmentLabel: string;
@@ -767,8 +1047,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [expandedAreas, setExpandedAreas] = useState<
     Record<FeedManagerArea, boolean>
   >({
-    feeds: true,
-    operations: false,
+    overview: true,
+    sources: true,
+    organization: true,
+    maintenance: true,
     diagnostics: false,
   });
   const [diagnosticsFocus, setDiagnosticsFocus] = useState<string | null>(null);
@@ -929,19 +1211,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     [],
   );
 
-  const scrollToRoute = React.useCallback((route: FeedManagerRoute) => {
-    if (typeof window === "undefined") return;
-    const nextRoute = canonicalizeFeedManagerRoute(route);
-    window.setTimeout(() => {
-      document
-        .getElementById(getFeedManagerSectionId(nextRoute))
-        ?.scrollIntoView?.({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 80);
-  }, []);
-
   const navigateToRoute = React.useCallback(
     (route: FeedManagerRoute, focusSection?: string) => {
       const nextRoute = canonicalizeFeedManagerRoute(route);
@@ -953,9 +1222,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         ...current,
         [nextArea]: true,
       }));
-      scrollToRoute(nextRoute);
+      const scrollContainer = contentScrollRef.current;
+      if (typeof scrollContainer?.scrollTo === "function") {
+        scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+      }
     },
-    [openAccordionRoute, scrollToRoute],
+    [openAccordionRoute],
   );
 
   useEffect(() => {
@@ -967,62 +1239,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             [activeArea]: true,
           },
     );
-  }, [activeArea]);
-
-  useEffect(() => {
-    const root = contentScrollRef.current;
-    if (!root) return;
-
-    let ticking = false;
-    const updateActiveRouteFromScroll = () => {
-      ticking = false;
-      if (root.clientHeight === 0) return;
-      const rootTop = root.getBoundingClientRect().top;
-      const marker = rootTop + 160;
-      const measuredSections = routesByArea[activeArea]
-        .map((route) => {
-          const section = document.getElementById(getFeedManagerSectionId(route));
-          if (!section) return null;
-          const rect = section.getBoundingClientRect();
-          return rect.height > 0 ? { route, rect } : null;
-        })
-        .filter(
-          (section): section is { route: FeedManagerRoute; rect: DOMRect } =>
-          Boolean(section),
-        );
-      const distinctTops = new Set(
-        measuredSections.map(({ rect }) => Math.round(rect.top)),
-      );
-      if (distinctTops.size <= 1) return;
-
-      const visibleRoute =
-        measuredSections.find(
-          ({ rect }) => rect.top <= marker && rect.bottom > marker,
-        )?.route ||
-        measuredSections
-          .filter(({ rect }) => rect.top <= marker)
-          .sort((a, b) => b.rect.top - a.rect.top)[0]?.route ||
-        measuredSections[0]?.route;
-
-      if (!visibleRoute) return;
-      setActiveRoute((current) =>
-        current === visibleRoute ? current : visibleRoute,
-      );
-    };
-
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(updateActiveRouteFromScroll);
-    };
-
-    updateActiveRouteFromScroll();
-    const settleTimer = window.setTimeout(updateActiveRouteFromScroll, 140);
-    root.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.clearTimeout(settleTimer);
-      root.removeEventListener("scroll", onScroll);
-    };
   }, [activeArea]);
 
   useEffect(() => {
@@ -1054,8 +1270,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           parsed.section,
           parsed.openProxySettings,
         );
-        openAccordionRoute(nextRoute);
         setActiveRoute(nextRoute);
+        openAccordionRoute(nextRoute);
         if (parsed.openProxySettings) {
           setDiagnosticsFocus("proxy-health");
         } else if (parsed.section) {
@@ -1090,7 +1306,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   useEffect(() => {
     if (
       activeFeeds.length > 0 &&
-      (activeArea === "feeds" || activeArea === "diagnostics")
+      (activeArea === "overview" ||
+        activeArea === "sources" ||
+        activeArea === "diagnostics")
     ) {
       const frameId = requestAnimationFrame(() => {
         void validateAllFeeds();
@@ -1666,69 +1884,37 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     description: string;
     overviewRoute: FeedManagerRoute;
     icon: React.ReactNode;
-    items: Array<{
-      route: FeedManagerRoute;
-      label: string;
-      description: string;
-      icon: React.ReactNode;
-      badge?: number;
-      focusSection?: string;
-    }>;
+    badge?: number;
+    focusSection?: string;
   }> = [
     {
-      id: "feeds",
-      label: "Coleção",
-      description: "Fontes, entrada e organização",
+      id: "overview",
+      label: "Visão geral",
+      description: "Resumo e próximos passos",
       overviewRoute: "feeds:overview",
       icon: <Library className="h-4 w-4" />,
-      items: [
-        {
-          route: "feeds:list",
-          label: "Feeds",
-          description: "Lista, busca e status",
-          icon: <Library className="h-4 w-4" />,
-        },
-        {
-          route: "feeds:add",
-          label: "Adicionar",
-          description: "Novo feed e OPML",
-          icon: <Plus className="h-4 w-4" />,
-        },
-        {
-          route: "feeds:categories",
-          label: "Categorias",
-          description: "Organização visual",
-          icon: <Tags className="h-4 w-4" />,
-        },
-        {
-          route: "feeds:quarantine",
-          label: "Quarentena",
-          description: "Feeds preservados fora da carga",
-          icon: <ShieldAlert className="h-4 w-4" />,
-          badge: quarantineCount > 0 ? quarantineCount : undefined,
-        },
-      ],
     },
     {
-      id: "operations",
-      label: "Operações",
-      description: "Intercâmbio, reparos e risco",
+      id: "sources",
+      label: "Fontes",
+      description: "Feeds, entrada e quarentena",
+      overviewRoute: "feeds:list",
+      icon: <FileUp className="h-4 w-4" />,
+      badge: quarantineCount > 0 ? quarantineCount : undefined,
+    },
+    {
+      id: "organization",
+      label: "Organização",
+      description: "Categorias e roteamento visual",
+      overviewRoute: "feeds:categories",
+      icon: <Tags className="h-4 w-4" />,
+    },
+    {
+      id: "maintenance",
+      label: "Manutenção",
+      description: "Backup, reparos e risco",
       overviewRoute: "operations:overview",
-      icon: <Settings2 className="h-4 w-4" />,
-      items: [
-        {
-          route: "operations:io",
-          label: "Arquivos e listas",
-          description: "OPML, backups e coleções",
-          icon: <FileUp className="h-4 w-4" />,
-        },
-        {
-          route: "operations:maintenance",
-          label: "Manutenção e risco",
-          description: "Reparos e ações críticas",
-          icon: <Wrench className="h-4 w-4" />,
-        },
-      ],
+      icon: <Wrench className="h-4 w-4" />,
     },
     {
       id: "diagnostics",
@@ -1736,81 +1922,26 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       description: "Saúde, infraestrutura e relatórios",
       overviewRoute: "diagnostics:overview",
       icon: <BarChart3 className="h-4 w-4" />,
-      items: [
-        {
-          route: "diagnostics:health",
-          label: "Saúde dos feeds",
-          description: "Erros, impacto e status",
-          icon: <Activity className="h-4 w-4" />,
-          badge: invalidCount > 0 ? invalidCount : undefined,
-          focusSection: "feed-status",
-        },
-        {
-          route: "diagnostics:infra",
-          label: "Infraestrutura",
-          description: "Backend, proxies e rotas",
-          icon: <ServerCog className="h-4 w-4" />,
-          focusSection: "proxy-health",
-        },
-        {
-          route: "diagnostics:reports",
-          label: "Relatórios",
-          description: "Exportação de diagnóstico",
-          icon: <FileText className="h-4 w-4" />,
-          focusSection: "feed-reports",
-        },
-      ],
+      badge: invalidCount > 0 ? invalidCount : undefined,
     },
   ];
-  const headerMetrics = (
-    <>
-      <FeedManagerOperationalMetric
-        icon={<Boxes className="h-4 w-4" />}
-        label="Total"
-        value={currentFeeds.length}
-      />
-      <FeedManagerOperationalMetric
-        icon={<CircleCheck className="h-4 w-4" />}
-        label="Válidos"
-        tone="success"
-        value={validCount}
-      />
-      <FeedManagerOperationalMetric
-        icon={<AlertTriangle className="h-4 w-4" />}
-        label="Erros"
-        tone="danger"
-        value={invalidCount}
-      />
-      <FeedManagerOperationalMetric
-        icon={<ShieldAlert className="h-4 w-4" />}
-        label="Quarentena"
-        tone={quarantineCount > 0 ? "warning" : "neutral"}
-        value={quarantineCount}
-      />
-    </>
-  );
-
   const selectAreaOverview = (group: {
     id: FeedManagerArea;
     overviewRoute: FeedManagerRoute;
+    focusSection?: string;
   }) => {
     setExpandedAreas({
-      feeds: false,
-      operations: false,
+      overview: false,
+      sources: false,
+      organization: false,
+      maintenance: false,
       diagnostics: false,
       [group.id]: true,
     });
-    navigateToRoute(group.overviewRoute);
+    navigateToRoute(group.overviewRoute, group.focusSection);
     if (mobileSidebarOpen) {
       closeMobileNavigation();
     }
-  };
-
-  const toggleArea = (area: FeedManagerArea) => {
-    setExpandedAreas((current) => ({
-      ...current,
-      [area]: !current[area],
-    }));
   };
 
   return (
@@ -1905,58 +2036,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               aria-label="Navegação do gerenciador de feeds"
             >
               {navigationGroups.map((group) => (
-                <section key={group.id} className={sidebarCollapsed ? "" : "py-1"}>
-                  <div className="flex items-center gap-1">
-                    <FeedManagerAreaButton
-                      onClick={() => selectAreaOverview(group)}
-                      active={activeArea === group.id}
-                      collapsed={sidebarCollapsed}
-                      description={group.description}
-                      icon={group.icon}
-                      label={group.label}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => toggleArea(group.id)}
-                      className={`hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[rgb(var(--theme-text-secondary-readable))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-text-readable))] lg:flex ${
-                        sidebarCollapsed ? "sr-only" : ""
-                      }`}
-                      aria-expanded={expandedAreas[group.id]}
-                      aria-label={`${
-                        expandedAreas[group.id] ? "Recolher" : "Expandir"
-                      } ${group.label}`}
-                    >
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform ${
-                          expandedAreas[group.id] ? "rotate-0" : "-rotate-90"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  {expandedAreas[group.id] && (
-                    <div
-                      className={`mt-1 grid gap-1 ${
-                        sidebarCollapsed ? "grid-cols-1" : "grid-cols-1 pl-3"
-                      }`}
-                    >
-                      {group.items.map((item) => (
-                        <FeedManagerSidebarButton
-                          key={item.route}
-                          active={activeRoute === item.route}
-                          badge={item.badge}
-                          collapsed={sidebarCollapsed}
-                          description={item.description}
-                          icon={item.icon}
-                          label={item.label}
-                          onClick={() => {
-                            navigateToRoute(item.route, item.focusSection);
-                            closeMobileNavigation();
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
+                <FeedManagerAreaButton
+                  key={group.id}
+                  onClick={() => selectAreaOverview(group)}
+                  active={activeArea === group.id}
+                  badge={group.badge}
+                  collapsed={sidebarCollapsed}
+                  description={group.description}
+                  icon={group.icon}
+                  label={group.label}
+                />
               ))}
             </nav>
           </div>
@@ -1966,161 +2055,74 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           ref={contentScrollRef}
           className="feed-manager-workspace custom-scrollbar"
         >
-          <div className="mx-auto w-full max-w-[1480px] space-y-5">
-            <FeedManagerOperationalHero
-              metrics={headerMetrics}
-              onAddFeed={() => navigateToRoute("feeds:add")}
-              onRefreshFeeds={onRefreshFeeds ? handleConfirmRefreshAll : undefined}
-            />
+          <div className="mx-auto w-full max-w-[1400px] space-y-5">
+            {activeArea === "overview" && (
+              <FeedManagerOverviewPage
+                categoryCount={categories.length}
+                invalidCount={invalidCount}
+                onNavigate={navigateToRoute}
+                onRefreshFeeds={
+                  onRefreshFeeds ? handleConfirmRefreshAll : undefined
+                }
+                quarantineCount={quarantineCount}
+                totalFeedCount={currentFeeds.length}
+                validCount={validCount}
+              />
+            )}
 
-            {activeArea === "feeds" && (
-              <>
-                <section
-                  id={getFeedManagerSectionId("feeds:overview")}
-                  className={`${managerInfoSurfaceClass} feed-manager-anchor-section sm:p-6`}
-                >
-                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] xl:items-stretch">
-                    <div>
-                      <FeedManagerSectionHeader
-                        eyebrow="Coleção"
-                        title="Painel da coleção"
-                        description="Use esta entrada como mapa da coleção: revise fontes, inclua novos endereços e ajuste categorias sem competir com os indicadores do topo."
-                        icon={<Library className="h-5 w-5" />}
-                      />
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <CollectionModeButton
-                          active={false}
-                          onClick={() => navigateToRoute("feeds:list")}
-                        >
-                          Revisar feeds
-                        </CollectionModeButton>
-                        <CollectionModeButton
-                          active={false}
-                          onClick={() => navigateToRoute("feeds:add")}
-                        >
-                          Adicionar fonte
-                        </CollectionModeButton>
-                        <CollectionModeButton
-                          active={false}
-                          onClick={() => navigateToRoute("feeds:categories")}
-                        >
-                          Organizar categorias
-                        </CollectionModeButton>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <FeedManagerInsight
-                        label="Organização"
-                        value={categories.length}
-                        description="categorias de roteamento visual."
-                      />
-                      <FeedManagerInsight
-                        label="Atalhos"
-                        value="3"
-                        description="caminhos diretos para revisar, adicionar e organizar."
-                      />
-                    </div>
-                  </div>
-                </section>
+            {activeArea === "sources" && (
+              <FeedManagerSourcesPage
+                activeFeeds={activeFeeds}
+                articles={articles}
+                categories={categories}
+                currentFeedCount={currentFeeds.length}
+                feedValidations={feedValidations}
+                newFeedCategory={newFeedCategory}
+                newFeedTitle={newFeedTitle}
+                newFeedUrl={newFeedUrl}
+                onConfirmRefreshAll={handleConfirmRefreshAll}
+                onImportOPML={() => fileInputRef.current?.click()}
+                onMoveCategory={moveFeedToCategory}
+                onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
+                onRefreshFeeds={onRefreshFeeds}
+                onRemoveFeed={handleRemoveFeed}
+                onRetryFeed={validateSingleFeed}
+                onShowCuratedLists={() => setShowImportModal(true)}
+                onShowError={handleShowError}
+                onSubmitFeed={handleAddFeed}
+                onToggleHideFromAll={handleToggleHideFromAll}
+                onEditFeed={handleEditFeed}
+                onEditFeedTitle={handleEditFeedTitle}
+                processingUrl={processingUrl}
+                quarantineRecommendedUrls={quarantineRecommendedUrls}
+                setNewFeedCategory={setNewFeedCategory}
+                setNewFeedTitle={setNewFeedTitle}
+                setNewFeedUrl={setNewFeedUrl}
+              />
+            )}
 
-                <FeedManagerAccordionSection
-                  id={getFeedManagerSectionId("feeds:list")}
-                  className={managerInfoSurfaceClass}
-                  eyebrow="Coleção"
-                  title="Revisão de feeds"
-                  description="Revise status, categorias, títulos e ações de cada fonte preservada na coleção."
-                  icon={<Library className="h-5 w-5" />}
-                  isOpen={expandedAccordionRoutes["feeds:list"]}
-                  onToggle={() => toggleAccordionRoute("feeds:list")}
-                >
-                  <FeedListTab
-                    embedded
-                    feeds={activeFeeds}
-                    validations={feedValidations}
-                    categories={categories}
-                    onRemove={handleRemoveFeed}
-                    onRetry={validateSingleFeed}
-                    onEdit={handleEditFeed}
-                    onEditTitle={handleEditFeedTitle}
-                    onShowError={handleShowError}
-                    onMoveCategory={moveFeedToCategory}
-                    onToggleHideFromAll={handleToggleHideFromAll}
-                    onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
-                    quarantineRecommendedUrls={quarantineRecommendedUrls}
-                    onRefreshAll={onRefreshFeeds}
-                    onConfirmRefreshAll={handleConfirmRefreshAll}
-                    articles={articles}
-                  />
-                </FeedManagerAccordionSection>
-
-                <FeedManagerAccordionSection
-                  id={getFeedManagerSectionId("feeds:add")}
-                  className={managerInfoSurfaceClass}
-                  eyebrow="Entrada"
-                  title="Adicionar fontes"
-                  description="Inclua um feed individual, importe OPML ou abra listas curadas sem alterar a coleção antes da confirmação."
-                  icon={<Plus className="h-5 w-5" />}
-                  isOpen={expandedAccordionRoutes["feeds:add"]}
-                  onToggle={() => toggleAccordionRoute("feeds:add")}
-                >
-                  <FeedAddTab
-                    embedded
-                    categories={categories}
-                    newFeedUrl={newFeedUrl}
-                    setNewFeedUrl={setNewFeedUrl}
-                    newFeedTitle={newFeedTitle}
-                    setNewFeedTitle={setNewFeedTitle}
-                    newFeedCategory={newFeedCategory}
-                    setNewFeedCategory={setNewFeedCategory}
-                    processingUrl={processingUrl}
-                    onSubmit={handleAddFeed}
-                    onImportOPML={() => fileInputRef.current?.click()}
-                    onShowImportModal={() => setShowImportModal(true)}
-                    feedCount={currentFeeds.length}
-                  />
-                </FeedManagerAccordionSection>
-
-                <FeedManagerAccordionSection
-                  id={getFeedManagerSectionId("feeds:categories")}
-                  className={managerInfoSurfaceClass}
+            {activeArea === "organization" && (
+              <section
+                id={getFeedManagerSectionId("feeds:categories")}
+                className={`${managerInfoSurfaceClass} feed-manager-anchor-section sm:p-6`}
+              >
+                <FeedManagerSectionHeader
                   eyebrow="Organização"
                   title="Categorias"
-                  description="Ajuste agrupamentos, cores e ordem visual das fontes sem sair do gerenciador."
+                  description="Ajuste agrupamentos, cores e ordem visual das fontes sem sair da Central."
                   icon={<Tags className="h-5 w-5" />}
-                  isOpen={expandedAccordionRoutes["feeds:categories"]}
-                  onToggle={() => toggleAccordionRoute("feeds:categories")}
-                >
+                />
+                <div className="mt-5">
                   <FeedCategoryManager
                     feeds={currentFeeds}
                     setFeeds={setFeeds}
                     onClose={() => navigateToRoute("feeds:overview")}
                   />
-                </FeedManagerAccordionSection>
-
-                <FeedManagerAccordionSection
-                  id={getFeedManagerSectionId("feeds:quarantine")}
-                  className={managerInfoSurfaceClass}
-                  eyebrow="Proteção"
-                  title="Quarentena"
-                  description="Feeds preservados fora da carga ficam aqui até validação, restauração ou remoção."
-                  icon={<ShieldAlert className="h-5 w-5" />}
-                  tone="warning"
-                  isOpen={expandedAccordionRoutes["feeds:quarantine"]}
-                  onToggle={() => toggleAccordionRoute("feeds:quarantine")}
-                >
-                  <FeedQuarantineTab
-                    embedded
-                    feeds={currentFeeds}
-                    onValidate={(url) => void handleValidateQuarantinedFeed(url)}
-                    onRestore={(url) => void handleRestoreQuarantinedFeed(url)}
-                    onMarkInactive={(url) => void handleMarkFeedInactive(url)}
-                    onRemove={(url) => void handleRemoveFeed(url)}
-                  />
-                </FeedManagerAccordionSection>
-              </>
+                </div>
+              </section>
             )}
 
-            {activeArea === "operations" && (
+            {activeArea === "maintenance" && (
               <FeedToolsTab
                 embedded
                 view="all"
