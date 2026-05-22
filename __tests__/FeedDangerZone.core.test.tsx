@@ -119,7 +119,7 @@ beforeEach(() => {
 });
 
 describe("Feed danger zone flows", () => {
-  it("renders the Portuguese shell with hierarchical sidebar navigation", async () => {
+  it("renders the Portuguese shell with primary page navigation", async () => {
     render(
       <FeedManager
         currentFeeds={testFeeds}
@@ -130,7 +130,7 @@ describe("Feed danger zone flows", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Gerenciar Feeds" }),
+      screen.getByRole("heading", { name: "Central da Coleção" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Fechar gerenciador de feeds" }),
@@ -141,22 +141,22 @@ describe("Feed danger zone flows", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Painel da coleção" }),
+      screen.getByRole("heading", { name: "Ações recomendadas" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Estado da coleção" }),
+      screen.getByRole("heading", { name: "Resumo da coleção" }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Total").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Válidos").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Erros").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Quarentena").length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: "Adicionar feed" }),
+      screen.getByRole("button", { name: "Adicionar fonte" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Revalidar feeds" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Use esta entrada como mapa da coleção/)).toBeInTheDocument();
+    expect(screen.getByText(/Use esta entrada para escolher/)).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu de navegação" }));
@@ -181,7 +181,7 @@ describe("Feed danger zone flows", () => {
       ).not.toBeInTheDocument(),
     );
     expect(
-      screen.getByRole("heading", { name: "Gerenciar Feeds" }),
+      screen.getByRole("heading", { name: "Central da Coleção" }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu de navegação" }));
@@ -206,7 +206,7 @@ describe("Feed danger zone flows", () => {
         screen.getByRole("dialog", {
           name: "Menu de navegação do gerenciador de feeds",
         }),
-      ).getByRole("button", { name: "Adicionar. Novo feed e OPML" }),
+      ).getByRole("button", { name: "Fontes. Feeds, entrada e quarentena" }),
     );
     await waitFor(() =>
       expect(
@@ -216,10 +216,7 @@ describe("Feed danger zone flows", () => {
       ).not.toBeInTheDocument(),
     );
     expect(
-      screen.getByRole("heading", { name: "Adicionar feed" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Recolher Adicionar fontes" }),
+      screen.getByRole("heading", { name: "Feeds cadastrados" }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
@@ -229,16 +226,12 @@ describe("Feed danger zone flows", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Expandir barra lateral" })[0]);
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Expandir Diagnóstico/ }),
-    );
-    expect(
-      screen.getByRole("button", { name: /Recolher Diagnóstico/ }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(
       screen.getByRole("button", {
-        name: "Infraestrutura. Backend, proxies e rotas",
+        name: "Diagnóstico. Saúde, infraestrutura e relatórios",
       }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Expandir Backend, proxies e rotas" }),
     );
     expect(
       screen.getByRole("heading", { name: "Backend, proxies e rotas" }),
@@ -248,7 +241,7 @@ describe("Feed danger zone flows", () => {
     ).toBeInTheDocument();
   });
 
-  it("collapses and expands collection sections without losing anchors", async () => {
+  it("opens sources and organization as significant primary pages", async () => {
     const { container } = render(
       <FeedManager
         currentFeeds={testFeeds}
@@ -257,39 +250,35 @@ describe("Feed danger zone flows", () => {
       />,
     );
 
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Fontes. Feeds, entrada e quarentena",
+      }),
+    );
+
     const reviewSection = container.querySelector(
       "#feed-manager-section-feeds-list",
     ) as HTMLElement;
     expect(reviewSection).not.toBeNull();
     expect(
-      within(reviewSection).getByRole("heading", { name: "Revisão de feeds" }),
+      within(reviewSection).getByRole("heading", { name: "Feeds cadastrados" }),
     ).toBeInTheDocument();
     expect(
-      within(reviewSection).getByRole("button", {
-        name: "Expandir Revisão de feeds",
-      }),
+      screen.getByRole("heading", { name: "Adicionar fontes" }),
     ).toBeInTheDocument();
-
+    expect(
+      screen.getAllByRole("heading", { name: "Quarentena" }).length,
+    ).toBeGreaterThan(0);
     fireEvent.click(
-      within(reviewSection).getByRole("button", {
-        name: "Expandir Revisão de feeds",
+      screen.getByRole("button", {
+        name: "Organização. Categorias e roteamento visual",
       }),
     );
     expect(
-      within(reviewSection).getByRole("button", {
-        name: "Recolher Revisão de feeds",
-      }),
+      screen.getByRole("heading", { name: "Categorias" }),
     ).toBeInTheDocument();
-
-    fireEvent.click(
-      within(reviewSection).getByRole("button", {
-        name: "Recolher Revisão de feeds",
-      }),
-    );
     expect(
-      within(reviewSection).getByRole("button", {
-        name: "Expandir Revisão de feeds",
-      }),
+      screen.getByText(/Ajuste agrupamentos, cores e ordem visual/),
     ).toBeInTheDocument();
   });
 
@@ -304,7 +293,7 @@ describe("Feed danger zone flows", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Operações. Intercâmbio, reparos e risco",
+        name: "Manutenção. Backup, reparos e risco",
       }),
     );
     expect(
@@ -312,36 +301,22 @@ describe("Feed danger zone flows", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Próximo passo:")).not.toBeInTheDocument();
     expect(screen.getByText("Como escolher:")).toBeInTheDocument();
-    const navigation = screen.getByRole("navigation", {
+    expect(screen.getByRole("navigation", {
       name: "Navegação do gerenciador de feeds",
-    });
+    })).toBeInTheDocument();
     expect(
-      within(navigation).getByRole("button", {
-        name: "Arquivos e listas. OPML, backups e coleções",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(navigation).getByRole("button", {
-        name: "Manutenção e risco. Reparos e ações críticas",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(navigation).queryByRole("button", {
+      screen.queryByRole("button", {
         name: "Listas curadas. Coleções prontas",
       }),
     ).not.toBeInTheDocument();
     expect(
-      within(navigation).queryByRole("button", {
+      screen.queryByRole("button", {
         name: "Zona de risco. Ações destrutivas",
       }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Transporte da coleção")).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Arquivos e listas. OPML, backups e coleções",
-      }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Expandir Transporte da coleção" }));
     expect(
       screen.getByRole("heading", { name: "Transporte da coleção" }),
     ).toBeInTheDocument();
@@ -354,11 +329,7 @@ describe("Feed danger zone flows", () => {
       }),
     ).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Manutenção e risco. Reparos e ações críticas",
-      }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Expandir Reparos e ações críticas" }));
     expect(
       screen.getByRole("heading", { name: "Reparos e ações críticas" }),
     ).toBeInTheDocument();
@@ -389,7 +360,7 @@ describe("Feed danger zone flows", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Operações. Intercâmbio, reparos e risco",
+        name: "Manutenção. Backup, reparos e risco",
       }),
     );
     expect(
@@ -418,23 +389,14 @@ describe("Feed danger zone flows", () => {
     expect(within(diagnosticsOverview as HTMLElement).queryByText(/rotas saudáveis/i)).not.toBeInTheDocument();
     expect(within(diagnosticsOverview as HTMLElement).queryByText(/requisições/i)).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Relatórios. Exportação de diagnóstico",
-      }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Expandir Relatórios" }));
     expect(
       screen.getByRole("button", { name: "Recolher Relatórios" }),
     ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Coleção. Fontes, entrada e organização",
-      }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Quarentena. Feeds preservados fora da carga",
+        name: "Fontes. Feeds, entrada e quarentena",
       }),
     );
     expect(
@@ -479,13 +441,11 @@ describe("Feed danger zone flows", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Operações. Intercâmbio, reparos e risco",
+        name: "Manutenção. Backup, reparos e risco",
       }),
     );
     fireEvent.click(
-      screen.getByRole("button", {
-        name: "Manutenção e risco. Reparos e ações críticas",
-      }),
+      screen.getByRole("button", { name: "Expandir Reparos e ações críticas" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 
@@ -616,13 +576,11 @@ describe("Feed danger zone flows", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Operações. Intercâmbio, reparos e risco",
+        name: "Manutenção. Backup, reparos e risco",
       }),
     );
     fireEvent.click(
-      screen.getByRole("button", {
-        name: "Manutenção e risco. Reparos e ações críticas",
-      }),
+      screen.getByRole("button", { name: "Expandir Reparos e ações críticas" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 

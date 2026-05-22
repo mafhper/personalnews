@@ -578,6 +578,45 @@ body:has(.feed-manager-shell) .notification-container {
   color: rgb(var(--theme-manager-text, var(--color-text)));
 }
 
+.feed-manager-overview-action {
+  display: flex;
+  min-width: 0;
+  gap: var(--space-3);
+  align-items: flex-start;
+  border-radius: var(--radius-2xl);
+  background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text, var(--color-text)));
+  padding: var(--space-4);
+  text-align: left;
+  box-shadow: var(--feed-manager-shadow-control);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.feed-manager-overview-action:hover {
+  background: rgb(var(--theme-manager-elevated, var(--color-surface)));
+  transform: translateY(-1px);
+}
+
+.feed-manager-overview-action:focus-visible {
+  outline: 2px solid rgb(var(--color-accent));
+  outline-offset: 3px;
+}
+
+.feed-manager-overview-action__icon {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background: rgb(var(--theme-manager-soft, var(--color-accentSurface)));
+  color: rgb(var(--color-accent));
+}
+
 .feed-manager-operational-hero {
   display: grid;
   gap: var(--space-4);
