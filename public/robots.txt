@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mafhper.github.io/personalnews/sitemap.xml
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /

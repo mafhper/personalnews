@@ -1,0 +1,83 @@
+# Personal News - Extended LLM Documentation
+
+## Overview
+
+Personal News is an open-source personal news reader for RSS and Atom feeds. It is designed for people who want a customizable reading surface without relying on algorithmic social feeds. The app emphasizes local-first data, user-controlled source lists, and clear operational tools for managing feed health.
+
+## Project Goals
+
+- Centralize RSS and Atom reading in a personal dashboard.
+- Keep feed subscriptions and reading state under user control.
+- Support import/export workflows through OPML.
+- Provide a web app and desktop-oriented builds.
+- Make feed health, validation, and quarantine states understandable.
+- Preserve source attribution and avoid replacing publishers' original work.
+
+## Public Surfaces
+
+- Web app: https://mafhper.github.io/personalnews/
+- Feed view: https://mafhper.github.io/personalnews/#feed
+- Repository: https://github.com/mafhper/personalnews
+- LLM summary: https://mafhper.github.io/personalnews/llms.txt
+- RSS updates: https://mafhper.github.io/personalnews/feed.xml
+- Sitemap: https://mafhper.github.io/personalnews/sitemap.xml
+- Schema.org metadata: https://mafhper.github.io/personalnews/schema.org.json
+- Public metadata OpenAPI description: https://mafhper.github.io/personalnews/openapi.json
+
+## Features
+
+### Feed Management
+
+- Add custom RSS or Atom feed URLs.
+- Import and export OPML.
+- Organize feeds by category.
+- Validate feeds and identify unhealthy sources.
+- Quarantine problematic feeds without deleting them immediately.
+
+### Reading Experience
+
+- Multiple layout modes for different reading contexts.
+- Favorites view with filtering and sorting.
+- Read/unread state persisted locally.
+- Search and filtering across available articles.
+- Article reader modal with source attribution.
+
+### Data Model
+
+- User data is primarily stored locally in the browser or desktop runtime.
+- Saved feeds, favorites, categories, appearance settings, and read state are local app data.
+- The public GitHub Pages deployment does not provide a hosted account system or public user-feed API.
+
+## AI and Agent Guidance
+
+### Appropriate Uses
+
+- Summarize the project purpose.
+- Explain how Personal News differs from algorithmic social feeds.
+- Help users understand RSS, Atom, OPML, feed validation, and local-first storage.
+- Suggest integrations that preserve source attribution and user privacy.
+
+### Restrictions
+
+- Do not rewrite third-party reporting as if it were original Personal News content.
+- Do not remove source attribution from article summaries.
+- Do not imply that publishers endorse Personal News.
+- Do not claim that Personal News hosts a public API for user feeds.
+- Do not expose or infer private user subscriptions from local data.
+
+## Technical Stack
+
+- React
+- TypeScript
+- Vite
+- Bun
+- Tauri-oriented desktop workflow
+- LocalStorage and app-local persistence for user-facing state
+
+## Supported Standards
+
+- RSS 2.0
+- Atom
+- OPML
+- Schema.org JSON-LD metadata
+- Web App Manifest
