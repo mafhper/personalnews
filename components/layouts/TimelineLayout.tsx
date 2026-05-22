@@ -131,6 +131,14 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                         })}
                       </span>
                     </div>
+                    <div className="flex-shrink-0">
+                      <FavoriteButton
+                        article={article}
+                        size="small"
+                        position="inline"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
                   </div>
 
                   <h3
@@ -158,26 +166,19 @@ export const TimelineLayout: React.FC<TimelineLayoutProps> = ({ articles, timeFo
                     </p>
 
                     {/* Action Buttons */}
-                    <div className="feed-card-action-rail !mt-4 !mb-0 w-full max-w-none justify-start border-t border-[rgb(var(--color-border))]/50 pt-4">
-                      {(() => {
-                        const embedUrl = getVideoEmbed(article.link);
-                        return (
-                          <FeedInteractiveActions
-                            articleLink={article.link}
-                            onRead={() => handleOpenReader(article)}
-                            showRead={!embedUrl}
-                            showWatch={!!embedUrl}
-                            showVisit={true}
-                            className="!mt-0"
-                          />
-                        );
-                      })()}
-                      <FavoriteButton
-                        article={article}
-                        size="small"
-                        position="inline"
-                      />
-                    </div>
+                    {(() => {
+                      const embedUrl = getVideoEmbed(article.link);
+                      return (
+                        <FeedInteractiveActions
+                          articleLink={article.link}
+                          onRead={() => handleOpenReader(article)}
+                          showRead={!embedUrl}
+                          showWatch={!!embedUrl}
+                          showVisit={true}
+                          className="!mt-4 !mb-0 pt-4 border-t border-[rgb(var(--color-border))]/50 w-full justify-between"
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               </article>

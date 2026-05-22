@@ -14,11 +14,6 @@ interface FeedDropdownProps {
   onSelectCategory: () => void;
   selectedCategory: string;
   onEditCategory?: (categoryId: string) => void; // Passed categoryId for specific editing
-  isVirtual?: boolean;
-  primaryViewActionLabel?: string;
-  primaryViewActionIcon?: "feeds" | "favorites";
-  onPrimaryViewAction?: () => void;
-  onLayoutChange?: (layoutMode: FeedCategory["layoutMode"] | undefined) => void;
   variant?: 'default' | 'centered' | 'minimal';
 }
 
@@ -65,11 +60,6 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   onSelectCategory,
   selectedCategory,
   onEditCategory,
-  isVirtual = false,
-  primaryViewActionLabel,
-  primaryViewActionIcon,
-  onPrimaryViewAction,
-  onLayoutChange,
   variant = 'default',
 }) => {
   const { deleteCategory, updateCategory } = useFeedCategories();
@@ -125,30 +115,12 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   };
 
   const handleLayoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextLayoutMode =
-      e.target.value === ""
-        ? undefined
-        : (e.target.value as FeedCategory["layoutMode"]);
-
-    if (onLayoutChange) {
-      onLayoutChange(nextLayoutMode);
-      return;
-    }
-
-    if (isVirtual) return;
     updateCategory(category.id, {
-      layoutMode: nextLayoutMode,
+      layoutMode: e.target.value as FeedCategory["layoutMode"],
     });
   };
 
   const isSelected = selectedCategory === category.id;
-  const canChangeLayout = !isVirtual || Boolean(onLayoutChange);
-  const selectedLayoutMode = category.layoutMode || "";
-  const layoutActionLabel = "Alterar layout";
-  const PrimaryViewIcon =
-    primaryViewActionIcon === "favorites"
-      ? HeaderIcons.Favorites
-      : HeaderIcons.Feeds;
   const variantBase = {
     default: 'px-5 py-2.5 rounded-full min-h-[44px]',
     centered: 'px-4 py-2 rounded-full min-h-[40px]',
@@ -219,34 +191,17 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
             <div className="p-1.5">
               <div className="px-4 py-3 border-b border-[rgb(var(--color-border))]/10 mb-1 flex items-center justify-between bg-[rgb(var(--color-background))]/30">
                 <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] uppercase tracking-widest">
-                  {t("feeds.tab.feeds")}
+                  {t("feeds.tab.feeds")} de {category.name}
                 </span>
 
                 <div className="flex items-center space-x-1">
-                  {primaryViewActionLabel && onPrimaryViewAction && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPrimaryViewAction();
-                        setIsOpen(false);
-                      }}
-                      className="p-2 rounded hover:bg-[rgb(var(--color-text))]/10 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] min-w-[32px] min-h-[32px]"
-                      title={primaryViewActionLabel}
-                      aria-label={primaryViewActionLabel}
-                    >
-                      <PrimaryViewIcon showBackground={false} size="sm" />
-                    </button>
-                  )}
-
                   {/* Layout Selector */}
-                  {canChangeLayout && (
                   <div className="relative group/layout">
                     <button
                       onClick={(e) => e.stopPropagation()}
-                      className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${selectedLayoutMode ? "text-[rgb(var(--color-accent))]" : "text-[rgb(var(--color-textSecondary))]"}`}
-                      title={layoutActionLabel}
-                      aria-label={layoutActionLabel}
+                      className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.layoutMode ? "text-[rgb(var(--color-accent))]" : "text-[rgb(var(--color-textSecondary))]"}`}
+                      title="Alterar Layout da Categoria"
+                      aria-label="Alterar Layout da Categoria"
                     >
                       <svg
                         className="w-3.5 h-3.5"
@@ -264,24 +219,22 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     </button>
                     <select
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-black"
-                      value={selectedLayoutMode}
+                      value={category.layoutMode || ""}
                       onChange={handleLayoutChange}
                       onClick={(e) => e.stopPropagation()}
-                      title={layoutActionLabel}
+                      title="Alterar Layout da Categoria"
                     >
                       {layoutOptions.map((option) => (
                         <option key={option.label} value={option.value}>
                           {option.label}{" "}
-                          {selectedLayoutMode === option.value
+                          {(category.layoutMode || "") === option.value
                             ? " (ativo)"
                             : ""}
                         </option>
                       ))}
                     </select>
                   </div>
-                  )}
 
-                  {!isVirtual && (
                   <button
                     onClick={handlePin}
                     className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.isPinned ? "text-[rgb(var(--color-accent))]" : "text-[rgb(var(--color-textSecondary))]"}`}
@@ -310,9 +263,8 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                       />
                     </svg>
                   </button>
-                  )}
 
-                  {!isVirtual && onEditCategory && (
+                  {onEditCategory && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -339,7 +291,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     </button>
                   )}
 
-                  {!isVirtual && !category.isDefault && (
+                  {!category.isDefault && (
                     <button
                       onClick={handleDelete}
                       className="p-2 rounded hover:bg-red-500/20 text-[rgb(var(--color-textSecondary))] hover:text-red-400 min-w-[32px] min-h-[32px]"
@@ -376,7 +328,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     aria-label={`Select feed ${getFeedDisplayName(feed)}`}
                   >
                     <img
-                      src={getFaviconUrl(feed.faviconUrl || feed.url)}
+                      src={getFaviconUrl(feed.url)}
                       alt=""
                       className="w-4 h-4 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity"
                       onError={(e) => {

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { FeedSource } from '../types';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
 import { Modal } from './Modal';
-import { buildRemoveSelectedFeedsConfirmation } from '../utils/feedDangerConfirmation';
 
 interface FeedErrorHistoryItem {
   url: string;
@@ -16,7 +15,6 @@ interface FeedCleanupModalProps {
   onClose: () => void;
   feeds: FeedSource[];
   onRemoveFeeds: (urls: string[]) => void;
-  onQuarantineFeeds?: (urls: string[]) => void;
 }
 
 export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
@@ -24,7 +22,6 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
   onClose,
   feeds,
   onRemoveFeeds,
-  onQuarantineFeeds,
 }) => {
   const [errorHistory, setErrorHistory] = useState<FeedErrorHistoryItem[]>([]);
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
@@ -33,8 +30,7 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
   const [minFailures, setMinFailures] = useState<number>(1);
   const [errorTypeFilter, setErrorTypeFilter] = useState<string>('all');
 
-  const { confirmDanger, confirmWarning, alertSuccess } =
-    useNotificationReplacements();
+  const { confirmDanger, alertSuccess } = useNotificationReplacements();
 
   const loadErrorHistory = React.useCallback(() => {
     try {
@@ -104,12 +100,9 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
 
   const handleDelete = async () => {
     if (selectedUrls.size === 0) return;
-    const feedsToRemove = Array.from(selectedUrls).map((url) => {
-      return feeds.find((feed) => feed.url === url) || { url };
-    });
 
     const confirmed = await confirmDanger(
-      buildRemoveSelectedFeedsConfirmation(feedsToRemove),
+      `Tem certeza que deseja remover ${selectedUrls.size} feeds selecionados? Esta ação não pode ser desfeita.`
     );
 
     if (confirmed) {
@@ -128,28 +121,6 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
     }
   };
 
-  const handleQuarantine = async () => {
-    if (selectedUrls.size === 0 || !onQuarantineFeeds) return;
-
-    const confirmed = await confirmWarning({
-      title: `Quarentenar ${selectedUrls.size} feeds`,
-      message: `Colocar ${selectedUrls.size} feeds selecionados em quarentena?`,
-      impact:
-        "Eles sairão das categorias e do carregamento, mas poderão ser restaurados depois.",
-      confirmText: `Quarentenar ${selectedUrls.size} feeds`,
-      cancelText: "Manter ativos",
-      type: "warning",
-    });
-
-    if (confirmed) {
-      onQuarantineFeeds(Array.from(selectedUrls));
-      alertSuccess(`${selectedUrls.size} feeds enviados para quarentena.`);
-      loadErrorHistory();
-      setSelectedUrls(new Set());
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -165,16 +136,6 @@ export const FeedCleanupModal: React.FC<FeedCleanupModalProps> = ({
       bodyClassName="p-0"
       footer={
         <div className="flex justify-end gap-3">
-          {onQuarantineFeeds && (
-            <button
-              onClick={() => void handleQuarantine()}
-              disabled={selectedUrls.size === 0}
-              className="rounded-lg bg-[rgba(var(--color-warning),0.16)] px-4 py-2 text-sm font-medium text-[rgb(var(--color-warning))] transition-colors hover:bg-[rgba(var(--color-warning),0.22)] disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-            >
-              Quarentenar {selectedUrls.size > 0 ? `(${selectedUrls.size})` : ""}
-            </button>
-          )}
           <button
             onClick={onClose}
             className="rounded-lg px-4 py-2 text-sm font-medium text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition-colors hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-manager-text,var(--color-text)))]"

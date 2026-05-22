@@ -1,5 +1,5 @@
 import React from "react";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LandingPage } from "../components/landing/LandingPage";
 import type { Language } from "../types";
@@ -14,35 +14,6 @@ vi.mock("../hooks/useLanguage", () => ({
 
 const scrollIntoViewMock = vi.fn();
 const scrollToMock = vi.fn();
-const pushStateMock = vi.fn();
-
-const setNavigatorPlatform = ({
-  platform,
-  userAgent,
-  maxTouchPoints = 0,
-}: {
-  platform: string;
-  userAgent: string;
-  maxTouchPoints?: number;
-}) => {
-  Object.defineProperty(window.navigator, "platform", {
-    configurable: true,
-    value: platform,
-  });
-  Object.defineProperty(window.navigator, "userAgent", {
-    configurable: true,
-    value: userAgent,
-  });
-  Object.defineProperty(window.navigator, "maxTouchPoints", {
-    configurable: true,
-    value: maxTouchPoints,
-  });
-};
-
-const getPromoNavLink = (name: string) =>
-  within(
-    screen.getByRole("navigation", { name: "Navegação promocional" }),
-  ).getByRole("link", { name });
 
 describe("LandingPage promo structure", () => {
   beforeEach(() => {
@@ -51,27 +22,15 @@ describe("LandingPage promo structure", () => {
     window.localStorage.removeItem("appearance-background");
     scrollIntoViewMock.mockClear();
     scrollToMock.mockClear();
-    pushStateMock.mockClear();
-    pushStateMock.mockImplementation((_state, _title, url) => {
-      if (typeof url === "string" && url.startsWith("#")) {
-        window.location.hash = url;
-      }
-    });
     window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
     window.scrollTo = scrollToMock;
-    window.history.pushState = pushStateMock;
-    setNavigatorPlatform({
-      platform: "Win32",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    });
   });
 
   it("renders the promo as one continuous editorial landing", () => {
-    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
+    render(<LandingPage onOpenFeed={vi.fn()} />);
 
     expect(screen.getByTestId("promo-section-home")).toBeInTheDocument();
     expect(screen.getByTestId("promo-section-experience")).toBeInTheDocument();
-    expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
     expect(screen.getByTestId("promo-section-project")).toBeInTheDocument();
     expect(screen.getByTestId("promo-section-faq")).toBeInTheDocument();
     expect(
@@ -79,14 +38,6 @@ describe("LandingPage promo structure", () => {
         name: "Notícias no seu ritmo.",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Teste a demonstração online funcional; instale no desktop para a experiência completa.",
-      ),
-    ).toBeInTheDocument();
-    expect(container.querySelectorAll(".promo-hero__actions > *")).toHaveLength(
-      2,
-    );
   });
 
   it("keeps the feed CTA functional in both hero and header", () => {
@@ -102,92 +53,6 @@ describe("LandingPage promo structure", () => {
     expect(onOpenFeed).toHaveBeenCalledTimes(2);
     expect(screen.getAllByText("Personal News").length).toBeGreaterThan(0);
     expect(document.body.textContent).not.toContain("PersonalNews");
-  });
-
-  it("routes the install hero CTA to the versions section", () => {
-    render(<LandingPage onOpenFeed={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole("link", { name: "Instalar app" }));
-
-    expect(pushStateMock).toHaveBeenCalledWith(null, "", "#versions");
-    expect(getPromoNavLink("Experiência")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
-    expect(scrollToMock).toHaveBeenCalled();
-  });
-
-  it("handles shared versions hashes through the promo hash router", async () => {
-    render(<LandingPage onOpenFeed={vi.fn()} />);
-
-    await act(async () => {
-      window.location.hash = "#versions";
-      window.dispatchEvent(new HashChangeEvent("hashchange"));
-    });
-
-    expect(screen.getByTestId("promo-section-versions")).toBeInTheDocument();
-    expect(getPromoNavLink("Experiência")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    expect(scrollToMock).toHaveBeenCalled();
-  });
-
-  it("marks the related nav item active when opening a shared versions URL", () => {
-    window.location.hash = "#versions";
-
-    render(<LandingPage onOpenFeed={vi.fn()} />);
-
-    expect(getPromoNavLink("Experiência")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-  });
-
-  it("does not add duplicate history entries for repeated install CTA clicks", () => {
-    render(<LandingPage onOpenFeed={vi.fn()} />);
-
-    const installCta = screen.getByRole("link", { name: "Instalar app" });
-    fireEvent.click(installCta);
-    window.location.hash = "#versions";
-    fireEvent.click(installCta);
-
-    expect(pushStateMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("labels supported desktop platforms in the install CTA", () => {
-    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
-
-    const installHint = container.querySelector(".promo-install-button small");
-    expect(installHint).toHaveTextContent("Windows");
-  });
-
-  it("hides unsupported mobile platform labels in the install CTA", () => {
-    setNavigatorPlatform({
-      platform: "Linux armv8l",
-      userAgent:
-        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile",
-      maxTouchPoints: 5,
-    });
-
-    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
-
-    expect(container.querySelector(".promo-install-button small")).toBeNull();
-    expect(screen.getByRole("link", { name: "Instalar app" })).toBeInTheDocument();
-  });
-
-  it("does not label touch iOS devices as macOS in the install CTA", () => {
-    setNavigatorPlatform({
-      platform: "iPhone",
-      userAgent:
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
-      maxTouchPoints: 5,
-    });
-
-    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
-
-    expect(container.querySelector(".promo-install-button small")).toBeNull();
   });
 
   it("uses the liquid WebGL hero backdrop with a product screenshot signal", () => {

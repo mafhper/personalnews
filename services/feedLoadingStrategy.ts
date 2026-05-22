@@ -1,6 +1,5 @@
 import type { FeedLoadRequest, FeedSource } from "../types";
 import { areUrlsEqual } from "../utils/urlUtils";
-import { getActiveFeeds } from "../utils/feedQuarantine";
 
 export const resolveScopeMode = (
   request?: FeedLoadRequest,
@@ -30,17 +29,16 @@ export const resolveFeedLoadScope = (
   request?: FeedLoadRequest,
 ): FeedSource[] => {
   const mode = resolveScopeMode(request);
-  const activeFeeds = getActiveFeeds(feeds);
 
   if (mode === "single-feed" && request?.feedUrl) {
-    return activeFeeds.filter((feed) => areUrlsEqual(feed.url, request.feedUrl!));
+    return feeds.filter((feed) => areUrlsEqual(feed.url, request.feedUrl!));
   }
 
   if (mode === "category" && request?.categoryId) {
-    return activeFeeds.filter((feed) => feed.categoryId === request.categoryId);
+    return feeds.filter((feed) => feed.categoryId === request.categoryId);
   }
 
-  return activeFeeds;
+  return feeds;
 };
 
 export interface FeedVisibilityResolutionInput {

@@ -40,8 +40,6 @@ pnpm-debug.log*
 lerna-debug.log*
 performance-reports/*
 coverage/
-playwright-report/
-test-results/
 __tests_unused/
 temp-vitest-report.json
 

@@ -1,12 +1,10 @@
-import React, { useState, useCallback, useRef, ReactNode } from "react";
+import React, { useState, useCallback, ReactNode } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { AlertDialog } from "../components/AlertDialog";
 import {
   NotificationOptions,
   Notification,
   ConfirmDialogOptions,
-  ConfirmDialogCloseResult,
-  ConfirmDialogResult,
 } from "../types";
 import { NotificationContext } from "./NotificationContextState";
 
@@ -14,27 +12,15 @@ interface NotificationProviderProps {
   children: ReactNode;
 }
 
-type ConfirmDialogRequest =
-  | {
-      isOpen: boolean;
-      options: ConfirmDialogOptions;
-      mode: "boolean";
-      resolve: (value: boolean) => void;
-    }
-  | {
-      isOpen: boolean;
-      options: ConfirmDialogOptions;
-      mode: "scoped";
-      resolve: (value: ConfirmDialogResult) => void;
-    };
-
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const notificationDedupeRef = useRef<Map<string, number>>(new Map());
-  const [confirmDialog, setConfirmDialog] =
-    useState<ConfirmDialogRequest | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    options: ConfirmDialogOptions;
+    resolve: (value: boolean) => void;
+  } | null>(null);
   const [alertDialog, setAlertDialog] = useState<{
     isOpen: boolean;
     message: string;
@@ -50,42 +36,23 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const showNotification = useCallback(
     (message: string, options: NotificationOptions = {}) => {
-      const type = options.type || "info";
-      const now = Date.now();
-      const dedupeKey = `${type}:${message}`;
-      const lastShownAt = notificationDedupeRef.current.get(dedupeKey);
-
-      if (lastShownAt && now - lastShownAt < 1000) {
-        return;
-      }
-
-      notificationDedupeRef.current.set(dedupeKey, now);
       const id =
         Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const notification: Notification = {
         id,
         message,
-        type,
+        type: options.type || "info",
         duration: options.duration || 5000,
         persistent: options.persistent || false,
         timestamp: Date.now(),
       };
 
-      setNotifications((prev) => {
-        const alreadyVisible = prev.some(
-          (item) => item.message === message && item.type === type,
-        );
-
-        return alreadyVisible ? prev : [...prev, notification];
-      });
+      setNotifications((prev) => [...prev, notification]);
 
       // Auto-remove non-persistent notifications
       if (!notification.persistent) {
         setTimeout(() => {
           removeNotification(id);
-          if (notificationDedupeRef.current.get(dedupeKey) === now) {
-            notificationDedupeRef.current.delete(dedupeKey);
-          }
         }, notification.duration);
       }
     },
@@ -102,21 +69,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         setConfirmDialog({
           isOpen: true,
           options,
-          mode: "boolean",
-          resolve,
-        });
-      });
-    },
-    [],
-  );
-
-  const showScopedConfirm = useCallback(
-    (options: ConfirmDialogOptions): Promise<ConfirmDialogResult> => {
-      return new Promise((resolve) => {
-        setConfirmDialog({
-          isOpen: true,
-          options,
-          mode: "scoped",
           resolve,
         });
       });
@@ -139,19 +91,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   );
 
   const handleConfirmClose = useCallback(
-    (result: ConfirmDialogCloseResult) => {
+    (result: boolean) => {
       if (confirmDialog) {
-        if (confirmDialog.mode === "scoped") {
-          const scopedResult =
-            typeof result === "boolean"
-              ? { confirmed: result, selectedScopeIds: [] }
-              : result;
-          confirmDialog.resolve(scopedResult);
-        } else {
-          confirmDialog.resolve(
-            typeof result === "boolean" ? result : result.confirmed,
-          );
-        }
+        confirmDialog.resolve(result);
         setConfirmDialog(null);
       }
     },
@@ -171,7 +113,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     removeNotification,
     clearAllNotifications,
     showConfirm,
-    showScopedConfirm,
     showAlert,
   };
 

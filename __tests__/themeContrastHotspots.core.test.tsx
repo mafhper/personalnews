@@ -2,7 +2,6 @@ import React from "react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fireEvent, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { FeedAddTab } from "../components/FeedManager/FeedAddTab";
 import { SettingsSidebar } from "../components/SettingsSidebar";
@@ -245,12 +244,6 @@ describe("theme contrast hotspots", () => {
   });
 
   it("uses semantic CTA tokens in feed manager add flow", () => {
-    const cssSource = readFileSync(resolve(process.cwd(), "index.css"), "utf8");
-
-    expect(cssSource).toContain(".feed-manager-primary-button");
-    expect(cssSource).toContain("background: rgb(var(--color-accentSurface));");
-    expect(cssSource).toContain("color: rgb(var(--color-onAccent));");
-
     render(
       <FeedAddTab
         categories={[{ id: "general", name: "General", color: "0 0 0", order: 0 }]}
@@ -269,60 +262,20 @@ describe("theme contrast hotspots", () => {
     );
 
     const newFeedButton = screen.getByRole("button", { name: /Abrir listas/i });
-    expect(newFeedButton.className).toContain("feed-manager-primary-button");
+    expect(newFeedButton.className).toContain(
+      "bg-[rgb(var(--color-accentSurface))]",
+    );
+    expect(newFeedButton.className).toContain(
+      "text-[rgb(var(--color-onAccent))]",
+    );
 
     const saveFeedButton = screen.getByRole("button", { name: /^Adicionar$/i });
-    expect(saveFeedButton.className).toContain("feed-manager-primary-button");
-  });
-
-  it("uses scoped semantic classes for the feed manager header and operational hero", () => {
-    const cssSource = readFileSync(resolve(process.cwd(), "index.css"), "utf8");
-
-    expect(cssSource).toContain(".feed-manager-header");
-    expect(cssSource).toContain(".feed-manager-header-main");
-    expect(cssSource).toContain(".feed-manager-header-context");
-    expect(cssSource).toContain(".feed-manager-icon-button");
-    expect(cssSource).toContain(".feed-manager-mobile-backdrop");
-    expect(cssSource).toContain(".feed-manager-sidebar-nav-item");
-    expect(cssSource).toContain(".feed-manager-sidebar-nav-icon");
-    expect(cssSource).toContain(".feed-manager-section-header");
-    expect(cssSource).toContain(".feed-manager-section-header__icon");
-    expect(cssSource).toContain(".feed-manager-section-header__content");
-    expect(cssSource).toContain(".feed-manager-section-header__action");
-    expect(cssSource).toContain(".feed-manager-accordion-section");
-    expect(cssSource).toContain(".feed-manager-accordion-section--collapsed");
-    expect(cssSource).toContain(".feed-manager-accordion-body");
-    expect(cssSource).toContain(".feed-manager-accordion-toggle");
-    expect(cssSource).toContain(".feed-manager-workspace-footer");
-    expect(cssSource).toContain(".feed-manager-operational-hero");
-    expect(cssSource).toContain(".feed-manager-sidebar--open");
-    expect(cssSource).toContain(".feed-manager-hero-metrics");
-    expect(cssSource).toContain(".feed-manager-hero-actions");
-    expect(cssSource).toContain(".feed-manager-operational-metric");
-    expect(cssSource).toContain(".feed-manager-operational-metric__label");
-    expect(cssSource).toContain(".notification-container");
-    expect(cssSource).toContain(
-      "background: rgb(var(--theme-manager-surface, var(--color-surface)))",
+    expect(saveFeedButton.className).toContain(
+      "bg-[rgb(var(--color-accentSurface))]",
     );
-    expect(cssSource).toContain(
-      "background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)))",
+    expect(saveFeedButton.className).toContain(
+      "text-[rgb(var(--color-onAccent))]",
     );
-  });
-
-  it("uses scoped semantic classes for the favorites toolbar", () => {
-    const cssSource = readFileSync(resolve(process.cwd(), "index.css"), "utf8");
-    const toolbarSource = readFileSync(
-      resolve(process.cwd(), "components/FavoritesViewToolbar.tsx"),
-      "utf8",
-    );
-
-    expect(cssSource).toContain(".favorites-toolbar-frame");
-    expect(cssSource).toContain(".favorites-toolbar-frame + .feed-layout");
-    expect(cssSource).toContain(".favorites-toolbar__controls");
-    expect(cssSource).toContain(".favorites-toolbar__segment--active");
-    expect(cssSource).toContain("background: rgba(var(--color-accent), 0.14);");
-    expect(toolbarSource).toContain("favorites-toolbar-frame");
-    expect(toolbarSource).not.toContain("feed-page-frame");
   });
 
   it("keeps category manager accent CTAs on explicit high-contrast foreground tokens", () => {
@@ -376,22 +329,18 @@ describe("theme contrast hotspots", () => {
     expect(settingsSidebarSource).toContain("w-full h-9 rounded-xl");
   });
 
-  it("routes sidebar theme mode changes through presets with semantic tokens", async () => {
-    const user = userEvent.setup();
-
+  it("routes sidebar theme mode changes through presets with semantic tokens", () => {
     render(
       <SettingsSidebar
         isOpen={true}
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
-        primaryView="all"
-        onPrimaryViewChange={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByText("Aparência").closest("button")!);
-    await user.click(screen.getByRole("button", { name: "Escuro" }));
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: "Escuro" }));
 
     expect(setCurrentThemeMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -405,22 +354,18 @@ describe("theme contrast hotspots", () => {
     );
   });
 
-  it("applies seed color presets as complete semantic light and dark themes", async () => {
-    const user = userEvent.setup();
-
+  it("applies seed color presets as complete semantic light and dark themes", () => {
     render(
       <SettingsSidebar
         isOpen={true}
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
-        primaryView="all"
-        onPrimaryViewChange={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByText("Aparência").closest("button")!);
-    await user.click(
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(
       screen.getByRole("button", { name: "Aplicar cor-semente Esmeralda" }),
     );
 
@@ -450,8 +395,7 @@ describe("theme contrast hotspots", () => {
     );
   });
 
-  it("preserves the active seed pair when switching between light and dark modes", async () => {
-    const user = userEvent.setup();
+  it("preserves the active seed pair when switching between light and dark modes", () => {
     const seedPair = createThemeSeedPair("5 150 105", "Esmeralda", "seed-emerald");
     themeState.currentTheme = seedPair.dark;
     themeState.customThemes = [seedPair.light, seedPair.dark];
@@ -469,18 +413,16 @@ describe("theme contrast hotspots", () => {
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
-        primaryView="all"
-        onPrimaryViewChange={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
 
     expect(
       screen.getByText("Cor-semente ativa: Esmeralda (Escuro)"),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Claro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Claro" }));
 
     expect(setCurrentThemeMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -499,21 +441,17 @@ describe("theme contrast hotspots", () => {
     });
   });
 
-  it("renders seed preview coverage for CTA, outline, pagination, chips, and elevated cards", async () => {
-    const user = userEvent.setup();
-
+  it("renders seed preview coverage for CTA, outline, pagination, chips, and elevated cards", () => {
     render(
       <SettingsSidebar
         isOpen={true}
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
-        primaryView="all"
-        onPrimaryViewChange={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
 
     expect(
       screen.getByRole("button", { name: "Aplicar cor-semente Azul" }),
@@ -525,22 +463,18 @@ describe("theme contrast hotspots", () => {
     expect(screen.getAllByText("Azul").length).toBeGreaterThan(0);
   });
 
-  it("syncs the custom seed swatch with the selected preset color", async () => {
-    const user = userEvent.setup();
-
+  it("syncs the custom seed swatch with the selected preset color", () => {
     render(
       <SettingsSidebar
         isOpen={true}
         onClose={vi.fn()}
         timeFormat="24h"
         setTimeFormat={vi.fn()}
-        primaryView="all"
-        onPrimaryViewChange={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByText("Aparência").closest("button")!);
-    await user.click(
+    fireEvent.click(screen.getByText("Aparência").closest("button")!);
+    fireEvent.click(
       screen.getByRole("button", { name: "Aplicar cor-semente Âmbar" }),
     );
 
@@ -571,29 +505,10 @@ describe("theme contrast hotspots", () => {
       "utf8",
     );
 
-    expect(toolsSource).toContain("Síntese operacional");
-    expect(toolsSource).toContain("FeedManagerAccordionSection");
-    expect(toolsSource).toContain("Escolha o tipo de intervenção");
-    expect(toolsSource).toContain("Como escolher");
-    expect(toolsSource).toContain("Arquivos e listas");
-    expect(toolsSource).toContain("Manutenção e risco");
+    expect(toolsSource).toContain("Bancada");
+    expect(toolsSource).toContain("Fluxos principais");
     expect(toolsSource).toContain("Zona de risco");
-    expect(toolsSource).toContain("bg-[rgb(var(--color-error))]");
-    expect(toolsSource).toContain("text-[rgb(var(--color-onAccent))]");
+    expect(toolsSource).toContain("bg-red-500 px-4 py-3 text-sm font-black text-white");
     expect(toolsSource).not.toContain("useProxyDashboard");
-    expect(toolsSource).not.toContain("Próximo passo");
-  });
-
-  it("keeps diagnostics overview informational instead of duplicating metrics", () => {
-    const analyticsSource = readFileSync(
-      resolve(process.cwd(), "components/FeedAnalytics.tsx"),
-      "utf8",
-    );
-
-    expect(analyticsSource).toContain("Investigar fontes");
-    expect(analyticsSource).toContain("Ver rotas de carregamento");
-    expect(analyticsSource).toContain("Exportar diagnóstico");
-    expect(analyticsSource).toContain("Lista de atenção");
-    expect(analyticsSource).not.toContain("Feeds afetados");
   });
 });

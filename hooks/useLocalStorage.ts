@@ -17,7 +17,7 @@
  * - Histórico de busca (não sensíveis)
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function getStorageValue<T,>(key: string, defaultValue: T): T {
   if (typeof window === 'undefined') {
@@ -35,55 +35,24 @@ function getStorageValue<T,>(key: string, defaultValue: T): T {
   return defaultValue;
 }
 
-function persistStorageValue<T,>(key: string, value: T): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-    queueMicrotask(() => {
-      window.dispatchEvent(new CustomEvent('localStorage-change', {
-        detail: { key, value }
-      }));
-    });
-  } catch (e) {
-    console.error(`Failed to set item in localStorage for key "${key}"`, e);
-  }
-}
-
 export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
     return getStorageValue(key, initialValue);
   });
 
-  const setStoredValue = useCallback<React.Dispatch<React.SetStateAction<T>>>((nextValue) => {
-    setValue((previousValue) => {
-      const resolvedValue =
-        typeof nextValue === 'function'
-          ? (nextValue as (previousState: T) => T)(previousValue)
-          : nextValue;
-
-      if (Object.is(previousValue, resolvedValue)) {
-        return previousValue;
-      }
-
-      persistStorageValue(key, resolvedValue);
-      return resolvedValue;
-    });
-  }, [key]);
-
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    if (window.localStorage.getItem(key) === null) {
-      persistStorageValue(key, value);
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+      // Dispatch a custom event to notify other components of the change
+      window.dispatchEvent(new CustomEvent('localStorage-change', {
+        detail: { key, value }
+      }));
+    } catch (e) {
+      console.error(`Failed to set item in localStorage for key "${key}"`, e);
     }
   }, [key, value]);
 
-  // Listen for localStorage changes from other tabs/windows and other hook instances.
+  // Listen for localStorage changes from other tabs/windows
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === key && e.newValue !== null) {
@@ -111,5 +80,5 @@ export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dis
     };
   }, [key]);
 
-  return [value, setStoredValue];
+  return [value, setValue];
 }

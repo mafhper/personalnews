@@ -115,7 +115,7 @@ export const CompactLayout: React.FC<CompactLayoutProps> = ({ articles }) => {
                         article={article}
                         size="small"
                         position="inline"
-                        className="p-0 hover:text-[rgb(var(--color-error))] transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-0 hover:text-[rgb(var(--color-error))] transition-colors opacity-60 group-hover:opacity-100"
                       />
                       <span className="opacity-30 flex-shrink-0">•</span>
                       {(() => {

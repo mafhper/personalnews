@@ -2,19 +2,11 @@ import type { Article } from "../types";
 import { detectEnvironment } from "./environmentDetector";
 import { desktopBackendClient } from "./desktopBackendClient";
 import {
-  feedDiscoveryService,
-  type DiscoveredFeed,
-} from "./feedDiscoveryService";
-import {
   buildFeedDiagnosticInfo,
   type FeedDiagnosticInfo,
   type FeedRouteInfo,
 } from "./feedDiagnostics";
-import {
-  ProxyManager,
-  proxyManager,
-  type ProxyRouteMode,
-} from "./proxyManager";
+import { ProxyManager } from "./proxyManager";
 import { parseRssUrlDetailed } from "./rssParser";
 
 export interface FeedRuntimeResult {
@@ -24,29 +16,10 @@ export interface FeedRuntimeResult {
   warning?: FeedDiagnosticInfo;
   cached: boolean;
   source: "backend" | "client-fallback" | "client";
-  discovery?: FeedRuntimeDiscoveryInfo;
-}
-
-export interface FeedRuntimeDiscoveryInfo {
-  originalUrl: string;
-  discoveredUrl?: string;
-  discoveredTitle?: string;
-  status: "used" | "not-found" | "failed";
-  suggestions: string[];
-  candidates: Array<Pick<DiscoveredFeed, "url" | "title" | "type" | "confidence">>;
-  message: string;
 }
 
 export interface FeedRuntimeState {
-  activeMode:
-    | "desktop-local"
-    | "cloud-fallback"
-    | "external-proxies"
-    | "web-client"
-    | "unknown";
-  proxyRouteMode?: ProxyRouteMode;
-  primaryRoute?: string;
-  fallbackOrder?: string[];
+  activeMode: "desktop-local" | "cloud-fallback" | "web-client" | "unknown";
   lastRoute?: FeedRouteInfo;
   lastWarning?: FeedDiagnosticInfo;
   backendAvailable?: boolean;
@@ -103,46 +76,6 @@ const sleep = (ms: number, signal?: AbortSignal) =>
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
-
-const shouldAttemptHtmlFeedDiscovery = (error: unknown): boolean => {
-  const message = getErrorMessage(error).toLowerCase();
-
-  if (
-    message.includes("abort") ||
-    message.includes("cancelled") ||
-    message.includes("timeout") ||
-    message.includes("404") ||
-    message.includes("not found") ||
-    message.includes("rate limit") ||
-    message.includes("429")
-  ) {
-    return false;
-  }
-
-  return (
-    message.includes("html") ||
-    message.includes("invalid response format") ||
-    message.includes("unsupported rss format") ||
-    message.includes("xml parsing error") ||
-    message.includes("parse") ||
-    message.includes("valid rss") ||
-    message.includes("valid feed") ||
-    message.includes("not a feed")
-  );
-};
-
-const summarizeDiscoveredFeeds = (feeds: DiscoveredFeed[]) =>
-  feeds.map(({ url, title, type, confidence }) => ({
-    url,
-    title,
-    type,
-    confidence,
-  }));
-
-const sortDiscoveredFeeds = (feeds: DiscoveredFeed[]) =>
-  feeds
-    .slice()
-    .sort((a, b) => b.confidence - a.confidence || a.url.localeCompare(b.url));
 
 const getBackendErrorStatusCode = (error: unknown): number | undefined => {
   if (!error || typeof error !== "object") return undefined;
@@ -213,33 +146,23 @@ export async function loadFeedWithRuntime(
 ): Promise<FeedRuntimeResult> {
   const env = detectEnvironment();
   const hasBackendRuntime = desktopBackendClient.isEnabled();
-  const proxyRouteMode = ProxyManager.getRoutingMode();
-  const fallbackOrder = proxyManager.getClientProxyOrder();
-  const allowClientProxyFallback = proxyRouteMode === "mixed";
+  const preferLocalProxy = ProxyManager.getPreferLocalProxy();
+  const allowClientProxyFallback = ProxyManager.shouldUseClientProxyFallback();
   const { forceRefresh = false, signal, skipCache = false } = options;
 
-  if (hasBackendRuntime && proxyRouteMode === "full-external-proxies") {
+  if (hasBackendRuntime && !preferLocalProxy) {
     const result = await parseRssUrlDetailed(url, {
       signal,
       skipCache,
-      forceClientFallback: true,
-      externalOnly: true,
-      routeMode: "full-external-proxies",
     });
     updateRuntimeState({
-      activeMode: "external-proxies",
-      proxyRouteMode,
-      primaryRoute: fallbackOrder[0],
-      fallbackOrder,
+      activeMode: "cloud-fallback",
       lastRoute: result.route,
       lastWarning: undefined,
       backendAvailable: false,
     });
     desktopBackendClient.setRuntimeState({
-      activeMode: "external-proxies",
-      proxyRouteMode,
-      primaryRoute: fallbackOrder[0],
-      fallbackOrder,
+      activeMode: "cloud-fallback",
       lastRoute: result.route.routeName,
       lastWarning: undefined,
       backendAvailable: false,
@@ -250,7 +173,7 @@ export async function loadFeedWithRuntime(
       articles: result.articles,
       route: {
         ...result.route,
-        viaFallback: false,
+        viaFallback: true,
       },
       cached: result.cached,
       source: "client",
@@ -272,18 +195,12 @@ export async function loadFeedWithRuntime(
         const route = buildBackendRoute(response.meta.cached);
         updateRuntimeState({
           activeMode: "desktop-local",
-          proxyRouteMode,
-          primaryRoute: "LocalBackend",
-          fallbackOrder,
           lastRoute: route,
           lastWarning: undefined,
           backendAvailable: true,
         });
         desktopBackendClient.setRuntimeState({
           activeMode: "desktop-local",
-          proxyRouteMode,
-          primaryRoute: "LocalBackend",
-          fallbackOrder,
           lastRoute: "LocalBackend",
           lastWarning: undefined,
           backendAvailable: true,
@@ -310,9 +227,6 @@ export async function loadFeedWithRuntime(
         if (!isBackendReachabilityError(error)) {
           updateRuntimeState({
             activeMode: "desktop-local",
-            proxyRouteMode,
-            primaryRoute: "LocalBackend",
-            fallbackOrder,
             lastRoute: backendRoute,
             lastWarning: buildFeedDiagnosticInfo(
               message,
@@ -323,9 +237,6 @@ export async function loadFeedWithRuntime(
           });
           desktopBackendClient.setRuntimeState({
             activeMode: "desktop-local",
-            proxyRouteMode,
-            primaryRoute: "LocalBackend",
-            fallbackOrder,
             lastRoute: "LocalBackend",
             lastWarning: undefined,
             backendAvailable: true,
@@ -346,18 +257,12 @@ export async function loadFeedWithRuntime(
         if (!allowClientProxyFallback) {
           updateRuntimeState({
             activeMode: "desktop-local",
-            proxyRouteMode,
-            primaryRoute: "LocalBackend",
-            fallbackOrder,
             lastRoute: backendRoute,
             lastWarning: warning,
             backendAvailable: false,
           });
           desktopBackendClient.setRuntimeState({
             activeMode: "desktop-local",
-            proxyRouteMode,
-            primaryRoute: "LocalBackend",
-            fallbackOrder,
             lastRoute: "LocalBackend",
             lastWarning: JSON.stringify(warning),
             backendAvailable: false,
@@ -369,25 +274,16 @@ export async function loadFeedWithRuntime(
         const fallback = await parseRssUrlDetailed(url, {
           signal,
           skipCache,
-          forceClientFallback: true,
-          externalOnly: true,
-          routeMode: "full-external-proxies",
         });
 
         updateRuntimeState({
           activeMode: "cloud-fallback",
-          proxyRouteMode,
-          primaryRoute: "LocalBackend",
-          fallbackOrder,
           lastRoute: fallback.route,
           lastWarning: warning,
           backendAvailable: false,
         });
         desktopBackendClient.setRuntimeState({
           activeMode: "cloud-fallback",
-          proxyRouteMode,
-          primaryRoute: "LocalBackend",
-          fallbackOrder,
           lastRoute: fallback.route.routeName,
           lastWarning: JSON.stringify(warning),
           backendAvailable: false,
@@ -427,18 +323,12 @@ export async function loadFeedWithRuntime(
     if (!allowClientProxyFallback) {
       updateRuntimeState({
         activeMode: "desktop-local",
-        proxyRouteMode,
-        primaryRoute: "LocalBackend",
-        fallbackOrder,
         lastRoute: warning.route,
         lastWarning: warning,
         backendAvailable: false,
       });
       desktopBackendClient.setRuntimeState({
         activeMode: "desktop-local",
-        proxyRouteMode,
-        primaryRoute: "LocalBackend",
-        fallbackOrder,
         lastRoute: "LocalBackend",
         lastWarning: JSON.stringify(warning),
         backendAvailable: false,
@@ -451,25 +341,16 @@ export async function loadFeedWithRuntime(
     const fallback = await parseRssUrlDetailed(url, {
       signal,
       skipCache,
-      forceClientFallback: true,
-      externalOnly: true,
-      routeMode: "full-external-proxies",
     });
 
     updateRuntimeState({
       activeMode: "cloud-fallback",
-      proxyRouteMode,
-      primaryRoute: "LocalBackend",
-      fallbackOrder,
       lastRoute: fallback.route,
       lastWarning: warning,
       backendAvailable: false,
     });
     desktopBackendClient.setRuntimeState({
       activeMode: "cloud-fallback",
-      proxyRouteMode,
-      primaryRoute: "LocalBackend",
-      fallbackOrder,
       lastRoute: fallback.route.routeName,
       lastWarning: JSON.stringify(warning),
       backendAvailable: false,
@@ -492,15 +373,9 @@ export async function loadFeedWithRuntime(
   const result = await parseRssUrlDetailed(url, {
     signal,
     skipCache,
-    forceClientFallback: true,
-    externalOnly: !env.isTauri,
-    routeMode: env.isTauri ? proxyRouteMode : "full-external-proxies",
   });
   updateRuntimeState({
     activeMode: env.isTauri ? "desktop-local" : "web-client",
-    proxyRouteMode,
-    primaryRoute: env.isTauri ? "LocalBackend" : fallbackOrder[0],
-    fallbackOrder,
     lastRoute: result.route,
     lastWarning: undefined,
     backendAvailable: false,
@@ -513,80 +388,4 @@ export async function loadFeedWithRuntime(
     cached: result.cached,
     source: "client",
   };
-}
-
-export async function loadFeedWithRuntimeAndDiscovery(
-  url: string,
-  options: {
-    forceRefresh?: boolean;
-    signal?: AbortSignal;
-    skipCache?: boolean;
-    discoverHtmlFallback?: boolean;
-  } = {},
-): Promise<FeedRuntimeResult> {
-  const { discoverHtmlFallback = false, ...runtimeOptions } = options;
-
-  try {
-    return await loadFeedWithRuntime(url, runtimeOptions);
-  } catch (initialError) {
-    if (
-      !discoverHtmlFallback ||
-      !shouldAttemptHtmlFeedDiscovery(initialError)
-    ) {
-      throw initialError;
-    }
-
-    let discoveredFeeds: DiscoveredFeed[] = [];
-    let suggestions: string[] = [];
-
-    try {
-      const discovery = await feedDiscoveryService.discoverFromWebsite(url);
-      discoveredFeeds = sortDiscoveredFeeds(discovery.discoveredFeeds);
-      suggestions = discovery.suggestions;
-    } catch (discoveryError) {
-      const message = getErrorMessage(discoveryError);
-      throw new Error(
-        `Falha ao descobrir RSS/Atom a partir do HTML recebido: ${message}`,
-      );
-    }
-
-    const candidates = summarizeDiscoveredFeeds(discoveredFeeds);
-
-    if (discoveredFeeds.length === 0) {
-      throw new Error(
-        "HTML recebido, mas nenhum feed RSS/Atom foi encontrado para esta origem.",
-      );
-    }
-
-    let lastCandidateError: unknown = initialError;
-
-    for (const candidate of discoveredFeeds) {
-      if (runtimeOptions.signal?.aborted) {
-        throw new DOMException("Request was cancelled", "AbortError");
-      }
-
-      try {
-        const result = await loadFeedWithRuntime(candidate.url, runtimeOptions);
-        return {
-          ...result,
-          discovery: {
-            originalUrl: url,
-            discoveredUrl: candidate.url,
-            discoveredTitle: candidate.title,
-            status: "used",
-            suggestions,
-            candidates,
-            message:
-              "URL salva respondeu como HTML; feed RSS/Atom descoberto usado apenas nesta tentativa.",
-          },
-        };
-      } catch (candidateError) {
-        lastCandidateError = candidateError;
-      }
-    }
-
-    throw new Error(
-      `HTML recebido e ${discoveredFeeds.length} feed(s) RSS/Atom foram descobertos, mas nenhum carregou com sucesso: ${getErrorMessage(lastCandidateError)}`,
-    );
-  }
 }

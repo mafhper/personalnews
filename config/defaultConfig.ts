@@ -183,7 +183,6 @@ export const STORAGE_KEYS = {
     articleLayout: 'article-layout-settings',
     readStatus: 'article-read-status',
     favorites: 'favorites-data',
-    primaryView: 'personalnews-primary-view',
     weatherCity: 'personalnews_weather_city',
     searchHistory: 'searchHistory',
 } as const;

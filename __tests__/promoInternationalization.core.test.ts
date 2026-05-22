@@ -21,9 +21,6 @@ describe("promo internationalization", () => {
     );
     expect(getPromoContent("en-US").hero.title).toBe("News at your pace.");
     expect(getPromoContent("es").hero.title).toBe("Noticias a tu ritmo.");
-    expect(getPromoContent("pt-BR").hero.installCta).toBe("Instalar app");
-    expect(getPromoContent("en-US").hero.installCta).toBe("Install app");
-    expect(getPromoContent("es").hero.installCta).toBe("Instalar app");
     expect(getPromoContent("es").nav.pages.experience).toBe("Experiencia");
   });
 

@@ -1,12 +1,6 @@
 import React from "react";
 import { FileUp, ListPlus, PlusCircle, Rss, Send } from "lucide-react";
 import type { FeedCategory } from "../../types";
-import {
-  managerFieldClass,
-  managerPrimaryButtonClass,
-  managerSectionBandClass,
-  managerSurfaceClass,
-} from "./feedManagerStyles";
 
 interface FeedAddTabProps {
   categories: FeedCategory[];
@@ -21,12 +15,13 @@ interface FeedAddTabProps {
   onImportOPML: () => void;
   onShowImportModal: () => void;
   feedCount: number;
-  embedded?: boolean;
 }
 
-const PANEL_CLASS = managerSurfaceClass;
+const PANEL_CLASS =
+  "rounded-[28px] border border-[rgba(var(--color-border),0.12)] bg-[rgb(var(--theme-manager-surface,var(--color-surface)))] shadow-[0_24px_60px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.025)]";
 
-const FIELD_CLASS = managerFieldClass;
+const FIELD_CLASS =
+  "w-full rounded-[18px] border border-[rgba(var(--color-border),0.12)] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-4 py-3 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))] outline-none transition placeholder:text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] focus:border-[rgba(var(--color-accent),0.45)] focus:ring-2 focus:ring-[rgba(var(--color-accent),0.18)]";
 
 export const FeedAddTab: React.FC<FeedAddTabProps> = ({
   categories,
@@ -41,15 +36,14 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
   onImportOPML,
   onShowImportModal,
   feedCount,
-  embedded = false,
 }) => {
   const isProcessing = processingUrl !== null;
 
   return (
-    <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
+    <div className="h-full overflow-y-auto custom-scrollbar p-4 sm:p-6">
       <div className="mx-auto grid w-full max-w-[1480px] gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-        <section className={`${PANEL_CLASS} overflow-hidden p-0`}>
-          <div className={`${managerSectionBandClass} rounded-none px-6 py-5`}>
+        <section className={`${PANEL_CLASS} overflow-hidden`}>
+          <div className="border-b border-[rgba(var(--color-border),0.12)] bg-[rgb(var(--theme-manager-bg,var(--color-background)))] px-6 py-5">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))]">
                 <Rss className="h-6 w-6" />
@@ -128,7 +122,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
               <button
                 type="submit"
                 disabled={isProcessing}
-                className={`${managerPrimaryButtonClass} px-6 py-3`}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[rgb(var(--color-accentSurface))] px-6 py-3 text-sm font-bold text-[rgb(var(--color-onAccent))] shadow-[0_18px_40px_rgba(0,0,0,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isProcessing ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -182,7 +176,7 @@ export const FeedAddTab: React.FC<FeedAddTabProps> = ({
             <button
               type="button"
               onClick={onShowImportModal}
-              className={`${managerPrimaryButtonClass} w-full py-3`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[rgba(var(--color-accent),0.24)] bg-[rgb(var(--color-accentSurface))] px-4 py-3 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110"
             >
               <PlusCircle className="h-4 w-4" />
               Abrir listas

@@ -37,78 +37,6 @@ const splitLines = (value: string, maxLength: number, maxLines: number) => {
   return lines.slice(0, maxLines);
 };
 
-const sourcePalettes = [
-  {
-    start: "#0f172a",
-    mid: "#312e81",
-    end: "#0891b2",
-    accent: "#22d3ee",
-    accentAlt: "#f97316",
-  },
-  {
-    start: "#111827",
-    mid: "#065f46",
-    end: "#0e7490",
-    accent: "#34d399",
-    accentAlt: "#facc15",
-  },
-  {
-    start: "#18181b",
-    mid: "#7f1d1d",
-    end: "#be123c",
-    accent: "#fb7185",
-    accentAlt: "#38bdf8",
-  },
-  {
-    start: "#172554",
-    mid: "#6d28d9",
-    end: "#c026d3",
-    accent: "#a78bfa",
-    accentAlt: "#2dd4bf",
-  },
-  {
-    start: "#1f2937",
-    mid: "#92400e",
-    end: "#b45309",
-    accent: "#fbbf24",
-    accentAlt: "#60a5fa",
-  },
-] as const;
-
-const hashString = (value: string) => {
-  let hash = 2166136261;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return hash >>> 0;
-};
-
-const getHostLabel = (value?: string) => {
-  if (!value) return "";
-
-  try {
-    return new URL(value).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-};
-
-const getSourceInitials = (value: string) => {
-  const normalized = value
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .trim();
-
-  const words = normalized.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "PN";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-
-  return `${words[0][0] ?? "P"}${words[1][0] ?? "N"}`.toUpperCase();
-};
-
 const tonePalette = {
   brand: {
     start: "#071421",
@@ -135,7 +63,6 @@ export interface ImagePlaceholderOptions {
   height: number;
   label: string;
   eyebrow?: string;
-  feedUrl?: string;
   headline?: string;
   tone?: keyof typeof tonePalette;
   variant?: "editorial" | "ambient";
@@ -146,7 +73,6 @@ export const buildImagePlaceholderDataUri = ({
   height,
   label,
   eyebrow = "Visual local",
-  feedUrl,
   headline,
   tone = "brand",
   variant = "editorial",
@@ -191,113 +117,114 @@ export const buildImagePlaceholderDataUri = ({
     .join("");
 
   if (variant === "ambient") {
-    const feedHost = getHostLabel(feedUrl);
-    const seed = hashString(`${label}|${feedHost}|${tone}`);
-    const sourcePalette = sourcePalettes[seed % sourcePalettes.length];
-    const safeAmbientLabel = escapeXml(label.trim().slice(0, 32) || "Personal News");
-    const safeHost = escapeXml(feedHost || "Fonte local");
-    const sourceInitials = escapeXml(getSourceInitials(label || feedHost || "Personal News"));
+    const orbPrimary = tone === "brand" ? palette.accent : "#8eb6ff";
+    const orbSecondary = tone === "brand" ? "#7c3aed" : "#7dd3fc";
+    const orbTertiary = tone === "brand" ? "#f59e0b" : "#f8fafc";
+    const glowBand =
+      tone === "brand"
+        ? "rgba(130,230,213,0.24)"
+        : "rgba(142,182,255,0.2)";
+    const noiseOpacity = tone === "brand" ? "0.06" : "0.05";
+    const safeAmbientLabel = escapeXml(
+      (label.trim().slice(0, 28) || "Personal News").toUpperCase(),
+    );
+    const ambientEyebrow = escapeXml(
+      (eyebrow.trim().slice(0, 22) || "Visual local").toUpperCase(),
+    );
     const ambientLabelSize = Math.max(11, Math.round(width * 0.015));
     const ambientMetaSize = Math.max(10, Math.round(width * 0.011));
-    const ambientStatusSize = Math.max(12, Math.round(width * 0.013));
     const ambientPadding = Math.round(width * 0.065);
-    const badgeSize = Math.max(58, Math.round(Math.min(width, height) * 0.18));
-    const badgeX = Math.round(width * 0.08);
-    const badgeY = Math.round(height * 0.16);
-    const cardWidth = Math.round(width * 0.56);
-    const cardHeight = Math.round(height * 0.34);
-    const cardX = Math.round(width * 0.36);
-    const cardY = Math.round(height * 0.22);
-    const statusX = ambientPadding;
-    const statusY = Math.round(height * 0.86);
 
     const ambientMarkup = `
       <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="${sourcePalette.start}" />
-            <stop offset="52%" stop-color="${sourcePalette.mid}" />
-            <stop offset="100%" stop-color="${sourcePalette.end}" />
+            <stop offset="0%" stop-color="${palette.start}" />
+            <stop offset="52%" stop-color="${palette.end}" />
+            <stop offset="100%" stop-color="#080c14" />
           </linearGradient>
-          <radialGradient id="glowA" cx="16%" cy="18%" r="58%">
-            <stop offset="0%" stop-color="${sourcePalette.accent}" stop-opacity="0.46" />
-            <stop offset="100%" stop-color="${sourcePalette.accent}" stop-opacity="0" />
+          <radialGradient id="orbA" cx="18%" cy="16%" r="56%">
+            <stop offset="0%" stop-color="${orbPrimary}" stop-opacity="0.34" />
+            <stop offset="100%" stop-color="${orbPrimary}" stop-opacity="0" />
           </radialGradient>
-          <radialGradient id="glowB" cx="86%" cy="28%" r="52%">
-            <stop offset="0%" stop-color="${sourcePalette.accentAlt}" stop-opacity="0.34" />
-            <stop offset="100%" stop-color="${sourcePalette.accentAlt}" stop-opacity="0" />
+          <radialGradient id="orbB" cx="84%" cy="18%" r="50%">
+            <stop offset="0%" stop-color="${orbSecondary}" stop-opacity="0.26" />
+            <stop offset="100%" stop-color="${orbSecondary}" stop-opacity="0" />
           </radialGradient>
-          <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="rgba(255,255,255,0.24)" />
-            <stop offset="100%" stop-color="rgba(255,255,255,0.06)" />
+          <radialGradient id="orbC" cx="42%" cy="82%" r="58%">
+            <stop offset="0%" stop-color="${orbTertiary}" stop-opacity="0.14" />
+            <stop offset="100%" stop-color="${orbTertiary}" stop-opacity="0" />
+          </radialGradient>
+          <radialGradient id="orbD" cx="74%" cy="72%" r="38%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.1" />
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+          </radialGradient>
+          <linearGradient id="flowA" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="${glowBand}" />
+            <stop offset="46%" stop-color="rgba(255,255,255,0.1)" />
+            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
           </linearGradient>
-          <linearGradient id="accentBar" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="${sourcePalette.accent}" stop-opacity="0.95" />
-            <stop offset="100%" stop-color="${sourcePalette.accentAlt}" stop-opacity="0.75" />
+          <linearGradient id="flowB" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.14)" />
+            <stop offset="44%" stop-color="rgba(255,255,255,0.02)" />
+            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
           </linearGradient>
-          <pattern id="dots" x="0" y="0" width="34" height="34" patternUnits="userSpaceOnUse">
-            <circle cx="4" cy="4" r="1" fill="rgba(255,255,255,0.16)" />
-            <circle cx="22" cy="18" r="1" fill="rgba(255,255,255,0.08)" />
-            <circle cx="13" cy="30" r="1" fill="rgba(255,255,255,0.06)" />
+          <linearGradient id="veil" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.02)" />
+            <stop offset="100%" stop-color="rgba(2,4,8,0.34)" />
+          </linearGradient>
+          <pattern id="noise" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="5" r="1" fill="rgba(255,255,255,${noiseOpacity})" />
+            <circle cx="20" cy="16" r="1" fill="rgba(255,255,255,0.05)" />
+            <circle cx="30" cy="10" r="1" fill="rgba(255,255,255,0.04)" />
+            <circle cx="11" cy="29" r="1" fill="rgba(255,255,255,0.03)" />
           </pattern>
           <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="${Math.max(16, Math.round(width * 0.018))}" />
+            <feGaussianBlur stdDeviation="${Math.max(18, Math.round(width * 0.02))}" />
           </filter>
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="${Math.max(10, Math.round(height * 0.025))}" stdDeviation="${Math.max(10, Math.round(width * 0.012))}" flood-color="#020617" flood-opacity="0.28" />
+          <filter id="softBlur" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="${Math.max(8, Math.round(width * 0.009))}" />
           </filter>
         </defs>
-        <rect width="100%" height="100%" rx="28" fill="url(#bg)" />
-        <rect width="100%" height="100%" rx="28" fill="url(#dots)" opacity="0.7" />
-        <ellipse cx="${Math.round(width * 0.16)}" cy="${Math.round(height * 0.18)}" rx="${Math.round(width * 0.28)}" ry="${Math.round(height * 0.2)}" fill="url(#glowA)" filter="url(#blur)" />
-        <ellipse cx="${Math.round(width * 0.86)}" cy="${Math.round(height * 0.28)}" rx="${Math.round(width * 0.24)}" ry="${Math.round(height * 0.22)}" fill="url(#glowB)" filter="url(#blur)" />
-        <path d="M-${Math.round(width * 0.05)} ${Math.round(height * 0.66)} C ${Math.round(width * 0.18)} ${Math.round(height * 0.5)}, ${Math.round(width * 0.36)} ${Math.round(height * 0.58)}, ${Math.round(width * 0.56)} ${Math.round(height * 0.72)} S ${Math.round(width * 0.9)} ${Math.round(height * 0.92)}, ${Math.round(width * 1.05)} ${Math.round(height * 0.66)}" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="${Math.max(14, Math.round(width * 0.028))}" stroke-linecap="round" filter="url(#blur)" />
-        <g filter="url(#shadow)">
-          <rect x="${cardX}" y="${cardY}" width="${cardWidth}" height="${cardHeight}" rx="24" fill="url(#card)" stroke="rgba(255,255,255,0.2)" />
-          <rect x="${cardX + Math.round(cardWidth * 0.07)}" y="${cardY + Math.round(cardHeight * 0.16)}" width="${Math.round(cardWidth * 0.52)}" height="${Math.max(10, Math.round(cardHeight * 0.075))}" rx="999" fill="rgba(255,255,255,0.36)" />
-          <rect x="${cardX + Math.round(cardWidth * 0.07)}" y="${cardY + Math.round(cardHeight * 0.32)}" width="${Math.round(cardWidth * 0.78)}" height="${Math.max(10, Math.round(cardHeight * 0.075))}" rx="999" fill="rgba(255,255,255,0.22)" />
-          <rect x="${cardX + Math.round(cardWidth * 0.07)}" y="${cardY + Math.round(cardHeight * 0.5)}" width="${Math.round(cardWidth * 0.64)}" height="${Math.max(10, Math.round(cardHeight * 0.075))}" rx="999" fill="rgba(255,255,255,0.16)" />
-          <rect x="${cardX + Math.round(cardWidth * 0.07)}" y="${cardY + Math.round(cardHeight * 0.74)}" width="${Math.round(cardWidth * 0.38)}" height="${Math.max(8, Math.round(cardHeight * 0.065))}" rx="999" fill="url(#accentBar)" />
-        </g>
-        <g filter="url(#shadow)">
-          <rect x="${badgeX}" y="${badgeY}" width="${badgeSize}" height="${badgeSize}" rx="${Math.round(badgeSize * 0.28)}" fill="rgba(255,255,255,0.92)" />
-          <rect x="${badgeX + Math.round(badgeSize * 0.12)}" y="${badgeY + Math.round(badgeSize * 0.12)}" width="${Math.round(badgeSize * 0.76)}" height="${Math.round(badgeSize * 0.76)}" rx="${Math.round(badgeSize * 0.22)}" fill="url(#accentBar)" />
-          <text
-            x="${badgeX + Math.round(badgeSize * 0.5)}"
-            y="${badgeY + Math.round(badgeSize * 0.6)}"
-            fill="#ffffff"
-            text-anchor="middle"
-            font-family="Manrope, Segoe UI, Arial, sans-serif"
-            font-size="${Math.max(18, Math.round(badgeSize * 0.34))}"
-            font-weight="800"
-          >${sourceInitials}</text>
-        </g>
+        <rect width="100%" height="100%" rx="32" fill="url(#bg)" />
+        <rect width="100%" height="100%" rx="32" fill="url(#noise)" />
+        <rect width="100%" height="100%" rx="32" fill="url(#veil)" />
+        <ellipse cx="${Math.round(width * 0.18)}" cy="${Math.round(height * 0.14)}" rx="${Math.round(width * 0.24)}" ry="${Math.round(height * 0.18)}" fill="url(#orbA)" filter="url(#blur)" />
+        <ellipse cx="${Math.round(width * 0.82)}" cy="${Math.round(height * 0.18)}" rx="${Math.round(width * 0.23)}" ry="${Math.round(height * 0.18)}" fill="url(#orbB)" filter="url(#blur)" />
+        <ellipse cx="${Math.round(width * 0.4)}" cy="${Math.round(height * 0.86)}" rx="${Math.round(width * 0.34)}" ry="${Math.round(height * 0.22)}" fill="url(#orbC)" filter="url(#blur)" />
+        <ellipse cx="${Math.round(width * 0.8)}" cy="${Math.round(height * 0.76)}" rx="${Math.round(width * 0.24)}" ry="${Math.round(height * 0.17)}" fill="url(#orbD)" filter="url(#softBlur)" />
+        <path d="M-${Math.round(width * 0.08)} ${Math.round(height * 0.28)} C ${Math.round(width * 0.12)} ${Math.round(height * 0.08)}, ${Math.round(width * 0.34)} ${Math.round(height * 0.1)}, ${Math.round(width * 0.48)} ${Math.round(height * 0.24)} S ${Math.round(width * 0.8)} ${Math.round(height * 0.4)}, ${Math.round(width * 1.06)} ${Math.round(height * 0.16)} L ${Math.round(width * 1.06)} -20 L -20 -20 Z" fill="url(#flowA)" opacity="0.78" />
+        <path d="M-${Math.round(width * 0.05)} ${Math.round(height * 0.78)} C ${Math.round(width * 0.18)} ${Math.round(height * 0.58)}, ${Math.round(width * 0.34)} ${Math.round(height * 0.64)}, ${Math.round(width * 0.56)} ${Math.round(height * 0.82)} S ${Math.round(width * 0.92)} ${Math.round(height * 0.98)}, ${Math.round(width * 1.05)} ${Math.round(height * 0.74)}" fill="none" stroke="url(#flowB)" stroke-width="${Math.max(16, Math.round(width * 0.032))}" stroke-linecap="round" opacity="0.72" filter="url(#softBlur)" />
+        <path d="M-${Math.round(width * 0.04)} ${Math.round(height * 0.56)} C ${Math.round(width * 0.16)} ${Math.round(height * 0.46)}, ${Math.round(width * 0.28)} ${Math.round(height * 0.42)}, ${Math.round(width * 0.44)} ${Math.round(height * 0.52)} S ${Math.round(width * 0.72)} ${Math.round(height * 0.68)}, ${Math.round(width * 1.04)} ${Math.round(height * 0.52)}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="${Math.max(6, Math.round(width * 0.01))}" stroke-linecap="round" opacity="0.68" />
+        <path d="M${Math.round(width * 0.08)} ${Math.round(height * 0.22)} C ${Math.round(width * 0.14)} ${Math.round(height * 0.18)}, ${Math.round(width * 0.18)} ${Math.round(height * 0.14)}, ${Math.round(width * 0.24)} ${Math.round(height * 0.18)}" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="${Math.max(4, Math.round(width * 0.006))}" stroke-linecap="round" />
+        <path d="M${Math.round(width * 0.68)} ${Math.round(height * 0.24)} C ${Math.round(width * 0.74)} ${Math.round(height * 0.18)}, ${Math.round(width * 0.82)} ${Math.round(height * 0.18)}, ${Math.round(width * 0.88)} ${Math.round(height * 0.26)}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="${Math.max(4, Math.round(width * 0.006))}" stroke-linecap="round" />
         <text
           x="${ambientPadding}"
-          y="${Math.round(height * 0.66)}"
-          fill="rgba(255,255,255,0.82)"
+          y="${Math.round(height * 0.2)}"
+          fill="rgba(255,255,255,0.58)"
           font-family="Manrope, Segoe UI, Arial, sans-serif"
           font-size="${ambientMetaSize}"
           font-weight="700"
-        >${safeHost}</text>
+          letter-spacing="2.4"
+        >${ambientEyebrow}</text>
         <text
           x="${ambientPadding}"
-          y="${Math.round(height * 0.75)}"
-          fill="rgba(255,255,255,0.96)"
+          y="${Math.round(height * 0.84)}"
+          fill="rgba(255,255,255,0.9)"
           font-family="Manrope, Segoe UI, Arial, sans-serif"
           font-size="${ambientLabelSize}"
-          font-weight="800"
-        >${safeAmbientLabel}</text>
-        <rect x="${statusX}" y="${statusY - Math.round(ambientStatusSize * 1.5)}" width="${Math.round(width * 0.34)}" height="${Math.round(ambientStatusSize * 2.2)}" rx="999" fill="rgba(2,6,23,0.42)" stroke="rgba(255,255,255,0.16)" />
-        <circle cx="${statusX + Math.round(ambientStatusSize * 1.25)}" cy="${statusY - Math.round(ambientStatusSize * 0.72)}" r="${Math.max(4, Math.round(ambientStatusSize * 0.32))}" fill="${sourcePalette.accent}" />
-        <text
-          x="${statusX + Math.round(ambientStatusSize * 2.2)}"
-          y="${statusY - Math.round(ambientStatusSize * 0.35)}"
-          fill="rgba(255,255,255,0.86)"
-          font-family="Manrope, Segoe UI, Arial, sans-serif"
-          font-size="${ambientStatusSize}"
           font-weight="700"
-        >Imagem indisponivel</text>
+          letter-spacing="1.6"
+        >${safeAmbientLabel}</text>
+        <text
+          x="${ambientPadding}"
+          y="${Math.round(height * 0.9)}"
+          fill="rgba(255,255,255,0.42)"
+          font-family="Manrope, Segoe UI, Arial, sans-serif"
+          font-size="${ambientMetaSize}"
+          font-weight="600"
+          letter-spacing="1.4"
+        >IMAGEM INDISPONIVEL</text>
       </svg>
     `;
 
