@@ -16,7 +16,7 @@ import type { Article, FeedLoadRequest, FeedSource } from "../types";
 import { getCachedArticles } from "../services/smartCache";
 import { useLogger } from "../services/logger";
 import { categorizeFeedError } from "../services/feedErrorCategorization";
-import { loadFeedWithRuntime } from "../services/feedRuntime";
+import { loadFeedWithRuntimeAndDiscovery } from "../services/feedRuntime";
 import { ProxyManager } from "../services/proxyManager";
 import type {
   FeedDiagnosticInfo,
@@ -138,6 +138,26 @@ const isUnavailablePayload = (articles: Article[]): boolean => {
   return articles.every(isSystemNoticeArticle);
 };
 
+export const normalizeArticleForFeedSource = (
+  feed: FeedSource,
+  article: Article,
+  options: { preferSavedFeedUrl?: boolean } = {},
+): Article => {
+  const feedUrl = options.preferSavedFeedUrl
+    ? feed.url
+    : article.feedUrl || feed.url;
+
+  return {
+    ...article,
+    feedUrl,
+    sourceTitle: resolveFeedSourceTitle(
+      feed,
+      article.sourceTitle,
+      feedUrl || article.link || feed.url,
+    ),
+  };
+};
+
 /**
  * Custom hook for progressive feed loading with enhanced performance
  */
@@ -174,18 +194,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     new Map(),
   );
 
-  const normalizeArticleForFeed = useCallback(
-    (feed: FeedSource, article: Article): Article => ({
-      ...article,
-      feedUrl: article.feedUrl || feed.url,
-      sourceTitle: resolveFeedSourceTitle(
-        feed,
-        article.sourceTitle,
-        article.feedUrl || article.link || feed.url,
-      ),
-    }),
-    [],
-  );
+  const normalizeArticleForFeed = useCallback(normalizeArticleForFeedSource, []);
 
   const collectArticlesFromFeedResults = useCallback(
     (results: Map<string, FeedResult>): Article[] => {
@@ -299,17 +308,20 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       try {
         logger.debug(`Loading feed: ${feed.url}`);
 
-        const result = await loadFeedWithRuntime(feed.url, {
+        const result = await loadFeedWithRuntimeAndDiscovery(feed.url, {
           signal: signal
             ? AbortSignal.any([signal, timeoutController.signal])
             : timeoutController.signal,
           skipCache,
           forceRefresh: skipCache,
+          discoverHtmlFallback: true,
         });
 
         clearTimeout(timeoutId);
         const normalizedFetchedArticles = result.articles.map((article) =>
-          normalizeArticleForFeed(feed, article),
+          normalizeArticleForFeed(feed, article, {
+            preferSavedFeedUrl: result.discovery?.status === "used",
+          }),
         );
 
         if (isUnavailablePayload(result.articles)) {
