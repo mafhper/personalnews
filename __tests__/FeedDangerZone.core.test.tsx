@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FeedCategoryManager } from "../components/FeedCategoryManager";
+import { FeedAnalytics } from "../components/FeedAnalytics";
 import { FeedCleanupModal } from "../components/FeedCleanupModal";
 import { FeedDuplicateModal } from "../components/FeedDuplicateModal";
 import { FeedManager } from "../components/FeedManager";
@@ -155,7 +156,7 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("button", { name: "Revalidar feeds" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Use esta entrada para revisar fontes/)).toBeInTheDocument();
+    expect(screen.getByText(/Use esta entrada como mapa da coleção/)).toBeInTheDocument();
     expect(screen.queryByText("Feed Manager")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu de navegação" }));
@@ -258,6 +259,8 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("heading", { name: "Escolha o tipo de intervenção" }),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Próximo passo:")).not.toBeInTheDocument();
+    expect(screen.getByText("Como escolher:")).toBeInTheDocument();
     const navigation = screen.getByRole("navigation", {
       name: "Navegação do gerenciador de feeds",
     });
@@ -344,6 +347,19 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("heading", { name: "Diagnóstico em camadas" }),
     ).toBeInTheDocument();
+    const diagnosticsOverview = container.querySelector(
+      "#feed-manager-section-diagnostics-overview",
+    );
+    expect(diagnosticsOverview).not.toBeNull();
+    expect(within(diagnosticsOverview as HTMLElement).getByText("Investigar fontes")).toBeInTheDocument();
+    expect(
+      within(diagnosticsOverview as HTMLElement).getByText(
+        "Ver rotas de carregamento",
+      ),
+    ).toBeInTheDocument();
+    expect(within(diagnosticsOverview as HTMLElement).getByText("Exportar diagnóstico")).toBeInTheDocument();
+    expect(within(diagnosticsOverview as HTMLElement).queryByText(/rotas saudáveis/i)).not.toBeInTheDocument();
+    expect(within(diagnosticsOverview as HTMLElement).queryByText(/requisições/i)).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -416,6 +432,39 @@ describe("Feed danger zone flows", () => {
         "A coleção ficará vazia. Esta ação não pode ser desfeita pelo aplicativo.",
     });
     expect(setFeeds).not.toHaveBeenCalled();
+  });
+
+  it("keeps affected diagnostics as an attention list inside feed health", () => {
+    render(
+      <FeedAnalytics
+        feeds={testFeeds}
+        articles={[]}
+        view="all"
+        feedValidations={
+          new Map([
+            [
+              "https://one.example/rss",
+              {
+                url: "https://one.example/rss",
+                isValid: false,
+                status: "network_error",
+                error: "Falha de rede",
+                lastChecked: Date.now(),
+                validationAttempts: [],
+                suggestions: [],
+                totalRetries: 0,
+                totalValidationTime: 0,
+              },
+            ],
+          ])
+        }
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Lista de atenção" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Feeds afetados")).not.toBeInTheDocument();
   });
 
   it("empties feeds after confirming delete-all", async () => {

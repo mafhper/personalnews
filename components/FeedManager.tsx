@@ -1880,42 +1880,40 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                       <FeedManagerSectionHeader
                         eyebrow="Coleção"
                         title="Painel da coleção"
-                        description="Use esta entrada para revisar fontes, adicionar novos endereços e organizar categorias sem sair do gerenciador."
+                        description="Use esta entrada como mapa da coleção: revise fontes, inclua novos endereços e ajuste categorias sem competir com os indicadores do topo."
                         icon={<Library className="h-5 w-5" />}
-                        action={
-                          <div className="flex flex-wrap gap-2">
-                            <CollectionModeButton
-                              active={false}
-                              onClick={() => navigateToRoute("feeds:list")}
-                            >
-                              Revisar feeds
-                            </CollectionModeButton>
-                            <CollectionModeButton
-                              active={false}
-                              onClick={() => navigateToRoute("feeds:add")}
-                            >
-                              Adicionar fonte
-                            </CollectionModeButton>
-                            <CollectionModeButton
-                              active={false}
-                              onClick={() => navigateToRoute("feeds:categories")}
-                            >
-                              Organizar categorias
-                            </CollectionModeButton>
-                          </div>
-                        }
                       />
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <CollectionModeButton
+                          active={false}
+                          onClick={() => navigateToRoute("feeds:list")}
+                        >
+                          Revisar feeds
+                        </CollectionModeButton>
+                        <CollectionModeButton
+                          active={false}
+                          onClick={() => navigateToRoute("feeds:add")}
+                        >
+                          Adicionar fonte
+                        </CollectionModeButton>
+                        <CollectionModeButton
+                          active={false}
+                          onClick={() => navigateToRoute("feeds:categories")}
+                        >
+                          Organizar categorias
+                        </CollectionModeButton>
+                      </div>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <FeedManagerInsight
                         label="Organização"
                         value={categories.length}
-                        description="categorias disponíveis para roteamento."
+                        description="categorias de roteamento visual."
                       />
                       <FeedManagerInsight
-                        label="Fluxo recomendado"
-                        value="Revisar"
-                        description="comece pela lista de feeds quando houver alerta no painel operacional."
+                        label="Atalhos"
+                        value="3"
+                        description="caminhos diretos para revisar, adicionar e organizar."
                       />
                     </div>
                   </div>
@@ -2041,8 +2039,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onOpenMaintenance={() => navigateToRoute("operations:maintenance")}
                 onOpenRisk={() => navigateToRoute("operations:risk")}
                 feedCount={currentFeeds.length}
-                validCount={validCount}
-                invalidCount={invalidCount}
               />
             )}
 
