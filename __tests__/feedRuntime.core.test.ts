@@ -570,6 +570,58 @@ describe("feedRuntime", () => {
     ).rejects.toThrow("nenhum feed RSS/Atom");
   });
 
+  it("attempts discovery for HTML podcast feed URLs captured from the large OPML run", async () => {
+    mockIsEnabled.mockReturnValue(false);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: true,
+      isLocalhost: false,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: true,
+      corsMode: "public-apis",
+    });
+    const htmlPodcastFeeds = [
+      "https://www.amigosdoforum.com.br/podcast/rebobinando/feed.xml",
+      "https://debatedebolso.com/podcast",
+      "https://naosalvo.com.br/podcast/seeufossevoce/feed.xml",
+      "http://temacast.com.br/feed.xml",
+      "https://republicadomedo.com.br/feed/podcast/",
+      "https://podcastnbw.com/?feed=podcast",
+    ];
+
+    for (const feedUrl of htmlPodcastFeeds) {
+      mockParseRssUrlDetailed.mockRejectedValueOnce(
+        new Error(
+          `Unexpected feed Content-Type: text/html; charset=utf-8 for ${feedUrl}`,
+        ),
+      );
+      mockDiscoverFromWebsite.mockResolvedValueOnce({
+        originalUrl: feedUrl,
+        discoveredFeeds: [],
+        discoveryMethods: ["html-parsing"],
+        totalAttempts: 1,
+        successfulAttempts: 0,
+        discoveryTime: 1,
+        suggestions: [],
+      });
+
+      await expect(
+        loadFeedWithRuntimeAndDiscovery(feedUrl, {
+          discoverHtmlFallback: true,
+        }),
+      ).rejects.toThrow("nenhum feed RSS/Atom");
+    }
+
+    expect(mockDiscoverFromWebsite).toHaveBeenCalledTimes(
+      htmlPodcastFeeds.length,
+    );
+    for (const feedUrl of htmlPodcastFeeds) {
+      expect(mockDiscoverFromWebsite).toHaveBeenCalledWith(feedUrl);
+    }
+  });
+
   it("does not attempt discovery for normal RSS loads, including feeds served as text/html", async () => {
     mockIsEnabled.mockReturnValue(false);
     mockDetectEnvironment.mockReturnValue({
