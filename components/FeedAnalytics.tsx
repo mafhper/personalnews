@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Layers3, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileText, Layers3, ShieldAlert } from "lucide-react";
 import { Article, FeedSource } from "../types";
 import { useProxyDashboard } from "../hooks/useProxyDashboard";
 import {
@@ -15,6 +15,7 @@ import {
   managerSecondaryButtonClass,
   managerSurfaceClass,
 } from "./FeedManager/feedManagerStyles";
+import { FeedManagerSectionHeader } from "./FeedManager/FeedManagerSectionHeader";
 import { ProxySettings } from "./ProxySettings";
 
 interface FeedAnalyticsProps {
@@ -531,30 +532,23 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       {showOverview && (
         <section
           id="feed-manager-section-diagnostics-overview"
-          className={`${INFO_SURFACE_CLASS} scroll-mt-4`}
+          className={`${INFO_SURFACE_CLASS} feed-manager-anchor-section`}
         >
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-                Síntese
-              </p>
-              <h3 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
-                Diagnóstico em camadas
-              </h3>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
-                Esta visão resume onde investigar primeiro. As páginas de saúde,
-                infraestrutura e relatórios ficam separadas na navegação.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              className={MANAGER_CONTROL_CLASS}
-            >
-              Atualizar
-            </button>
-          </div>
+          <FeedManagerSectionHeader
+            eyebrow="Síntese"
+            title="Diagnóstico em camadas"
+            description="Esta visão resume onde investigar primeiro. As páginas de saúde, infraestrutura e relatórios ficam separadas na navegação."
+            icon={<Layers3 className="h-5 w-5" />}
+            action={
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className={MANAGER_CONTROL_CLASS}
+              >
+                Atualizar
+              </button>
+            }
+          />
 
           <div className="mt-5 grid gap-4 lg:grid-cols-3">
             <DiagnosticOverviewCard
@@ -590,12 +584,13 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       {showHealth && hasAttentionItems && (
         <section
           id="feed-manager-section-diagnostics-health"
-          className={`${SURFACE_CLASS} scroll-mt-4`}
+          className={`${SURFACE_CLASS} feed-manager-anchor-section`}
         >
-          <SectionTitle
+          <FeedManagerSectionHeader
             eyebrow="Saúde dos feeds"
             title={diagnosis.label}
             icon={<AlertCircle className="h-5 w-5" />}
+            tone="warning"
           />
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -805,9 +800,9 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       {showHealth && !hasAttentionItems && (view === "health" || showAll) && (
         <section
           id="feed-manager-section-diagnostics-health"
-          className={`${SURFACE_CLASS} scroll-mt-4`}
+          className={`${SURFACE_CLASS} feed-manager-anchor-section`}
         >
-          <SectionTitle
+          <FeedManagerSectionHeader
             eyebrow="Saúde dos feeds"
             title="Nenhuma ação necessária"
             icon={<CheckCircle2 className="h-5 w-5" />}
@@ -821,9 +816,9 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       {showInfra && (
       <section
         id="feed-manager-section-diagnostics-infra"
-        className={`${SURFACE_CLASS} scroll-mt-4`}
+        className={`${SURFACE_CLASS} feed-manager-anchor-section`}
       >
-        <SectionTitle
+        <FeedManagerSectionHeader
           eyebrow="Infraestrutura"
           title="Backend, proxies e rotas"
           icon={<Layers3 className="h-5 w-5" />}
@@ -848,8 +843,10 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       {showReports && (
       <AccordionSection
         sectionId="feed-manager-section-diagnostics-reports"
-        sectionClassName={`${SURFACE_CLASS} scroll-mt-4`}
-        title="Detalhes"
+        sectionClassName={`${SURFACE_CLASS} feed-manager-anchor-section`}
+        title="Relatórios"
+        description="Exporte um recorte técnico da saúde dos feeds e da infraestrutura atual."
+        icon={<FileText className="h-5 w-5" />}
         isOpen={view === "reports" || showAll ? true : openSections.details}
         onToggle={() => toggleSection("details")}
       >
@@ -879,6 +876,7 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
   icon?: React.ReactNode;
+  description?: string;
   actions?: React.ReactNode;
   sectionId?: string;
   sectionClassName?: string;
@@ -888,62 +886,33 @@ const AccordionSection: React.FC<{
   onToggle,
   children,
   icon,
+  description,
   actions,
   sectionId,
   sectionClassName = INFO_SURFACE_CLASS,
 }) => (
   <section id={sectionId} className={sectionClassName}>
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        className="flex items-center justify-between gap-3 text-left"
-      >
-        <span className="flex items-center gap-2">
-          {icon}
-          <span className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
-            {title}
-          </span>
-        </span>
-        <span
-          aria-hidden="true"
-          className={`text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-transform ${isOpen ? "rotate-180" : ""}`}
-        >
-          ▾
-        </span>
-      </button>
-      {actions}
-    </div>
-
+    <FeedManagerSectionHeader
+      eyebrow="Diagnóstico"
+      title={title}
+      description={description}
+      icon={icon}
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          {actions}
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={isOpen}
+            className={managerSecondaryButtonClass}
+          >
+            {isOpen ? "Recolher" : "Expandir"}
+          </button>
+        </div>
+      }
+    />
     {isOpen && <div className="mt-4">{children}</div>}
   </section>
-);
-
-const SectionTitle: React.FC<{
-  eyebrow: string;
-  title: string;
-  description?: string;
-  icon: React.ReactNode;
-}> = ({ eyebrow, title, description, icon }) => (
-  <div className="flex items-start gap-3">
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--color-primary))]">
-      {icon}
-    </div>
-    <div>
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-58">
-        {eyebrow}
-      </p>
-      <h4 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
-        {title}
-      </h4>
-      {description && (
-        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
-          {description}
-        </p>
-      )}
-    </div>
-  </div>
 );
 
 const DiagnosticOverviewCard: React.FC<{

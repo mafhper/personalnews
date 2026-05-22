@@ -7,7 +7,9 @@ import {
   RefreshCcw,
   RotateCcw,
   Trash2,
+  Wrench,
 } from "lucide-react";
+import { FeedManagerSectionHeader } from "./FeedManagerSectionHeader";
 import {
   managerActionCardClass,
   managerControlSurfaceClass,
@@ -65,13 +67,17 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
     <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
       <div className="mx-auto w-full max-w-[1480px] space-y-5">
         {showOverview && (
-          <section id="feed-manager-section-operations-overview" className={`${WORKBENCH_CLASS} scroll-mt-4`}>
+          <section
+            id="feed-manager-section-operations-overview"
+            className={`${WORKBENCH_CLASS} feed-manager-anchor-section`}
+          >
             <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.72fr)_minmax(0,1.28fr)] xl:items-stretch">
               <div className="flex flex-col justify-between gap-5">
-                <SectionHeader
+                <FeedManagerSectionHeader
                   eyebrow="Síntese operacional"
                   title="Escolha o tipo de intervenção"
                   description="Operações ficam separadas por intenção: trocar dados com arquivos, abrir coleções prontas, reparar a base ou executar ações destrutivas."
+                  icon={<Wrench className="h-5 w-5" />}
                 />
 
                 <div className={`${managerControlSurfaceClass} p-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-86`}>
@@ -120,11 +126,15 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         )}
 
         {showIo && (
-          <section id="feed-manager-section-operations-io" className={`${GROUP_CLASS} scroll-mt-4`}>
-            <SectionHeader
+          <section
+            id="feed-manager-section-operations-io"
+            className={`${GROUP_CLASS} feed-manager-anchor-section`}
+          >
+            <FeedManagerSectionHeader
               eyebrow="Importar/Exportar"
               title="Intercâmbio da coleção"
               description="Backup e entrada de arquivos OPML com ações diretas."
+              icon={<FileUp className="h-5 w-5" />}
             />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <OperationAction
@@ -144,11 +154,15 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         )}
 
         {showCurated && (
-          <section id="feed-manager-section-operations-curated" className={`${GROUP_CLASS} scroll-mt-4`}>
-            <SectionHeader
+          <section
+            id="feed-manager-section-operations-curated"
+            className={`${GROUP_CLASS} feed-manager-anchor-section`}
+          >
+            <FeedManagerSectionHeader
               eyebrow="Listas curadas"
               title="Coleções prontas"
               description="Use listas selecionadas para acelerar a montagem da coleção."
+              icon={<ListPlus className="h-5 w-5" />}
             />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <OperationAction
@@ -164,11 +178,15 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
         {(showMaintenance || showRisk) && (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.46fr)]">
           {showMaintenance && (
-          <section id="feed-manager-section-operations-maintenance" className={`${GROUP_CLASS} scroll-mt-4`}>
-            <SectionHeader
+          <section
+            id="feed-manager-section-operations-maintenance"
+            className={`${GROUP_CLASS} feed-manager-anchor-section`}
+          >
+            <FeedManagerSectionHeader
               eyebrow="Manutenção"
               title="Reparos controlados"
               description="Use esta área para recuperar a coleção. Investigação detalhada de causa fica em Diagnóstico."
+              icon={<RefreshCcw className="h-5 w-5" />}
             />
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -190,25 +208,18 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
           )}
 
           {showRisk && (
-          <section id="feed-manager-section-operations-risk" className={`${managerDangerSurfaceClass} scroll-mt-4`}>
+          <section
+            id="feed-manager-section-operations-risk"
+            className={`${managerDangerSurfaceClass} feed-manager-anchor-section`}
+          >
             <div className="flex h-full flex-col justify-between gap-5">
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgba(var(--color-error),0.12)] text-[rgb(var(--color-error))]">
-                  <AlertCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--color-error))]">
-                    Zona de risco
-                  </p>
-                  <h3 className="mt-1 text-lg font-black text-[rgb(var(--theme-text-readable))]">
-                    Ações destrutivas
-                  </h3>
-                  <p className="mt-1 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))]">
-                    Concentrada aqui para não disputar atenção com importação,
-                    backup e reparos comuns.
-                  </p>
-                </div>
-              </div>
+              <FeedManagerSectionHeader
+                eyebrow="Zona de risco"
+                title="Ações destrutivas"
+                description="Concentrada aqui para não disputar atenção com importação, backup e reparos comuns."
+                icon={<AlertCircle className="h-5 w-5" />}
+                tone="danger"
+              />
 
               <button
                 type="button"
@@ -228,24 +239,6 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
     </div>
   );
 };
-
-const SectionHeader: React.FC<{
-  eyebrow: string;
-  title: string;
-  description: string;
-}> = ({ eyebrow, title, description }) => (
-  <div>
-    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-      {eyebrow}
-    </p>
-    <h2 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
-      {title}
-    </h2>
-    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
-      {description}
-    </p>
-  </div>
-);
 
 const OperationAction: React.FC<{
   title: string;

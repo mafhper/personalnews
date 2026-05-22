@@ -268,6 +268,61 @@ describe("Feed danger zone flows", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders standardized section headers and workspace footer", async () => {
+    const { container } = render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector(".feed-manager-section-header")).not.toBeNull();
+    expect(
+      screen.getByRole("contentinfo", { name: "Resumo do gerenciador" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Personal News v/)).toBeInTheDocument();
+    expect(screen.getByText("Desenvolvimento")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Fechar gerenciador de feeds" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Operações. Intercâmbio, reparos e risco",
+      }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Escolha o tipo de intervenção" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Diagnóstico. Saúde, infraestrutura e relatórios",
+      }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Diagnóstico em camadas" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Coleção. Fontes, entrada e organização",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Quarentena. Feeds preservados fora da carga",
+      }),
+    );
+    expect(
+      screen.getAllByRole("heading", { name: "Quarentena" }).length,
+    ).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".feed-manager-anchor-section").length).toBeGreaterThan(
+      0,
+    );
+  });
+
   it("maps persisted proxy focus to the infrastructure route", async () => {
     window.sessionStorage.setItem(
       "feed-manager-focus",

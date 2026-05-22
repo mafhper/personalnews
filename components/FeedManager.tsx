@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import pkg from "../package.json";
 import {
   Activity,
   AlertTriangle,
@@ -21,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import type { FeedSource, Article } from "../types";
+import { detectEnvironment } from "../services/environmentDetector";
 import { parseOpml } from "../services/rssParser";
 import { FeedCategoryManager } from "./FeedCategoryManager";
 import { FeedDiscoveryModal } from "./FeedDiscoveryModal";
@@ -63,6 +65,7 @@ import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedQuarantineTab } from "./FeedManager/FeedQuarantineTab";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
+import { FeedManagerSectionHeader } from "./FeedManager/FeedManagerSectionHeader";
 import {
   managerControlSurfaceClass,
   managerFieldClass,
@@ -83,6 +86,8 @@ import {
   shouldRecommendQuarantine,
   updateQuarantineAfterValidation,
 } from "../utils/feedQuarantine";
+
+const appVersion = pkg.version;
 
 interface FeedManagerProps {
   currentFeeds: FeedSource[];
@@ -638,6 +643,16 @@ const getFeedManagerDrawerFocusableElements = (root: HTMLElement | null) => {
   );
 };
 
+const formatFeedManagerEnvironment = (
+  environment: ReturnType<typeof detectEnvironment>,
+) => {
+  if (environment.isTauri) return "Desktop";
+  if (environment.isDevelopment) return "Desenvolvimento";
+  if (environment.isGitHubPages) return "GitHub Pages";
+  if (environment.isProduction) return "Produção";
+  return "Web";
+};
+
 const FeedManagerInsight: React.FC<{
   label: string;
   value: React.ReactNode;
@@ -667,6 +682,39 @@ const FeedManagerInsight: React.FC<{
     </div>
   );
 };
+
+const FeedManagerWorkspaceFooter: React.FC<{
+  activeFeedCount: number;
+  environmentLabel: string;
+  invalidCount: number;
+  quarantineCount: number;
+  totalFeedCount: number;
+}> = ({
+  activeFeedCount,
+  environmentLabel,
+  invalidCount,
+  quarantineCount,
+  totalFeedCount,
+}) => (
+  <footer className="feed-manager-workspace-footer" aria-label="Resumo do gerenciador">
+    <p className="text-sm leading-relaxed">
+      <strong>Personal News v{appVersion}</strong>
+      <span className="block text-xs opacity-75">Gerenciador de feeds</span>
+    </p>
+    <p className="text-sm leading-relaxed">
+      <strong>{environmentLabel}</strong>
+      <span className="block text-xs opacity-75">Ambiente atual</span>
+    </p>
+    <p className="text-sm leading-relaxed">
+      <strong>
+        {activeFeedCount}/{totalFeedCount} ativos
+      </strong>
+      <span className="block text-xs opacity-75">
+        {invalidCount} com erro, {quarantineCount} em quarentena
+      </span>
+    </p>
+  </footer>
+);
 
 export const FeedManager: React.FC<FeedManagerProps> = ({
   currentFeeds,
@@ -733,6 +781,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const activeFeeds = React.useMemo(
     () => currentFeeds.filter(isFeedActive),
     [currentFeeds],
+  );
+  const environmentLabel = React.useMemo(
+    () => formatFeedManagerEnvironment(detectEnvironment()),
+    [],
   );
   const activeArea = routeAreaMap[activeRoute];
   const activeRouteContent = routeContentMap[activeRoute];
@@ -1830,40 +1882,38 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               <>
                 <section
                   id={getFeedManagerSectionId("feeds:overview")}
-                  className={`${managerInfoSurfaceClass} scroll-mt-4 sm:p-6`}
+                  className={`${managerInfoSurfaceClass} feed-manager-anchor-section sm:p-6`}
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] xl:items-stretch">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-                        Coleção
-                      </p>
-                      <h3 className="mt-1 text-xl font-black text-[rgb(var(--theme-text-readable))]">
-                        Painel da coleção
-                      </h3>
-                      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
-                        Use esta entrada para revisar fontes, adicionar novos
-                        endereços e organizar categorias sem sair do gerenciador.
-                      </p>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <CollectionModeButton
-                          active={false}
-                          onClick={() => navigateToRoute("feeds:list")}
-                        >
-                          Revisar feeds
-                        </CollectionModeButton>
-                        <CollectionModeButton
-                          active={false}
-                          onClick={() => navigateToRoute("feeds:add")}
-                        >
-                          Adicionar fonte
-                        </CollectionModeButton>
-                        <CollectionModeButton
-                          active={false}
-                          onClick={() => navigateToRoute("feeds:categories")}
-                        >
-                          Organizar categorias
-                        </CollectionModeButton>
-                      </div>
+                      <FeedManagerSectionHeader
+                        eyebrow="Coleção"
+                        title="Painel da coleção"
+                        description="Use esta entrada para revisar fontes, adicionar novos endereços e organizar categorias sem sair do gerenciador."
+                        icon={<Library className="h-5 w-5" />}
+                        action={
+                          <div className="flex flex-wrap gap-2">
+                            <CollectionModeButton
+                              active={false}
+                              onClick={() => navigateToRoute("feeds:list")}
+                            >
+                              Revisar feeds
+                            </CollectionModeButton>
+                            <CollectionModeButton
+                              active={false}
+                              onClick={() => navigateToRoute("feeds:add")}
+                            >
+                              Adicionar fonte
+                            </CollectionModeButton>
+                            <CollectionModeButton
+                              active={false}
+                              onClick={() => navigateToRoute("feeds:categories")}
+                            >
+                              Organizar categorias
+                            </CollectionModeButton>
+                          </div>
+                        }
+                      />
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <FeedManagerInsight
@@ -1882,8 +1932,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
                 <section
                   id={getFeedManagerSectionId("feeds:list")}
-                  className="scroll-mt-4"
+                  className="feed-manager-anchor-section"
                 >
+                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
+                    <FeedManagerSectionHeader
+                      eyebrow="Coleção"
+                      title="Revisão de feeds"
+                      description="Revise status, categorias, títulos e ações de cada fonte preservada na coleção."
+                      icon={<Library className="h-5 w-5" />}
+                    />
+                  </div>
                   <FeedListTab
                     embedded
                     feeds={activeFeeds}
@@ -1906,8 +1964,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
                 <section
                   id={getFeedManagerSectionId("feeds:add")}
-                  className="scroll-mt-4"
+                  className="feed-manager-anchor-section"
                 >
+                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
+                    <FeedManagerSectionHeader
+                      eyebrow="Entrada"
+                      title="Adicionar fontes"
+                      description="Inclua um feed individual, importe OPML ou abra listas curadas sem alterar a coleção antes da confirmação."
+                      icon={<Plus className="h-5 w-5" />}
+                    />
+                  </div>
                   <FeedAddTab
                     embedded
                     categories={categories}
@@ -1927,8 +1993,16 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
                 <section
                   id={getFeedManagerSectionId("feeds:categories")}
-                  className="scroll-mt-4"
+                  className="feed-manager-anchor-section"
                 >
+                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
+                    <FeedManagerSectionHeader
+                      eyebrow="Organização"
+                      title="Categorias"
+                      description="Ajuste agrupamentos, cores e ordem visual das fontes sem sair do gerenciador."
+                      icon={<Tags className="h-5 w-5" />}
+                    />
+                  </div>
                   <FeedCategoryManager
                     feeds={currentFeeds}
                     setFeeds={setFeeds}
@@ -1938,8 +2012,17 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
                 <section
                   id={getFeedManagerSectionId("feeds:quarantine")}
-                  className="scroll-mt-4"
+                  className="feed-manager-anchor-section"
                 >
+                  <div className={`${managerInfoSurfaceClass} mb-5 sm:p-6`}>
+                    <FeedManagerSectionHeader
+                      eyebrow="Proteção"
+                      title="Quarentena"
+                      description="Feeds preservados fora da carga ficam aqui até validação, restauração ou remoção."
+                      icon={<ShieldAlert className="h-5 w-5" />}
+                      tone="warning"
+                    />
+                  </div>
                   <FeedQuarantineTab
                     embedded
                     feeds={currentFeeds}
@@ -1985,6 +2068,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
               />
             )}
+
+            <FeedManagerWorkspaceFooter
+              activeFeedCount={activeFeeds.length}
+              environmentLabel={environmentLabel}
+              invalidCount={invalidCount}
+              quarantineCount={quarantineCount}
+              totalFeedCount={currentFeeds.length}
+            />
           </div>
         </main>
       </div>
