@@ -1,4 +1,4 @@
-import React, { useState, useCallback, ReactNode } from "react";
+import React, { useState, useCallback, useRef, ReactNode } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { AlertDialog } from "../components/AlertDialog";
 import {
@@ -32,6 +32,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const notificationDedupeRef = useRef<Map<string, number>>(new Map());
   const [confirmDialog, setConfirmDialog] =
     useState<ConfirmDialogRequest | null>(null);
   const [alertDialog, setAlertDialog] = useState<{
@@ -49,23 +50,42 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const showNotification = useCallback(
     (message: string, options: NotificationOptions = {}) => {
+      const type = options.type || "info";
+      const now = Date.now();
+      const dedupeKey = `${type}:${message}`;
+      const lastShownAt = notificationDedupeRef.current.get(dedupeKey);
+
+      if (lastShownAt && now - lastShownAt < 1000) {
+        return;
+      }
+
+      notificationDedupeRef.current.set(dedupeKey, now);
       const id =
         Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const notification: Notification = {
         id,
         message,
-        type: options.type || "info",
+        type,
         duration: options.duration || 5000,
         persistent: options.persistent || false,
         timestamp: Date.now(),
       };
 
-      setNotifications((prev) => [...prev, notification]);
+      setNotifications((prev) => {
+        const alreadyVisible = prev.some(
+          (item) => item.message === message && item.type === type,
+        );
+
+        return alreadyVisible ? prev : [...prev, notification];
+      });
 
       // Auto-remove non-persistent notifications
       if (!notification.persistent) {
         setTimeout(() => {
           removeNotification(id);
+          if (notificationDedupeRef.current.get(dedupeKey) === now) {
+            notificationDedupeRef.current.delete(dedupeKey);
+          }
         }, notification.duration);
       }
     },

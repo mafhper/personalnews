@@ -71,18 +71,7 @@ export const NotificationContainer: React.FC = () => {
   const { notifications } = useNotification();
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 20,
-        right: 20,
-        zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        maxWidth: "400px",
-      }}
-    >
+    <div className="notification-container">
       {notifications.map((notification: Notification) => (
         <NotificationToast key={notification.id} notification={notification} />
       ))}

@@ -417,13 +417,11 @@ const FeedManagerOperationalMetric: React.FC<{
 
   return (
     <div className="feed-manager-operational-metric">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-secondary-readable))]">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-secondary-readable))]">
         {icon}
       </span>
-      <span className="min-w-0">
-        <span className="block truncate text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-          {label}
-        </span>
+      <span className="feed-manager-operational-metric__copy">
+        <span className="feed-manager-operational-metric__label">{label}</span>
         <span className={`mt-1 block text-2xl font-black leading-none ${toneClass}`}>
           {value}
         </span>

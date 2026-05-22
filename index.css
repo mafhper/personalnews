@@ -206,6 +206,22 @@ body {
   padding: 0;
 }
 
+.notification-container {
+  position: fixed;
+  top: var(--space-5);
+  right: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  width: min(25rem, calc(100vw - (var(--space-5) * 2)));
+  max-width: 25rem;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+body:has(.feed-manager-shell) .notification-container {
+  display: none;
+}
+
 /* Feed Manager dashboard surfaces */
 :root {
   --feed-manager-border-subtle: rgba(var(--color-border), 0.12);
@@ -586,11 +602,28 @@ body {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   border-radius: var(--radius-2xl);
   background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
   box-shadow: var(--feed-manager-shadow-control);
   padding: var(--space-3);
+}
+
+.feed-manager-operational-metric__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.feed-manager-operational-metric__label {
+  display: block;
+  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  opacity: 0.65;
+  white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .feed-manager-surface {
