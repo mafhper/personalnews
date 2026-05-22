@@ -299,6 +299,8 @@ describe("theme contrast hotspots", () => {
     expect(cssSource).toContain(".feed-manager-hero-metrics");
     expect(cssSource).toContain(".feed-manager-hero-actions");
     expect(cssSource).toContain(".feed-manager-operational-metric");
+    expect(cssSource).toContain(".feed-manager-operational-metric__label");
+    expect(cssSource).toContain(".notification-container");
     expect(cssSource).toContain(
       "background: rgb(var(--theme-manager-surface, var(--color-surface)))",
     );
