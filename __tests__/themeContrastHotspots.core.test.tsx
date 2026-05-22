@@ -551,6 +551,8 @@ describe("theme contrast hotspots", () => {
 
     expect(toolsSource).toContain("Síntese operacional");
     expect(toolsSource).toContain("Escolha o tipo de intervenção");
+    expect(toolsSource).toContain("Arquivos e listas");
+    expect(toolsSource).toContain("Manutenção e risco");
     expect(toolsSource).toContain("Zona de risco");
     expect(toolsSource).toContain("bg-[rgb(var(--color-error))]");
     expect(toolsSource).toContain("text-[rgb(var(--color-onAccent))]");

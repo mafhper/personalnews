@@ -258,14 +258,54 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("heading", { name: "Escolha o tipo de intervenção" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Intercâmbio da coleção")).toBeInTheDocument();
+    const navigation = screen.getByRole("navigation", {
+      name: "Navegação do gerenciador de feeds",
+    });
+    expect(
+      within(navigation).getByRole("button", {
+        name: "Arquivos e listas. OPML, backups e coleções",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(navigation).getByRole("button", {
+        name: "Manutenção e risco. Reparos e ações críticas",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(navigation).queryByRole("button", {
+        name: "Listas curadas. Coleções prontas",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(navigation).queryByRole("button", {
+        name: "Zona de risco. Ações destrutivas",
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Transporte da coleção")).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: /Importar\/Exportar/ })[0],
+      screen.getByRole("button", {
+        name: "Arquivos e listas. OPML, backups e coleções",
+      }),
     );
     expect(
-      screen.getByRole("heading", { name: "Intercâmbio da coleção" }),
+      screen.getByRole("heading", { name: "Transporte da coleção" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: /Listas curadas.*Mescle coleções prontas/,
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Manutenção e risco. Reparos e ações críticas",
+      }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Reparos e ações críticas" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Excluir todos os feeds" })).toBeInTheDocument();
   });
 
   it("renders standardized section headers and workspace footer", async () => {
@@ -361,7 +401,9 @@ describe("Feed danger zone flows", () => {
       }),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Zona de risco. Ações destrutivas" }),
+      screen.getByRole("button", {
+        name: "Manutenção e risco. Reparos e ações críticas",
+      }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 
@@ -394,7 +436,9 @@ describe("Feed danger zone flows", () => {
       }),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Zona de risco. Ações destrutivas" }),
+      screen.getByRole("button", {
+        name: "Manutenção e risco. Reparos e ações críticas",
+      }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 

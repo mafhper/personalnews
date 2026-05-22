@@ -10,7 +10,6 @@ import {
   FileText,
   FileUp,
   Library,
-  ListPlus,
   Menu,
   Plus,
   RefreshCw,
@@ -131,6 +130,14 @@ const routeAreaMap: Record<FeedManagerRoute, FeedManagerArea> = {
   "diagnostics:reports": "diagnostics",
 };
 
+const canonicalizeFeedManagerRoute = (
+  route: FeedManagerRoute,
+): FeedManagerRoute => {
+  if (route === "operations:curated") return "operations:io";
+  if (route === "operations:risk") return "operations:maintenance";
+  return route;
+};
+
 const routeContentMap: Record<
   FeedManagerRoute,
   { area: string; title: string; description: string }
@@ -167,23 +174,23 @@ const routeContentMap: Record<
   },
   "operations:io": {
     area: "Operações",
-    title: "Importar e exportar",
-    description: "OPML, backups e transporte da coleção.",
+    title: "Arquivos e listas",
+    description: "OPML, backups e coleções prontas.",
   },
   "operations:curated": {
     area: "Operações",
-    title: "Listas curadas",
-    description: "Coleções prontas para acelerar a montagem.",
+    title: "Arquivos e listas",
+    description: "OPML, backups e coleções prontas.",
   },
   "operations:maintenance": {
     area: "Operações",
-    title: "Manutenção",
-    description: "Reparos controlados e limpeza assistida.",
+    title: "Manutenção e risco",
+    description: "Reparos, restauração e ações destrutivas.",
   },
   "operations:risk": {
     area: "Operações",
-    title: "Zona de risco",
-    description: "Ações destrutivas com confirmação explícita.",
+    title: "Manutenção e risco",
+    description: "Reparos, restauração e ações destrutivas.",
   },
   "diagnostics:overview": {
     area: "Diagnóstico",
@@ -215,13 +222,7 @@ const routesByArea: Record<FeedManagerArea, FeedManagerRoute[]> = {
     "feeds:categories",
     "feeds:quarantine",
   ],
-  operations: [
-    "operations:overview",
-    "operations:io",
-    "operations:curated",
-    "operations:maintenance",
-    "operations:risk",
-  ],
+  operations: ["operations:overview", "operations:io", "operations:maintenance"],
   diagnostics: [
     "diagnostics:overview",
     "diagnostics:health",
@@ -231,7 +232,7 @@ const routesByArea: Record<FeedManagerArea, FeedManagerRoute[]> = {
 };
 
 const getFeedManagerSectionId = (route: FeedManagerRoute) =>
-  `feed-manager-section-${route.replace(":", "-")}`;
+  `feed-manager-section-${canonicalizeFeedManagerRoute(route).replace(":", "-")}`;
 
 const normalizePersistedRoute = (
   value?: string,
@@ -267,7 +268,7 @@ const normalizePersistedRoute = (
     value === "diagnostics:infra" ||
     value === "diagnostics:reports"
   ) {
-    return value;
+    return canonicalizeFeedManagerRoute(value);
   }
 
   if (value === "diagnostics") return "diagnostics:health";
@@ -876,9 +877,10 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const scrollToRoute = React.useCallback((route: FeedManagerRoute) => {
     if (typeof window === "undefined") return;
+    const nextRoute = canonicalizeFeedManagerRoute(route);
     window.setTimeout(() => {
       document
-        .getElementById(getFeedManagerSectionId(route))
+        .getElementById(getFeedManagerSectionId(nextRoute))
         ?.scrollIntoView?.({
         behavior: "smooth",
         block: "start",
@@ -888,14 +890,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const navigateToRoute = React.useCallback(
     (route: FeedManagerRoute, focusSection?: string) => {
-      const nextArea = routeAreaMap[route];
-      setActiveRoute(route);
+      const nextRoute = canonicalizeFeedManagerRoute(route);
+      const nextArea = routeAreaMap[nextRoute];
+      setActiveRoute(nextRoute);
       setDiagnosticsFocus(focusSection || null);
       setExpandedAreas((current) => ({
         ...current,
         [nextArea]: true,
       }));
-      scrollToRoute(route);
+      scrollToRoute(nextRoute);
     },
     [scrollToRoute],
   );
@@ -1611,27 +1614,15 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       items: [
         {
           route: "operations:io",
-          label: "Importar/Exportar",
-          description: "OPML e backups de coleção",
+          label: "Arquivos e listas",
+          description: "OPML, backups e coleções",
           icon: <FileUp className="h-4 w-4" />,
         },
         {
-          route: "operations:curated",
-          label: "Listas curadas",
-          description: "Coleções prontas",
-          icon: <ListPlus className="h-4 w-4" />,
-        },
-        {
           route: "operations:maintenance",
-          label: "Manutenção",
-          description: "Reparos controlados",
+          label: "Manutenção e risco",
+          description: "Reparos e ações críticas",
           icon: <Wrench className="h-4 w-4" />,
-        },
-        {
-          route: "operations:risk",
-          label: "Zona de risco",
-          description: "Ações destrutivas",
-          icon: <AlertTriangle className="h-4 w-4" />,
         },
       ],
     },

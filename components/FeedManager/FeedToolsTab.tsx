@@ -48,20 +48,18 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   onCleanupErrors,
   onDeleteAll,
   onOpenIo,
-  onOpenCurated,
   onOpenMaintenance,
-  onOpenRisk,
   feedCount,
   validCount,
   invalidCount,
   embedded = false,
 }) => {
+  const normalizedView =
+    view === "curated" ? "io" : view === "risk" ? "maintenance" : view;
   const showAll = view === "all";
-  const showOverview = showAll || view === "overview";
-  const showIo = showAll || view === "io";
-  const showCurated = showAll || view === "curated";
-  const showMaintenance = showAll || view === "maintenance";
-  const showRisk = showAll || view === "risk";
+  const showOverview = showAll || normalizedView === "overview";
+  const showIo = showAll || normalizedView === "io";
+  const showMaintenance = showAll || normalizedView === "maintenance";
 
   return (
     <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
@@ -76,7 +74,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                 <FeedManagerSectionHeader
                   eyebrow="Síntese operacional"
                   title="Escolha o tipo de intervenção"
-                  description="Operações ficam separadas por intenção: trocar dados com arquivos, abrir coleções prontas, reparar a base ou executar ações destrutivas."
+                  description="Operações ficam agrupadas em fluxos fortes: transporte e listas, ou reparos com ações críticas."
                   icon={<Wrench className="h-5 w-5" />}
                 />
 
@@ -94,31 +92,18 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <OperationAction
-                  title="Importar/Exportar"
-                  description="Backup, migração e entrada de OPML ficam em uma página própria."
+                  title="Arquivos e listas"
+                  description="Exportação, importação OPML e listas curadas ficam juntas para transporte da coleção."
                   icon={<FileUp className="h-5 w-5" />}
                   onClick={onOpenIo || onImportOPML}
                 />
                 <OperationAction
-                  title="Listas curadas"
-                  description="Abra coleções prontas com confirmação antes de mesclar ou substituir."
-                  icon={<ListPlus className="h-5 w-5" />}
-                  onClick={onOpenCurated || onShowImportModal}
-                />
-                <OperationAction
-                  title="Manutenção"
-                  description="Reparos controlados sem misturar com zona de risco."
+                  title="Manutenção e risco"
+                  description="Limpeza, restauração e exclusão ficam próximas, mas com perigo isolado visualmente."
                   icon={<RefreshCcw className="h-5 w-5" />}
                   onClick={onOpenMaintenance || onCleanupErrors}
-                />
-                <OperationAction
-                  title="Zona de risco"
-                  description="Ações destrutivas ficam isoladas em uma página dedicada."
-                  icon={<AlertCircle className="h-5 w-5" />}
-                  onClick={onOpenRisk || onDeleteAll}
-                  warning
                 />
               </div>
             </div>
@@ -131,12 +116,12 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
             className={`${GROUP_CLASS} feed-manager-anchor-section`}
           >
             <FeedManagerSectionHeader
-              eyebrow="Importar/Exportar"
-              title="Intercâmbio da coleção"
-              description="Backup e entrada de arquivos OPML com ações diretas."
+              eyebrow="Arquivos e listas"
+              title="Transporte da coleção"
+              description="Backup, entrada de OPML e coleções prontas ficam em um fluxo único de arquivos e listas."
               icon={<FileUp className="h-5 w-5" />}
             />
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
               <OperationAction
                 title="Exportar OPML"
                 description="Baixe a coleção atual para backup ou migração."
@@ -149,22 +134,6 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
                 icon={<FileUp className="h-5 w-5" />}
                 onClick={onImportOPML}
               />
-            </div>
-          </section>
-        )}
-
-        {showCurated && (
-          <section
-            id="feed-manager-section-operations-curated"
-            className={`${GROUP_CLASS} feed-manager-anchor-section`}
-          >
-            <FeedManagerSectionHeader
-              eyebrow="Listas curadas"
-              title="Coleções prontas"
-              description="Use listas selecionadas para acelerar a montagem da coleção."
-              icon={<ListPlus className="h-5 w-5" />}
-            />
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
               <OperationAction
                 title="Listas curadas"
                 description="Mescle coleções prontas ou substitua tudo com confirmação."
@@ -175,65 +144,58 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
           </section>
         )}
 
-        {(showMaintenance || showRisk) && (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.46fr)]">
-          {showMaintenance && (
+        {showMaintenance && (
           <section
             id="feed-manager-section-operations-maintenance"
             className={`${GROUP_CLASS} feed-manager-anchor-section`}
           >
             <FeedManagerSectionHeader
-              eyebrow="Manutenção"
-              title="Reparos controlados"
-              description="Use esta área para recuperar a coleção. Investigação detalhada de causa fica em Diagnóstico."
+              eyebrow="Manutenção e risco"
+              title="Reparos e ações críticas"
+              description="Use esta área para recuperar a coleção, restaurar a base ou executar ações destrutivas com confirmação explícita."
               icon={<RefreshCcw className="h-5 w-5" />}
             />
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              <OperationAction
-                title="Limpar feeds com erro"
-                description="Abra uma revisão segura dos feeds problemáticos antes de remover."
-                icon={<RefreshCcw className="h-5 w-5" />}
-                onClick={onCleanupErrors}
-              />
-              <OperationAction
-                title="Restaurar padrões"
-                description="Recria a base inicial do projeto depois de confirmação."
-                icon={<RotateCcw className="h-5 w-5" />}
-                onClick={onResetDefaults}
-                warning
-              />
+            <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.46fr)]">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <OperationAction
+                  title="Limpar feeds com erro"
+                  description="Abra uma revisão segura dos feeds problemáticos antes de remover."
+                  icon={<RefreshCcw className="h-5 w-5" />}
+                  onClick={onCleanupErrors}
+                />
+                <OperationAction
+                  title="Restaurar padrões"
+                  description="Recria a base inicial do projeto depois de confirmação."
+                  icon={<RotateCcw className="h-5 w-5" />}
+                  onClick={onResetDefaults}
+                  warning
+                />
+              </div>
+
+              <div className={`${managerDangerSurfaceClass} p-5`}>
+                <div className="flex h-full flex-col justify-between gap-5">
+                  <FeedManagerSectionHeader
+                    eyebrow="Zona de risco"
+                    title="Ações destrutivas"
+                    description="Fica dentro de manutenção, mas isolada por tom de perigo e confirmação forte."
+                    icon={<AlertCircle className="h-5 w-5" />}
+                    tone="danger"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={onDeleteAll}
+                    disabled={feedCount === 0}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--color-error))] px-4 py-3 text-sm font-black text-[rgb(var(--color-onAccent))] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Excluir todos os feeds
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
-          )}
-
-          {showRisk && (
-          <section
-            id="feed-manager-section-operations-risk"
-            className={`${managerDangerSurfaceClass} feed-manager-anchor-section`}
-          >
-            <div className="flex h-full flex-col justify-between gap-5">
-              <FeedManagerSectionHeader
-                eyebrow="Zona de risco"
-                title="Ações destrutivas"
-                description="Concentrada aqui para não disputar atenção com importação, backup e reparos comuns."
-                icon={<AlertCircle className="h-5 w-5" />}
-                tone="danger"
-              />
-
-              <button
-                type="button"
-                onClick={onDeleteAll}
-                disabled={feedCount === 0}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--color-error))] px-4 py-3 text-sm font-black text-[rgb(var(--color-onAccent))] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                <Trash2 className="h-4 w-4" />
-                Excluir todos os feeds
-              </button>
-            </div>
-          </section>
-          )}
-        </div>
         )}
       </div>
     </div>
