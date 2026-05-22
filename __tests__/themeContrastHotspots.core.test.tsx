@@ -285,6 +285,11 @@ describe("theme contrast hotspots", () => {
     expect(cssSource).toContain(".feed-manager-mobile-backdrop");
     expect(cssSource).toContain(".feed-manager-sidebar-nav-item");
     expect(cssSource).toContain(".feed-manager-sidebar-nav-icon");
+    expect(cssSource).toContain(".feed-manager-section-header");
+    expect(cssSource).toContain(".feed-manager-section-header__icon");
+    expect(cssSource).toContain(".feed-manager-section-header__content");
+    expect(cssSource).toContain(".feed-manager-section-header__action");
+    expect(cssSource).toContain(".feed-manager-workspace-footer");
     expect(cssSource).toContain(".feed-manager-operational-hero");
     expect(cssSource).toContain(".feed-manager-sidebar--open");
     expect(cssSource).toContain(".feed-manager-hero-metrics");
