@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://mafhper.github.io/personalnews/</loc>
+    <lastmod>2026-05-22</lastmod>
+  </url>
+  <url>
+    <loc>https://mafhper.github.io/personalnews/llms.txt</loc>
+    <lastmod>2026-05-22</lastmod>
+  </url>
+  <url>
+    <loc>https://mafhper.github.io/personalnews/llms-full.txt</loc>
+    <lastmod>2026-05-22</lastmod>
+  </url>
+  <url>
+    <loc>https://mafhper.github.io/personalnews/feed.xml</loc>
+    <lastmod>2026-05-22</lastmod>
+  </url>
+  <url>
+    <loc>https://mafhper.github.io/personalnews/schema.org.json</loc>
+    <lastmod>2026-05-22</lastmod>
+  </url>
+  <url>
+    <loc>https://mafhper.github.io/personalnews/openapi.json</loc>
+    <lastmod>2026-05-22</lastmod>
+  </url>
+</urlset>

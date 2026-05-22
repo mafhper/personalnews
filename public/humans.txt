@@ -1,0 +1,13 @@
+/* TEAM */
+Developer: mafhper
+GitHub: https://github.com/mafhper
+
+/* PROJECT */
+Project: Personal News
+Repository: https://github.com/mafhper/personalnews
+Site: https://mafhper.github.io/personalnews/
+Type: Open-source RSS aggregation app
+Focus: Local-first and privacy-conscious personal news reading
+
+/* STANDARDS */
+RSS 2.0, Atom, OPML, Web App Manifest, Schema.org

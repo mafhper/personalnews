@@ -1,0 +1,19 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Personal News",
+  "applicationCategory": "NewsApplication",
+  "operatingSystem": "Web, Windows, Linux",
+  "softwareVersion": "1.13.6",
+  "description": "Open-source RSS and news aggregation app focused on local-first reading, user-controlled feeds, OPML workflows, and privacy-conscious customization.",
+  "url": "https://mafhper.github.io/personalnews/",
+  "codeRepository": "https://github.com/mafhper/personalnews",
+  "author": {
+    "@type": "Person",
+    "name": "mafhper",
+    "url": "https://github.com/mafhper"
+  },
+  "license": "https://opensource.org/licenses/MIT",
+  "programmingLanguage": ["TypeScript", "JavaScript"],
+  "isAccessibleForFree": true
+}
