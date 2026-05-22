@@ -2,6 +2,10 @@ import type { Article } from "../types";
 import { detectEnvironment } from "./environmentDetector";
 import { desktopBackendClient } from "./desktopBackendClient";
 import {
+  feedDiscoveryService,
+  type DiscoveredFeed,
+} from "./feedDiscoveryService";
+import {
   buildFeedDiagnosticInfo,
   type FeedDiagnosticInfo,
   type FeedRouteInfo,
@@ -20,6 +24,17 @@ export interface FeedRuntimeResult {
   warning?: FeedDiagnosticInfo;
   cached: boolean;
   source: "backend" | "client-fallback" | "client";
+  discovery?: FeedRuntimeDiscoveryInfo;
+}
+
+export interface FeedRuntimeDiscoveryInfo {
+  originalUrl: string;
+  discoveredUrl?: string;
+  discoveredTitle?: string;
+  status: "used" | "not-found" | "failed";
+  suggestions: string[];
+  candidates: Array<Pick<DiscoveredFeed, "url" | "title" | "type" | "confidence">>;
+  message: string;
 }
 
 export interface FeedRuntimeState {
@@ -88,6 +103,46 @@ const sleep = (ms: number, signal?: AbortSignal) =>
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
+
+const shouldAttemptHtmlFeedDiscovery = (error: unknown): boolean => {
+  const message = getErrorMessage(error).toLowerCase();
+
+  if (
+    message.includes("abort") ||
+    message.includes("cancelled") ||
+    message.includes("timeout") ||
+    message.includes("404") ||
+    message.includes("not found") ||
+    message.includes("rate limit") ||
+    message.includes("429")
+  ) {
+    return false;
+  }
+
+  return (
+    message.includes("html") ||
+    message.includes("invalid response format") ||
+    message.includes("unsupported rss format") ||
+    message.includes("xml parsing error") ||
+    message.includes("parse") ||
+    message.includes("valid rss") ||
+    message.includes("valid feed") ||
+    message.includes("not a feed")
+  );
+};
+
+const summarizeDiscoveredFeeds = (feeds: DiscoveredFeed[]) =>
+  feeds.map(({ url, title, type, confidence }) => ({
+    url,
+    title,
+    type,
+    confidence,
+  }));
+
+const sortDiscoveredFeeds = (feeds: DiscoveredFeed[]) =>
+  feeds
+    .slice()
+    .sort((a, b) => b.confidence - a.confidence || a.url.localeCompare(b.url));
 
 const getBackendErrorStatusCode = (error: unknown): number | undefined => {
   if (!error || typeof error !== "object") return undefined;
@@ -458,4 +513,80 @@ export async function loadFeedWithRuntime(
     cached: result.cached,
     source: "client",
   };
+}
+
+export async function loadFeedWithRuntimeAndDiscovery(
+  url: string,
+  options: {
+    forceRefresh?: boolean;
+    signal?: AbortSignal;
+    skipCache?: boolean;
+    discoverHtmlFallback?: boolean;
+  } = {},
+): Promise<FeedRuntimeResult> {
+  const { discoverHtmlFallback = false, ...runtimeOptions } = options;
+
+  try {
+    return await loadFeedWithRuntime(url, runtimeOptions);
+  } catch (initialError) {
+    if (
+      !discoverHtmlFallback ||
+      !shouldAttemptHtmlFeedDiscovery(initialError)
+    ) {
+      throw initialError;
+    }
+
+    let discoveredFeeds: DiscoveredFeed[] = [];
+    let suggestions: string[] = [];
+
+    try {
+      const discovery = await feedDiscoveryService.discoverFromWebsite(url);
+      discoveredFeeds = sortDiscoveredFeeds(discovery.discoveredFeeds);
+      suggestions = discovery.suggestions;
+    } catch (discoveryError) {
+      const message = getErrorMessage(discoveryError);
+      throw new Error(
+        `Falha ao descobrir RSS/Atom a partir do HTML recebido: ${message}`,
+      );
+    }
+
+    const candidates = summarizeDiscoveredFeeds(discoveredFeeds);
+
+    if (discoveredFeeds.length === 0) {
+      throw new Error(
+        "HTML recebido, mas nenhum feed RSS/Atom foi encontrado para esta origem.",
+      );
+    }
+
+    let lastCandidateError: unknown = initialError;
+
+    for (const candidate of discoveredFeeds) {
+      if (runtimeOptions.signal?.aborted) {
+        throw new DOMException("Request was cancelled", "AbortError");
+      }
+
+      try {
+        const result = await loadFeedWithRuntime(candidate.url, runtimeOptions);
+        return {
+          ...result,
+          discovery: {
+            originalUrl: url,
+            discoveredUrl: candidate.url,
+            discoveredTitle: candidate.title,
+            status: "used",
+            suggestions,
+            candidates,
+            message:
+              "URL salva respondeu como HTML; feed RSS/Atom descoberto usado apenas nesta tentativa.",
+          },
+        };
+      } catch (candidateError) {
+        lastCandidateError = candidateError;
+      }
+    }
+
+    throw new Error(
+      `HTML recebido e ${discoveredFeeds.length} feed(s) RSS/Atom foram descobertos, mas nenhum carregou com sucesso: ${getErrorMessage(lastCandidateError)}`,
+    );
+  }
 }
