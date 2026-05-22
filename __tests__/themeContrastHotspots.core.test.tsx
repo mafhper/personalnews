@@ -551,11 +551,26 @@ describe("theme contrast hotspots", () => {
 
     expect(toolsSource).toContain("Síntese operacional");
     expect(toolsSource).toContain("Escolha o tipo de intervenção");
+    expect(toolsSource).toContain("Como escolher");
     expect(toolsSource).toContain("Arquivos e listas");
     expect(toolsSource).toContain("Manutenção e risco");
     expect(toolsSource).toContain("Zona de risco");
     expect(toolsSource).toContain("bg-[rgb(var(--color-error))]");
     expect(toolsSource).toContain("text-[rgb(var(--color-onAccent))]");
     expect(toolsSource).not.toContain("useProxyDashboard");
+    expect(toolsSource).not.toContain("Próximo passo");
+  });
+
+  it("keeps diagnostics overview informational instead of duplicating metrics", () => {
+    const analyticsSource = readFileSync(
+      resolve(process.cwd(), "components/FeedAnalytics.tsx"),
+      "utf8",
+    );
+
+    expect(analyticsSource).toContain("Investigar fontes");
+    expect(analyticsSource).toContain("Ver rotas de carregamento");
+    expect(analyticsSource).toContain("Exportar diagnóstico");
+    expect(analyticsSource).toContain("Lista de atenção");
+    expect(analyticsSource).not.toContain("Feeds afetados");
   });
 });

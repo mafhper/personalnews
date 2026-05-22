@@ -537,7 +537,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           <FeedManagerSectionHeader
             eyebrow="Síntese"
             title="Diagnóstico em camadas"
-            description="Esta visão resume onde investigar primeiro. As páginas de saúde, infraestrutura e relatórios ficam separadas na navegação."
+            description="Use esta área para escolher onde investigar: saúde das fontes, infraestrutura de carregamento ou relatório técnico."
             icon={<Layers3 className="h-5 w-5" />}
             action={
               <button
@@ -554,28 +554,21 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             <DiagnosticOverviewCard
               icon={<AlertCircle className="h-5 w-5" />}
               label="Saúde dos feeds"
-              title={hasAttentionItems ? diagnosis.label : "Sem alerta ativo"}
-              description={
-                hasAttentionItems
-                  ? diagnosis.detail || `${actionItems.length} ação sugerida para revisão.`
-                  : "As fontes carregadas não pedem intervenção imediata."
-              }
+              title="Investigar fontes"
+              description="Revise falhas, impacto e lista de atenção das fontes que pedem cuidado."
               tone={hasAttentionItems ? "warning" : "success"}
             />
             <DiagnosticOverviewCard
               icon={<Layers3 className="h-5 w-5" />}
               label="Infraestrutura"
-              title={infraStatusLabel}
-              description={`${snapshot.summary.healthyRoutes}/${Math.max(
-                1,
-                snapshot.summary.totalRoutes,
-              )} rotas saudáveis com ${snapshot.summary.successRate}% de sucesso na sessão.`}
+              title="Ver rotas de carregamento"
+              description="Confira backend, proxies e configuração operacional apenas na seção detalhada."
             />
             <DiagnosticOverviewCard
               icon={<CheckCircle2 className="h-5 w-5" />}
               label="Relatórios"
-              title="Exportação disponível"
-              description={`${activityStats.matchedArticles} artigos associados aos feeds atuais podem compor o relatório.`}
+              title="Exportar diagnóstico"
+              description="Gere um recorte técnico quando precisar compartilhar o estado da coleção e da infraestrutura."
             />
           </div>
         </section>
@@ -626,7 +619,8 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           <AccordionSection
             sectionId="feed-status"
             sectionClassName={`${managerControlSurfaceClass} mt-5 p-4`}
-            title="Feeds afetados"
+            title="Lista de atenção"
+            description="Fontes com impacto detectado, organizadas dentro da saúde dos feeds."
             isOpen={openSections.affected}
             onToggle={() => toggleSection("affected")}
             icon={

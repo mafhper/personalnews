@@ -31,8 +31,6 @@ interface FeedToolsTabProps {
   onOpenMaintenance?: () => void;
   onOpenRisk?: () => void;
   feedCount: number;
-  validCount: number;
-  invalidCount: number;
   embedded?: boolean;
 }
 
@@ -50,8 +48,6 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   onOpenIo,
   onOpenMaintenance,
   feedCount,
-  validCount,
-  invalidCount,
   embedded = false,
 }) => {
   const normalizedView =
@@ -80,15 +76,11 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
 
                 <div className={`${managerControlSurfaceClass} p-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-86`}>
                   <strong className="text-[rgb(var(--theme-text-readable))]">
-                    Próximo passo:
+                    Como escolher:
                   </strong>{" "}
-                  {invalidCount > 0
-                    ? "revise a saúde dos feeds antes de manutenção pesada."
-                    : feedCount === 0
-                      ? "adicione ou importe fontes antes de configurar reparos."
-                      : validCount > 0
-                        ? "faça backup antes de alterações em lote."
-                        : "revalide as fontes antes de ações em lote."}
+                  use Arquivos e listas para transportar, ampliar ou recuperar
+                  coleções; use Manutenção e risco para reparar, restaurar ou
+                  executar ações críticas com confirmação.
                 </div>
               </div>
 
