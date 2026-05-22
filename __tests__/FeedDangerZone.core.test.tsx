@@ -218,6 +218,9 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("heading", { name: "Adicionar feed" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Recolher Adicionar fontes" }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Recolher barra lateral" })[0]);
     expect(
@@ -239,6 +242,54 @@ describe("Feed danger zone flows", () => {
     );
     expect(
       screen.getByRole("heading", { name: "Backend, proxies e rotas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Recolher Backend, proxies e rotas" }),
+    ).toBeInTheDocument();
+  });
+
+  it("collapses and expands collection sections without losing anchors", async () => {
+    const { container } = render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    const reviewSection = container.querySelector(
+      "#feed-manager-section-feeds-list",
+    ) as HTMLElement;
+    expect(reviewSection).not.toBeNull();
+    expect(
+      within(reviewSection).getByRole("heading", { name: "Revisão de feeds" }),
+    ).toBeInTheDocument();
+    expect(
+      within(reviewSection).getByRole("button", {
+        name: "Expandir Revisão de feeds",
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(reviewSection).getByRole("button", {
+        name: "Expandir Revisão de feeds",
+      }),
+    );
+    expect(
+      within(reviewSection).getByRole("button", {
+        name: "Recolher Revisão de feeds",
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(reviewSection).getByRole("button", {
+        name: "Recolher Revisão de feeds",
+      }),
+    );
+    expect(
+      within(reviewSection).getByRole("button", {
+        name: "Expandir Revisão de feeds",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -295,6 +346,9 @@ describe("Feed danger zone flows", () => {
       screen.getByRole("heading", { name: "Transporte da coleção" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("button", { name: "Recolher Transporte da coleção" }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("button", {
         name: /Listas curadas.*Mescle coleções prontas/,
       }),
@@ -307,6 +361,9 @@ describe("Feed danger zone flows", () => {
     );
     expect(
       screen.getByRole("heading", { name: "Reparos e ações críticas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Recolher Reparos e ações críticas" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Excluir todos os feeds" })).toBeInTheDocument();
   });
@@ -360,6 +417,15 @@ describe("Feed danger zone flows", () => {
     expect(within(diagnosticsOverview as HTMLElement).getByText("Exportar diagnóstico")).toBeInTheDocument();
     expect(within(diagnosticsOverview as HTMLElement).queryByText(/rotas saudáveis/i)).not.toBeInTheDocument();
     expect(within(diagnosticsOverview as HTMLElement).queryByText(/requisições/i)).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Relatórios. Exportação de diagnóstico",
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Recolher Relatórios" }),
+    ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {

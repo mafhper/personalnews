@@ -355,6 +355,59 @@ body {
   scroll-margin-top: var(--space-5);
 }
 
+.feed-manager-accordion-section {
+  min-width: 0;
+}
+
+.feed-manager-accordion-section--collapsed {
+  box-shadow: var(--feed-manager-shadow-control);
+}
+
+.feed-manager-accordion-body {
+  margin-top: var(--space-5);
+}
+
+.feed-manager-accordion-toggle {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--feed-manager-border-strong);
+  background: rgb(var(--theme-manager-control, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: var(--space-2) var(--space-3);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.feed-manager-accordion-toggle:hover {
+  background: rgb(var(--theme-manager-soft, var(--color-surfaceElevated)));
+  color: rgb(var(--theme-manager-text, var(--color-text)));
+}
+
+.feed-manager-accordion-toggle:active {
+  transform: scale(0.97);
+}
+
+.feed-manager-accordion-toggle:focus-visible {
+  outline: 2px solid rgba(var(--color-accent), 0.62);
+  outline-offset: 2px;
+}
+
+.feed-manager-accordion-toggle svg {
+  transition: transform 160ms ease;
+}
+
+.feed-manager-accordion-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 .feed-manager-sidebar-nav-item {
   display: flex;
   width: 100%;

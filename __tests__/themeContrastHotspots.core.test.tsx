@@ -289,6 +289,10 @@ describe("theme contrast hotspots", () => {
     expect(cssSource).toContain(".feed-manager-section-header__icon");
     expect(cssSource).toContain(".feed-manager-section-header__content");
     expect(cssSource).toContain(".feed-manager-section-header__action");
+    expect(cssSource).toContain(".feed-manager-accordion-section");
+    expect(cssSource).toContain(".feed-manager-accordion-section--collapsed");
+    expect(cssSource).toContain(".feed-manager-accordion-body");
+    expect(cssSource).toContain(".feed-manager-accordion-toggle");
     expect(cssSource).toContain(".feed-manager-workspace-footer");
     expect(cssSource).toContain(".feed-manager-operational-hero");
     expect(cssSource).toContain(".feed-manager-sidebar--open");
@@ -550,6 +554,7 @@ describe("theme contrast hotspots", () => {
     );
 
     expect(toolsSource).toContain("Síntese operacional");
+    expect(toolsSource).toContain("FeedManagerAccordionSection");
     expect(toolsSource).toContain("Escolha o tipo de intervenção");
     expect(toolsSource).toContain("Como escolher");
     expect(toolsSource).toContain("Arquivos e listas");
