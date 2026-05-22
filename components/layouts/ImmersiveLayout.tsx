@@ -22,7 +22,7 @@ export const ImmersiveSkeleton: React.FC = () => {
   return (
     <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-12 pb-20 px-4">
       {/* HERO SKELETON */}
-      <div className="relative w-full rounded-3xl overflow-hidden h-[clamp(24rem,52vw,38rem)] feed-skeleton-block flex flex-col justify-end p-10 space-y-5">
+      <div className="relative w-full rounded-3xl overflow-hidden min-h-[46vh] md:min-h-[52vh] xl:min-h-[56vh] feed-skeleton-block flex flex-col justify-end p-10 space-y-5">
         <div className="w-48 h-6 feed-skeleton-block rounded-full" />
         <div className="w-3/4 h-20 feed-skeleton-block rounded-2xl" />
         <div className="w-1/2 h-8 feed-skeleton-block rounded-xl" />
@@ -33,7 +33,7 @@ export const ImmersiveSkeleton: React.FC = () => {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="relative w-full rounded-3xl overflow-hidden h-[clamp(22rem,42vw,32rem)] feed-skeleton-block flex flex-col justify-end p-8 space-y-4"
+            className="relative w-full rounded-3xl overflow-hidden min-h-[45vh] feed-skeleton-block flex flex-col justify-end p-8 space-y-4"
           >
             <div className="w-32 h-4 feed-skeleton-block rounded-full" />
             <div className="w-full h-10 feed-skeleton-block rounded-xl" />
@@ -147,7 +147,7 @@ const HeroArticle: React.FC<{
   const gradient = getGradientFromString(article.title);
 
   return (
-    <section className="relative w-full rounded-3xl overflow-hidden h-[clamp(24rem,52vw,38rem)] shadow-xl group flex flex-col">
+    <section className="relative w-full rounded-3xl overflow-hidden min-h-[46vh] md:min-h-[52vh] xl:min-h-[56vh] shadow-xl group flex flex-col">
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
       <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 opacity-80">
@@ -246,7 +246,7 @@ const ArticleCard: React.FC<{
   const gradient = getGradientFromString(article.title);
 
   return (
-    <section className="relative w-full rounded-3xl overflow-hidden h-[clamp(22rem,42vw,32rem)] shadow-xl group flex flex-col">
+    <section className="relative w-full rounded-3xl overflow-hidden min-h-[45vh] shadow-xl group flex flex-col">
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
       <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 opacity-80">
@@ -262,7 +262,7 @@ const ArticleCard: React.FC<{
       <div className="absolute inset-0 bg-gradient-to-t from-black/96 via-black/62 to-transparent pointer-events-none" />
 
       {/* Content Container */}
-      <div className="relative z-10 h-full flex flex-col justify-between p-6 min-h-0">
+      <div className="relative z-10 h-full flex flex-col justify-between p-6 min-h-[inherit]">
         {/* Top Part */}
         <div className="feed-card-top-rail w-full">
           <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 min-w-0 max-w-[170px] sm:max-w-[220px]">

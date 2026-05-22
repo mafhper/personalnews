@@ -78,7 +78,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
         {/* Integrated Hero Section */}
         {heroArticle && (
           <section
-            className="mb-[50px] group cursor-pointer relative"
+            className="mb-32 group cursor-pointer relative"
             onClick={() => setReadingIndex(0)}
           >
             <div className="feed-surface-strong flex flex-col lg:grid lg:grid-cols-12 gap-0 items-stretch rounded-sm overflow-hidden">
@@ -164,7 +164,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
         )}
 
         {/* Asymmetric Grid for rest */}
-        <div className="space-y-[50px] max-w-[1400px] mx-auto">
+        <div className="space-y-8 md:space-y-12 max-w-[1400px] mx-auto">
           {remainingArticles.map((article, index) => {
             const isFullWidth = (index + 1) % 5 === 0;
 

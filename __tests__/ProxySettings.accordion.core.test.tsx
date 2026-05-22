@@ -3,19 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { ProxySettings } from "../components/ProxySettings";
 import type { ProxyDashboardSnapshot } from "../hooks/useProxyDashboard";
 
-const proxySettingsState = vi.hoisted(() => ({
-  routingMode: "full-local" as "full-local" | "mixed" | "full-external-proxies",
-}));
-
 vi.mock("../hooks/useProxyConfig", () => ({
   useProxyConfig: () => ({
     apiKeys: {},
     validationErrors: {},
     isLoading: false,
-    routingMode: proxySettingsState.routingMode,
-    clientProxyOrder: ["rss2json"],
-    setRoutingMode: vi.fn(),
-    moveClientProxy: vi.fn(),
     setProxyEnabled: vi.fn(),
     setApiKey: vi.fn(),
     clearApiKey: vi.fn(),
@@ -54,12 +46,7 @@ vi.mock("../hooks/useProxyConfig", () => ({
 vi.mock("../hooks/useProxyDashboard", () => ({
   useProxyDashboard: () => ({
     snapshot: {
-      runtime: {
-        activeMode: "web-client",
-        proxyRouteMode: "full-external-proxies",
-        fallbackOrder: ["RSS2JSON"],
-        backendAvailable: false,
-      },
+      runtime: { activeMode: "web-client", backendAvailable: false },
       backend: { enabled: false, available: false },
       routes: [],
       summary: {
@@ -80,8 +67,6 @@ vi.mock("../hooks/useProxyDashboard", () => ({
 const makeSnapshot = (localStatus: "healthy" | "offline" = "healthy"): ProxyDashboardSnapshot => ({
   runtime: {
     activeMode: "web-client",
-    proxyRouteMode: "full-external-proxies",
-    fallbackOrder: ["RSS2JSON"],
     backendAvailable: false,
   },
   backend: {
@@ -103,7 +88,6 @@ const makeSnapshot = (localStatus: "healthy" | "offline" = "healthy"): ProxyDash
       failureCount: 0,
       avgResponseTime: 0,
       consecutiveFailures: localStatus === "healthy" ? 0 : 3,
-      routeOrder: null,
       detail: "Local backend",
     },
     {
@@ -120,7 +104,6 @@ const makeSnapshot = (localStatus: "healthy" | "offline" = "healthy"): ProxyDash
       failureCount: 0,
       avgResponseTime: 0,
       consecutiveFailures: 0,
-      routeOrder: 0,
       detail: "RSS2JSON route",
     },
   ],
@@ -138,7 +121,6 @@ const makeSnapshot = (localStatus: "healthy" | "offline" = "healthy"): ProxyDash
 
 describe("ProxySettings accordion", () => {
   it("keeps the user-opened proxy expanded across snapshot refreshes", () => {
-    proxySettingsState.routingMode = "full-local";
     const { rerender } = render(
       <ProxySettings snapshot={makeSnapshot()} onRefresh={vi.fn()} />,
     );
@@ -149,15 +131,5 @@ describe("ProxySettings accordion", () => {
     rerender(<ProxySettings snapshot={makeSnapshot("offline")} onRefresh={vi.fn()} />);
 
     expect(screen.getByText("Chave de API")).toBeInTheDocument();
-  });
-
-  it("warns when the active route mode can use external proxies", () => {
-    proxySettingsState.routingMode = "mixed";
-
-    render(<ProxySettings snapshot={makeSnapshot()} onRefresh={vi.fn()} />);
-
-    expect(
-      screen.getByText(/URLs dos feeds podem passar por proxies externos/i),
-    ).toBeInTheDocument();
   });
 });

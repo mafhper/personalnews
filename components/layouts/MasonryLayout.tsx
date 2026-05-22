@@ -17,7 +17,7 @@ export const MasonrySkeleton: React.FC = () => {
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 space-y-8">
       {/* Featured Hero Skeleton */}
-      <div className="h-[clamp(24rem,46vw,40rem)] rounded-2xl feed-skeleton-block" />
+      <div className="h-[60vh] min-h-[400px] rounded-2xl feed-skeleton-block" />
 
       {/* Masonry Columns Skeleton */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
@@ -57,7 +57,7 @@ export const MasonryLayout: React.FC<MasonryLayoutProps> = ({ articles, timeForm
   return (
     <div className="feed-page-frame feed-page-frame--wide space-y-8 animate-in fade-in duration-500">
       {/* Featured Article - Full Width Hero */}
-      <div className="masonry-featured group relative h-[clamp(24rem,46vw,40rem)] overflow-hidden rounded-2xl shadow-xl">
+      <div className="masonry-featured group relative h-[60vh] min-h-[400px] overflow-hidden rounded-2xl shadow-xl">
         <FeaturedArticle
           article={featured}
           timeFormat={timeFormat}

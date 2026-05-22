@@ -15,7 +15,6 @@ vi.mock('../hooks/useNotification', () => ({
     removeNotification: vi.fn(),
     clearAllNotifications: vi.fn(),
     showConfirm: vi.fn(() => Promise.resolve(true)),
-    showScopedConfirm: vi.fn(() => Promise.resolve({ confirmed: true, selectedScopeIds: [] })),
     showAlert: vi.fn(() => Promise.resolve()),
   })
 }));
@@ -44,13 +43,11 @@ vi.mock('../services/logger', () => {
 describe('FeedContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.clear();
-    window.localStorage.setItem('rss-feeds', JSON.stringify([]));
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <NotificationProvider>
-      <FeedProvider autoStart={false}>{children}</FeedProvider>
+      <FeedProvider>{children}</FeedProvider>
     </NotificationProvider>
   );
 
@@ -66,7 +63,7 @@ describe('FeedContext', () => {
   it('runs migration on mount', () => {
     render(
       <NotificationProvider>
-        <FeedProvider autoStart={false}>
+        <FeedProvider>
           <div>Test</div>
         </FeedProvider>
       </NotificationProvider>

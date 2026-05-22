@@ -1,9 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import {
-  favoriteToArticle,
-  inferFavoriteMediaType,
-  useFavorites,
-} from '../hooks/useFavorites';
+import { useFavorites } from '../hooks/useFavorites';
 import type { Article } from '../types';
 import { allowConsoleError } from '../src/test-console';
 
@@ -76,52 +72,6 @@ describe('useFavorites', () => {
       expect(result.current.favorites[0].title).toBe('Test Article 1');
       expect(result.current.isFavorite(mockArticle1)).toBe(true);
       expect(result.current.getFavoritesCount()).toBe(1);
-    });
-
-    it('should preserve feed, content, and podcast fields when favoriting', () => {
-      const podcastArticle: Article = {
-        ...mockArticle1,
-        link: 'https://example.com/podcast-episode',
-        feedUrl: 'https://example.com/podcast.xml',
-        content: '<p>Full episode notes</p>',
-        audioUrl: 'https://cdn.example.com/episode.mp3',
-        audioDuration: '00:42:00',
-      };
-      const { result } = renderHook(() => useFavorites());
-
-      act(() => {
-        result.current.addToFavorites(podcastArticle);
-      });
-
-      expect(result.current.favorites[0]).toMatchObject({
-        feedUrl: 'https://example.com/podcast.xml',
-        content: '<p>Full episode notes</p>',
-        audioUrl: 'https://cdn.example.com/episode.mp3',
-        audioDuration: '00:42:00',
-        mediaType: 'podcast',
-      });
-
-      expect(favoriteToArticle(result.current.favorites[0])).toMatchObject({
-        feedUrl: 'https://example.com/podcast.xml',
-        content: '<p>Full episode notes</p>',
-        audioUrl: 'https://cdn.example.com/episode.mp3',
-        audioDuration: '00:42:00',
-      });
-    });
-
-    it('should infer video favorites from YouTube links or sources', () => {
-      expect(
-        inferFavoriteMediaType({
-          link: 'https://www.youtube.com/watch?v=abc',
-          sourceTitle: 'Example Channel',
-        }),
-      ).toBe('video');
-      expect(
-        inferFavoriteMediaType({
-          link: 'https://example.com/article',
-          sourceTitle: 'YouTube Creator',
-        }),
-      ).toBe('video');
     });
 
     it('should not add duplicate favorites', () => {
@@ -289,7 +239,6 @@ describe('useFavorites', () => {
       expect(success!).toBe(true);
       expect(result.current.favorites).toHaveLength(1);
       expect(result.current.favorites[0].title).toBe('Imported Article');
-      expect(result.current.favorites[0].mediaType).toBe('article');
     });
 
     it('should handle invalid import data', () => {

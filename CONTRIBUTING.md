@@ -54,9 +54,9 @@ bun run dev:local
 ### Minimum checks
 
 ```bash
-bun run format:check
+bun run lint
 bun run type-check
-bun run test:core
+bun run test
 ```
 
 ### Useful targeted checks
@@ -76,13 +76,6 @@ bun run quality:gate:local-silent
 
 Use the full gate when a change touches multiple layers or when you want a release-grade local check.
 
-## Repository hygiene
-
-- `bun.lock` is the operational lockfile for local installs, builds, and app validation. Use `bun install --frozen-lockfile` for normal verification.
-- `package-lock.json` is kept for npm supply-chain validation only. Do not run `npm install` just to refresh dependencies; update it only when a dependency or npm audit task explicitly requires it.
-- The canonical Playwright config for npm scripts is `playwright.config.cjs`. Keep `playwright.config.ts` aligned if it remains present for editor or tool compatibility.
-- Build and test artifacts such as `dist/`, `test-results/`, `playwright-report/`, and `coverage/` must stay out of commits.
-
 ## Release workflow
 
 If your change includes a version bump:
@@ -93,7 +86,6 @@ If your change includes a version bump:
 4. push the matching version tag, using the `vX.Y.Z` format
 
 The repository publishes GitHub Pages from `main`, but GitHub Releases and desktop installers are generated only from `v*` tags.
-GitHub Pages is built and published by the workflow artifact; do not commit local `dist/` output as a deployment mechanism.
 
 ## Coding guidelines
 

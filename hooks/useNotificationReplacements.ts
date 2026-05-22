@@ -1,13 +1,11 @@
 import { useNotification } from "../hooks/useNotification";
-import type { ConfirmDialogOptions, ConfirmDialogResult } from "../types";
 
 /**
  * Hook que fornece substitutos para window.alert, window.confirm, etc.
  * usando o sistema de notificação integrado
  */
 export const useNotificationReplacements = () => {
-  const { showAlert, showConfirm, showScopedConfirm, showNotification } =
-    useNotification();
+  const { showAlert, showConfirm, showNotification } = useNotification();
 
   // Substituto para window.alert()
   const alert = async (message: string) => {
@@ -39,55 +37,27 @@ export const useNotificationReplacements = () => {
   };
 
   const confirmDanger = async (
-    input: string | ConfirmDialogOptions,
-    title?: string,
+    message: string,
+    title?: string
   ): Promise<boolean> => {
-    const options =
-      typeof input === "string"
-        ? {
-            message: input,
-            title: title || "Atenção",
-          }
-        : input;
-
     return await showConfirm({
-      ...options,
-      title: options.title || title || "Atenção",
+      message,
+      title: title || "Atenção",
+      confirmText: "Excluir",
+      cancelText: "Cancelar",
       type: "danger",
-      confirmText: options.confirmText || "Excluir",
-      cancelText: options.cancelText || "Cancelar",
-    });
-  };
-
-  const confirmDangerScopes = async (
-    options: ConfirmDialogOptions,
-  ): Promise<ConfirmDialogResult> => {
-    return await showScopedConfirm({
-      ...options,
-      title: options.title || "Atenção",
-      type: "danger",
-      confirmText: options.confirmText || "Confirmar",
-      cancelText: options.cancelText || "Cancelar",
     });
   };
 
   const confirmWarning = async (
-    input: string | ConfirmDialogOptions,
-    title?: string,
+    message: string,
+    title?: string
   ): Promise<boolean> => {
-    const options =
-      typeof input === "string"
-        ? {
-            message: input,
-            title: title || "Aviso",
-          }
-        : input;
-
     return await showConfirm({
-      ...options,
-      title: options.title || title || "Aviso",
-      confirmText: options.confirmText || "Continuar",
-      cancelText: options.cancelText || "Cancelar",
+      message,
+      title: title || "Aviso",
+      confirmText: "Continuar",
+      cancelText: "Cancelar",
       type: "warning",
     });
   };
@@ -109,7 +79,6 @@ export const useNotificationReplacements = () => {
     alertError,
     alertWarning,
     confirmDanger,
-    confirmDangerScopes,
     confirmWarning,
     toast,
   };

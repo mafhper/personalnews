@@ -10,7 +10,6 @@ interface PocketFeedsLayoutProps {
 }
 
 const Bone: React.FC<{ className?: string }> = ({ className = "" }) => <div className={`feed-skeleton-block ${className}`} />;
-const MAX_TIMELINE_EPISODES = 120;
 
 const EpisodeArtwork: React.FC<{ episode: Article; fallbackAlt: string }> = ({ episode, fallbackAlt }) => (
   <div className="hidden h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)] sm:block">
@@ -57,7 +56,6 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<Article | null>(null);
   const [expandedPodcast, setExpandedPodcast] = useState<string | null>(null);
-  const [expandedEpisodeKey, setExpandedEpisodeKey] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.9);
@@ -80,32 +78,10 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
   const hasFewPodcasts = podcastNames.length <= 4;
   const episodeLabel = (count: number) => count === 1 ? 'episódio' : 'episódios';
   const previewTitle = 'Abrir detalhes do episódio';
-  const getEpisodeKey = (episode: Article, index: number) =>
-    `${episode.feedUrl || episode.sourceTitle || 'podcast'}:${episode.link || episode.title}:${index}`;
   const getEpisodeByline = (episode: Article) =>
     episode.author && episode.author !== episode.sourceTitle
       ? `${episode.sourceTitle} • ${episode.author}`
       : episode.sourceTitle;
-  const sortedEpisodes = React.useMemo(
-    () =>
-      articles
-        .slice()
-        .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()),
-    [articles],
-  );
-  const visibleTimelineEpisodes = sortedEpisodes.slice(0, MAX_TIMELINE_EPISODES);
-  const timelineGroups = React.useMemo(() => {
-    return visibleTimelineEpisodes.reduce<Record<string, Article[]>>((groups, episode) => {
-      const key = new Date(episode.pubDate).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(episode);
-      return groups;
-    }, {});
-  }, [visibleTimelineEpisodes]);
 
   // Format duration (e.g., "3600" -> "1:00:00" or "45:30" -> "45:30")
   const formatDuration = (duration?: string): string => {
@@ -220,131 +196,6 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({ articles }
           </span>
         </div>
       </div>
-
-      {visibleTimelineEpisodes.length > 1 && (
-        <section className="mb-8 feed-surface rounded-2xl border border-[rgb(var(--color-border))] p-4 md:p-5">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[rgb(var(--color-textSecondary))]">
-                Linha do tempo
-              </p>
-              <h2 className="text-lg font-bold text-[rgb(var(--color-text))]">
-                Episódios por data
-              </h2>
-            </div>
-            <p className="text-sm text-[rgb(var(--color-textSecondary))]">
-              {visibleTimelineEpisodes.length} de {articles.length} {episodeLabel(articles.length)}
-            </p>
-          </div>
-
-          <div className="space-y-5">
-            {Object.entries(timelineGroups).map(([dateLabel, episodes]) => (
-              <div key={dateLabel} className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-textSecondary))]">
-                  {dateLabel}
-                </h3>
-                <div className="overflow-hidden rounded-xl border border-[rgb(var(--color-border))]">
-                  {episodes.map((episode, index) => {
-                    const episodeKey = getEpisodeKey(episode, index);
-                    const isExpanded = expandedEpisodeKey === episodeKey;
-
-                    return (
-                      <article
-                        key={episodeKey}
-                        data-testid="pocketfeeds-timeline-episode"
-                        className="border-b border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.025)] last:border-b-0"
-                      >
-                        <div className="flex items-center gap-3 p-3 md:p-4">
-                          {episode.audioUrl ? (
-                            <button
-                              type="button"
-                              onClick={() => handlePlayPause(episode)}
-                              aria-label={playingAudio === episode.audioUrl ? `Pausar ${episode.title}` : `Tocar ${episode.title}`}
-                              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-all ${playingAudio === episode.audioUrl
-                                  ? 'bg-[rgba(var(--color-accent),0.65)] text-white'
-                                  : 'bg-[rgb(var(--color-background))] text-[rgb(var(--color-text))] hover:bg-[rgba(var(--color-accent),0.45)] hover:text-white'
-                                }`}
-                            >
-                              {playingAudio === episode.audioUrl ? (
-                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                                </svg>
-                              ) : (
-                                <svg className="h-5 w-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M8 5v14l11-7z" />
-                                </svg>
-                              )}
-                            </button>
-                          ) : (
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[rgb(var(--color-background))] text-[rgb(var(--color-textSecondary))]">
-                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                            </div>
-                          )}
-
-                          <EpisodeArtwork episode={episode} fallbackAlt={episode.sourceTitle} />
-
-                          <button
-                            type="button"
-                            className="min-w-0 flex-1 text-left"
-                            aria-expanded={isExpanded}
-                            onClick={() => setExpandedEpisodeKey(isExpanded ? null : episodeKey)}
-                          >
-                            <span className="block truncate text-sm font-semibold text-[rgb(var(--color-text))] md:text-base">
-                              {episode.title}
-                            </span>
-                            <span className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))]">
-                              <span className="min-w-0 truncate">{getEpisodeByline(episode)}</span>
-                              {episode.audioDuration && (
-                                <>
-                                  <span className="opacity-40">•</span>
-                                  <span>{formatDuration(episode.audioDuration)}</span>
-                                </>
-                              )}
-                            </span>
-                          </button>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="border-t border-[rgb(var(--color-border))] px-3 pb-4 pt-3 md:px-4">
-                            {episode.description && (
-                              <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-[rgb(var(--color-textSecondary))]">
-                                {episode.description}
-                              </p>
-                            )}
-                            <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setReadingArticle(episode)}
-                                className="rounded-full bg-[rgba(var(--color-text),0.08)] px-3 py-1.5 text-sm font-medium text-[rgb(var(--color-text))] transition-colors hover:bg-[rgba(var(--color-accent),0.28)]"
-                              >
-                                Abrir detalhes
-                              </button>
-                              <FavoriteButton
-                                article={episode}
-                                size="small"
-                                position="inline"
-                                className="text-[rgb(var(--color-textSecondary))] hover:text-white"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {articles.length > MAX_TIMELINE_EPISODES && (
-            <p className="mt-4 text-sm text-[rgb(var(--color-textSecondary))]">
-              Mostrando os {MAX_TIMELINE_EPISODES} episódios mais recentes para manter a lista leve.
-            </p>
-          )}
-        </section>
-      )}
 
       {hasFewPodcasts ? (
         /* Showcase mode for few podcasts */

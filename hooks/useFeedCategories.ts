@@ -3,7 +3,6 @@ import { useLocalStorage } from './useLocalStorage';
 import type { FeedCategory, FeedSource } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants/curatedFeeds';
 import { getFeedSortKey } from '../utils/feedDisplay';
-import { isFeedActive } from '../utils/feedQuarantine';
 
 export interface UseFeedCategoriesReturn {
   categories: FeedCategory[];
@@ -135,7 +134,7 @@ export const useFeedCategories = (): UseFeedCategoriesReturn => {
     // Add uncategorized feeds to 'all' category
     result['uncategorized'] = [];
 
-    feeds.filter(isFeedActive).forEach(feed => {
+    feeds.forEach(feed => {
       if (feed.categoryId && result[feed.categoryId]) {
         result[feed.categoryId].push(feed);
       } else {

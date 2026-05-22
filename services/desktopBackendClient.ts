@@ -23,7 +23,6 @@ import {
   buildFeedDiagnosticInfo,
   type FeedDiagnosticInfo,
 } from "./feedDiagnostics";
-import type { ProxyRouteMode } from "./proxyManager";
 
 type HealthState = {
   available: boolean;
@@ -34,15 +33,7 @@ type HealthState = {
 };
 
 type RuntimeState = {
-  activeMode:
-    | "desktop-local"
-    | "cloud-fallback"
-    | "external-proxies"
-    | "web-client"
-    | "unknown";
-  proxyRouteMode?: ProxyRouteMode;
-  primaryRoute?: string;
-  fallbackOrder?: string[];
+  activeMode: "desktop-local" | "cloud-fallback" | "web-client" | "unknown";
   lastWarning?: string;
   lastRoute?: string;
   lastCheckedAt?: number;

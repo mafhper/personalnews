@@ -1,12 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  FileText,
-  Layers3,
-  ShieldAlert,
-} from "lucide-react";
-import { Article, FeedCategory, FeedSource } from "../types";
+import { AlertCircle, CheckCircle2, Layers3 } from "lucide-react";
+import { Article, FeedSource } from "../types";
 import { useProxyDashboard } from "../hooks/useProxyDashboard";
 import {
   formatFeedRouteLabel,
@@ -15,35 +9,14 @@ import {
 } from "../services/feedDiagnostics";
 import { type FeedValidationResult } from "../services/feedValidator";
 import { HealthReportExporter } from "./HealthReportExporter";
-import {
-  managerControlSurfaceClass,
-  managerInfoSurfaceClass,
-  managerSecondaryButtonClass,
-  managerSurfaceClass,
-} from "./FeedManager/feedManagerStyles";
-import { FeedManagerAccordionSection } from "./FeedManager/FeedManagerAccordionSection";
-import { FeedManagerSectionHeader } from "./FeedManager/FeedManagerSectionHeader";
 import { ProxySettings } from "./ProxySettings";
 
 interface FeedAnalyticsProps {
   feeds: FeedSource[];
   articles: Article[];
   feedValidations: Map<string, FeedValidationResult>;
-  view?: "overview" | "health" | "infra" | "reports" | "all";
-  expandedSections?: Partial<Record<FeedAnalyticsOuterSection, boolean>>;
-  onToggleSection?: (section: FeedAnalyticsOuterSection) => void;
   focusSection?: string;
   onFocusConsumed?: () => void;
-  quarantineRecommendedUrls?: Set<string>;
-  onQuarantineFeed?: (url: string) => void;
-  categories?: FeedCategory[];
-  onRetryFeeds?: (urls: string[]) => void | Promise<void>;
-  onQuarantineFeeds?: (urls: string[]) => void | Promise<void>;
-  onMoveFeedsCategory?: (
-    urls: string[],
-    categoryId: string,
-  ) => void | Promise<void>;
-  embedded?: boolean;
 }
 
 type AnalyticsAccordionSection =
@@ -51,8 +24,6 @@ type AnalyticsAccordionSection =
   | "actions"
   | "affected"
   | "details";
-
-type FeedAnalyticsOuterSection = "health" | "infra" | "reports";
 
 type AffectedFeedRow = {
   url: string;
@@ -67,13 +38,16 @@ type AffectedFeedRow = {
   lastChecked?: number;
   impact: "alto" | "médio" | "baixo";
   isValid: boolean;
-  quarantineRecommended: boolean;
 };
 
-const SURFACE_CLASS = `${managerSurfaceClass} p-5`;
-const INFO_SURFACE_CLASS = managerInfoSurfaceClass;
-const MANAGER_CONTROL_CLASS = managerSecondaryButtonClass;
-const MANAGER_SURFACE_CARD_CLASS = `${managerControlSurfaceClass} p-4`;
+const SURFACE_CLASS =
+  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const INFO_SURFACE_CLASS =
+  "rounded-[26px] bg-[rgb(var(--theme-manager-surface,var(--theme-surface-readable,var(--color-surface))))] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.025)]";
+const MANAGER_CONTROL_CLASS =
+  "rounded-full border border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-4 py-2 text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))] transition-all hover:bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))]";
+const MANAGER_SURFACE_CARD_CLASS =
+  "rounded-[18px] border border-[rgb(var(--color-border))]/12 bg-[rgb(var(--theme-manager-elevated,var(--theme-surface-elevated,var(--color-surface))))] p-4";
 
 const normalizeLabel = (value?: string) =>
   (value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -197,25 +171,11 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   feeds,
   articles,
   feedValidations,
-  view = "overview",
-  expandedSections,
-  onToggleSection,
   focusSection,
   onFocusConsumed,
-  quarantineRecommendedUrls = new Set(),
-  onQuarantineFeed,
-  categories = [],
-  onRetryFeeds,
-  onQuarantineFeeds,
-  onMoveFeedsCategory,
-  embedded = false,
 }) => {
   const { snapshot, refresh } = useProxyDashboard();
   const [showAllRows, setShowAllRows] = useState(false);
-  const [selectedAttentionUrls, setSelectedAttentionUrls] = useState<Set<string>>(
-    new Set(),
-  );
-  const [bulkCategoryId, setBulkCategoryId] = useState("");
 
   const activityStats = useMemo(() => {
     const countByFeed = new Map<string, number>();
@@ -360,7 +320,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
           lastChecked: validation?.lastChecked,
           impact: getImpact(articleCount, isValid),
           isValid,
-          quarantineRecommended: quarantineRecommendedUrls.has(feed.url),
         };
       })
       .sort((a, b) => {
@@ -373,22 +332,9 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         }
         return a.title.localeCompare(b.title);
       });
-  }, [activityStats.countsByFeed, feedValidations, feeds, quarantineRecommendedUrls]);
+  }, [activityStats.countsByFeed, feedValidations, feeds]);
 
   const visibleRows = showAllRows ? affectedRows : affectedRows.slice(0, 8);
-  const visibleRowUrls = visibleRows.map((row) => row.url);
-  const selectedRows = affectedRows.filter((row) =>
-    selectedAttentionUrls.has(row.url),
-  );
-  const selectedUrls = selectedRows.map((row) => row.url);
-  const selectedCount = selectedRows.length;
-  const actionableCategories = categories.filter((category) => category.id !== "all");
-  const allVisibleRowsSelected =
-    visibleRows.length > 0 &&
-    visibleRows.every((row) => selectedAttentionUrls.has(row.url));
-  const canRunBulkActions = selectedCount > 0;
-  const canMoveSelected =
-    canRunBulkActions && Boolean(bulkCategoryId) && Boolean(onMoveFeedsCategory);
   const invalidRows = affectedRows.filter(
     (row) => !row.isValid && row.status !== "unchecked",
   );
@@ -398,19 +344,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   const hasAttentionItems =
     invalidRows.length > 0 ||
     uncheckedRows.length > 0 ||
-    quarantineRecommendedUrls.size > 0 ||
     snapshot.summary.fallbackActive;
-
-  useEffect(() => {
-    setSelectedAttentionUrls((current) => {
-      if (current.size === 0) return current;
-      const validUrls = new Set(affectedRows.map((row) => row.url));
-      const next = new Set(
-        Array.from(current).filter((url) => validUrls.has(url)),
-      );
-      return next.size === current.size ? current : next;
-    });
-  }, [affectedRows]);
 
   const diagnosis = useMemo(() => {
     if (snapshot.summary.fallbackActive && snapshot.runtime.warningDetails) {
@@ -476,16 +410,12 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
       items.add(invalidRows[0].action);
     }
 
-    if (quarantineRecommendedUrls.size > 0) {
-      items.add(`${quarantineRecommendedUrls.size} feeds podem ir para quarentena.`);
-    }
-
     if (uncheckedRows.length > 0) {
       items.add(`Revalidar ${uncheckedRows.length} feeds pendentes.`);
     }
 
     return Array.from(items).slice(0, 3);
-  }, [diagnosis.action, invalidRows, quarantineRecommendedUrls.size, snapshot, uncheckedRows.length]);
+  }, [diagnosis.action, invalidRows, snapshot, uncheckedRows.length]);
 
   const exportFeeds = useMemo(
     () =>
@@ -543,50 +473,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     }));
   };
 
-  const toggleAttentionUrl = (url: string) => {
-    setSelectedAttentionUrls((current) => {
-      const next = new Set(current);
-      if (next.has(url)) {
-        next.delete(url);
-      } else {
-        next.add(url);
-      }
-      return next;
-    });
-  };
-
-  const toggleVisibleRows = () => {
-    setSelectedAttentionUrls((current) => {
-      const next = new Set(current);
-      if (allVisibleRowsSelected) {
-        visibleRowUrls.forEach((url) => next.delete(url));
-      } else {
-        visibleRowUrls.forEach((url) => next.add(url));
-      }
-      return next;
-    });
-  };
-
-  const clearAttentionSelection = () => {
-    setSelectedAttentionUrls(new Set());
-    setBulkCategoryId("");
-  };
-
-  const handleRetrySelectedFeeds = () => {
-    if (!canRunBulkActions || !onRetryFeeds) return;
-    void onRetryFeeds(selectedUrls);
-  };
-
-  const handleQuarantineSelectedFeeds = () => {
-    if (!canRunBulkActions || !onQuarantineFeeds) return;
-    void onQuarantineFeeds(selectedUrls);
-  };
-
-  const handleMoveSelectedFeeds = () => {
-    if (!canMoveSelected || !bulkCategoryId || !onMoveFeedsCategory) return;
-    void onMoveFeedsCategory(selectedUrls, bulkCategoryId);
-  };
-
   useEffect(() => {
     if (!focusSection) return;
 
@@ -599,15 +485,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             ? true
             : current.details,
       }));
-      const focusTarget =
-        focusSection === "proxy-health"
-          ? "feed-manager-section-diagnostics-infra"
-          : focusSection === "feed-reports"
-            ? "feed-manager-section-diagnostics-reports"
-            : focusSection === "feed-status"
-              ? "feed-manager-section-diagnostics-health"
-              : focusSection;
-      document.getElementById(focusTarget)?.scrollIntoView?.({
+      document.getElementById(focusSection)?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
@@ -617,98 +495,53 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
     return () => window.clearTimeout(timer);
   }, [focusSection, onFocusConsumed]);
 
-  const showAll = view === "all";
-  const showOverview = showAll || view === "overview";
-  const showHealth = showAll || view === "health";
-  const showInfra = showAll || view === "infra";
-  const showReports = showAll || view === "reports";
-  const [localExpandedOuterSections, setLocalExpandedOuterSections] =
-    useState<Record<FeedAnalyticsOuterSection, boolean>>({
-      health: true,
-      infra: true,
-      reports: true,
-    });
-  const isOuterSectionOpen = (section: FeedAnalyticsOuterSection) =>
-    expandedSections?.[section] ?? localExpandedOuterSections[section];
-  const toggleOuterSection = (section: FeedAnalyticsOuterSection) => {
-    if (onToggleSection) {
-      onToggleSection(section);
-      return;
-    }
-
-    setLocalExpandedOuterSections((current) => ({
-      ...current,
-      [section]: !current[section],
-    }));
-  };
-
   return (
-    <div className={embedded ? "space-y-5" : "space-y-5"}>
-      {showOverview && (
-        <section
-          id="feed-manager-section-diagnostics-overview"
-          className={`${INFO_SURFACE_CLASS} feed-manager-anchor-section`}
-        >
-          <FeedManagerSectionHeader
-            eyebrow="Síntese"
-            title="Diagnóstico em camadas"
-            description="Use esta área para escolher onde investigar: saúde das fontes, infraestrutura de carregamento ou relatório técnico."
-            icon={<Layers3 className="h-5 w-5" />}
-            action={
-              <button
-                type="button"
-                onClick={() => void refresh()}
-                className={MANAGER_CONTROL_CLASS}
-              >
-                Atualizar
-              </button>
-            }
+    <div className="space-y-5">
+      <section id="diagnostics-overview" className={INFO_SURFACE_CLASS}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-[rgb(var(--theme-text-readable))]">
+              Diagnóstico
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className={MANAGER_CONTROL_CLASS}
+          >
+            Atualizar
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Feeds" value={feeds.length} />
+          <StatCard label="Com erro" value={invalidRows.length} tone="danger" />
+          <StatCard
+            label="Pendentes"
+            value={uncheckedRows.length}
+            tone="warning"
+          />
+          <StatCard label="Artigos" value={activityStats.matchedArticles} />
+        </div>
+      </section>
+
+      {hasAttentionItems && (
+        <section id="feed-health" className={SURFACE_CLASS}>
+          <SectionTitle
+            eyebrow="Saúde dos feeds"
+            title={diagnosis.label}
+            icon={<AlertCircle className="h-5 w-5" />}
           />
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-3">
-            <DiagnosticOverviewCard
-              icon={<AlertCircle className="h-5 w-5" />}
-              label="Saúde dos feeds"
-              title="Investigar fontes"
-              description="Revise falhas, impacto e lista de atenção das fontes que pedem cuidado."
-              tone={hasAttentionItems ? "warning" : "success"}
-            />
-            <DiagnosticOverviewCard
-              icon={<Layers3 className="h-5 w-5" />}
-              label="Infraestrutura"
-              title="Ver rotas de carregamento"
-              description="Confira backend, proxies e configuração operacional apenas na seção detalhada."
-            />
-            <DiagnosticOverviewCard
-              icon={<CheckCircle2 className="h-5 w-5" />}
-              label="Relatórios"
-              title="Exportar diagnóstico"
-              description="Gere um recorte técnico quando precisar compartilhar o estado da coleção e da infraestrutura."
-            />
-          </div>
-        </section>
-      )}
-
-      {showHealth && hasAttentionItems && (
-        <FeedManagerAccordionSection
-          id="feed-manager-section-diagnostics-health"
-          className={SURFACE_CLASS}
-          eyebrow="Saúde dos feeds"
-          title={diagnosis.label}
-          icon={<AlertCircle className="h-5 w-5" />}
-          tone="warning"
-          isOpen={isOuterSectionOpen("health")}
-          onToggle={() => toggleOuterSection("health")}
-        >
-
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <div className={`${managerControlSurfaceClass} p-5`}>
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <div className="rounded-[20px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
               <p className="text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
                 {diagnosis.detail}
               </p>
             </div>
 
-            <div className={`${managerControlSurfaceClass} p-5`}>
+            <div className="rounded-[20px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[rgb(var(--color-success))]" />
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-58">
@@ -719,7 +552,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 {actionItems.map((item, idx) => (
                   <div
                     key={item}
-                    className="flex items-center gap-3 rounded-xl bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
+                    className="flex items-center gap-3 rounded-[16px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-4 py-3 text-sm font-semibold text-[rgb(var(--theme-text-readable))]"
                   >
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.12)] text-[10px] text-[rgb(var(--color-accent))]">
                       {idx + 1}
@@ -733,9 +566,8 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
 
           <AccordionSection
             sectionId="feed-status"
-            sectionClassName={`${managerControlSurfaceClass} mt-5 p-4`}
-            title="Lista de atenção"
-            description="Fontes com impacto detectado, organizadas dentro da saúde dos feeds."
+            sectionClassName="mt-5 rounded-[22px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]"
+            title="Feeds afetados"
             isOpen={openSections.affected}
             onToggle={() => toggleSection("affected")}
             icon={
@@ -759,98 +591,20 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             }
           >
             <div>
-              {affectedRows.length > 0 && (
-                <div className={`${managerControlSurfaceClass} mb-4 p-4`}>
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <label className="flex items-center gap-3 text-sm font-bold text-[rgb(var(--theme-text-readable))]">
-                      <input
-                        type="checkbox"
-                        checked={allVisibleRowsSelected}
-                        onChange={toggleVisibleRows}
-                        className="h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
-                        aria-label="Selecionar feeds visíveis"
-                      />
-                      Selecionar visíveis
-                    </label>
-                    <p className="text-xs font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-70">
-                      {selectedCount} selecionado
-                      {selectedCount === 1 ? "" : "s"}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-[auto_auto_minmax(12rem,1fr)_auto_auto]">
-                    <button
-                      type="button"
-                      onClick={handleRetrySelectedFeeds}
-                      disabled={!canRunBulkActions || !onRetryFeeds}
-                      className={`${MANAGER_CONTROL_CLASS} justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45`}
-                    >
-                      Testar selecionados
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleQuarantineSelectedFeeds}
-                      disabled={!canRunBulkActions || !onQuarantineFeeds}
-                      className="feed-manager-secondary-button justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      Quarentenar selecionados
-                    </button>
-                    <select
-                      value={bulkCategoryId}
-                      onChange={(event) => setBulkCategoryId(event.target.value)}
-                      className="feed-manager-field h-10 w-full px-3 text-xs font-bold"
-                      aria-label="Mover selecionados para categoria"
-                    >
-                      <option value="">Mover para categoria</option>
-                      {actionableCategories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={handleMoveSelectedFeeds}
-                      disabled={!canMoveSelected}
-                      className={`${MANAGER_CONTROL_CLASS} justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45`}
-                    >
-                      Mover selecionados
-                    </button>
-                    <button
-                      type="button"
-                      onClick={clearAttentionSelection}
-                      disabled={selectedCount === 0}
-                      className={`${MANAGER_CONTROL_CLASS} justify-center px-3 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-45`}
-                    >
-                      Limpar seleção
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div className="space-y-2 md:hidden">
                 {visibleRows.map((row) => (
                   <div
                     key={row.url}
-                    className={`${managerControlSurfaceClass} p-4`}
+                    className="rounded-[18px] bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedAttentionUrls.has(row.url)}
-                          onChange={() => toggleAttentionUrl(row.url)}
-                          className="mt-1 h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
-                          aria-label={`Selecionar ${row.title}`}
-                        />
-                        <div className="min-w-0">
+                      <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-[rgb(var(--theme-text-readable))]">
                           {row.title}
                         </p>
                         <p className="mt-0.5 truncate text-[11px] font-mono text-[rgb(var(--theme-text-secondary-readable))] opacity-55">
                           {row.host}
                         </p>
-                        </div>
                       </div>
                       <div
                         className={`shrink-0 text-xs font-bold uppercase tracking-widest ${impactTone(row.impact)}`}
@@ -860,7 +614,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div className="rounded-xl bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
+                      <div className="rounded-[14px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
                           Rota
                         </p>
@@ -868,7 +622,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                           {row.route}
                         </p>
                       </div>
-                      <div className="rounded-xl bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
+                      <div className="rounded-[14px] bg-[rgb(var(--theme-manager-soft,var(--theme-control-bg,var(--color-surface))))] px-3 py-2">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[rgb(var(--theme-text-secondary-readable))] opacity-50">
                           Status
                         </p>
@@ -881,16 +635,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                     <p className="mt-3 text-xs leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
                       {row.error}
                     </p>
-                    {row.quarantineRecommended && onQuarantineFeed && (
-                      <button
-                        type="button"
-                        onClick={() => onQuarantineFeed(row.url)}
-                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-[rgba(var(--color-warning),0.12)] px-3 py-2 text-xs font-bold text-[rgb(var(--color-warning))]"
-                      >
-                        <ShieldAlert className="h-3.5 w-3.5" />
-                        Quarentenar
-                      </button>
-                    )}
                   </div>
                 ))}
               </div>
@@ -899,15 +643,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                 <table className="w-full border-separate border-spacing-y-1.5">
                 <thead>
                   <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
-                    <th className="px-4 py-2">
-                      <input
-                        type="checkbox"
-                        checked={allVisibleRowsSelected}
-                        onChange={toggleVisibleRows}
-                        className="h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
-                        aria-label="Selecionar feeds visíveis"
-                      />
-                    </th>
                     <th className="px-4 py-2">Feed</th>
                     <th className="px-4 py-2">Rota</th>
                     <th className="px-4 py-2">Status</th>
@@ -921,15 +656,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                       className="group rounded-xl bg-[rgb(var(--theme-manager-control))] transition-all hover:bg-[rgb(var(--theme-manager-soft))]"
                     >
                       <td className="rounded-l-xl px-4 py-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedAttentionUrls.has(row.url)}
-                          onChange={() => toggleAttentionUrl(row.url)}
-                          className="h-4 w-4 rounded border-[rgb(var(--color-border))] accent-[rgb(var(--color-accentSurface))]"
-                          aria-label={`Selecionar ${row.title}`}
-                        />
-                      </td>
-                      <td className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-[rgb(var(--theme-text-readable))] truncate max-w-[180px]">
                             {row.title}
@@ -972,16 +698,6 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
                         <div className="text-[10px] font-bold text-[rgb(var(--theme-text-secondary-readable))] opacity-40">
                           {row.articleCount} arts.
                         </div>
-                        {row.quarantineRecommended && onQuarantineFeed && (
-                          <button
-                            type="button"
-                            onClick={() => onQuarantineFeed(row.url)}
-                            className="mt-2 inline-flex items-center justify-end gap-1 rounded-full bg-[rgba(var(--color-warning),0.12)] px-2.5 py-1 text-[10px] font-bold text-[rgb(var(--color-warning))] transition hover:bg-[rgba(var(--color-warning),0.18)]"
-                          >
-                            <ShieldAlert className="h-3 w-3" />
-                            Quarentena
-                          </button>
-                        )}
                       </td>
                     </tr>
                   ))}
@@ -999,36 +715,17 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
               )}
             </div>
           </AccordionSection>
-        </FeedManagerAccordionSection>
+        </section>
       )}
 
-      {showHealth && !hasAttentionItems && (view === "health" || showAll) && (
-        <FeedManagerAccordionSection
-          id="feed-manager-section-diagnostics-health"
-          className={SURFACE_CLASS}
-          eyebrow="Saúde dos feeds"
-          title="Nenhuma ação necessária"
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          isOpen={isOuterSectionOpen("health")}
-          onToggle={() => toggleOuterSection("health")}
-        >
-          <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
-            Os feeds validados não apresentam falhas no momento.
-          </p>
-        </FeedManagerAccordionSection>
-      )}
+      <section id="proxy-health" className={SURFACE_CLASS}>
+        <SectionTitle
+          eyebrow="Infraestrutura"
+          title="Backend, proxies e rotas"
+          icon={<Layers3 className="h-5 w-5" />}
+        />
 
-      {showInfra && (
-      <FeedManagerAccordionSection
-        id="feed-manager-section-diagnostics-infra"
-        className={SURFACE_CLASS}
-        eyebrow="Infraestrutura"
-        title="Backend, proxies e rotas"
-        icon={<Layers3 className="h-5 w-5" />}
-        isOpen={isOuterSectionOpen("infra")}
-        onToggle={() => toggleOuterSection("infra")}
-      >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Estado" value={infraStatusLabel} />
           <StatCard label="Sucesso" value={`${snapshot.summary.successRate}%`} />
           <StatCard
@@ -1041,19 +738,12 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
         <div id="proxy-settings" className="mt-5">
           <ProxySettings detailed embedded snapshot={snapshot} onRefresh={refresh} />
         </div>
-      </FeedManagerAccordionSection>
-      )}
+      </section>
 
-      {showReports && (
-      <FeedManagerAccordionSection
-        id="feed-manager-section-diagnostics-reports"
-        className={SURFACE_CLASS}
-        eyebrow="Diagnóstico"
-        title="Relatórios"
-        description="Exporte um recorte técnico da saúde dos feeds e da infraestrutura atual."
-        icon={<FileText className="h-5 w-5" />}
-        isOpen={isOuterSectionOpen("reports")}
-        onToggle={() => toggleOuterSection("reports")}
+      <AccordionSection
+        title="Detalhes"
+        isOpen={openSections.details}
+        onToggle={() => toggleSection("details")}
       >
         <div className="space-y-4">
           <section id="feed-reports" className={MANAGER_SURFACE_CARD_CLASS}>
@@ -1069,8 +759,7 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
             </div>
           </section>
         </div>
-      </FeedManagerAccordionSection>
-      )}
+      </AccordionSection>
     </div>
   );
 };
@@ -1081,7 +770,6 @@ const AccordionSection: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
   icon?: React.ReactNode;
-  description?: string;
   actions?: React.ReactNode;
   sectionId?: string;
   sectionClassName?: string;
@@ -1091,72 +779,63 @@ const AccordionSection: React.FC<{
   onToggle,
   children,
   icon,
-  description,
   actions,
   sectionId,
   sectionClassName = INFO_SURFACE_CLASS,
 }) => (
   <section id={sectionId} className={sectionClassName}>
-    <FeedManagerSectionHeader
-      eyebrow="Diagnóstico"
-      title={title}
-      description={description}
-      icon={icon}
-      action={
-        <div className="flex flex-wrap items-center gap-2">
-          {actions}
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={isOpen}
-            className={managerSecondaryButtonClass}
-          >
-            {isOpen ? "Recolher" : "Expandir"}
-          </button>
-        </div>
-      }
-    />
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        className="flex items-center justify-between gap-3 text-left"
+      >
+        <span className="flex items-center gap-2">
+          {icon}
+          <span className="text-base font-semibold text-[rgb(var(--theme-text-readable))]">
+            {title}
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className={`text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))] transition-transform ${isOpen ? "rotate-180" : ""}`}
+        >
+          ▾
+        </span>
+      </button>
+      {actions}
+    </div>
+
     {isOpen && <div className="mt-4">{children}</div>}
   </section>
 );
 
-const DiagnosticOverviewCard: React.FC<{
-  icon: React.ReactNode;
-  label: string;
+const SectionTitle: React.FC<{
+  eyebrow: string;
   title: string;
-  description: string;
-  tone?: "default" | "success" | "warning";
-}> = ({ icon, label, title, description, tone = "default" }) => {
-  const iconTone =
-    tone === "success"
-      ? "bg-[rgba(var(--color-success),0.12)] text-[rgb(var(--color-success))]"
-      : tone === "warning"
-        ? "bg-[rgba(var(--color-warning),0.12)] text-[rgb(var(--color-warning))]"
-        : "bg-[rgb(var(--theme-manager-bg,var(--color-background)))] text-[rgb(var(--theme-text-readable))]";
-
-  return (
-    <div className={`${managerControlSurfaceClass} p-5`}>
-      <div className="flex items-start gap-4">
-        <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconTone}`}
-        >
-          {icon}
-        </span>
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-            {label}
-          </p>
-          <h4 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
-            {title}
-          </h4>
-        </div>
-      </div>
-      <p className="mt-4 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
-        {description}
-      </p>
+  description?: string;
+  icon: React.ReactNode;
+}> = ({ eyebrow, title, description, icon }) => (
+  <div className="flex items-start gap-3">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--color-primary))]">
+      {icon}
     </div>
-  );
-};
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable))] opacity-58">
+        {eyebrow}
+      </p>
+      <h4 className="mt-1 text-base font-black text-[rgb(var(--theme-text-readable))]">
+        {title}
+      </h4>
+      {description && (
+        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-72">
+          {description}
+        </p>
+      )}
+    </div>
+  </div>
+);
 
 const StatCard: React.FC<{
   label: string;
@@ -1164,12 +843,12 @@ const StatCard: React.FC<{
   tone?: "default" | "warning" | "danger";
 }> = ({ label, value, tone = "default" }) => (
   <div
-    className={`rounded-2xl p-4 ${
+    className={`rounded-[18px] p-4 ${
       tone === "danger"
         ? "bg-[rgba(var(--color-error),0.1)]"
         : tone === "warning"
           ? "bg-[rgba(var(--color-warning),0.1)]"
-          : managerControlSurfaceClass
+          : "bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))]"
     }`}
   >
     <p className="text-[11px] uppercase tracking-[0.16em] text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">

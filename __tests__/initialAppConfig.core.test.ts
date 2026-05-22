@@ -6,7 +6,7 @@ describe("initial app configuration", () => {
   it("syncs release setup defaults into generated config", () => {
     expect(INITIAL_APP_CONFIG).toMatchObject({
       header: "floating",
-      headerHeight: "tiny",
+      headerHeight: "compact",
       headerOpacity: 0.6,
       headerBlur: 20,
       logoSize: "md",
@@ -18,7 +18,7 @@ describe("initial app configuration", () => {
   });
 
   it("wires generated defaults into runtime defaults", () => {
-    expect(DEFAULT_HEADER_CONFIG.height).toBe("tiny");
+    expect(DEFAULT_HEADER_CONFIG.height).toBe("compact");
     expect(DEFAULT_HEADER_CONFIG.bgOpacity).toBe(0.6);
     expect(DEFAULT_HEADER_CONFIG.blur).toBe(20);
     expect(DEFAULT_HEADER_CONFIG.logoSize).toBe("md");

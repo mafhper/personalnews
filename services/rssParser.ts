@@ -16,11 +16,7 @@ import type { Article } from "../types";
 import { getLogger } from "./logger";
 import { getCachedArticles, setCachedArticles } from "./smartCache";
 import { parseSecureOpmlXml, parseSecureRssXml } from "./secureXmlParser";
-import {
-  proxyManager,
-  type ProxyAttempt,
-  type ProxyRouteMode,
-} from "./proxyManager";
+import { proxyManager, type ProxyAttempt } from "./proxyManager";
 import { getAlternativeUrls } from "./feedUrlMapper";
 import { type FeedRouteInfo } from "./feedDiagnostics";
 import {
@@ -42,16 +38,6 @@ export interface DetailedFeedParseResult {
   route: FeedRouteInfo;
   attempts: ProxyAttempt[];
   cached: boolean;
-}
-
-interface FeedParseOptions {
-  timeout?: number;
-  maxRetries?: number;
-  signal?: AbortSignal;
-  skipCache?: boolean;
-  forceClientFallback?: boolean;
-  externalOnly?: boolean;
-  routeMode?: ProxyRouteMode;
 }
 
 // --- HELPERS ---
@@ -1192,10 +1178,6 @@ function validateResponse(content: string): boolean {
 async function fetchRssFeed(
   url: string,
   _signal?: AbortSignal,
-  proxyOptions: Pick<
-    FeedParseOptions,
-    "forceClientFallback" | "externalOnly" | "routeMode"
-  > = {},
 ): Promise<DetailedFeedParseResult> {
   const urlsToTry = getAlternativeUrls(url);
   let lastError: Error = new Error("Unknown error");
@@ -1294,10 +1276,7 @@ async function fetchRssFeed(
       }
 
       // If direct fetch didn't succeed, use ProxyManager for robust fetching with failover
-      const result = await proxyManager.tryProxiesWithFailover(
-        currentUrl,
-        proxyOptions,
-      );
+      const result = await proxyManager.tryProxiesWithFailover(currentUrl);
 
       // Parse the content returned by the proxy
       // We try to detect if it's JSON (RSS2JSON) or XML
@@ -1367,25 +1346,23 @@ function sleep(ms: number): Promise<void> {
 
 async function parseRssUrlWithRetry(
   url: string,
-  options: FeedParseOptions = {},
+  options: {
+    timeout?: number;
+    maxRetries?: number;
+    signal?: AbortSignal;
+    skipCache?: boolean;
+  } = {},
 ): Promise<DetailedFeedParseResult> {
   const {
     maxRetries = MAX_RETRY_ATTEMPTS,
     signal,
     skipCache = false,
-    forceClientFallback,
-    externalOnly,
-    routeMode,
   } = options;
   let lastError: Error = new Error("Unknown error");
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const result = await fetchRssFeed(url, signal, {
-        forceClientFallback,
-        externalOnly,
-        routeMode,
-      });
+      const result = await fetchRssFeed(url, signal);
 
       if (result.articles.length > 0) {
         setCachedArticles(url, result.articles, result.title);
@@ -1443,7 +1420,12 @@ async function parseRssUrlWithRetry(
 
 export async function parseRssUrlDetailed(
   url: string,
-  options: FeedParseOptions = {},
+  options: {
+    timeout?: number;
+    maxRetries?: number;
+    signal?: AbortSignal;
+    skipCache?: boolean;
+  } = {},
 ): Promise<DetailedFeedParseResult> {
   const { skipCache = false } = options;
 
@@ -1471,7 +1453,12 @@ export async function parseRssUrlDetailed(
 
 export async function parseRssUrl(
   url: string,
-  options: FeedParseOptions = {},
+  options: {
+    timeout?: number;
+    maxRetries?: number;
+    signal?: AbortSignal;
+    skipCache?: boolean;
+  } = {},
 ): Promise<{ title: string; articles: Article[] }> {
   try {
     const result = await parseRssUrlDetailed(url, options);

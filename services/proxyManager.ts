@@ -61,31 +61,10 @@ export interface ProxyTestResult {
   route: "backend-health" | "backend-fetch" | "client-proxy";
 }
 
-export const PROXY_ROUTE_MODES = [
-  "full-local",
-  "mixed",
-  "full-external-proxies",
-] as const;
-
-export type ProxyRouteMode = (typeof PROXY_ROUTE_MODES)[number];
-
-export interface ProxyRoutingPreferences {
-  mode: ProxyRouteMode;
-  proxyOrder: string[];
-}
-
-const isProxyRouteMode = (value: string | null): value is ProxyRouteMode =>
-  Boolean(
-    value &&
-      (PROXY_ROUTE_MODES as readonly string[]).includes(value),
-  );
-
 export class ProxyManager {
   private static readonly DISABLED_PROXIES_STORAGE_KEY = "disabled_proxies";
   private static readonly DESKTOP_PROXY_DEFAULTS_APPLIED_KEY =
     "desktop_proxy_defaults_applied_v1";
-  private static readonly ROUTE_MODE_STORAGE_KEY = "proxy_route_mode_v1";
-  private static readonly ROUTE_ORDER_STORAGE_KEY = "proxy_route_order_v1";
   private static readonly AUTO_DISABLE_HEALTH_SCORE = 0.1;
   private static readonly AUTO_DISABLE_FAILURES = 5;
   private static readonly RSS2JSON_TIMEOUT_MS = 12_000;
@@ -94,9 +73,6 @@ export class ProxyManager {
   private static corsproxyCIOApiKey: string = "";
   private static corsproxyCIOApiKeyOrigin: string = "not-configured";
   private static preferLocalProxy: boolean = false;
-  private static routingMode: ProxyRouteMode = "full-external-proxies";
-  private static clientProxyOrder: string[] = [];
-  private static customClientProxyOrder = false;
   private static readonly DEFAULT_TEST_FEED =
     "https://feeds.arstechnica.com/arstechnica/index.rss";
 
@@ -147,7 +123,7 @@ export class ProxyManager {
   }
 
   static shouldUseClientProxyFallback(): boolean {
-    return this.routingMode !== "full-local";
+    return !(this.isTauriRuntime() && this.preferLocalProxy);
   }
 
   static canDisableRuntimeProxy(proxyName: string): boolean {
@@ -197,39 +173,12 @@ export class ProxyManager {
     this.dispatchStorageChange("corsproxy_cio_api_key", key || null);
   }
 
-  private static applyRoutingMode(mode: ProxyRouteMode, persist: boolean) {
-    this.routingMode = mode;
-    this.preferLocalProxy = mode !== "full-external-proxies";
-
-    if (typeof localStorage !== "undefined") {
-      if (persist) {
-        localStorage.setItem(this.ROUTE_MODE_STORAGE_KEY, mode);
-      }
-      localStorage.setItem(
-        "prefer_local_proxy",
-        this.preferLocalProxy ? "true" : "false",
-      );
-    }
-  }
-
-  static setRoutingMode(mode: ProxyRouteMode) {
-    this.applyRoutingMode(mode, true);
-    if (mode !== "full-local") {
-      proxyManager.ensureClientFallbackProxiesEnabled();
-    }
-    this.dispatchStorageChange(this.ROUTE_MODE_STORAGE_KEY, mode);
-    this.dispatchStorageChange(
-      "prefer_local_proxy",
-      this.preferLocalProxy ? "true" : "false",
-    );
-  }
-
-  static getRoutingMode(): ProxyRouteMode {
-    return this.routingMode;
-  }
-
   static setPreferLocalProxy(prefer: boolean) {
-    this.setRoutingMode(prefer ? "full-local" : "full-external-proxies");
+    this.preferLocalProxy = prefer;
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("prefer_local_proxy", prefer ? "true" : "false");
+    }
+    this.dispatchStorageChange("prefer_local_proxy", prefer ? "true" : "false");
   }
 
   static getRss2jsonApiKey(): string {
@@ -249,7 +198,7 @@ export class ProxyManager {
   }
 
   static getPreferLocalProxy(): boolean {
-    return this.routingMode !== "full-external-proxies";
+    return this.preferLocalProxy;
   }
 
   static hasConfiguredApiKeys(): boolean {
@@ -279,9 +228,6 @@ export class ProxyManager {
         localStorage.removeItem("corsproxy_api_key");
       }
 
-      const savedRouteMode = localStorage.getItem(
-        ProxyManager.ROUTE_MODE_STORAGE_KEY,
-      );
       const savedPrefer = localStorage.getItem("prefer_local_proxy");
       const defaultMode =
         this.getEnvValue("VITE_BACKEND_DEFAULT_MODE") || "auto";
@@ -291,18 +237,18 @@ export class ProxyManager {
           this.isLocalBrowserRuntime() ||
           this.isBackendRuntimeEnabled());
 
-      if (isProxyRouteMode(savedRouteMode) && defaultMode !== "off") {
-        this.applyRoutingMode(savedRouteMode, false);
-      } else if (defaultMode === "off") {
-        this.applyRoutingMode("full-external-proxies", false);
-      } else if (savedPrefer === "false") {
-        this.applyRoutingMode("full-external-proxies", false);
-      } else if (savedPrefer === "true") {
-        this.applyRoutingMode("full-local", false);
+      if (defaultMode === "off") {
+        this.preferLocalProxy = false;
+        localStorage.setItem("prefer_local_proxy", "false");
       } else if (shouldForceLocalPreference) {
-        this.applyRoutingMode("full-local", false);
+        this.preferLocalProxy = true;
+        localStorage.setItem("prefer_local_proxy", "true");
+      } else if (savedPrefer) {
+        this.preferLocalProxy = savedPrefer === "true";
       } else {
-        this.applyRoutingMode("full-external-proxies", false);
+        this.preferLocalProxy =
+          this.isTauriRuntime() ||
+          (this.isBackendRuntimeEnabled() && defaultMode !== "off");
       }
     }
 
@@ -316,7 +262,6 @@ export class ProxyManager {
       this.setCorsproxyCIOApiKey(envCorsproxy, "env.local");
     }
 
-    proxyManager.loadClientProxyOrderFromStorage();
     proxyManager.restorePersistedProxyStates();
   }
 
@@ -482,170 +427,28 @@ export class ProxyManager {
     this.startHealthMonitoring();
   }
 
-  private getDefaultClientProxyOrder(): string[] {
-    return this.PROXY_CONFIGS.filter(
-      (proxy) => proxy.name !== "LocalProxy" && proxy.includeInFallback === true,
-    )
-      .map((proxy) => {
-        if (proxy.name === "RSS2JSON") {
-          return {
-            ...proxy,
-            priority: ProxyManager.rss2jsonApiKey ? -1 : 1,
-          };
-        }
-        return proxy;
-      })
-      .sort((a, b) => a.priority - b.priority)
-      .map((proxy) => proxy.name);
-  }
-
-  private normalizeClientProxyOrder(proxyNames: string[]): string[] {
-    const defaultOrder = this.getDefaultClientProxyOrder();
-    const allowedNames = new Set(defaultOrder);
-    const seen = new Set<string>();
-    const normalized = proxyNames.filter((proxyName) => {
-      if (!allowedNames.has(proxyName) || seen.has(proxyName)) return false;
-      seen.add(proxyName);
-      return true;
-    });
-
-    defaultOrder.forEach((proxyName) => {
-      if (!seen.has(proxyName)) normalized.push(proxyName);
-    });
-
-    return normalized;
-  }
-
-  loadClientProxyOrderFromStorage(): void {
-    if (typeof localStorage === "undefined") {
-      ProxyManager.clientProxyOrder = this.getDefaultClientProxyOrder();
-      ProxyManager.customClientProxyOrder = false;
-      return;
-    }
-
-    const raw = localStorage.getItem(ProxyManager.ROUTE_ORDER_STORAGE_KEY);
-    try {
-      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-      if (Array.isArray(parsed)) {
-        ProxyManager.clientProxyOrder = this.normalizeClientProxyOrder(
-          parsed.filter((value): value is string => typeof value === "string"),
-        );
-        ProxyManager.customClientProxyOrder = true;
-        return;
-      }
-    } catch {
-      // ignore malformed route order and fall back to the runtime default.
-    }
-
-    ProxyManager.clientProxyOrder = this.getDefaultClientProxyOrder();
-    ProxyManager.customClientProxyOrder = false;
-  }
-
-  getClientProxyOrder(): string[] {
-    const currentOrder =
-      ProxyManager.clientProxyOrder.length > 0
-        ? ProxyManager.clientProxyOrder
-        : this.getDefaultClientProxyOrder();
-    return this.normalizeClientProxyOrder(currentOrder);
-  }
-
-  getRoutingPreferences(): ProxyRoutingPreferences {
-    return {
-      mode: ProxyManager.getRoutingMode(),
-      proxyOrder: this.getClientProxyOrder(),
-    };
-  }
-
-  setClientProxyOrder(proxyNames: string[]): void {
-    const normalized = this.normalizeClientProxyOrder(proxyNames);
-    ProxyManager.clientProxyOrder = normalized;
-    ProxyManager.customClientProxyOrder = true;
-
-    if (typeof localStorage !== "undefined") {
-      const serialized = JSON.stringify(normalized);
-      localStorage.setItem(ProxyManager.ROUTE_ORDER_STORAGE_KEY, serialized);
-      ProxyManager.dispatchStorageChange(
-        ProxyManager.ROUTE_ORDER_STORAGE_KEY,
-        serialized,
-      );
-    }
-  }
-
-  ensureClientFallbackProxiesEnabled(): void {
-    const fallbackProxies = this.PROXY_CONFIGS.filter(
-      (proxy) => proxy.name !== "LocalProxy" && proxy.includeInFallback === true,
-    );
-    const hasEnabledFallback = fallbackProxies.some((proxy) => proxy.enabled);
-    if (hasEnabledFallback) return;
-
-    fallbackProxies.forEach((proxy) => {
-      proxy.enabled = true;
-      const stats = this.proxyStats.get(proxy.name);
-      if (stats) {
-        stats.consecutiveFailures = 0;
-      }
-      this.proxyHealthCheck.set(proxy.name, true);
-    });
-
-    this.persistDisabledProxyNames();
-  }
-
-  moveClientProxy(proxyName: string, direction: "up" | "down"): void {
-    const order = this.getClientProxyOrder();
-    const currentIndex = order.indexOf(proxyName);
-    if (currentIndex === -1) return;
-
-    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    if (nextIndex < 0 || nextIndex >= order.length) return;
-
-    const nextOrder = [...order];
-    [nextOrder[currentIndex], nextOrder[nextIndex]] = [
-      nextOrder[nextIndex],
-      nextOrder[currentIndex],
-    ];
-    this.setClientProxyOrder(nextOrder);
-  }
-
   /**
    * Get available proxies sorted by health score and priority
    */
-  getAvailableProxies(
-    options: {
-      forceClientFallback?: boolean;
-      externalOnly?: boolean;
-      routeMode?: ProxyRouteMode;
-    } = {},
-  ): ProxyConfig[] {
-    const routeMode = options.routeMode || ProxyManager.getRoutingMode();
+  getAvailableProxies(options: { forceClientFallback?: boolean } = {}): ProxyConfig[] {
     const isTauri = ProxyManager.isTauriRuntime();
     const isLocalhost =
       typeof window !== "undefined" &&
       (window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1" ||
         window.location.hostname.endsWith(".local"));
-    const externalOnly =
-      options.externalOnly ||
-      options.forceClientFallback ||
-      routeMode === "full-external-proxies";
     const allowLocalProxy =
-      !externalOnly &&
-      !isTauri &&
-      (ProxyManager.preferLocalProxy || isLocalhost);
+      !isTauri && (ProxyManager.preferLocalProxy || isLocalhost);
     const keepRemoteProxiesEnabled = ProxyManager.keepsRemoteProxiesEnabled();
     const allowClientProxyFallback =
-      options.forceClientFallback || routeMode !== "full-local";
-    const clientProxyOrder = this.getClientProxyOrder();
-    const clientProxyOrderIndex = new Map(
-      clientProxyOrder.map((proxyName, index) => [proxyName, index]),
-    );
+      options.forceClientFallback || ProxyManager.shouldUseClientProxyFallback();
 
     // Create a copy to modify priorities dynamically
     const configsToSort = this.PROXY_CONFIGS.filter(
       (proxy) =>
         proxy.enabled &&
-        (proxy.name === "LocalProxy"
-          ? allowLocalProxy
-          : proxy.includeInFallback === true && allowClientProxyFallback) &&
+        proxy.includeInFallback !== false &&
+        (proxy.name === "LocalProxy" || allowClientProxyFallback) &&
         (this.isProxyHealthy(proxy.name) ||
           (keepRemoteProxiesEnabled && proxy.name !== "LocalProxy")) &&
         (proxy.name !== "LocalProxy" || allowLocalProxy),
@@ -671,16 +474,16 @@ export class ProxyManager {
         return proxy;
       })
       .sort((a, b) => {
-        if (a.name === "LocalProxy") return -1;
-        if (b.name === "LocalProxy") return 1;
+        const statsA = this.proxyStats.get(a.name);
+        const statsB = this.proxyStats.get(b.name);
 
-        const orderA = clientProxyOrderIndex.get(a.name);
-        const orderB = clientProxyOrderIndex.get(b.name);
-        if (orderA !== undefined && orderB !== undefined) {
-          return orderA - orderB;
+        // Sort by health score first, then by priority
+        const healthScoreA = statsA?.healthScore || 0;
+        const healthScoreB = statsB?.healthScore || 0;
+
+        if (Math.abs(healthScoreA - healthScoreB) > 0.1) {
+          return healthScoreB - healthScoreA; // Higher health score first
         }
-        if (orderA !== undefined) return -1;
-        if (orderB !== undefined) return 1;
 
         return a.priority - b.priority; // Lower priority number first
       });
@@ -818,11 +621,7 @@ export class ProxyManager {
    */
   async tryProxiesWithFailover(
     targetUrl: string,
-    options: {
-      forceClientFallback?: boolean;
-      externalOnly?: boolean;
-      routeMode?: ProxyRouteMode;
-    } = {},
+    options: { forceClientFallback?: boolean } = {},
   ): Promise<{
     content: string;
     proxyUsed: string;
@@ -836,6 +635,16 @@ export class ProxyManager {
     }
 
     const host = this.getHostForTarget(targetUrl);
+    const preferredName = host ? this.getPreferredProxyName(host) : null;
+    if (preferredName) {
+      const preferredIndex = availableProxies.findIndex(
+        (proxy) => proxy.name === preferredName,
+      );
+      if (preferredIndex > 0) {
+        const [preferred] = availableProxies.splice(preferredIndex, 1);
+        availableProxies.unshift(preferred);
+      }
+    }
 
     let lastError: Error | null = null;
 
@@ -882,6 +691,10 @@ export class ProxyManager {
 
         // Mark proxy as potentially unhealthy if it fails
         this.markProxyStatus(proxy.name, false);
+        if (preferredName && proxy.name === preferredName && host) {
+          this.clearPreferredProxy(host);
+        }
+
         // Continue to next proxy
         continue;
       }

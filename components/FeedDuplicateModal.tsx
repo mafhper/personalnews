@@ -2,7 +2,6 @@ import React from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { FeedSource } from '../types';
 import { Modal } from './Modal';
-import { buildReplaceDuplicateFeedConfirmation } from '../utils/feedDangerConfirmation';
 
 interface FeedDuplicateModalProps {
   isOpen: boolean;
@@ -24,17 +23,6 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
   confidence
 }) => {
   const { t } = useLanguage();
-  const replacementConfirmation = existingFeed
-    ? buildReplaceDuplicateFeedConfirmation({
-        existingFeed,
-        newFeedUrl,
-        labels: {
-          impact: t('feeds.duplicate.replace_impact'),
-          current: t('feeds.duplicate.current'),
-          next: t('feeds.duplicate.replacement'),
-        },
-      })
-    : null;
 
   return (
     <Modal
@@ -52,7 +40,7 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
             className="rounded-lg px-5 py-2.5 text-sm font-medium text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition-colors hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] hover:text-[rgb(var(--theme-manager-text,var(--color-text)))]"
             type="button"
           >
-            {t('feeds.action.cancel_dont_add') || replacementConfirmation?.cancelText || 'Cancelar'}
+            {t('feeds.action.cancel_dont_add') || 'Cancelar'}
           </button>
           <button
             onClick={onAddAnyway}
@@ -66,7 +54,7 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
             className="rounded-lg bg-[rgb(var(--color-warning))] px-5 py-2.5 text-sm font-bold text-black shadow-lg transition-all hover:brightness-110"
             type="button"
           >
-            {t('feeds.action.replace') || replacementConfirmation?.confirmText || 'Substituir Existente'}
+            {t('feeds.action.replace') || 'Substituir Existente'}
           </button>
         </div>
       }
@@ -128,24 +116,6 @@ export const FeedDuplicateModal: React.FC<FeedDuplicateModalProps> = ({
                 </span>
              </div>
           </div>
-
-          {replacementConfirmation && (
-            <div className="mt-5 rounded-xl border border-[rgba(var(--color-warning),0.22)] bg-[rgba(var(--color-warning),0.08)] p-4">
-              <p className="text-sm font-semibold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
-                {replacementConfirmation.impact}
-              </p>
-              <ul className="mt-3 space-y-1">
-                {replacementConfirmation.details?.map((detail) => (
-                  <li
-                    className="break-words text-xs font-mono text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]"
-                    key={detail}
-                  >
-                    {detail}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
     </Modal>
   );
 };

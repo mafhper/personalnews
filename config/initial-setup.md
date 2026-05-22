@@ -22,7 +22,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Layout Global - Define como os artigos são organizados na grade
 
-- Layout Global: masonry;
+- Layout Global: magazine;
   Opções:
 - `list`: Lista limpa estilo portal
 - `masonry`: Cards com alturas variáveis
@@ -61,7 +61,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Aparência do Header - Define dimensões e transparência iniciais
 
-- Altura do Header: tiny;
+- Altura do Header: compact;
 - Opacidade do Header: 60;
 - Blur do Header: 20;
 - Tamanho do Logo: md;
@@ -95,7 +95,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Tipo de Paginação: numbered;
 - Destaques Principais: 15;
 - Intervalo de Atualização Automática: 15;
-- Cache Temporário de Feeds: 15;
+- Cache Temporário de Feeds: 10;
   Opções:
 - `numbered`: Paginação numerada
 - `loadMore`: Botão para carregar mais
@@ -120,7 +120,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Tecnologia;
 - ID: tech;
 - Cor: #0078D7;
-- Layout: minimal;
+- Layout: masonry;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
@@ -132,7 +132,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Design;
 - ID: design;
 - Cor: #663399;
-- Layout: gallery;
+- Layout: immersive;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Inspiração visual, UX/UI e tendências de design.;
@@ -156,7 +156,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Política;
 - ID: politics;
 - Cor: #E13111;
-- Layout: newspaper;
+- Layout: magazine;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Cobertura política nacional e internacional.;

@@ -216,7 +216,7 @@ const LazyImageComponent: React.FC<LazyImageProps> = ({
       height={fill ? undefined : height}
       style={imageStyle}
       className={`transition-opacity duration-300 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-80'
-        } ${className} ${!isLoaded ? 'bg-transparent' : ''}`}
+        } ${className} ${!isLoaded ? 'bg-gray-800' : ''}`}
       onLoad={handleImageLoad}
       onError={handleImageError}
       loading={shouldUseLazy ? "lazy" : "eager"}
