@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AlertCircle,
+  ChevronRight,
   Download,
   FileUp,
   ListPlus,
@@ -14,6 +15,7 @@ import { FeedManagerSectionHeader } from "./FeedManagerSectionHeader";
 import {
   managerActionCardClass,
   managerControlSurfaceClass,
+  managerDangerButtonClass,
   managerDangerSurfaceClass,
   managerSurfaceClass,
   managerWarningActionCardClass,
@@ -28,6 +30,7 @@ interface FeedToolsTabProps {
   onImportOPML: () => void;
   onShowImportModal: () => void;
   onResetDefaults: () => void;
+  onResetCategories?: () => void;
   onCleanupErrors: () => void;
   onDeleteAll: () => void;
   onOpenIo?: () => void;
@@ -42,6 +45,31 @@ interface FeedToolsTabProps {
 const WORKBENCH_CLASS = `${managerSurfaceClass} p-5 sm:p-6`;
 const GROUP_CLASS = `${managerSurfaceClass} p-5 sm:p-6`;
 
+const MaintenanceRow: React.FC<{
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}> = ({ title, description, icon, onClick, danger = false }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`feed-manager-light-row feed-manager-light-row--interactive ${
+      danger ? "feed-manager-light-row--danger" : ""
+    }`}
+  >
+    <span className="feed-manager-light-row__icon">{icon}</span>
+    <span className="min-w-0 flex-1">
+      <span className="block text-[13.5px] font-semibold">{title}</span>
+      <span className="mt-0.5 block truncate text-xs opacity-72">
+        {description}
+      </span>
+    </span>
+    <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
+  </button>
+);
+
 export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   view = "overview",
   expandedSections,
@@ -49,6 +77,7 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
   onImportOPML,
   onShowImportModal,
   onResetDefaults,
+  onResetCategories,
   onCleanupErrors,
   onDeleteAll,
   onOpenIo,
@@ -82,6 +111,113 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
       [section]: !current[section],
     }));
   };
+
+  if (embedded && view === "all") {
+    return (
+      <div className="feed-manager-page collection-central-page collection-central-page--maintenance">
+        <section>
+          <div className="feed-manager-page-title">
+            <h3>Backup e transporte</h3>
+            <p>Mova e preserve sua coleção.</p>
+          </div>
+          <div className="feed-manager-light-card">
+            <MaintenanceRow
+              icon={<Download className="h-[18px] w-[18px]" />}
+              title="Exportar OPML"
+              description="Baixar um snapshot atual da coleção."
+              onClick={onExportOPML}
+            />
+            <MaintenanceRow
+              icon={<FileUp className="h-[18px] w-[18px]" />}
+              title="Importar OPML"
+              description="Você revisa antes de aplicar."
+              onClick={onImportOPML}
+            />
+            <MaintenanceRow
+              icon={<ListPlus className="h-[18px] w-[18px]" />}
+              title="Listas curadas"
+              description="Mescle coleções prontas ou substitua com confirmação."
+              onClick={onShowImportModal}
+            />
+          </div>
+        </section>
+
+        <section>
+          <div className="feed-manager-page-title">
+            <h3>Reparos</h3>
+            <p>Manutenções rotineiras da coleção.</p>
+          </div>
+          <div className="feed-manager-light-card">
+            <MaintenanceRow
+              icon={<RefreshCcw className="h-[18px] w-[18px]" />}
+              title="Revalidar todos"
+              description="Rechecar disponibilidade de cada feed."
+              onClick={onOpenMaintenance || onCleanupErrors}
+            />
+            <MaintenanceRow
+              icon={<Wrench className="h-[18px] w-[18px]" />}
+              title="Limpar feeds com erro"
+              description="Abra uma revisão segura antes de remover."
+              onClick={onCleanupErrors}
+            />
+            <MaintenanceRow
+              icon={<RotateCcw className="h-[18px] w-[18px]" />}
+              title="Restaurar padrões"
+              description="Voltar ao conjunto inicial sugerido."
+              onClick={onResetDefaults}
+            />
+            {onResetCategories && (
+              <MaintenanceRow
+                icon={<ListPlus className="h-[18px] w-[18px]" />}
+                title="Restaurar categorias"
+                description="Retorna às categorias padrão e envia feeds para sem categoria."
+                onClick={onResetCategories}
+              />
+            )}
+          </div>
+        </section>
+
+        <section>
+          <div className="feed-manager-page-title feed-manager-page-title--danger">
+            <h3>Zona de risco</h3>
+            <p>{feedCount} feeds cadastrados. Faça backup antes de ações destrutivas.</p>
+          </div>
+          <div className="feed-manager-light-card feed-manager-light-card--danger collection-central-risk-panel">
+            <div className="collection-central-risk-panel__body">
+              <span className="feed-manager-light-row__icon text-[rgb(var(--color-error))]">
+                <Trash2 className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-semibold">Excluir todos os feeds</p>
+                <p className="mt-1 text-[12.5px] leading-relaxed opacity-72">
+                  Remove todas as fontes da coleção. Categorias e configurações pessoais permanecem.
+                </p>
+              </div>
+            </div>
+            <div className="collection-central-risk-panel__actions">
+              <button
+                type="button"
+                onClick={onExportOPML}
+                className="feed-manager-secondary-button inline-flex items-center justify-center gap-2 px-3 py-2 text-[12.5px] font-semibold"
+              >
+                <Download className="h-4 w-4" />
+                Fazer backup primeiro
+              </button>
+              <button
+                type="button"
+                onClick={onDeleteAll}
+                disabled={feedCount === 0}
+                className={`${managerDangerButtonClass} px-3 py-2 text-[12.5px] disabled:cursor-not-allowed disabled:opacity-45`}
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir todos os feeds
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>

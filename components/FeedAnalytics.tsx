@@ -643,7 +643,13 @@ export const FeedAnalytics: React.FC<FeedAnalyticsProps> = ({
   };
 
   return (
-    <div className={embedded ? "space-y-5" : "space-y-5"}>
+    <div
+      className={
+        embedded
+          ? "feed-manager-page collection-central-page collection-central-page--diagnostics"
+          : "space-y-5"
+      }
+    >
       {showOverview && (
         <section
           id="feed-manager-section-diagnostics-overview"

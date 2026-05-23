@@ -222,7 +222,13 @@ export const FeedListTab: React.FC<FeedListTabProps> = ({
 
   return (
     <div className={embedded ? "" : "h-full overflow-y-auto custom-scrollbar p-4 sm:p-6"}>
-      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
+      <div
+        className={
+          embedded
+            ? "flex w-full flex-col gap-5"
+            : "mx-auto flex w-full max-w-[1480px] flex-col gap-5"
+        }
+      >
         <section className="flex flex-col gap-4">
           <section className={INFO_SURFACE_CLASS}>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

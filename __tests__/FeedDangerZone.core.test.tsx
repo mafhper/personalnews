@@ -5,6 +5,8 @@ import { FeedAnalytics } from "../components/FeedAnalytics";
 import { FeedCleanupModal } from "../components/FeedCleanupModal";
 import { FeedDuplicateModal } from "../components/FeedDuplicateModal";
 import { FeedManager } from "../components/FeedManager";
+import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
+import { ProxyManager, proxyManager } from "../services/proxyManager";
 import type { FeedSource } from "../types";
 
 const mocks = vi.hoisted(() => ({
@@ -85,6 +87,13 @@ const testFeeds = mocks.testFeeds as FeedSource[];
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
+  ProxyManager.setRss2jsonApiKey("");
+  ProxyManager.setCorsproxyCIOApiKey("");
+  ProxyManager.setRoutingMode("full-local");
+  mocks.testCategories = [
+    { id: "all", name: "Todos", color: "#111111", order: 0, isDefault: true },
+    { id: "tech", name: "Tech", color: "#222222", order: 1 },
+  ];
   mocks.translations = {
     "action.export": "Exportar",
     "action.import": "Importar",
@@ -135,6 +144,9 @@ describe("Feed danger zone flows", () => {
     expect(
       screen.getByRole("button", { name: "Fechar gerenciador de feeds" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Restaurar aparência" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("navigation", {
         name: "Navegação do gerenciador de feeds",
@@ -206,7 +218,7 @@ describe("Feed danger zone flows", () => {
         screen.getByRole("dialog", {
           name: "Menu de navegação do gerenciador de feeds",
         }),
-      ).getByRole("button", { name: "Fontes. Feeds, entrada e quarentena" }),
+      ).getByRole("button", { name: "Fontes. Feeds, busca e quarentena" }),
     );
     await waitFor(() =>
       expect(
@@ -225,17 +237,14 @@ describe("Feed danger zone flows", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Diagnóstico. Saúde, infraestrutura e relatórios",
+        name: "Diagnóstico. Saúde e infraestrutura",
       }),
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Expandir Backend, proxies e rotas" }),
-    );
     expect(
-      screen.getByRole("heading", { name: "Backend, proxies e rotas" }),
+      screen.getByRole("heading", { name: "Infraestrutura e proxies" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Recolher Backend, proxies e rotas" }),
+      screen.getByText("Proxies de terceiros"),
     ).toBeInTheDocument();
   });
 
@@ -250,7 +259,7 @@ describe("Feed danger zone flows", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Fontes. Feeds, entrada e quarentena",
+        name: "Fontes. Feeds, busca e quarentena",
       }),
     );
 
@@ -263,7 +272,7 @@ describe("Feed danger zone flows", () => {
     expect(screen.getByText("Listas curadas")).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Organização. Categorias e roteamento visual",
+        name: "Organização. Categorias",
       }),
     );
     expect(
@@ -290,10 +299,10 @@ describe("Feed danger zone flows", () => {
       }),
     );
     expect(
-      screen.getByRole("heading", { name: "Escolha o tipo de intervenção" }),
+      screen.getByRole("heading", { name: "Manutenção" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Próximo passo:")).not.toBeInTheDocument();
-    expect(screen.getByText("Como escolher:")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Backup e transporte" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", {
       name: "Navegação do gerenciador de feeds",
     })).toBeInTheDocument();
@@ -307,14 +316,13 @@ describe("Feed danger zone flows", () => {
         name: "Zona de risco. Ações destrutivas",
       }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Transporte da coleção")).toBeInTheDocument();
+    expect(screen.getByText("Backup e transporte")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Expandir Transporte da coleção" }));
     expect(
-      screen.getByRole("heading", { name: "Transporte da coleção" }),
+      screen.getByRole("heading", { name: "Backup e transporte" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Recolher Transporte da coleção" }),
+      screen.getByRole("button", { name: /Importar OPML/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
@@ -322,12 +330,11 @@ describe("Feed danger zone flows", () => {
       }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Expandir Reparos e ações críticas" }));
     expect(
-      screen.getByRole("heading", { name: "Reparos e ações críticas" }),
+      screen.getByRole("heading", { name: "Reparos" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Recolher Reparos e ações críticas" }),
+      screen.getByRole("button", { name: /Restaurar categorias/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Excluir todos os feeds" })).toBeInTheDocument();
   });
@@ -357,39 +364,38 @@ describe("Feed danger zone flows", () => {
       }),
     );
     expect(
-      screen.getByRole("heading", { name: "Escolha o tipo de intervenção" }),
+      screen.getByRole("heading", { name: "Manutenção" }),
     ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Diagnóstico. Saúde, infraestrutura e relatórios",
+        name: "Diagnóstico. Saúde e infraestrutura",
       }),
     );
     expect(
-      screen.getByRole("heading", { name: "Diagnóstico em camadas" }),
+      screen.getByRole("heading", { name: "Saúde dos feeds" }),
     ).toBeInTheDocument();
     const diagnosticsOverview = container.querySelector(
-      "#feed-manager-section-diagnostics-overview",
+      ".collection-central-page--diagnostics",
     );
     expect(diagnosticsOverview).not.toBeNull();
-    expect(within(diagnosticsOverview as HTMLElement).getByText("Investigar fontes")).toBeInTheDocument();
+    expect(within(diagnosticsOverview as HTMLElement).getByText("Status geral")).toBeInTheDocument();
     expect(
       within(diagnosticsOverview as HTMLElement).getByText(
-        "Ver rotas de carregamento",
+        "Infraestrutura e proxies",
       ),
     ).toBeInTheDocument();
-    expect(within(diagnosticsOverview as HTMLElement).getByText("Exportar diagnóstico")).toBeInTheDocument();
+    expect(within(diagnosticsOverview as HTMLElement).getByText("Relatórios")).toBeInTheDocument();
     expect(within(diagnosticsOverview as HTMLElement).queryByText(/rotas saudáveis/i)).not.toBeInTheDocument();
-    expect(within(diagnosticsOverview as HTMLElement).queryByText(/requisições/i)).not.toBeInTheDocument();
+    expect(within(diagnosticsOverview as HTMLElement).getByText(/requisições/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Expandir Relatórios" }));
     expect(
-      screen.getByRole("button", { name: "Recolher Relatórios" }),
+      screen.getByRole("heading", { name: "Relatórios" }),
     ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Fontes. Feeds, entrada e quarentena",
+        name: "Fontes. Feeds, busca e quarentena",
       }),
     );
     expect(
@@ -416,9 +422,217 @@ describe("Feed danger zone flows", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Backend, proxies e rotas" }),
+        screen.getByRole("heading", { name: "Infraestrutura e proxies" }),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("filters curated lists and imports only selected feeds on merge", async () => {
+    const setFeeds = vi.fn();
+    const [listName, listFeeds] = Object.entries(DEFAULT_CURATED_LISTS)[0];
+    const firstFeed = listFeeds[0];
+
+    render(
+      <FeedManager
+        currentFeeds={[]}
+        setFeeds={setFeeds}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Fontes. Feeds, busca e quarentena",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Ver todas" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Listas curadas" });
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getAllByText(listName).length).toBeGreaterThan(0);
+
+    fireEvent.change(screen.getByPlaceholderText("Buscar nesta lista"), {
+      target: { value: firstFeed.customTitle || firstFeed.url },
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: new RegExp(firstFeed.customTitle || firstFeed.url, "i"),
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Mesclar" }));
+
+    await waitFor(() => expect(setFeeds).toHaveBeenCalledTimes(1));
+    const importedFeeds = setFeeds.mock.calls[0][0] as FeedSource[];
+    expect(importedFeeds).toHaveLength(listFeeds.length - 1);
+    expect(importedFeeds.some((feed) => feed.url === firstFeed.url)).toBe(false);
+  });
+
+  it("keeps destructive confirmation for curated replace with selected count", async () => {
+    const setFeeds = vi.fn();
+    const [listName, listFeeds] = Object.entries(DEFAULT_CURATED_LISTS)[0];
+    mocks.confirmDanger.mockResolvedValueOnce(false);
+
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={setFeeds}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Fontes. Feeds, busca e quarentena",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Ver todas" }));
+    fireEvent.click(screen.getByRole("button", { name: "Substituir coleção" }));
+
+    await waitFor(() => expect(mocks.confirmDanger).toHaveBeenCalledTimes(1));
+    expect(mocks.confirmDanger.mock.calls[0][0]).toMatchObject({
+      title: "Substituir coleção",
+      message: `Substituir a coleção atual pela lista "${listName}"?`,
+      confirmText: "Substituir coleção",
+      cancelText: "Manter coleção",
+      type: "danger",
+    });
+    expect(mocks.confirmDanger.mock.calls[0][0].impact).toContain(
+      `${listFeeds.length} feeds serão gravados`,
+    );
+    expect(setFeeds).not.toHaveBeenCalled();
+  });
+
+  it("persists proxy mode, local enable state, test action and API key", async () => {
+    const testProxySpy = vi.spyOn(proxyManager, "testProxy").mockResolvedValue({
+      success: true,
+      responseTime: 12,
+      detail: "ok",
+      route: "client-proxy",
+    });
+
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Diagnóstico. Saúde e infraestrutura",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Web" }));
+    expect(window.localStorage.getItem("proxy_route_mode_v1")).toBe(
+      "full-external-proxies",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Desativar LocalProxy" }));
+    expect(
+      JSON.parse(window.localStorage.getItem("disabled_proxies") || "[]"),
+    ).toContain("LocalProxy");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Configurar chave de RSS2JSON" }),
+    );
+    fireEvent.change(screen.getByPlaceholderText("Cole a chave aqui"), {
+      target: { value: "abcdefghijklmnop" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() =>
+      expect(window.localStorage.getItem("rss2json_api_key")).toBe(
+        "abcdefghijklmnop",
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Testar RSS2JSON" }));
+    await waitFor(() => expect(testProxySpy).toHaveBeenCalledWith("RSS2JSON"));
+    testProxySpy.mockRestore();
+  });
+
+  it("opens the cache policy preview from diagnostics", async () => {
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Diagnóstico. Saúde e infraestrutura",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Política de cache/ }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Política de cache" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/placeholder de implementação/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Persistir TTL por coleção e por feed"),
+    ).toBeInTheDocument();
+  });
+
+  it("reorders categories by the drag handle", async () => {
+    mocks.testCategories = [
+      { id: "all", name: "Todos", color: "#111111", order: 0, isDefault: true },
+      { id: "tech", name: "Tech", color: "#222222", order: 1 },
+      { id: "design", name: "Design", color: "#333333", order: 2 },
+    ];
+    mocks.getCategorizedFeeds.mockReturnValue({
+      all: testFeeds,
+      tech: testFeeds,
+      design: [],
+      uncategorized: [],
+    });
+
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={vi.fn()}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Organização. Categorias",
+      }),
+    );
+
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      dropEffect: "move",
+      effectAllowed: "move",
+      types: [] as string[],
+      getData(type: string) {
+        return this.data[type] || "";
+      },
+      setData(type: string, value: string) {
+        this.data[type] = value;
+        if (!this.types.includes(type)) this.types.push(type);
+      },
+    };
+
+    fireEvent.dragStart(
+      screen.getByRole("button", { name: "Arrastar categoria Tech" }),
+      { dataTransfer },
+    );
+    fireEvent.dragOver(
+      screen.getByRole("button", { name: "Arrastar categoria Design" }),
+      { dataTransfer },
+    );
+    fireEvent.drop(
+      screen.getByRole("button", { name: "Arrastar categoria Design" }),
+      { dataTransfer },
+    );
+
+    expect(mocks.reorderCategories).toHaveBeenCalledWith(["design", "tech"]);
   });
 
   it("shows a strong delete-all confirmation and preserves feeds on cancel", async () => {
@@ -436,9 +650,6 @@ describe("Feed danger zone flows", () => {
       screen.getByRole("button", {
         name: "Manutenção. Backup, reparos e risco",
       }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Expandir Reparos e ações críticas" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 
@@ -571,9 +782,6 @@ describe("Feed danger zone flows", () => {
       screen.getByRole("button", {
         name: "Manutenção. Backup, reparos e risco",
       }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Expandir Reparos e ações críticas" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Excluir todos os feeds" }));
 

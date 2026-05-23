@@ -2,31 +2,43 @@ import React, { useEffect, useRef, useState } from "react";
 import pkg from "../package.json";
 import {
   AlertTriangle,
+  Activity,
   ArrowDown,
   ArrowUp,
   BarChart3,
   ChevronRight,
+  Check,
   CircleCheck,
   Database,
   Download,
   Eye,
   EyeOff,
   FileUp,
+  FileText,
+  Flag,
   FolderTree,
   GripVertical,
+  Globe,
   Inbox,
+  Key,
+  Layers,
   LayoutGrid,
   Library,
   Menu,
+  Monitor,
   Pencil,
+  PlayCircle,
   Plus,
+  Power,
   RefreshCw,
   RotateCcw,
   Rss,
   Search,
+  Settings2,
   ShieldAlert,
   Tags,
   Trash2,
+  Wifi,
   Wrench,
   X,
 } from "lucide-react";
@@ -55,6 +67,17 @@ import {
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useAppearance } from "../hooks/useAppearance";
+import { useProxyConfig } from "../hooks/useProxyConfig";
+import {
+  useProxyDashboard,
+  type ProxyDashboardRoute,
+} from "../hooks/useProxyDashboard";
+import { PROXY_CONFIGS } from "../config/proxyConfig";
+import {
+  ProxyManager,
+  type ProxyRouteMode,
+  type ProxyTestResult,
+} from "../services/proxyManager";
 import {
   resetToDefaultFeeds,
   addFeedsToCollection,
@@ -70,7 +93,6 @@ import {
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
-import { FeedListTab } from "./FeedManager/FeedListTab";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
 import {
@@ -80,7 +102,6 @@ import {
   managerSecondaryButtonClass,
   managerDangerButtonClass,
 } from "./FeedManager/feedManagerStyles";
-import { FeedAnalytics } from "./FeedAnalytics";
 import { Modal } from "./Modal";
 import {
   type FeedErrorHistoryItem,
@@ -379,7 +400,7 @@ const FeedManagerTopbar: React.FC<{
       <button
         type="button"
         onClick={onAddSource}
-        className={`${managerPrimaryButtonClass} h-9 px-3 text-[12.5px]`}
+        className={`${managerPrimaryButtonClass} feed-manager-header-action feed-manager-header-action--add h-9 px-3 text-[12.5px]`}
       >
         <Plus className="h-4 w-4" />
         <span className="hidden sm:inline">Adicionar fonte</span>
@@ -388,7 +409,7 @@ const FeedManagerTopbar: React.FC<{
         <button
           type="button"
           onClick={onRefreshFeeds}
-          className={`${managerSecondaryButtonClass} hidden h-9 px-3 text-[12.5px] sm:inline-flex`}
+          className={`${managerSecondaryButtonClass} feed-manager-header-action feed-manager-header-action--refresh hidden h-9 px-3 text-[12.5px] sm:inline-flex`}
         >
           <RefreshCw className="h-4 w-4" />
           Revalidar
@@ -489,6 +510,60 @@ const formatFeedManagerEnvironment = (
   return "Web";
 };
 
+type CuratedListMeta = {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  feeds: FeedSource[];
+};
+
+const getCuratedListMeta = (
+  name: string,
+  feeds: FeedSource[],
+): CuratedListMeta => {
+  const normalized = name.toLowerCase();
+  if (normalized.includes("brasil")) {
+    return {
+      id: "brasil-mix",
+      name,
+      badge: "PT-BR",
+      description:
+        "Seleção equilibrada de jornais e revistas brasileiros: economia, política, tecnologia e cultura.",
+      feeds,
+    };
+  }
+  if (normalized.includes("international") || normalized.includes("internacional")) {
+    return {
+      id: "internacional-mix",
+      name,
+      badge: "EN",
+      description:
+        "Cobertura global em inglês: notícias, ciência, tecnologia e análise internacional.",
+      feeds,
+    };
+  }
+  return {
+    id: "pacote-mix-global",
+    name,
+    badge: "PT-BR + EN",
+    description:
+      "União curada de fontes nacionais e internacionais para ampliar a cobertura da coleção.",
+    feeds,
+  };
+};
+
+const getCuratedLists = () =>
+  Object.entries(DEFAULT_CURATED_LISTS).map(([name, feeds]) =>
+    getCuratedListMeta(name, feeds),
+  );
+
+const getCuratedIcon = (id: string) => {
+  if (id === "brasil-mix") return Flag;
+  if (id === "internacional-mix") return Globe;
+  return Layers;
+};
+
 const FeedManagerInsight: React.FC<{
   label: string;
   value: React.ReactNode;
@@ -568,9 +643,57 @@ const FeedManagerLightRow: React.FC<{
           </span>
         )}
       </span>
+      {onClick && (
+        <ChevronRight className="h-4 w-4 shrink-0 text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] opacity-72" />
+      )}
     </Component>
   );
 };
+
+const CollectionDialog: React.FC<{
+  children: React.ReactNode;
+  description?: string;
+  footer?: React.ReactNode;
+  icon?: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  wide?: boolean;
+}> = ({ children, description, footer, icon, isOpen, onClose, title, wide }) => (
+  <Modal
+    isOpen={isOpen}
+    onClose={onClose}
+    size="4xl"
+    ariaLabel={title}
+    showCloseButton={false}
+    zIndexClass="z-[9999]"
+    contentClassName={`collection-central-dialog ${
+      wide ? "collection-central-dialog--wide" : ""
+    }`}
+    bodyClassName="collection-central-dialog__body"
+  >
+    <div className="collection-central-dialog__header">
+      <div className="min-w-0">
+        <h2>
+          {icon}
+          {title}
+        </h2>
+        {description && <p>{description}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="feed-manager-icon-button"
+        aria-label="Fechar"
+        title="Fechar"
+      >
+        <X className="h-4.5 w-4.5" />
+      </button>
+    </div>
+    <div className="collection-central-dialog__content">{children}</div>
+    {footer && <div className="collection-central-dialog__footer">{footer}</div>}
+  </Modal>
+);
 
 const FeedManagerCompactMetric: React.FC<{
   icon: React.ReactNode;
@@ -579,15 +702,56 @@ const FeedManagerCompactMetric: React.FC<{
   value: React.ReactNode;
 }> = ({ icon, label, tone = "neutral", value }) => (
   <div className={`feed-manager-compact-metric feed-manager-compact-metric--${tone}`}>
-    <span>{icon}</span>
-    <span className="min-w-0">
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] opacity-68">
+    <span className="feed-manager-compact-metric__icon">{icon}</span>
+    <span className="feed-manager-compact-metric__copy">
+      <span>
         {label}
       </span>
       <strong>{value}</strong>
     </span>
   </div>
 );
+
+const CollectionDragHandle: React.FC<{
+  label: string;
+  onDragStart?: (event: React.DragEvent<HTMLSpanElement>) => void;
+}> = ({ label, onDragStart }) => (
+  <span
+    aria-label={label}
+    className="collection-central-drag-handle"
+    draggable={!!onDragStart}
+    onDragStart={onDragStart}
+    role="button"
+    tabIndex={0}
+    title={label}
+  >
+    <GripVertical className="h-4 w-4" />
+  </span>
+);
+
+const FeedManagerSourceIcon: React.FC<{ feed: FeedSource }> = ({ feed }) => {
+  const [failed, setFailed] = React.useState(false);
+  const favicon = feed.faviconUrl?.trim();
+
+  React.useEffect(() => {
+    setFailed(false);
+  }, [favicon]);
+
+  return (
+    <span className="feed-manager-light-row__icon collection-central-source-icon">
+      {favicon && !failed ? (
+        <img
+          src={favicon}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <Rss className="h-[17px] w-[17px]" />
+      )}
+    </span>
+  );
+};
 
 const FeedManagerOverviewPage: React.FC<{
   categoryCount: number;
@@ -606,7 +770,7 @@ const FeedManagerOverviewPage: React.FC<{
   totalFeedCount,
   validCount,
 }) => (
-  <div className="feed-manager-page feed-manager-page--narrow">
+  <div className="feed-manager-page feed-manager-page--narrow collection-central-page collection-central-page--overview">
     <section>
       <FeedManagerPageTitle title="Estado da coleção" />
       <div className="feed-manager-metric-strip">
@@ -729,30 +893,45 @@ const FeedManagerOverviewPage: React.FC<{
 
     <section>
       <FeedManagerPageTitle title="Integridade" />
-      <FeedManagerLightCard className="p-5">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <FeedManagerInsight
-            label="Cobertura"
-            value={totalFeedCount > 0 ? `${Math.round((validCount / totalFeedCount) * 100)}%` : "0%"}
-            description="fontes validadas na última leitura."
-            tone={invalidCount > 0 ? "warning" : "success"}
-          />
-          <FeedManagerInsight
-            label="Fontes ativas"
-            value={validCount}
-            description={`de ${totalFeedCount} cadastradas.`}
-          />
-          <FeedManagerInsight
-            label="Fora da carga"
-            value={quarantineCount}
-            description="fontes em quarentena."
-            tone={quarantineCount > 0 ? "warning" : "neutral"}
-          />
-          <FeedManagerInsight
-            label="Categorias"
-            value={categoryCount}
-            description="rotas visuais disponíveis."
-          />
+      <FeedManagerLightCard className="collection-central-integrity-panel">
+        <div className="collection-central-integrity-grid">
+          <div className="collection-central-integrity-item collection-central-integrity-item--wide">
+            <span>Cobertura de validação</span>
+            <strong className={invalidCount > 0 ? "text-[rgb(var(--color-warning))]" : "text-[rgb(var(--color-success))]"}>
+              {totalFeedCount > 0 ? `${Math.round((validCount / totalFeedCount) * 100)}%` : "0%"}
+            </strong>
+            <div
+              className="collection-central-integrity-progress"
+              aria-label="Cobertura de validação"
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={totalFeedCount > 0 ? Math.round((validCount / totalFeedCount) * 100) : 0}
+              role="progressbar"
+            >
+              <span
+                style={
+                  {
+                    "--coverage": `${totalFeedCount > 0 ? Math.round((validCount / totalFeedCount) * 100) : 0}%`,
+                  } as React.CSSProperties
+                }
+              />
+            </div>
+          </div>
+          <div className="collection-central-integrity-item">
+            <span>Fontes ativas</span>
+            <strong>{validCount}</strong>
+            <small>de {totalFeedCount} cadastradas</small>
+          </div>
+          <div className="collection-central-integrity-item">
+            <span>Fora de circulação</span>
+            <strong>{quarantineCount}</strong>
+            <small>{quarantineCount === 0 ? "nenhuma indisponível" : "em quarentena"}</small>
+          </div>
+          <div className="collection-central-integrity-item">
+            <span>Categorias</span>
+            <strong>{categoryCount}</strong>
+            <small>rotas visuais</small>
+          </div>
         </div>
       </FeedManagerLightCard>
     </section>
@@ -768,11 +947,8 @@ const FeedManagerSourcesPage: React.FC<{
   newFeedCategory: string;
   newFeedTitle: string;
   newFeedUrl: string;
-  onConfirmRefreshAll: () => void | Promise<void>;
   onImportOPML: () => void;
-  onMoveCategory: (feedUrl: string, categoryId: string) => void;
   onQuarantineFeed: (url: string) => void;
-  onRefreshFeeds?: () => void;
   onRemoveFeed: (url: string) => void;
   onRetryFeed: (url: string) => void;
   onShowCuratedLists: () => void;
@@ -795,11 +971,8 @@ const FeedManagerSourcesPage: React.FC<{
   newFeedCategory,
   newFeedTitle,
   newFeedUrl,
-  onConfirmRefreshAll,
   onImportOPML,
-  onMoveCategory,
   onQuarantineFeed,
-  onRefreshFeeds,
   onRemoveFeed,
   onRetryFeed,
   onShowCuratedLists,
@@ -815,41 +988,254 @@ const FeedManagerSourcesPage: React.FC<{
   setNewFeedUrl,
 }) => {
   const isProcessing = processingUrl !== null;
+  const [sourceQuery, setSourceQuery] = React.useState("");
+  const [sourceFilter, setSourceFilter] = React.useState<
+    "all" | "attention" | "pending" | "valid" | "quarantine" | "hidden"
+  >("all");
+  const curatedLists = React.useMemo(getCuratedLists, []);
+  const categoryById = React.useMemo(
+    () => new Map(categories.map((category) => [category.id, category])),
+    [categories],
+  );
+  const articlesByFeed = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    articles.forEach((article) => {
+      if (!article.feedUrl) return;
+      counts.set(article.feedUrl, (counts.get(article.feedUrl) || 0) + 1);
+    });
+    return counts;
+  }, [articles]);
+  const getSourceStatus = (feed: FeedSource) => {
+    const validation = feedValidations.get(feed.url);
+    if (isFeedQuarantined(feed) || quarantineRecommendedUrls.has(feed.url)) {
+      return "quarantine" as const;
+    }
+    if (feed.hideFromAll) return "hidden" as const;
+    if (!validation || validation.status === "checking") return "pending" as const;
+    if (validation.isValid) return "valid" as const;
+    return "error" as const;
+  };
+  const getSourceTitle = (feed: FeedSource) =>
+    feed.customTitle || feedValidations.get(feed.url)?.title || getFeedManagerFeedTitle(feed);
+  const sourceRows = React.useMemo(() => {
+    const query = sourceQuery.trim().toLowerCase();
+    return activeFeeds
+      .map((feed) => {
+        const validation = feedValidations.get(feed.url);
+        const category = feed.categoryId
+          ? categoryById.get(feed.categoryId)?.name
+          : undefined;
+        const status = getSourceStatus(feed);
+        const title = getSourceTitle(feed);
+        return {
+          feed,
+          title,
+          status,
+          validation,
+          category: category || "Sem categoria",
+          articleCount: articlesByFeed.get(feed.url) || 0,
+        };
+      })
+      .filter((row) => {
+        const matchesFilter =
+          sourceFilter === "all" ||
+          (sourceFilter === "attention" &&
+            (row.status === "error" || row.status === "quarantine")) ||
+          row.status === sourceFilter;
+        if (!matchesFilter) return false;
+        if (!query) return true;
+        return (
+          row.title.toLowerCase().includes(query) ||
+          row.feed.url.toLowerCase().includes(query) ||
+          row.category.toLowerCase().includes(query)
+        );
+      })
+      .sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
+  }, [
+    activeFeeds,
+    articlesByFeed,
+    categoryById,
+    feedValidations,
+    quarantineRecommendedUrls,
+    sourceFilter,
+    sourceQuery,
+  ]);
+  const sourceGroups = [
+    {
+      id: "attention",
+      title: "Atenção necessária",
+      hint: "erros e quarentena",
+      rows: sourceRows.filter(
+        (row) => row.status === "error" || row.status === "quarantine",
+      ),
+    },
+    {
+      id: "pending",
+      title: "Pendentes de validação",
+      rows: sourceRows.filter((row) => row.status === "pending"),
+    },
+    {
+      id: "valid",
+      title: "Coleção válida",
+      rows: sourceRows.filter(
+        (row) => row.status === "valid" || row.status === "hidden",
+      ),
+    },
+  ];
+  const statusLabel = {
+    valid: "Válido",
+    error: "Erro",
+    pending: "Pendente",
+    quarantine: "Quarentena",
+    hidden: "Oculto",
+  } as const;
+  const statusTone = {
+    valid: "collection-central-status-dot--success",
+    error: "collection-central-status-dot--danger",
+    pending: "collection-central-status-dot--warning",
+    quarantine: "collection-central-status-dot--warning",
+    hidden: "collection-central-status-dot--muted",
+  } as const;
+  const filters = [
+    { id: "all", label: "Todos" },
+    { id: "attention", label: "Com erro" },
+    { id: "pending", label: "Pendentes" },
+    { id: "valid", label: "Válidos" },
+    { id: "quarantine", label: "Quarentena" },
+    { id: "hidden", label: "Ocultos" },
+  ] as const;
+  const renderSourceRow = (row: (typeof sourceRows)[number]) => (
+    <div key={row.feed.url} className="collection-central-source-row">
+      <FeedManagerSourceIcon feed={row.feed} />
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            className={`collection-central-status-dot ${statusTone[row.status]}`}
+            aria-hidden="true"
+          />
+          <p
+            className={`truncate text-[13.5px] font-semibold ${
+              row.feed.hideFromAll ? "line-through opacity-62" : ""
+            }`}
+          >
+            {row.title}
+          </p>
+        </div>
+        <p className="mt-0.5 truncate text-[11.5px] text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] opacity-76">
+          {row.category} · {row.feed.url}
+        </p>
+      </div>
+      <div className="collection-central-source-row__meta">
+        <span className={`collection-central-status-pill collection-central-status-pill--${row.status}`}>
+          {statusLabel[row.status]}
+        </span>
+        <span>{row.articleCount} arts.</span>
+      </div>
+      <div className="collection-central-feed-row__actions">
+        {(row.status === "error" || row.status === "pending") && (
+          <button
+            type="button"
+            onClick={() => onRetryFeed(row.feed.url)}
+            aria-label={`Revalidar ${row.title}`}
+            title="Revalidar"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        )}
+        {row.validation && !row.validation.isValid && (
+          <button
+            type="button"
+            onClick={() => onShowError(row.feed.url, row.validation)}
+            aria-label={`Ver erro de ${row.title}`}
+            title="Ver erro"
+          >
+            <AlertTriangle className="h-4 w-4" />
+          </button>
+        )}
+        {quarantineRecommendedUrls.has(row.feed.url) && (
+          <button
+            type="button"
+            onClick={() => onQuarantineFeed(row.feed.url)}
+            aria-label={`Quarentenar ${row.title}`}
+            title="Quarentenar"
+          >
+            <ShieldAlert className="h-4 w-4" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onToggleHideFromAll(row.feed.url)}
+          aria-label={row.feed.hideFromAll ? "Mostrar em Todos" : "Ocultar de Todos"}
+          title={row.feed.hideFromAll ? "Mostrar em Todos" : "Ocultar de Todos"}
+        >
+          {row.feed.hideFromAll ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => onEditFeedTitle(row.feed.url)}
+          aria-label={`Editar nome de ${row.title}`}
+          title="Editar nome"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onEditFeed(row.feed.url)}
+          aria-label={`Editar URL de ${row.title}`}
+          title="Editar URL"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemoveFeed(row.feed.url)}
+          aria-label={`Excluir ${row.title}`}
+          title="Excluir feed"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="feed-manager-page">
+    <div className="feed-manager-page collection-central-page collection-central-page--sources">
       <section>
         <FeedManagerPageTitle
           title="Adicionar uma fonte"
           description="Três caminhos para crescer a coleção sem interromper a revisão."
         />
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(220px,0.75fr)_minmax(220px,0.75fr)]">
-          <FeedManagerLightCard className="p-4">
+        <div className="collection-central-source-add-stack">
+          <FeedManagerLightCard className="collection-central-source-add-card collection-central-source-add-card--manual">
             <form
               onSubmit={(event) => {
                 void onSubmitFeed(event);
               }}
-              className="grid gap-3"
+              className="collection-central-manual-source-form"
             >
-              <div className="flex items-center gap-2">
+              <div className="collection-central-source-add-card__intro">
                 <span className="feed-manager-light-row__icon">
                   <Plus className="h-4 w-4" />
                 </span>
                 <div>
-                  <h4 className="text-[13.5px] font-semibold">Por URL</h4>
-                  <p className="text-xs opacity-72">Cole RSS, Atom ou a página do site.</p>
+                  <h4 className="text-[13.5px] font-semibold">
+                    Adicionar manualmente
+                  </h4>
+                  <p className="text-xs opacity-72">
+                    Cole RSS, Atom ou a página do site.
+                  </p>
                 </div>
               </div>
-              <input
-                type="url"
-                required
-                placeholder="https://exemplo.com/feed"
-                value={newFeedUrl}
-                onChange={(event) => setNewFeedUrl(event.target.value)}
-                disabled={isProcessing}
-                className={managerFieldClass}
-              />
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="collection-central-manual-source-form__fields">
+                <input
+                  type="url"
+                  required
+                  placeholder="https://exemplo.com/feed"
+                  value={newFeedUrl}
+                  onChange={(event) => setNewFeedUrl(event.target.value)}
+                  disabled={isProcessing}
+                  className={managerFieldClass}
+                />
                 <input
                   type="text"
                   placeholder="Nome opcional"
@@ -871,33 +1257,41 @@ const FeedManagerSourcesPage: React.FC<{
                     </option>
                   ))}
                 </select>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className={managerPrimaryButtonClass}
+                >
+                  {isProcessing ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {isProcessing ? "Validando..." : "Adicionar"}
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className={`${managerPrimaryButtonClass} w-full`}
-              >
-                {isProcessing ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-                {isProcessing ? "Validando..." : "Adicionar"}
-              </button>
             </form>
           </FeedManagerLightCard>
 
-          <FeedManagerLightCard className="p-4">
-            <FeedManagerLightRow
-              icon={<FileUp className="h-[18px] w-[18px]" />}
-              title="Importar OPML"
-              description="Você revisa antes de confirmar."
-            />
+          <FeedManagerLightCard className="collection-central-source-add-card">
+            <div className="collection-central-source-add-card__intro">
+              <span className="feed-manager-light-row__icon">
+                <FileUp className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <h4 className="text-[13.5px] font-semibold">Importar OPML</h4>
+                <p className="text-xs opacity-72">
+                  Carregue um arquivo OPML. Você revisa antes de mesclar ou
+                  substituir.
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               onClick={onImportOPML}
-              className={`${managerSecondaryButtonClass} mt-3 w-full`}
+              className={`${managerSecondaryButtonClass} collection-central-source-add-card__action`}
             >
+              <FileUp className="h-4 w-4" />
               Escolher arquivo
             </button>
             <p className="mt-2 text-[11.5px] opacity-64">
@@ -905,46 +1299,114 @@ const FeedManagerSourcesPage: React.FC<{
             </p>
           </FeedManagerLightCard>
 
-          <FeedManagerLightCard className="p-4">
-            <FeedManagerLightRow
-              icon={<Library className="h-[18px] w-[18px]" />}
-              title="Listas curadas"
-              description="Mescle coleções prontas ao acervo."
-            />
-            <button
-              type="button"
-              onClick={onShowCuratedLists}
-              className={`${managerSecondaryButtonClass} mt-3 w-full`}
-            >
-              Abrir listas
-            </button>
-            <p className="mt-2 text-[11.5px] opacity-64">
-              Nada é aplicado sem confirmação.
-            </p>
+          <FeedManagerLightCard className="collection-central-source-add-card">
+            <div className="collection-central-source-add-card__intro">
+              <span className="feed-manager-light-row__icon">
+                <Library className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <h4 className="text-[13.5px] font-semibold">Listas curadas</h4>
+                <p className="text-xs opacity-72">
+                  Coleções prontas para pré-visualizar e mesclar.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onShowCuratedLists}
+                className={`${managerSecondaryButtonClass} ml-auto h-8 px-3`}
+              >
+                Ver todas
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="collection-central-curated-preview">
+              {curatedLists.slice(0, 3).map((list) => {
+                const Icon = getCuratedIcon(list.id);
+                return (
+                <button
+                  key={list.name}
+                  type="button"
+                  onClick={onShowCuratedLists}
+                  className="collection-central-curated-preview-card"
+                >
+                  <span className="feed-manager-light-row__icon">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span>
+                    <strong>{list.name}</strong>
+                    <small>
+                      {list.feeds.length} fontes
+                      <em>{list.badge}</em>
+                    </small>
+                    <small>{list.description}</small>
+                  </span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                );
+              })}
+            </div>
           </FeedManagerLightCard>
         </div>
       </section>
 
       <section>
         <FeedManagerPageTitle title="Fontes da coleção" />
-        <FeedListTab
-          embedded
-          feeds={activeFeeds}
-          validations={feedValidations}
-          categories={categories}
-          onRemove={onRemoveFeed}
-          onRetry={onRetryFeed}
-          onEdit={onEditFeed}
-          onEditTitle={onEditFeedTitle}
-          onShowError={onShowError}
-          onMoveCategory={onMoveCategory}
-          onToggleHideFromAll={onToggleHideFromAll}
-          onQuarantineFeed={onQuarantineFeed}
-          quarantineRecommendedUrls={quarantineRecommendedUrls}
-          onRefreshAll={onRefreshFeeds}
-          onConfirmRefreshAll={onConfirmRefreshAll}
-          articles={articles}
-        />
+        <div className="collection-central-source-tools">
+          <label className="collection-central-search-field">
+            <Search className="h-4 w-4" />
+            <input
+              value={sourceQuery}
+              onChange={(event) => setSourceQuery(event.target.value)}
+              placeholder="Buscar por título, URL ou categoria"
+            />
+          </label>
+          <div className="collection-central-filter-row">
+            {filters.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setSourceFilter(filter.id)}
+                className={
+                  sourceFilter === filter.id
+                    ? "collection-central-filter-chip collection-central-filter-chip--active"
+                    : "collection-central-filter-chip"
+                }
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {sourceGroups.map((group) => (
+          <div key={group.id} className="collection-central-source-group">
+            <div className="collection-central-group-heading">
+              <h4>{group.title}</h4>
+              <span>{group.hint || `${group.rows.length} fontes`}</span>
+            </div>
+            {group.rows.length > 0 ? (
+              <FeedManagerLightCard className="overflow-hidden">
+                {group.rows.map(renderSourceRow)}
+              </FeedManagerLightCard>
+            ) : group.id === "attention" ? (
+              <FeedManagerLightCard className="p-5">
+                <div className="flex items-center gap-3">
+                  <span className="feed-manager-light-row__icon">
+                    <CircleCheck className="h-[18px] w-[18px]" />
+                  </span>
+                  <div>
+                    <p className="text-[13.5px] font-semibold">
+                      Sem feeds em atenção
+                    </p>
+                    <p className="text-[12px] opacity-72">
+                      Nenhum erro e nenhum em quarentena.
+                    </p>
+                  </div>
+                </div>
+              </FeedManagerLightCard>
+            ) : null}
+          </div>
+        ))}
       </section>
     </div>
   );
@@ -969,6 +1431,216 @@ const getFeedManagerFeedTitle = (feed: FeedSource) => {
   } catch {
     return feed.url;
   }
+};
+
+type CuratedImportMode = "merge" | "replace";
+
+const CuratedListsDialog: React.FC<{
+  categories: FeedCategory[];
+  isOpen: boolean;
+  onClose: () => void;
+  onImport: (
+    mode: CuratedImportMode,
+    selectedFeeds: FeedSource[],
+    listName: string,
+  ) => void | Promise<void>;
+}> = ({ categories, isOpen, onClose, onImport }) => {
+  const curatedLists = React.useMemo(getCuratedLists, []);
+  const [activeName, setActiveName] = React.useState(
+    curatedLists[0]?.name || "",
+  );
+  const [query, setQuery] = React.useState("");
+  const [disabledFeeds, setDisabledFeeds] = React.useState<
+    Record<string, boolean>
+  >({});
+  const activeList =
+    curatedLists.find((list) => list.name === activeName) || curatedLists[0];
+  const ActiveIcon = getCuratedIcon(activeList?.id || "");
+  const categoryNames = React.useMemo(
+    () => new Map(categories.map((category) => [category.id, category.name])),
+    [categories],
+  );
+  const visibleFeeds = React.useMemo(() => {
+    if (!activeList) return [];
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return activeList.feeds;
+    return activeList.feeds.filter((feed) => {
+      const title = getFeedManagerFeedTitle(feed).toLowerCase();
+      const categoryName = feed.categoryId
+        ? categoryNames.get(feed.categoryId)?.toLowerCase() || ""
+        : "";
+      return (
+        title.includes(normalizedQuery) ||
+        feed.url.toLowerCase().includes(normalizedQuery) ||
+        categoryName.includes(normalizedQuery)
+      );
+    });
+  }, [activeList, categoryNames, query]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setActiveName((current) => current || curatedLists[0]?.name || "");
+    setQuery("");
+  }, [curatedLists, isOpen]);
+
+  const getKey = (feed: FeedSource) => `${activeList?.name || ""}::${feed.url}`;
+  const selectedFeeds = activeList
+    ? activeList.feeds.filter((feed) => !disabledFeeds[getKey(feed)])
+    : [];
+  const selectedCount = selectedFeeds.length;
+  const handleImport = (mode: CuratedImportMode) => {
+    if (!activeList || selectedFeeds.length === 0) return;
+    void onImport(mode, selectedFeeds, activeList.name);
+  };
+
+  return (
+    <CollectionDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Listas curadas"
+      description="Pré-visualize os itens da lista e desmarque o que não quiser importar."
+      icon={<Library className="h-4 w-4" />}
+      wide
+      footer={
+        <>
+          <p className="collection-central-dialog__count">
+            <strong>{selectedCount}</strong> de {activeList?.feeds.length || 0}{" "}
+            selecionados
+          </p>
+          <div className="collection-central-dialog__actions">
+            <button
+              type="button"
+              onClick={onClose}
+              className={`${managerSecondaryButtonClass} h-9 px-3`}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => handleImport("merge")}
+              disabled={selectedCount === 0}
+              className={`${managerSecondaryButtonClass} h-9 px-3`}
+            >
+              Mesclar
+            </button>
+            <button
+              type="button"
+              onClick={() => handleImport("replace")}
+              disabled={selectedCount === 0}
+              className={`${managerPrimaryButtonClass} h-9 px-3`}
+            >
+              Substituir coleção
+            </button>
+          </div>
+        </>
+      }
+    >
+      <div className="collection-central-curated-dialog">
+        <nav className="collection-central-curated-dialog__nav">
+          {curatedLists.map((list) => {
+            const Icon = getCuratedIcon(list.id);
+            const active = list.name === activeList?.name;
+            return (
+              <button
+                key={list.name}
+                type="button"
+                onClick={() => {
+                  setActiveName(list.name);
+                  setQuery("");
+                }}
+                className={
+                  active
+                    ? "collection-central-curated-list-option collection-central-curated-list-option--active"
+                    : "collection-central-curated-list-option"
+                }
+              >
+                <Icon className="h-4 w-4" />
+                <span>
+                  <strong>{list.name}</strong>
+                  <small>{list.feeds.length} fontes</small>
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="collection-central-curated-dialog__main">
+          <div className="collection-central-curated-dialog__intro">
+            <span className="feed-manager-light-row__icon">
+              <ActiveIcon className="h-[18px] w-[18px]" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4>{activeList?.name}</h4>
+                {activeList?.badge && (
+                  <span className="collection-central-badge">
+                    {activeList.badge}
+                  </span>
+                )}
+              </div>
+              <p>{activeList?.description}</p>
+            </div>
+          </div>
+
+          <label className="collection-central-search-field collection-central-search-field--dialog">
+            <Search className="h-4 w-4" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar nesta lista"
+            />
+          </label>
+
+          <ul className="collection-central-curated-feed-list">
+            {visibleFeeds.map((feed) => {
+              const key = getKey(feed);
+              const disabled = !!disabledFeeds[key];
+              const categoryName = feed.categoryId
+                ? categoryNames.get(feed.categoryId) || "Sem categoria"
+                : "Sem categoria";
+              return (
+                <li key={feed.url}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDisabledFeeds((current) => ({
+                        ...current,
+                        [key]: !current[key],
+                      }))
+                    }
+                  >
+                    <span
+                      className={
+                        disabled
+                          ? "collection-central-check"
+                          : "collection-central-check collection-central-check--active"
+                      }
+                    >
+                      {!disabled && <Check className="h-3.5 w-3.5" />}
+                    </span>
+                    <Rss className="h-4 w-4" />
+                    <span className="min-w-0 flex-1">
+                      <strong className={disabled ? "line-through opacity-60" : ""}>
+                        {getFeedManagerFeedTitle(feed)}
+                      </strong>
+                      <small>
+                        {categoryName} · {feed.url}
+                      </small>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+            {visibleFeeds.length === 0 && (
+              <li className="collection-central-empty-row">
+                Nada encontrado para "{query}".
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </CollectionDialog>
+  );
 };
 
 const FeedManagerCategoryEditor: React.FC<{
@@ -1084,7 +1756,6 @@ const FeedManagerOrganizationPage: React.FC<{
   onRemoveFeed: (url: string) => void;
   onToggleHideFromAll: (url: string) => void;
   reorderCategories: (categoryIds: string[]) => void;
-  resetCategoriesToDefaults: () => void;
   setFeeds: React.Dispatch<React.SetStateAction<FeedSource[]>>;
   updateCategory: (id: string, updates: Partial<FeedCategory>) => void;
   confirmDanger: ReturnType<typeof useNotificationReplacements>["confirmDanger"];
@@ -1099,7 +1770,6 @@ const FeedManagerOrganizationPage: React.FC<{
   onRemoveFeed,
   onToggleHideFromAll,
   reorderCategories,
-  resetCategoriesToDefaults,
   setFeeds,
   updateCategory,
   confirmDanger,
@@ -1112,6 +1782,9 @@ const FeedManagerOrganizationPage: React.FC<{
     null,
   );
   const [dragOverCategoryId, setDragOverCategoryId] = React.useState<string | null>(
+    null,
+  );
+  const [categoryDragOverId, setCategoryDragOverId] = React.useState<string | null>(
     null,
   );
   const [newCategoryName, setNewCategoryName] = React.useState("");
@@ -1157,17 +1830,21 @@ const FeedManagerOrganizationPage: React.FC<{
     [setFeeds],
   );
 
-  const moveCategory = React.useCallback(
-    (categoryId: string, direction: -1 | 1) => {
+  const moveCategoryToIndex = React.useCallback(
+    (categoryId: string, targetIndex: number) => {
       const ids = visibleCategories.map((category) => category.id);
       const currentIndex = ids.indexOf(categoryId);
-      const nextIndex = currentIndex + direction;
-      if (currentIndex < 0 || nextIndex < 0 || nextIndex >= ids.length) return;
+      if (
+        currentIndex < 0 ||
+        targetIndex < 0 ||
+        targetIndex >= ids.length ||
+        currentIndex === targetIndex
+      ) {
+        return;
+      }
       const nextIds = [...ids];
-      [nextIds[currentIndex], nextIds[nextIndex]] = [
-        nextIds[nextIndex],
-        nextIds[currentIndex],
-      ];
+      const [moved] = nextIds.splice(currentIndex, 1);
+      nextIds.splice(targetIndex, 0, moved);
       reorderCategories(nextIds);
     },
     [reorderCategories, visibleCategories],
@@ -1201,13 +1878,14 @@ const FeedManagerOrganizationPage: React.FC<{
     <div
       key={feed.url}
       className="collection-central-feed-row"
-      draggable
-      onDragStart={(event) => {
-        event.dataTransfer.setData("text/feed-url", feed.url);
-        event.dataTransfer.effectAllowed = "move";
-      }}
     >
-      <GripVertical className="h-4 w-4 text-[rgb(var(--theme-text-secondary-readable))] opacity-45" />
+      <CollectionDragHandle
+        label={`Arrastar ${getFeedManagerFeedTitle(feed)}`}
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/feed-url", feed.url);
+          event.dataTransfer.effectAllowed = "move";
+        }}
+      />
       <Rss className="h-4 w-4 text-[rgb(var(--theme-text-secondary-readable))]" />
       <span className="collection-central-status-dot" aria-hidden="true" />
       <div className="min-w-0 flex-1">
@@ -1218,20 +1896,17 @@ const FeedManagerOrganizationPage: React.FC<{
           {feed.url}
         </p>
       </div>
-      <select
-        value={feed.categoryId || "uncategorized"}
-        onChange={(event) => moveFeedToCategoryId(feed.url, event.target.value)}
-        className="collection-central-feed-row__select"
-        aria-label={`Categoria de ${getFeedManagerFeedTitle(feed)}`}
-      >
-        <option value="uncategorized">Sem categoria</option>
-        {visibleCategories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
-        ))}
-      </select>
       <div className="collection-central-feed-row__actions">
+        {feed.categoryId && (
+          <button
+            type="button"
+            onClick={() => moveFeedToCategoryId(feed.url, "uncategorized")}
+            aria-label={`Mover ${getFeedManagerFeedTitle(feed)} para sem categoria`}
+            title="Mover para sem categoria"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onToggleHideFromAll(feed.url)}
@@ -1349,32 +2024,44 @@ const FeedManagerOrganizationPage: React.FC<{
             const feedsInCategory = feedsByCategory[category.id] || [];
             const expanded = expandedCategoryId === category.id;
             return (
-              <div key={category.id}>
+              <div
+                key={category.id}
+                className={
+                  categoryDragOverId === category.id
+                    ? "collection-central-category-drop-target"
+                    : undefined
+                }
+                onDragOver={(event) => {
+                  if (!event.dataTransfer.types.includes("text/category-id")) return;
+                  event.preventDefault();
+                  if (categoryDragOverId !== category.id) {
+                    setCategoryDragOverId(category.id);
+                  }
+                }}
+                onDragLeave={() => {
+                  if (categoryDragOverId === category.id) setCategoryDragOverId(null);
+                }}
+                onDrop={(event) => {
+                  const sourceCategoryId = event.dataTransfer.getData("text/category-id");
+                  if (!sourceCategoryId) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  moveCategoryToIndex(sourceCategoryId, index);
+                  setCategoryDragOverId(null);
+                }}
+              >
                 {index > 0 && <div className="feed-manager-divider" />}
                 {renderDropZone(
                   category.id,
                   <>
                     <div className="collection-central-category-row">
-                      <div className="collection-central-category-row__order">
-                        <button
-                          type="button"
-                          onClick={() => moveCategory(category.id, -1)}
-                          disabled={index === 0}
-                          aria-label={`Subir ${category.name}`}
-                          title="Subir categoria"
-                        >
-                          <ArrowUp className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveCategory(category.id, 1)}
-                          disabled={index === visibleCategories.length - 1}
-                          aria-label={`Descer ${category.name}`}
-                          title="Descer categoria"
-                        >
-                          <ArrowDown className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      <CollectionDragHandle
+                        label={`Arrastar categoria ${category.name}`}
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData("text/category-id", category.id);
+                          event.dataTransfer.effectAllowed = "move";
+                        }}
+                      />
                       <button
                         type="button"
                         className="collection-central-category-row__main"
@@ -1407,6 +2094,16 @@ const FeedManagerOrganizationPage: React.FC<{
                       <div className="collection-central-category-row__actions">
                         <button
                           type="button"
+                          onClick={() =>
+                            setExpandedCategoryId(expanded ? null : category.id)
+                          }
+                          aria-label={`Expandir feeds de ${category.name}`}
+                          title="Expandir feeds"
+                        >
+                          <LayoutGrid className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => {
                             setExpandedCategoryId(category.id);
                             setEditingCategoryId(
@@ -1418,21 +2115,19 @@ const FeedManagerOrganizationPage: React.FC<{
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
-                        {!category.isDefault && (
-                          <button
-                            type="button"
-                            onClick={() => void handleDeleteCategory(category)}
-                            aria-label={`Excluir ${category.name}`}
-                            title="Excluir categoria"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteCategory(category)}
+                          aria-label={`Excluir ${category.name}`}
+                          title="Excluir categoria"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                     {expanded && (
                       <div className="collection-central-category-body">
-                        {(editingCategoryId === category.id || !category.isDefault) && (
+                        {editingCategoryId === category.id && (
                           <FeedManagerCategoryEditor
                             category={category}
                             onCancel={() => setEditingCategoryId(null)}
@@ -1482,52 +2177,803 @@ const FeedManagerOrganizationPage: React.FC<{
           )}
         </FeedManagerLightCard>
       </section>
+    </div>
+  );
+};
+
+const proxyRouteModeLabels: Record<
+  ProxyRouteMode,
+  { label: string; description: string }
+> = {
+  "full-local": {
+    label: "Local",
+    description: "Backend local sem fallback externo",
+  },
+  mixed: {
+    label: "Misto",
+    description: "Local primeiro, proxies depois",
+  },
+  "full-external-proxies": {
+    label: "Web",
+    description: "Ignora backend local para feeds",
+  },
+};
+
+const proxyRouteModeOptions: ProxyRouteMode[] = [
+  "full-local",
+  "mixed",
+  "full-external-proxies",
+];
+
+const getRuntimeRouteForCollectionProxy = (
+  proxyId: string,
+  proxyName: string,
+  routes: ProxyDashboardRoute[],
+) => {
+  if (proxyId === "local-proxy") {
+    return routes.find((route) => route.routeKind === "local-backend");
+  }
+  return routes.find(
+    (route) => route.routeKind === "proxy" && route.name === proxyName,
+  );
+};
+
+const getProxyStatus = (
+  enabled: boolean,
+  route?: ProxyDashboardRoute,
+): "healthy" | "degraded" | "offline" | "idle" | "disabled" => {
+  if (!enabled || route?.status === "disabled") return "disabled";
+  return route?.status || "idle";
+};
+
+const proxyStatusLabel: Record<
+  ReturnType<typeof getProxyStatus>,
+  string
+> = {
+  healthy: "Saudável",
+  degraded: "Instável",
+  offline: "Erro",
+  idle: "Sem uso",
+  disabled: "Desativado",
+};
+
+const ProxyApiKeyDialog: React.FC<{
+  draft: string;
+  error?: string;
+  isOpen: boolean;
+  onChange: (value: string) => void;
+  onClose: () => void;
+  onSave: () => void;
+  proxyName?: string;
+}> = ({ draft, error, isOpen, onChange, onClose, onSave, proxyName }) => (
+  <CollectionDialog
+    isOpen={isOpen}
+    onClose={onClose}
+    title={`API key${proxyName ? ` — ${proxyName}` : ""}`}
+    description="A chave é armazenada localmente e enviada apenas para o proxy correspondente."
+    icon={<Key className="h-4 w-4" />}
+    footer={
+      <div className="collection-central-dialog__actions">
+        <button
+          type="button"
+          onClick={onClose}
+          className={`${managerSecondaryButtonClass} h-9 px-3`}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          className={`${managerPrimaryButtonClass} h-9 px-3`}
+        >
+          Salvar
+        </button>
+      </div>
+    }
+  >
+    <div className="collection-central-api-key-form">
+      <input
+        type="text"
+        value={draft}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Cole a chave aqui"
+        className={managerFieldClass}
+      />
+      <p>Deixe em branco para remover a chave atual.</p>
+      {error && <strong>{error}</strong>}
+    </div>
+  </CollectionDialog>
+);
+
+const CollectionCachePolicyDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+}> = ({ isOpen, onClose }) => {
+  const [ttl, setTtl] = React.useState(10);
+  const [maxSize, setMaxSize] = React.useState(50);
+  const [respectEtag, setRespectEtag] = React.useState(true);
+  const [staleWhileRevalidate, setStaleWhileRevalidate] = React.useState(true);
+  const [offlineFallback, setOfflineFallback] = React.useState(true);
+
+  const plannedTasks = [
+    "Persistir TTL por coleção e por feed",
+    "Aplicar stale-while-revalidate no fetch de feeds",
+    "Adicionar limpeza manual e limites de armazenamento",
+    "Registrar métricas de hit, miss e revalidação",
+  ];
+  const toggleRows = [
+    {
+      icon: <ShieldAlert className="h-4 w-4" />,
+      title: "Respeitar ETag e Last-Modified",
+      description: "Usa cabeçalhos condicionais para reduzir downloads.",
+      checked: respectEtag,
+      onChange: setRespectEtag,
+    },
+    {
+      icon: <RefreshCw className="h-4 w-4" />,
+      title: "Stale-while-revalidate",
+      description: "Mostra cache recente enquanto revalida em segundo plano.",
+      checked: staleWhileRevalidate,
+      onChange: setStaleWhileRevalidate,
+    },
+    {
+      icon: <Wifi className="h-4 w-4" />,
+      title: "Fallback offline",
+      description: "Mantém artigos disponíveis quando a rede falhar.",
+      checked: offlineFallback,
+      onChange: setOfflineFallback,
+    },
+  ];
+
+  return (
+    <CollectionDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Política de cache"
+      description="Pré-visualização funcional das opções planejadas para o cache de feeds."
+      icon={<Database className="h-4 w-4" />}
+      wide
+      footer={
+        <div className="collection-central-dialog__actions">
+          <button
+            type="button"
+            onClick={onClose}
+            className={`${managerSecondaryButtonClass} h-9 px-3`}
+          >
+            Fechar
+          </button>
+        </div>
+      }
+    >
+      <div className="collection-central-cache-policy">
+        <div className="collection-central-cache-notice">
+          <AlertTriangle className="h-4 w-4" />
+          <p>
+            Este painel é um placeholder de implementação: os controles abaixo
+            não alteram o motor de cache atual.
+          </p>
+        </div>
+
+        <div className="collection-central-cache-control">
+          <div>
+            <label htmlFor="collection-cache-ttl">Tempo de vida (TTL)</label>
+            <span>{ttl} min</span>
+          </div>
+          <input
+            id="collection-cache-ttl"
+            type="range"
+            min={1}
+            max={60}
+            value={ttl}
+            onChange={(event) => setTtl(Number(event.target.value))}
+          />
+          <p>Duração padrão antes de revalidar uma fonte.</p>
+        </div>
+
+        <div className="feed-manager-light-card collection-central-cache-toggle-group">
+          {toggleRows.map((row) => (
+            <label key={row.title} className="collection-central-cache-toggle">
+              <span className="feed-manager-light-row__icon">{row.icon}</span>
+              <span className="min-w-0 flex-1">
+                <strong>{row.title}</strong>
+                <small>{row.description}</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={row.checked}
+                onChange={(event) => row.onChange(event.target.checked)}
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="collection-central-cache-control">
+          <div>
+            <label htmlFor="collection-cache-size">Limite de armazenamento</label>
+            <span>{maxSize} MB</span>
+          </div>
+          <input
+            id="collection-cache-size"
+            type="range"
+            min={10}
+            max={500}
+            step={10}
+            value={maxSize}
+            onChange={(event) => setMaxSize(Number(event.target.value))}
+          />
+          <p>Limite previsto para retenção local de respostas e metadados.</p>
+        </div>
+
+        <div className="feed-manager-light-card collection-central-cache-tasks">
+          <div className="collection-central-cache-tasks__header">
+            <strong>Tarefas para acelerar implementação</strong>
+            <span>preview</span>
+          </div>
+          {plannedTasks.map((task) => (
+            <div key={task} className="collection-central-cache-task-row">
+              <Check className="h-4 w-4" />
+              <span>{task}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </CollectionDialog>
+  );
+};
+
+const CollectionProxyPanel: React.FC = () => {
+  const {
+    apiKeys,
+    validationErrors,
+    routingMode,
+    clientProxyOrder,
+    setRoutingMode,
+    moveClientProxy,
+    setProxyEnabled,
+    setApiKey,
+    clearApiKey,
+    getAllProxiesStatus,
+    testProxy,
+  } = useProxyConfig();
+  const dashboard = useProxyDashboard();
+  const snapshot = dashboard.snapshot;
+  const [apiKeyTarget, setApiKeyTarget] = React.useState<string | null>(null);
+  const [apiKeyDraft, setApiKeyDraft] = React.useState("");
+  const [testingProxy, setTestingProxy] = React.useState<string | null>(null);
+  const [cacheDialogOpen, setCacheDialogOpen] = React.useState(false);
+  const [testResults, setTestResults] = React.useState<
+    Record<string, ProxyTestResult>
+  >({});
+  const proxies = React.useMemo(() => {
+    const routeOrder = new Map(
+      clientProxyOrder.map((proxyId, index) => [proxyId, index]),
+    );
+    return getAllProxiesStatus().sort((a, b) => {
+      if (a.id === "local-proxy") return -1;
+      if (b.id === "local-proxy") return 1;
+      const aOrder = routeOrder.get(a.id);
+      const bOrder = routeOrder.get(b.id);
+      if (aOrder !== undefined && bOrder !== undefined) return aOrder - bOrder;
+      if (aOrder !== undefined) return -1;
+      if (bOrder !== undefined) return 1;
+      return a.name.localeCompare(b.name, "pt-BR");
+    });
+  }, [clientProxyOrder, getAllProxiesStatus]);
+  const localProxy = proxies.find((proxy) => proxy.id === "local-proxy");
+  const thirdParty = proxies.filter((proxy) => proxy.id !== "local-proxy");
+  const enabledThirdParty = thirdParty.filter((proxy) => proxy.enabled).length;
+  const targetProxy = apiKeyTarget
+    ? proxies.find((proxy) => proxy.id === apiKeyTarget)
+    : undefined;
+
+  const handleOpenApiKey = (proxyId: string) => {
+    setApiKeyTarget(proxyId);
+    setApiKeyDraft(apiKeys[proxyId] || "");
+  };
+  const handleSaveApiKey = () => {
+    if (!apiKeyTarget) return;
+    const value = apiKeyDraft.trim();
+    if (!value) {
+      clearApiKey(apiKeyTarget);
+      setApiKeyTarget(null);
+      return;
+    }
+    if (setApiKey(apiKeyTarget, value)) {
+      setApiKeyTarget(null);
+    }
+  };
+  const handleTestProxy = async (proxyId: string) => {
+    setTestingProxy(proxyId);
+    try {
+      const result = await testProxy(proxyId);
+      setTestResults((current) => ({ ...current, [proxyId]: result }));
+      await dashboard.refresh();
+    } finally {
+      setTestingProxy(null);
+    }
+  };
+
+  const renderProxyRow = (
+    proxy: (typeof proxies)[number],
+    index: number,
+    total: number,
+  ) => {
+    const metadata = PROXY_CONFIGS[proxy.id];
+    const route = getRuntimeRouteForCollectionProxy(
+      proxy.id,
+      proxy.name,
+      snapshot.routes,
+    );
+    const status = getProxyStatus(proxy.enabled, route);
+    const isLocal = proxy.id === "local-proxy";
+    const canMove = !isLocal && clientProxyOrder.includes(proxy.id);
+    const routeOrder = clientProxyOrder.indexOf(proxy.id);
+    const healthScore = route?.healthScore ?? proxy.health.score;
+    const testResult = testResults[proxy.id];
+    const canDisable = ProxyManager.canDisableRuntimeProxy(proxy.name);
+
+    return (
+      <div key={proxy.id} className="collection-central-proxy-row">
+        <div
+          className={`collection-central-proxy-row__order ${
+            isLocal ? "collection-central-proxy-row__order--local" : ""
+          }`}
+        >
+          {isLocal ? (
+            <Monitor className="h-4 w-4" />
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => moveClientProxy(proxy.id, "up")}
+                disabled={!canMove || routeOrder <= 0}
+                aria-label={`Subir prioridade de ${proxy.name}`}
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
+              <span>{index + 1}</span>
+              <button
+                type="button"
+                onClick={() => moveClientProxy(proxy.id, "down")}
+                disabled={!canMove || routeOrder === total - 1}
+                aria-label={`Descer prioridade de ${proxy.name}`}
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+        {!isLocal && (
+          <span className="feed-manager-light-row__icon">
+            <Globe className="h-[18px] w-[18px]" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="collection-central-proxy-row__title">
+            <strong>{proxy.name}</strong>
+            <span className={`collection-central-proxy-status collection-central-proxy-status--${status}`}>
+              {proxyStatusLabel[status]}
+            </span>
+            {proxy.hasApiKey && (
+              <span className="collection-central-badge">
+                {proxy.isConfigured ? "API key" : "sem chave"}
+              </span>
+            )}
+          </div>
+          <p>{metadata?.description || proxy.health.recommendation}</p>
+          <div className="collection-central-proxy-row__stats">
+            <span>{healthScore}% saúde</span>
+            <span>
+              {route?.successRate !== null && route?.successRate !== undefined
+                ? `${route.successRate}% sucesso`
+                : "sem sessão"}
+            </span>
+            <span>
+              {route?.avgResponseTime
+                ? `${Math.round(route.avgResponseTime)} ms`
+                : metadata?.responseTime || "sem latência"}
+            </span>
+            {testResult && (
+              <span>{testResult.success ? "teste ok" : "teste falhou"}</span>
+            )}
+          </div>
+        </div>
+        <div className="collection-central-proxy-row__actions">
+          {proxy.hasApiKey && (
+            <button
+              type="button"
+              onClick={() => handleOpenApiKey(proxy.id)}
+              aria-label={`Configurar chave de ${proxy.name}`}
+              title="Configurar API key"
+            >
+              <Key className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleTestProxy(proxy.id)}
+            disabled={testingProxy === proxy.id || !proxy.enabled}
+            aria-label={`Testar ${proxy.name}`}
+            title="Testar proxy"
+          >
+            <PlayCircle
+              className={`h-4 w-4 ${
+                testingProxy === proxy.id ? "animate-spin" : ""
+              }`}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => setProxyEnabled(proxy.id, !proxy.enabled)}
+            disabled={!canDisable}
+            aria-label={
+              proxy.enabled ? `Desativar ${proxy.name}` : `Ativar ${proxy.name}`
+            }
+            title={
+              canDisable
+                ? proxy.enabled
+                  ? "Desativar proxy"
+                  : "Ativar proxy"
+                : "Obrigatório no runtime atual"
+            }
+          >
+            <Power className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <section id="feed-manager-section-diagnostics-infra">
+      <FeedManagerPageTitle
+        title="Infraestrutura e proxies"
+        description="A versão web depende de proxies de terceiros. A versão desktop pode usar o proxy local como padrão."
+      />
+
+      <FeedManagerLightCard className="collection-central-proxy-mode-card">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="feed-manager-light-row__icon">
+            {routingMode === "full-external-proxies" ? (
+              <Globe className="h-[18px] w-[18px]" />
+            ) : (
+              <Monitor className="h-[18px] w-[18px]" />
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13.5px] font-semibold">
+              Modo de execução: {proxyRouteModeLabels[routingMode].label}
+            </p>
+            <p className="text-[12px] opacity-72">
+              {proxyRouteModeLabels[routingMode].description}
+            </p>
+          </div>
+        </div>
+        <div className="collection-central-proxy-mode-switch">
+          {proxyRouteModeOptions.map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setRoutingMode(mode)}
+              className={routingMode === mode ? "is-active" : ""}
+            >
+              {mode === "full-external-proxies" ? (
+                <Wifi className="h-3.5 w-3.5" />
+              ) : (
+                <Monitor className="h-3.5 w-3.5" />
+              )}
+              {proxyRouteModeLabels[mode].label}
+            </button>
+          ))}
+        </div>
+      </FeedManagerLightCard>
+
+      {localProxy && (
+        <FeedManagerLightCard className="overflow-hidden">
+          {renderProxyRow(localProxy, 0, 1)}
+          <div className="collection-central-proxy-detail-grid">
+            <span>
+              <small>Backend</small>
+              <strong>{snapshot.backend.available ? "disponível" : "offline"}</strong>
+            </span>
+            <span>
+              <small>Rota primária</small>
+              <strong>{snapshot.runtime.primaryRoute || "LocalBackend"}</strong>
+            </span>
+            <span>
+              <small>Fallback</small>
+              <strong>
+                {snapshot.summary.fallbackActive ? "ativo" : "aguardando"}
+              </strong>
+            </span>
+            <span>
+              <small>Requisições</small>
+              <strong>{snapshot.summary.totalRequests}</strong>
+            </span>
+          </div>
+        </FeedManagerLightCard>
+      )}
+
+      <FeedManagerLightCard className="collection-central-proxy-list">
+        <div className="collection-central-proxy-list__header">
+          <div>
+            <p>Proxies de terceiros</p>
+            <span>
+              Ordenados por prioridade · {enabledThirdParty} ativos de{" "}
+              {thirdParty.length}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={managerSecondaryButtonClass}
+            disabled
+            title="Cadastro manual de proxy customizado ainda não está disponível."
+          >
+            <Settings2 className="h-4 w-4" />
+            Adicionar proxy
+          </button>
+        </div>
+        <div>
+          {thirdParty.map((proxy, index) =>
+            renderProxyRow(proxy, index, thirdParty.length),
+          )}
+        </div>
+      </FeedManagerLightCard>
+
+      <FeedManagerLightCard>
+        <FeedManagerLightRow
+          icon={<Database className="h-[18px] w-[18px]" />}
+          title="Política de cache"
+          description="TTL configurável · respeita cache local · stale-while-revalidate quando disponível"
+          onClick={() => setCacheDialogOpen(true)}
+        />
+      </FeedManagerLightCard>
+
+      <ProxyApiKeyDialog
+        isOpen={!!apiKeyTarget}
+        onClose={() => setApiKeyTarget(null)}
+        proxyName={targetProxy?.name}
+        draft={apiKeyDraft}
+        onChange={setApiKeyDraft}
+        onSave={handleSaveApiKey}
+        error={apiKeyTarget ? validationErrors[apiKeyTarget] : undefined}
+      />
+      <CollectionCachePolicyDialog
+        isOpen={cacheDialogOpen}
+        onClose={() => setCacheDialogOpen(false)}
+      />
+    </section>
+  );
+};
+
+const FeedManagerDiagnosticsPage: React.FC<{
+  activeFeeds: FeedSource[];
+  articles: Article[];
+  categories: FeedCategory[];
+  feedValidations: Map<string, FeedValidationResult>;
+  focusSection?: string;
+  onFocusConsumed?: () => void;
+  onQuarantineFeed: (url: string) => void;
+  onRefreshFeeds?: () => void;
+  onRetryFeeds: (urls: string[]) => void | Promise<void>;
+  onShowError: (url: string, validation?: FeedValidationResult) => void;
+  quarantineRecommendedUrls: Set<string>;
+}> = ({
+  activeFeeds,
+  articles,
+  categories,
+  feedValidations,
+  focusSection,
+  onFocusConsumed,
+  onQuarantineFeed,
+  onRefreshFeeds,
+  onRetryFeeds,
+  onShowError,
+  quarantineRecommendedUrls,
+}) => {
+  React.useEffect(() => {
+    if (!focusSection) return;
+    if (focusSection !== "proxy-health" && focusSection !== "diagnostics:infra") {
+      return;
+    }
+    window.setTimeout(() => {
+      document
+        .getElementById("feed-manager-section-diagnostics-infra")
+        ?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+      onFocusConsumed?.();
+    }, 60);
+  }, [focusSection, onFocusConsumed]);
+
+  const rows = React.useMemo(
+    () =>
+      activeFeeds
+        .map((feed) => {
+          const validation = feedValidations.get(feed.url);
+          const title = validation?.title || getFeedManagerFeedTitle(feed);
+          const host = (() => {
+            try {
+              return new URL(feed.url).hostname.replace(/^www\./, "");
+            } catch {
+              return feed.url;
+            }
+          })();
+          return { feed, validation, title, host };
+        })
+        .sort((a, b) => a.title.localeCompare(b.title, "pt-BR")),
+    [activeFeeds, feedValidations],
+  );
+  const invalidRows = rows.filter(
+    (row) => row.validation && !row.validation.isValid,
+  );
+  const pendingRows = rows.filter((row) => !row.validation);
+  const validRows = rows.filter((row) => row.validation?.isValid);
+  const successRate =
+    rows.length > 0 ? Math.round((validRows.length / rows.length) * 100) : 0;
+  const lastChecked = Math.max(
+    0,
+    ...rows.map((row) => row.validation?.lastChecked || 0),
+  );
+  const lastCheckedLabel =
+    lastChecked > 0
+      ? new Intl.DateTimeFormat("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(lastChecked))
+      : "sem leitura";
+  const retryUrls = invalidRows.map((row) => row.feed.url);
+  const attentionRows = invalidRows.slice(0, 6);
+
+  return (
+    <div className="feed-manager-page collection-central-page collection-central-page--diagnostics">
+      <section>
+        <FeedManagerPageTitle
+          title="Saúde dos feeds"
+          description="Resultado da última varredura."
+        />
+        <FeedManagerLightCard className="collection-central-health-panel">
+          <div className="collection-central-diagnostics-grid">
+            <FeedManagerInsight
+              label="Status geral"
+              value={invalidRows.length > 0 ? "Atenção" : "Saudável"}
+              description={
+                invalidRows.length > 0
+                  ? `${invalidRows.length} fontes pedem revisão.`
+                  : "Nenhuma falha ativa detectada."
+              }
+              tone={invalidRows.length > 0 ? "warning" : "success"}
+            />
+            <FeedManagerInsight
+              label="Disponibilidade"
+              value={`${successRate}%`}
+              description={`${validRows.length}/${rows.length} fontes válidas.`}
+              tone={successRate >= 90 ? "success" : "warning"}
+            />
+            <FeedManagerInsight
+              label="Pendentes"
+              value={pendingRows.length}
+              description="fontes sem leitura recente."
+              tone={pendingRows.length > 0 ? "warning" : "neutral"}
+            />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onRefreshFeeds}
+              disabled={!onRefreshFeeds}
+              className={`${managerPrimaryButtonClass} h-9 px-3 disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Revalidar agora
+            </button>
+            <button
+              type="button"
+              onClick={() => void onRetryFeeds(retryUrls)}
+              disabled={retryUrls.length === 0}
+              className={`${managerSecondaryButtonClass} h-9 px-3 disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              <Activity className="h-4 w-4" />
+              Testar atenção
+            </button>
+          </div>
+        </FeedManagerLightCard>
+      </section>
 
       <section>
         <FeedManagerPageTitle
-          title="Restaurar organização"
-          description="Retorne às categorias padrão quando a estrutura atual deixar de representar a coleção."
+          title="Lista de atenção"
+          description="Fontes com erro ou recomendação de quarentena."
         />
-        <FeedManagerLightCard className="p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        {attentionRows.length > 0 ? (
+          <FeedManagerLightCard className="overflow-hidden">
+            {attentionRows.map((row) => (
+              <div key={row.feed.url} className="collection-central-source-row">
+                <span className="feed-manager-light-row__icon">
+                  <AlertTriangle className="h-[17px] w-[17px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-semibold">
+                    {row.title}
+                  </p>
+                  <p className="mt-0.5 truncate text-[11.5px] opacity-72">
+                    {row.host} · {row.validation?.error || row.validation?.status || "erro"}
+                  </p>
+                </div>
+                <div className="collection-central-feed-row__actions">
+                  <button
+                    type="button"
+                    onClick={() => void onRetryFeeds([row.feed.url])}
+                    aria-label={`Testar ${row.title}`}
+                    title="Testar agora"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                  {row.validation && (
+                    <button
+                      type="button"
+                      onClick={() => onShowError(row.feed.url, row.validation)}
+                      aria-label={`Ver erro de ${row.title}`}
+                      title="Ver erro"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  )}
+                  {quarantineRecommendedUrls.has(row.feed.url) && (
+                    <button
+                      type="button"
+                      onClick={() => onQuarantineFeed(row.feed.url)}
+                      aria-label={`Quarentenar ${row.title}`}
+                      title="Quarentenar"
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </FeedManagerLightCard>
+        ) : (
+          <FeedManagerLightCard className="p-5">
             <div className="flex items-center gap-3">
               <span className="feed-manager-light-row__icon">
-                <LayoutGrid className="h-4 w-4" />
+                <CircleCheck className="h-[18px] w-[18px]" />
               </span>
               <div>
-                <p className="text-[13.5px] font-semibold">Categorias padrão</p>
-                <p className="text-xs opacity-72">
-                  A restauração remove categorias personalizadas e devolve os feeds para
-                  a fila sem categoria.
+                <p className="text-[13.5px] font-semibold">
+                  Nenhuma ação necessária
+                </p>
+                <p className="text-[12px] opacity-72">
+                  Os feeds validados não apresentam falhas no momento.
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              className={`${managerSecondaryButtonClass} h-9 px-3`}
-              onClick={async () => {
-                if (
-                  await confirmDanger(
-                    buildResetCategoriesConfirmation({
-                      categories: visibleCategories,
-                      feedCount: currentFeeds.length,
-                    }),
-                  )
-                ) {
-                  resetCategoriesToDefaults();
-                  setFeeds((feeds) =>
-                    feeds.map((feed) => ({ ...feed, categoryId: undefined })),
-                  );
-                  setExpandedCategoryId(null);
-                  setEditingCategoryId(null);
-                  await alertSuccess("Categorias padrão restauradas.");
-                }
-              }}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Restaurar padrão
-            </button>
-          </div>
+          </FeedManagerLightCard>
+        )}
+      </section>
+
+      <CollectionProxyPanel />
+
+      <section>
+        <FeedManagerPageTitle title="Relatórios" />
+        <FeedManagerLightCard>
+          <FeedManagerLightRow
+            icon={<BarChart3 className="h-[18px] w-[18px]" />}
+            title="Relatório de validação"
+            description={`${validRows.length}/${rows.length} fontes verificadas · última leitura ${lastCheckedLabel}`}
+          />
+          <FeedManagerLightRow
+            icon={<Activity className="h-[18px] w-[18px]" />}
+            title="Eventos recentes"
+            description={
+              invalidRows.length > 0
+                ? `${invalidRows.length} eventos exigem revisão`
+                : "Sem eventos críticos na última leitura"
+            }
+          />
+          <FeedManagerLightRow
+            icon={<FileText className="h-[18px] w-[18px]" />}
+            title="Resumo da biblioteca"
+            description={`${categories.length} categorias · ${articles.length} artigos carregados`}
+          />
         </FeedManagerLightCard>
       </section>
     </div>
@@ -1626,7 +3072,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [opmlPreviewCandidates, setOpmlPreviewCandidates] = useState<
     ImportCandidate[]
   >([]);
-  const [selectedListType, setSelectedListType] = useState<string>("");
   const [duplicateWarning, setDuplicateWarning] = useState<{
     show: boolean;
     result: DuplicateDetectionResult;
@@ -1790,17 +3235,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           },
     );
   }, [activeArea]);
-
-  useEffect(() => {
-    if (showImportModal && !selectedListType) {
-      const firstList = Object.keys(DEFAULT_CURATED_LISTS)[0];
-      if (!firstList) return;
-      const frameId = requestAnimationFrame(() => {
-        setSelectedListType(firstList);
-      });
-      return () => cancelAnimationFrame(frameId);
-    }
-  }, [showImportModal, selectedListType]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2004,9 +3438,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleImportCurated = async (mode: "merge" | "replace") => {
-    const feedsToImport =
-      DEFAULT_CURATED_LISTS[selectedListType] || DEFAULT_FEEDS;
+  const handleImportCurated = async (
+    mode: CuratedImportMode,
+    selectedFeeds: FeedSource[],
+    listName: string,
+  ) => {
+    if (selectedFeeds.length === 0) return;
+
+    const feedsToImport = selectedFeeds;
 
     if (mode === "replace") {
       if (
@@ -2014,7 +3453,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           buildReplaceCuratedCollectionConfirmation({
             currentFeeds,
             replacementFeeds: feedsToImport,
-            listName: selectedListType,
+            listName,
           }),
         )
       ) {
@@ -2050,6 +3489,23 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       setFeeds(defaultFeeds);
       refreshAppearance();
       await alertSuccess("Feeds resetados com sucesso!");
+    }
+  };
+
+  const handleResetCategoriesToDefaults = async () => {
+    if (
+      await confirmDanger(
+        buildResetCategoriesConfirmation({
+          categories,
+          feedCount: currentFeeds.length,
+        }),
+      )
+    ) {
+      resetToDefaults();
+      setFeeds((feeds) =>
+        feeds.map((feed) => ({ ...feed, categoryId: undefined })),
+      );
+      await alertSuccess("Categorias padrão restauradas.");
     }
   };
 
@@ -2450,22 +3906,22 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       label: "Visão geral",
       description: "Resumo e próximos passos",
       overviewRoute: "feeds:overview",
-      icon: <Library className="h-4 w-4" />,
+      icon: <LayoutGrid className="h-4 w-4" />,
     },
     {
       id: "sources",
       label: "Fontes",
-      description: "Feeds, entrada e quarentena",
+      description: "Feeds, busca e quarentena",
       overviewRoute: "feeds:list",
-      icon: <FileUp className="h-4 w-4" />,
+      icon: <Rss className="h-4 w-4" />,
       badge: quarantineCount > 0 ? quarantineCount : undefined,
     },
     {
       id: "organization",
       label: "Organização",
-      description: "Categorias e roteamento visual",
+      description: "Categorias",
       overviewRoute: "feeds:categories",
-      icon: <Tags className="h-4 w-4" />,
+      icon: <FolderTree className="h-4 w-4" />,
     },
     {
       id: "maintenance",
@@ -2477,9 +3933,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     {
       id: "diagnostics",
       label: "Diagnóstico",
-      description: "Saúde, infraestrutura e relatórios",
+      description: "Saúde e infraestrutura",
       overviewRoute: "diagnostics:overview",
-      icon: <BarChart3 className="h-4 w-4" />,
+      icon: <Activity className="h-4 w-4" />,
       badge: invalidCount > 0 ? invalidCount : undefined,
     },
   ];
@@ -2625,7 +4081,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           ref={contentScrollRef}
           className="feed-manager-workspace custom-scrollbar"
         >
-          <div className="feed-manager-workspace-inner">
+          <div
+            className={`feed-manager-workspace-inner feed-manager-workspace-inner--${activeArea}`}
+          >
             <div className="feed-manager-workspace-heading">
               <h2>{activeAreaContent.title}</h2>
               <p>{activeAreaContent.description}</p>
@@ -2646,7 +4104,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
             {activeArea === "sources" && (
               <FeedManagerSourcesPage
-                activeFeeds={activeFeeds}
+                activeFeeds={currentFeeds}
                 articles={articles}
                 categories={categories}
                 currentFeedCount={currentFeeds.length}
@@ -2654,11 +4112,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 newFeedCategory={newFeedCategory}
                 newFeedTitle={newFeedTitle}
                 newFeedUrl={newFeedUrl}
-                onConfirmRefreshAll={handleConfirmRefreshAll}
                 onImportOPML={() => fileInputRef.current?.click()}
-                onMoveCategory={moveFeedToCategory}
                 onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
-                onRefreshFeeds={onRefreshFeeds}
                 onRemoveFeed={handleRemoveFeed}
                 onRetryFeed={validateSingleFeed}
                 onShowCuratedLists={() => setShowImportModal(true)}
@@ -2688,7 +4143,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onRemoveFeed={handleRemoveFeed}
                 onToggleHideFromAll={handleToggleHideFromAll}
                 reorderCategories={reorderCategories}
-                resetCategoriesToDefaults={resetToDefaults}
                 setFeeds={setFeeds}
                 updateCategory={updateCategory}
               />
@@ -2702,6 +4156,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 onImportOPML={() => fileInputRef.current?.click()}
                 onShowImportModal={() => setShowImportModal(true)}
                 onResetDefaults={handleResetToDefaults}
+                onResetCategories={handleResetCategoriesToDefaults}
                 onCleanupErrors={() => setShowCleanupModal(true)}
                 onDeleteAll={handleDeleteAll}
                 onOpenIo={() => navigateToRoute("operations:io")}
@@ -2722,30 +4177,20 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             )}
 
             {activeArea === "diagnostics" && (
-              <FeedAnalytics
-                embedded
-                feeds={activeFeeds}
+              <FeedManagerDiagnosticsPage
+                activeFeeds={activeFeeds}
                 articles={articles}
+                categories={categories}
                 feedValidations={feedValidations}
-                view="all"
                 focusSection={diagnosticsFocus || undefined}
                 onFocusConsumed={() => setDiagnosticsFocus(null)}
-                quarantineRecommendedUrls={quarantineRecommendedUrls}
-                onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
-                categories={categories}
+                onRefreshFeeds={
+                  onRefreshFeeds ? handleConfirmRefreshAll : undefined
+                }
                 onRetryFeeds={(urls) => void handleValidateSelectedFeeds(urls)}
-                onQuarantineFeeds={(urls) => void handleQuarantineFeeds(urls)}
-                onMoveFeedsCategory={(urls, categoryId) =>
-                  void moveFeedsToCategory(urls, categoryId)
-                }
-                expandedSections={{
-                  health: expandedAccordionRoutes["diagnostics:health"],
-                  infra: expandedAccordionRoutes["diagnostics:infra"],
-                  reports: expandedAccordionRoutes["diagnostics:reports"],
-                }}
-                onToggleSection={(section) =>
-                  toggleAccordionRoute(`diagnostics:${section}`)
-                }
+                onShowError={handleShowError}
+                onQuarantineFeed={(url) => void handleQuarantineFeed(url)}
+                quarantineRecommendedUrls={quarantineRecommendedUrls}
               />
             )}
 
@@ -2850,57 +4295,12 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         }
       />
 
-      <Modal
+      <CuratedListsDialog
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
-        size="md"
-        title="Importar listas curadas"
-        description="Escolha uma lista pronta e decida se ela deve ser mesclada ou substituir sua coleção."
-        tone="selection"
-        zIndexClass="z-[9999]"
-        footer={
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <button
-              onClick={() => setShowImportModal(false)}
-              className={managerSecondaryButtonClass}
-              type="button"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => void handleImportCurated("merge")}
-              className={managerPrimaryButtonClass}
-              type="button"
-            >
-              Mesclar
-            </button>
-            <button
-              onClick={() => void handleImportCurated("replace")}
-              className={managerDangerButtonClass}
-              type="button"
-            >
-              Substituir tudo
-            </button>
-          </div>
-        }
-      >
-        <label className="block">
-          <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
-            Lista
-          </span>
-          <select
-            value={selectedListType}
-            onChange={(e) => setSelectedListType(e.target.value)}
-            className={`${managerFieldClass} p-3`}
-          >
-            {Object.keys(DEFAULT_CURATED_LISTS).map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-        </label>
-      </Modal>
+        categories={categories}
+        onImport={handleImportCurated}
+      />
 
       <Modal
         isOpen={showErrorModal && !!selectedErrorFeed}
