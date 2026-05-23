@@ -2602,7 +2602,10 @@ const CollectionProxyPanel: React.FC = () => {
   };
 
   return (
-    <section id="feed-manager-section-diagnostics-infra">
+    <section
+      id="feed-manager-section-diagnostics-infra"
+      className="collection-central-proxy-section"
+    >
       <FeedManagerPageTitle
         title="Infraestrutura e proxies"
         description="A versão web depende de proxies de terceiros. A versão desktop pode usar o proxy local como padrão."
@@ -2646,7 +2649,7 @@ const CollectionProxyPanel: React.FC = () => {
       </FeedManagerLightCard>
 
       {localProxy && (
-        <FeedManagerLightCard className="overflow-hidden">
+        <FeedManagerLightCard className="collection-central-proxy-local-card">
           {renderProxyRow(localProxy, 0, 1)}
         </FeedManagerLightCard>
       )}

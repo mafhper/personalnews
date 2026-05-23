@@ -544,26 +544,30 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
 
 .feed-manager-workspace-inner--overview {
   --collection-central-content-width: 80rem;
+  --collection-central-page-width: 80rem;
 }
 
 .feed-manager-workspace-inner--sources {
   --collection-central-content-width: 82rem;
+  --collection-central-page-width: 82rem;
 }
 
 .feed-manager-workspace-inner--organization,
 .feed-manager-workspace-inner--maintenance {
   --collection-central-content-width: 62rem;
+  --collection-central-page-width: 62rem;
 }
 
 .feed-manager-workspace-inner--diagnostics {
   --collection-central-content-width: 74rem;
+  --collection-central-page-width: 74rem;
 }
 
 .feed-manager-workspace-heading {
   min-width: 0;
   width: min(100%, var(--collection-central-page-width, var(--collection-central-content-width, 80rem)));
   justify-self: center;
-  padding-inline: 0.125rem;
+  padding-inline: 0;
 }
 
 .feed-manager-workspace-heading h2 {
@@ -695,7 +699,7 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   gap: 0.25rem;
   margin-bottom: var(--space-3);
   min-width: 0;
-  padding-inline: 0.125rem;
+  padding-inline: 0;
 }
 
 .feed-manager-page-title h3 {
@@ -892,7 +896,7 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
-  padding-inline: 0.125rem;
+  padding-inline: 0;
 }
 
 .collection-central-section-heading .feed-manager-page-title {
@@ -1632,6 +1636,15 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   padding: var(--space-3) var(--space-5);
 }
 
+.collection-central-proxy-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.collection-central-proxy-section > .feed-manager-page-title {
+  margin-bottom: var(--space-1);
+}
+
 .collection-central-proxy-mode-card {
   display: flex;
   flex-wrap: wrap;
@@ -1640,6 +1653,11 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   gap: var(--space-3);
   border-color: var(--feed-manager-border-strong);
   padding: var(--space-4);
+}
+
+.collection-central-proxy-local-card {
+  border-color: var(--feed-manager-border-strong);
+  overflow: hidden;
 }
 
 .collection-central-proxy-mode-switch {
@@ -2634,10 +2652,6 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
     padding-top: var(--space-7);
     padding-left: var(--space-10);
     padding-right: var(--space-10);
-  }
-
-  .feed-manager-workspace-inner {
-    --collection-central-content-width: 82rem;
   }
 
   .feed-manager-shortcut-grid {
