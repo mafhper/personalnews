@@ -2339,7 +2339,7 @@ const CollectionCachePolicyDialog: React.FC<{
           <p>Duração padrão antes de revalidar uma fonte.</p>
         </div>
 
-        <div className="feed-manager-light-card collection-central-cache-toggle-group">
+        <div className="collection-central-cache-toggle-group">
           {toggleRows.map((row) => (
             <label key={row.title} className="collection-central-cache-toggle">
               <span className="feed-manager-light-row__icon">{row.icon}</span>
@@ -2373,7 +2373,7 @@ const CollectionCachePolicyDialog: React.FC<{
           <p>Limite previsto para retenção local de respostas e metadados.</p>
         </div>
 
-        <div className="feed-manager-light-card collection-central-cache-tasks">
+        <div className="collection-central-cache-tasks">
           <div className="collection-central-cache-tasks__header">
             <strong>Tarefas para acelerar implementação</strong>
             <span>preview</span>

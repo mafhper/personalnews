@@ -183,34 +183,49 @@ export const FeedToolsTab: React.FC<FeedToolsTabProps> = ({
             <p>{feedCount} feeds cadastrados. Faça backup antes de ações destrutivas.</p>
           </div>
           <div className="feed-manager-light-card feed-manager-light-card--danger collection-central-risk-panel">
-            <div className="collection-central-risk-panel__body">
+            <div className="collection-central-risk-panel__header">
               <span className="feed-manager-light-row__icon text-[rgb(var(--color-error))]">
-                <Trash2 className="h-[18px] w-[18px]" />
+                <AlertCircle className="h-[18px] w-[18px]" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-semibold">Excluir todos os feeds</p>
-                <p className="mt-1 text-[12.5px] leading-relaxed opacity-72">
-                  Remove todas as fontes da coleção. Categorias e configurações pessoais permanecem.
-                </p>
+                <p>Confirmação obrigatória</p>
+                <span>Ações críticas continuam protegidas pelos diálogos destrutivos existentes.</span>
               </div>
             </div>
-            <div className="collection-central-risk-panel__actions">
+            <div className="collection-central-risk-panel__row">
+              <span className="feed-manager-light-row__icon">
+                <Download className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p>Backup recomendado</p>
+                <span>Exporte um OPML antes de alterar a coleção em massa.</span>
+              </div>
               <button
                 type="button"
                 onClick={onExportOPML}
                 className="feed-manager-secondary-button inline-flex items-center justify-center gap-2 px-3 py-2 text-[12.5px] font-semibold"
               >
                 <Download className="h-4 w-4" />
-                Fazer backup primeiro
+                Exportar
               </button>
+            </div>
+            <div className="collection-central-risk-panel__row collection-central-risk-panel__row--danger">
+              <span className="feed-manager-light-row__icon text-[rgb(var(--color-error))]">
+                <Trash2 className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p>Excluir todos os feeds</p>
+                <span>Remove todas as fontes. Categorias e configurações pessoais permanecem.</span>
+              </div>
               <button
                 type="button"
                 onClick={onDeleteAll}
                 disabled={feedCount === 0}
+                aria-label="Excluir todos os feeds"
                 className={`${managerDangerButtonClass} px-3 py-2 text-[12.5px] disabled:cursor-not-allowed disabled:opacity-45`}
               >
                 <Trash2 className="h-4 w-4" />
-                Excluir todos os feeds
+                Excluir feeds
               </button>
             </div>
           </div>
