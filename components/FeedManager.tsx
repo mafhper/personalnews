@@ -96,7 +96,6 @@ import { FeedDuplicateModal } from "./FeedDuplicateModal";
 import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
 import {
-  managerControlSurfaceClass,
   managerFieldClass,
   managerPrimaryButtonClass,
   managerSecondaryButtonClass,
@@ -562,36 +561,6 @@ const getCuratedIcon = (id: string) => {
   if (id === "brasil-mix") return Flag;
   if (id === "internacional-mix") return Globe;
   return Layers;
-};
-
-const FeedManagerInsight: React.FC<{
-  label: string;
-  value: React.ReactNode;
-  description: string;
-  tone?: "neutral" | "success" | "warning" | "danger";
-}> = ({ label, value, description, tone = "neutral" }) => {
-  const toneClass =
-    tone === "success"
-      ? "text-[rgb(var(--color-success))]"
-      : tone === "warning"
-        ? "text-[rgb(var(--color-warning))]"
-        : tone === "danger"
-          ? "text-[rgb(var(--color-error))]"
-          : "text-[rgb(var(--theme-text-readable))]";
-
-  return (
-    <div className={`${managerControlSurfaceClass} p-4`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[rgb(var(--theme-text-secondary-readable))] opacity-65">
-        {label}
-      </p>
-      <p className={`mt-2 text-2xl font-black leading-none ${toneClass}`}>
-        {value}
-      </p>
-      <p className="mt-2 text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable))] opacity-78">
-        {description}
-      </p>
-    </div>
-  );
 };
 
 const FeedManagerPageTitle: React.FC<{
@@ -1273,7 +1242,7 @@ const FeedManagerSourcesPage: React.FC<{
             </form>
           </FeedManagerLightCard>
 
-          <FeedManagerLightCard className="collection-central-source-add-card">
+          <FeedManagerLightCard className="collection-central-source-add-card collection-central-source-add-card--opml">
             <div className="collection-central-source-add-card__intro">
               <span className="feed-manager-light-row__icon">
                 <FileUp className="h-[18px] w-[18px]" />
@@ -1299,7 +1268,7 @@ const FeedManagerSourcesPage: React.FC<{
             </p>
           </FeedManagerLightCard>
 
-          <FeedManagerLightCard className="collection-central-source-add-card">
+          <FeedManagerLightCard className="collection-central-source-add-card collection-central-source-add-card--curated">
             <div className="collection-central-source-add-card__intro">
               <span className="feed-manager-light-row__icon">
                 <Library className="h-[18px] w-[18px]" />
@@ -2573,6 +2542,14 @@ const CollectionProxyPanel: React.FC = () => {
                 ? `${Math.round(route.avgResponseTime)} ms`
                 : metadata?.responseTime || "sem latência"}
             </span>
+            {isLocal && (
+              <>
+                <span>
+                  backend {snapshot.backend.available ? "disponível" : "offline"}
+                </span>
+                <span>{snapshot.summary.totalRequests} requisições</span>
+              </>
+            )}
             {testResult && (
               <span>{testResult.success ? "teste ok" : "teste falhou"}</span>
             )}
@@ -2671,26 +2648,6 @@ const CollectionProxyPanel: React.FC = () => {
       {localProxy && (
         <FeedManagerLightCard className="overflow-hidden">
           {renderProxyRow(localProxy, 0, 1)}
-          <div className="collection-central-proxy-detail-grid">
-            <span>
-              <small>Backend</small>
-              <strong>{snapshot.backend.available ? "disponível" : "offline"}</strong>
-            </span>
-            <span>
-              <small>Rota primária</small>
-              <strong>{snapshot.runtime.primaryRoute || "LocalBackend"}</strong>
-            </span>
-            <span>
-              <small>Fallback</small>
-              <strong>
-                {snapshot.summary.fallbackActive ? "ativo" : "aguardando"}
-              </strong>
-            </span>
-            <span>
-              <small>Requisições</small>
-              <strong>{snapshot.summary.totalRequests}</strong>
-            </span>
-          </div>
         </FeedManagerLightCard>
       )}
 
@@ -2809,6 +2766,20 @@ const FeedManagerDiagnosticsPage: React.FC<{
   const validRows = rows.filter((row) => row.validation?.isValid);
   const successRate =
     rows.length > 0 ? Math.round((validRows.length / rows.length) * 100) : 0;
+  const averageLatency = React.useMemo(() => {
+    const times = rows
+      .map(
+        (row) =>
+          row.validation?.responseTime || row.validation?.totalValidationTime || 0,
+      )
+      .filter((time) => time > 0);
+    if (times.length === 0) return 0;
+    return Math.round(times.reduce((total, time) => total + time, 0) / times.length);
+  }, [rows]);
+  const latencyScore =
+    averageLatency > 0
+      ? Math.max(0, Math.min(100, Math.round(100 - averageLatency / 30)))
+      : 0;
   const lastChecked = Math.max(
     0,
     ...rows.map((row) => row.validation?.lastChecked || 0),
@@ -2831,31 +2802,49 @@ const FeedManagerDiagnosticsPage: React.FC<{
           description="Resultado da última varredura."
         />
         <FeedManagerLightCard className="collection-central-health-panel">
-          <div className="collection-central-diagnostics-grid">
-            <FeedManagerInsight
-              label="Status geral"
-              value={invalidRows.length > 0 ? "Atenção" : "Saudável"}
-              description={
-                invalidRows.length > 0
-                  ? `${invalidRows.length} fontes pedem revisão.`
-                  : "Nenhuma falha ativa detectada."
-              }
-              tone={invalidRows.length > 0 ? "warning" : "success"}
-            />
-            <FeedManagerInsight
-              label="Disponibilidade"
-              value={`${successRate}%`}
-              description={`${validRows.length}/${rows.length} fontes válidas.`}
-              tone={successRate >= 90 ? "success" : "warning"}
-            />
-            <FeedManagerInsight
-              label="Pendentes"
-              value={pendingRows.length}
-              description="fontes sem leitura recente."
-              tone={pendingRows.length > 0 ? "warning" : "neutral"}
-            />
+          <div className="collection-central-health-summary">
+            <div className="collection-central-health-status">
+              <span className="feed-manager-light-row__icon">
+                {invalidRows.length > 0 ? (
+                  <AlertTriangle className="h-[18px] w-[18px]" />
+                ) : (
+                  <CircleCheck className="h-[18px] w-[18px]" />
+                )}
+              </span>
+              <div>
+                <span>Status geral</span>
+                <strong
+                  className={
+                    invalidRows.length > 0
+                      ? "text-[rgb(var(--color-warning))]"
+                      : "text-[rgb(var(--color-success))]"
+                  }
+                >
+                  {invalidRows.length > 0 ? "Atenção" : "Saudável"}
+                </strong>
+                <small>
+                  {invalidRows.length > 0
+                    ? `${invalidRows.length} fontes pedem revisão.`
+                    : "Nenhuma falha ativa detectada."}
+                </small>
+              </div>
+            </div>
+            <div className="collection-central-health-bars">
+              <div className="collection-central-health-bar">
+                <span>Disponibilidade</span>
+                <strong>{successRate}%</strong>
+                <i style={{ "--value": `${successRate}%` } as React.CSSProperties} />
+                <small>{validRows.length}/{rows.length} fontes válidas</small>
+              </div>
+              <div className="collection-central-health-bar collection-central-health-bar--latency">
+                <span>Latência média</span>
+                <strong>{averageLatency > 0 ? `${averageLatency} ms` : "sem dados"}</strong>
+                <i style={{ "--value": `${latencyScore}%` } as React.CSSProperties} />
+                <small>{pendingRows.length} pendentes de leitura</small>
+              </div>
+            </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="collection-central-health-actions">
             <button
               type="button"
               onClick={onRefreshFeeds}

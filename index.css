@@ -242,9 +242,9 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   --color-onAccent: 8 17 24;
   --feed-manager-border-subtle: rgba(var(--color-border), 0.3);
   --feed-manager-border-strong: rgba(var(--color-border), 0.44);
-  --feed-manager-ui-bg: oklch(0.975 0.006 250);
-  --feed-manager-ui-panel: oklch(0.995 0.002 250);
-  --feed-manager-ui-panel-muted: oklch(0.945 0.007 250);
+  --feed-manager-ui-bg: oklch(0.965 0.006 250);
+  --feed-manager-ui-panel: oklch(0.985 0.004 250);
+  --feed-manager-ui-panel-muted: oklch(0.935 0.007 250);
   --feed-manager-ui-hover: oklch(0.925 0.01 250);
   --feed-manager-ui-text: rgb(var(--theme-manager-text, var(--color-text)));
   --feed-manager-ui-muted: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
@@ -719,10 +719,11 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--feed-manager-border-strong);
-  border-radius: var(--radius-md);
+  border-radius: 0.75rem;
   background: var(--feed-manager-ui-panel);
   color: rgb(var(--theme-manager-text, var(--color-text)));
   box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--feed-manager-border-strong) 86%, transparent),
     0 1px 0 rgba(255, 255, 255, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
@@ -914,13 +915,36 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
 }
 
 .collection-central-source-add-card--manual {
-  border-color: rgba(var(--color-accent), 0.38);
+  border-color: rgba(var(--color-accent), 0.5);
   background:
-    linear-gradient(rgba(var(--color-accent), 0.055), rgba(var(--color-accent), 0.025)),
+    linear-gradient(rgba(var(--color-accent), 0.12), rgba(var(--color-accent), 0.04)),
     var(--feed-manager-ui-panel);
   box-shadow:
-    inset 0 0 0 1px rgba(var(--color-accent), 0.08),
+    inset 0 0 0 1px rgba(var(--color-accent), 0.32),
     0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.collection-central-source-add-card--opml {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.45fr);
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.collection-central-source-add-card--opml .collection-central-source-add-card__intro {
+  align-items: flex-start;
+}
+
+.collection-central-source-add-card--opml .collection-central-source-add-card__action {
+  margin-top: 0;
+  width: 100%;
+}
+
+.collection-central-source-add-card--opml > p {
+  grid-column: 1 / -1;
+  margin-top: 0;
+  padding-top: var(--space-3);
+  box-shadow: inset 0 1px 0 var(--feed-manager-border-subtle);
 }
 
 .collection-central-source-add-card__intro {
@@ -935,7 +959,7 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   width: 100%;
 }
 
-.collection-central-page--sources .collection-central-source-add-card:not(.collection-central-source-add-card--manual) {
+.collection-central-page--sources .collection-central-source-add-card--curated {
   display: grid;
   align-content: start;
   gap: var(--space-3);
@@ -1523,19 +1547,87 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   padding: 0;
 }
 
-.collection-central-health-panel .feed-manager-control-surface {
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: var(--space-4) var(--space-5);
+.collection-central-health-summary {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.9fr) minmax(0, 1.8fr);
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-5);
 }
 
-.collection-central-health-panel .feed-manager-control-surface + .feed-manager-control-surface {
-  box-shadow: inset 1px 0 0 var(--feed-manager-border-strong);
+.collection-central-health-status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
 }
 
-.collection-central-health-panel .collection-central-diagnostics-grid + .mt-4 {
-  margin-top: 0;
+.collection-central-health-status > div,
+.collection-central-health-bar {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.collection-central-health-status span,
+.collection-central-health-bar span {
+  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  font-size: 0.75rem;
+}
+
+.collection-central-health-status strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.collection-central-health-status small,
+.collection-central-health-bar small {
+  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  font-size: 0.75rem;
+}
+
+.collection-central-health-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.collection-central-health-bar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.collection-central-health-bar i {
+  display: block;
+  grid-column: 1 / -1;
+  height: 0.3rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--feed-manager-ui-panel-muted);
+}
+
+.collection-central-health-bar i::before {
+  display: block;
+  width: var(--value);
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(var(--color-success));
+  content: "";
+}
+
+.collection-central-health-bar--latency i::before {
+  background: rgb(var(--color-accent));
+}
+
+.collection-central-health-bar small {
+  grid-column: 1 / -1;
+}
+
+.collection-central-health-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   box-shadow: inset 0 1px 0 var(--feed-manager-border-strong);
   padding: var(--space-3) var(--space-5);
 }
@@ -2411,12 +2503,13 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
 }
 
 @media (max-width: 767px) {
-  .collection-central-health-panel .collection-central-diagnostics-grid {
+  .collection-central-source-add-card--opml {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .collection-central-health-panel .feed-manager-control-surface + .feed-manager-control-surface {
-    box-shadow: inset 0 1px 0 var(--feed-manager-border-strong);
+  .collection-central-health-summary,
+  .collection-central-health-bars {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2470,7 +2563,7 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
 
   .feed-manager-layout,
   .feed-manager-layout--expanded {
-    grid-template-columns: 20rem minmax(0, 1fr);
+    grid-template-columns: 16rem minmax(0, 1fr);
   }
 
   .feed-manager-layout--collapsed {
