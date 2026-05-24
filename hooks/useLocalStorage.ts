@@ -17,7 +17,7 @@
  * - Histórico de busca (não sensíveis)
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 function getStorageValue<T,>(key: string, defaultValue: T): T {
   if (typeof window === 'undefined') {
@@ -35,7 +35,9 @@ function getStorageValue<T,>(key: string, defaultValue: T): T {
   return defaultValue;
 }
 
-function persistStorageValue<T,>(key: string, value: T): void {
+let localStorageSourceSequence = 0;
+
+function persistStorageValue<T,>(key: string, value: T, source?: string): void {
   if (typeof window === 'undefined') {
     return;
   }
@@ -44,7 +46,7 @@ function persistStorageValue<T,>(key: string, value: T): void {
     window.localStorage.setItem(key, JSON.stringify(value));
     queueMicrotask(() => {
       window.dispatchEvent(new CustomEvent('localStorage-change', {
-        detail: { key, value }
+        detail: { key, source, value }
       }));
     });
   } catch (e) {
@@ -53,6 +55,12 @@ function persistStorageValue<T,>(key: string, value: T): void {
 }
 
 export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const sourceRef = useRef<string>('');
+  if (!sourceRef.current) {
+    localStorageSourceSequence += 1;
+    sourceRef.current = `useLocalStorage:${key}:${localStorageSourceSequence}`;
+  }
+
   const [value, setValue] = useState<T>(() => {
     return getStorageValue(key, initialValue);
   });
@@ -68,7 +76,7 @@ export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dis
         return previousValue;
       }
 
-      persistStorageValue(key, resolvedValue);
+      persistStorageValue(key, resolvedValue, sourceRef.current);
       return resolvedValue;
     });
   }, [key]);
@@ -79,7 +87,7 @@ export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dis
     }
 
     if (window.localStorage.getItem(key) === null) {
-      persistStorageValue(key, value);
+      persistStorageValue(key, value, sourceRef.current);
     }
   }, [key, value]);
 
@@ -97,7 +105,7 @@ export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dis
     };
 
     const handleCustomStorageChange = (e: CustomEvent) => {
-      if (e.detail.key === key) {
+      if (e.detail.key === key && e.detail.source !== sourceRef.current) {
         setValue(e.detail.value);
       }
     };
