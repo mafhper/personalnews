@@ -39,7 +39,10 @@ const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
 
 const MAX_TIMELINE_EPISODES = 120;
 const MAX_INLINE_EPISODES = 10;
+const DOUBLE_LAYOUT_PREVIEW_EPISODES = 3;
 const DOUBLE_LAYOUT_MIN_WIDTH = 760;
+const DOUBLE_LAYOUT_MIN_PODCASTS = 2;
+const DOUBLE_LAYOUT_MAX_PODCASTS = 6;
 const POCKETFEEDS_VIEW_STORAGE_KEY = "pocketfeeds-view-mode";
 const DEFAULT_POCKETFEEDS_VIEW_MODE: PocketFeedsViewMode = "double";
 
@@ -204,6 +207,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   articles,
 }) => {
   const layoutMeasureRef = useRef<HTMLDivElement | null>(null);
+  const layoutPickerRef = useRef<HTMLDivElement | null>(null);
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<Article | null>(null);
@@ -229,19 +233,6 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   const selectedViewMode = isPocketFeedsViewMode(storedViewMode)
     ? storedViewMode
     : DEFAULT_POCKETFEEDS_VIEW_MODE;
-  const canUseDoubleLayout =
-    layoutWidth === 0 || layoutWidth >= DOUBLE_LAYOUT_MIN_WIDTH;
-  const viewMode =
-    selectedViewMode === "double" && !canUseDoubleLayout
-      ? "single"
-      : selectedViewMode;
-  const availableViewModeOptions = VIEW_MODE_OPTIONS.filter(
-    (option) => option.id !== "double" || canUseDoubleLayout,
-  );
-  const currentViewModeOption =
-    VIEW_MODE_OPTIONS.find((option) => option.id === viewMode) ||
-    VIEW_MODE_OPTIONS[1];
-  const CurrentViewModeIcon = currentViewModeOption.Icon;
 
   useEffect(() => {
     if (!isPocketFeedsViewMode(storedViewMode)) {
@@ -268,6 +259,34 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!isLayoutPickerOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        layoutPickerRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setLayoutPickerOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setLayoutPickerOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isLayoutPickerOpen]);
 
   const podcastGroups = useMemo<PodcastGroup[]>(() => {
     const groups = new Map<string, Article[]>();
@@ -330,6 +349,30 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       {},
     );
   }, [visibleTimelineEpisodes]);
+
+  const canUseDoubleLayoutByWidth =
+    layoutWidth === 0 || layoutWidth >= DOUBLE_LAYOUT_MIN_WIDTH;
+  const canUseDoubleLayoutByPodcastCount =
+    podcastGroups.length >= DOUBLE_LAYOUT_MIN_PODCASTS &&
+    podcastGroups.length <= DOUBLE_LAYOUT_MAX_PODCASTS;
+  const canUseDoubleLayout =
+    canUseDoubleLayoutByWidth && canUseDoubleLayoutByPodcastCount;
+  const doubleLayoutFallback: PocketFeedsViewMode = !canUseDoubleLayoutByWidth
+    ? "single"
+    : podcastGroups.length > DOUBLE_LAYOUT_MAX_PODCASTS
+      ? "grid"
+      : "single";
+  const viewMode =
+    selectedViewMode === "double" && !canUseDoubleLayout
+      ? doubleLayoutFallback
+      : selectedViewMode;
+  const availableViewModeOptions = VIEW_MODE_OPTIONS.filter(
+    (option) => option.id !== "double" || canUseDoubleLayout,
+  );
+  const currentViewModeOption =
+    VIEW_MODE_OPTIONS.find((option) => option.id === viewMode) ||
+    VIEW_MODE_OPTIONS[1];
+  const CurrentViewModeIcon = currentViewModeOption.Icon;
 
   const formatPlaybackTime = (seconds: number): string => {
     if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -547,25 +590,36 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
 
   const renderPodcastCard = (
     group: PodcastGroup,
-    options: { compact?: boolean } = {},
+    options: { compact?: boolean; spanWide?: boolean } = {},
   ) => {
     const isExpanded =
       expandedPodcast === group.name || podcastGroups.length === 1;
+    const hasMorePreviewEpisodes =
+      group.episodes.length > DOUBLE_LAYOUT_PREVIEW_EPISODES;
+    const canToggleEpisodes =
+      podcastGroups.length > 1 &&
+      (!options.compact || hasMorePreviewEpisodes);
+    const visibleDoubleEpisodes = group.episodes.slice(
+      0,
+      isExpanded ? MAX_INLINE_EPISODES : DOUBLE_LAYOUT_PREVIEW_EPISODES,
+    );
     const artworkEpisode = getPodcastArtworkEpisode(group);
     const artworkClass = options.compact
-      ? "h-16 w-16 sm:h-24 sm:w-24"
+      ? "h-16 w-16 sm:h-20 sm:w-20"
       : "h-24 w-24 md:h-28 md:w-28";
 
     return (
       <article
         key={group.name}
-        className="overflow-hidden rounded-[var(--feed-card-radius)] border border-[rgb(var(--color-border))] transition-all duration-300 feed-surface"
+        className={`overflow-hidden rounded-[var(--feed-card-radius)] border border-[rgb(var(--color-border))] transition-all duration-300 feed-surface ${
+          options.spanWide ? "md:col-span-2" : ""
+        }`}
         data-testid="pocketfeeds-podcast-card"
       >
         <button
           type="button"
           className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-[rgba(var(--color-text),0.02)]"
-          onClick={() => podcastGroups.length > 1 && togglePodcast(group.name)}
+          onClick={() => canToggleEpisodes && togglePodcast(group.name)}
           aria-expanded={isExpanded}
         >
           <PodcastArtwork
@@ -581,9 +635,20 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
             <span className="mt-1 block text-sm text-[rgb(var(--color-textSecondary))]">
               {group.episodes.length} {episodeLabel(group.episodes.length)}
             </span>
-            {podcastGroups.length > 1 && (
+            {options.compact && group.firstEpisode.title && (
+              <span className="mt-3 block line-clamp-2 text-sm font-medium text-[rgb(var(--color-text))]">
+                {group.firstEpisode.title}
+              </span>
+            )}
+            {canToggleEpisodes && (
               <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[rgb(var(--color-accent))]">
-                {isExpanded ? "Recolher" : "Ver episódios"}
+                {options.compact
+                  ? isExpanded
+                    ? "Mostrar menos"
+                    : "Mais episódios"
+                  : isExpanded
+                    ? "Recolher"
+                    : "Ver episódios"}
                 <ChevronDown
                   className={`h-4 w-4 transition-transform ${
                     isExpanded ? "rotate-180" : ""
@@ -595,8 +660,29 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
           </span>
         </button>
 
-        {isExpanded &&
-          renderInlineEpisodes(group, { compact: true, showArtwork: true })}
+        {options.compact ? (
+          <div
+            className="border-t border-[rgb(var(--color-border))]"
+            data-testid={`pocketfeeds-double-episodes-${group.name}`}
+          >
+            {visibleDoubleEpisodes.map((episode, index) =>
+              renderEpisodeRow(episode, index, {
+                compact: true,
+                showArtwork: true,
+              }),
+            )}
+
+            {group.episodes.length > MAX_INLINE_EPISODES && isExpanded && (
+              <div className="p-4 text-center text-sm text-[rgb(var(--color-textSecondary))]">
+                +{group.episodes.length - MAX_INLINE_EPISODES} episódios
+                adicionais
+              </div>
+            )}
+          </div>
+        ) : (
+          isExpanded &&
+          renderInlineEpisodes(group, { compact: true, showArtwork: true })
+        )}
       </article>
     );
   };
@@ -792,8 +878,14 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
         }
         data-testid={`pocketfeeds-${viewMode}-layout`}
       >
-        {podcastGroups.map((group) =>
-          renderPodcastCard(group, { compact: viewMode === "double" }),
+        {podcastGroups.map((group, index) =>
+          renderPodcastCard(group, {
+            compact: viewMode === "double",
+            spanWide:
+              viewMode === "double" &&
+              podcastGroups.length % 2 === 1 &&
+              index === podcastGroups.length - 1,
+          }),
         )}
       </div>
     );
@@ -834,7 +926,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       />
 
       <header
-        className={`${layoutFrameClass} mb-8 flex flex-col gap-4 border-b border-[rgb(var(--color-border))] pb-4 lg:flex-row lg:items-center lg:justify-between`}
+        className={`${layoutFrameClass} mb-8 flex items-center justify-between gap-4 border-b border-[rgb(var(--color-border))] pb-4`}
         data-testid="pocketfeeds-layout-header"
       >
         <div className="flex min-w-0 items-center gap-3">
@@ -852,15 +944,26 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
           </span>
         </div>
 
-        <div
-          className={`inline-flex overflow-hidden rounded-full border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)] p-1 transition-all ${
-            isLayoutPickerOpen ? "w-full sm:w-auto" : "w-auto"
-          }`}
-          onMouseLeave={() => setLayoutPickerOpen(false)}
-        >
-          {isLayoutPickerOpen ? (
+        <div ref={layoutPickerRef} className="relative flex flex-shrink-0 justify-end">
+          <button
+            type="button"
+            className={`flex h-12 w-12 items-center justify-center rounded-full border border-[rgb(var(--color-border))] transition-colors ${
+              isLayoutPickerOpen
+                ? "bg-[rgba(var(--color-accent),0.16)] text-[rgb(var(--color-text))]"
+                : "bg-[rgba(var(--color-text),0.04)] text-[rgb(var(--color-textSecondary))] hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
+            }`}
+            onClick={() => setLayoutPickerOpen((current) => !current)}
+            aria-expanded={isLayoutPickerOpen}
+            aria-haspopup="true"
+            aria-label={`Alterar modo de visualização dos podcasts. Atual: ${currentViewModeOption.label}`}
+            title={`Layout: ${currentViewModeOption.label}`}
+          >
+            <CurrentViewModeIcon className="h-4 w-4" aria-hidden />
+          </button>
+
+          {isLayoutPickerOpen && (
             <div
-              className="inline-flex w-full sm:w-auto"
+              className="absolute right-0 top-14 z-20 inline-flex max-w-[calc(100vw-2rem)] rounded-full border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))]/95 p-1.5 shadow-xl backdrop-blur-xl"
               aria-label="Modo de visualização dos podcasts"
               role="group"
             >
@@ -871,39 +974,32 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
                     <button
                       key={id}
                       type="button"
-                      className={`flex min-h-9 flex-1 items-center justify-center gap-2 rounded-full px-3 text-sm font-medium transition-colors sm:flex-none ${
+                      className={`flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3.5 text-sm font-medium transition-colors ${
                         isActive
                           ? "bg-[rgba(var(--color-accent),0.22)] text-[rgb(var(--color-text))]"
                           : "text-[rgb(var(--color-textSecondary))] hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
                       }`}
-                      onClick={() => setStoredViewMode(id)}
+                      onClick={() => {
+                        setStoredViewMode(id);
+                        setLayoutPickerOpen(false);
+                      }}
                       aria-pressed={isActive}
                       title={title}
                     >
                       <Icon className="h-4 w-4" aria-hidden />
-                      <span className="hidden md:inline">{label}</span>
-                      <span className="md:hidden">{shortLabel}</span>
+                      <span className="hidden sm:inline">{label}</span>
+                      <span className="sm:hidden">{shortLabel}</span>
                     </button>
                   );
                 },
               )}
             </div>
-          ) : (
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[rgb(var(--color-textSecondary))] transition-colors hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
-              onClick={() => setLayoutPickerOpen(true)}
-              aria-label={`Alterar modo de visualização dos podcasts. Atual: ${currentViewModeOption.label}`}
-              title={`Layout: ${currentViewModeOption.label}`}
-            >
-              <CurrentViewModeIcon className="h-4 w-4" aria-hidden />
-            </button>
           )}
         </div>
       </header>
 
       <div className={layoutFrameClass}>
-        {visibleTimelineEpisodes.length > 1 && viewMode !== "mixtape" && (
+        {visibleTimelineEpisodes.length > 1 && viewMode === "single" && (
           <section className="mb-8 rounded-2xl border border-[rgb(var(--color-border))] p-4 feed-surface md:p-5">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>

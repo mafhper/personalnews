@@ -74,6 +74,14 @@ const podcastEpisodes: Article[] = [
   }),
 ];
 
+const manyPodcastFeeds: Article[] = Array.from({ length: 7 }, (_, index) =>
+  makeEpisode(
+    `Podcast ${index + 1}`,
+    `Episode ${index + 1}`,
+    `2026-05-${String(20 - index).padStart(2, "0")}T12:00:00Z`,
+  ),
+);
+
 const openLayoutPicker = () => {
   fireEvent.click(
     screen.getByRole("button", {
@@ -188,6 +196,11 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("renders a global date timeline with expandable episode rows", () => {
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
     const olderEpisode: Article = {
       ...podcastEpisode,
       title: "Older design episode",
@@ -241,6 +254,18 @@ describe("PocketFeedsLayout audio player", () => {
     expect(screen.getByTestId("pocketfeeds-double-layout")).toHaveClass(
       "md:grid-cols-2",
     );
+    expect(screen.queryByText("Linha do tempo")).not.toBeInTheDocument();
+    const scienceDoublePanel = screen.getByTestId(
+      "pocketfeeds-double-episodes-Science Podcast",
+    );
+    expect(within(scienceDoublePanel).getByText("Science newest")).toBeInTheDocument();
+    expect(within(scienceDoublePanel).getByText("Science older")).toBeInTheDocument();
+    const gamesCard = screen
+      .getAllByTestId("pocketfeeds-podcast-card")
+      .find(
+        (card) => within(card).queryAllByText("Games Podcast").length > 0,
+      );
+    expect(gamesCard).toHaveClass("md:col-span-2");
     expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
       "max-w-6xl",
     );
@@ -253,6 +278,7 @@ describe("PocketFeedsLayout audio player", () => {
       "max-w-4xl",
     );
 
+    openLayoutPicker();
     fireEvent.click(screen.getByRole("button", { name: /grid/i }));
     expect(screen.getByTestId("pocketfeeds-grid-layout")).toBeInTheDocument();
     expect(screen.getByTestId("pocketfeeds-grid-layout")).toHaveStyle({
@@ -299,13 +325,33 @@ describe("PocketFeedsLayout audio player", () => {
       expect(
         screen.queryByRole("button", { name: /2 colunas/i }),
       ).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /1 coluna/i })).toHaveAttribute(
-        "aria-pressed",
-        "true",
-      );
+      const picker = screen.getByRole("group", {
+        name: /modo de visualização dos podcasts/i,
+      });
+      expect(
+        within(picker).getByRole("button", { name: /1 coluna/i }),
+      ).toHaveAttribute("aria-pressed", "true");
     } finally {
       rectSpy.mockRestore();
     }
+  });
+
+  it("hides the two-column option for larger podcast libraries and falls back to grid", () => {
+    render(<PocketFeedsLayout articles={manyPodcastFeeds} />);
+
+    expect(screen.getByTestId("pocketfeeds-grid-layout")).toBeInTheDocument();
+
+    openLayoutPicker();
+
+    expect(
+      screen.queryByRole("button", { name: /2 colunas/i }),
+    ).not.toBeInTheDocument();
+    const picker = screen.getByRole("group", {
+      name: /modo de visualização dos podcasts/i,
+    });
+    expect(
+      within(picker).getByRole("button", { name: /grid/i }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("persists the selected podcast layout mode", async () => {
@@ -328,26 +374,52 @@ describe("PocketFeedsLayout audio player", () => {
     expect(screen.getByTestId("pocketfeeds-mixtape-layout")).toBeInTheDocument();
   });
 
-  it("collapses the layout picker after mouse leaves", () => {
+  it("keeps the layout picker open until selection, Escape, or outside click", () => {
     render(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     openLayoutPicker();
-    const picker = screen.getByRole("group", {
+    const pickerGroup = screen.getByRole("group", {
       name: /modo de visualização dos podcasts/i,
-    }).parentElement;
+    });
 
-    fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
-    expect(screen.getByRole("button", { name: /mixtape/i })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    fireEvent.mouseLeave(pickerGroup.parentElement!);
 
-    fireEvent.mouseLeave(picker!);
-
-    expect(screen.queryByRole("button", { name: /^mixtape$/i })).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /atual: mixtape/i }),
+      screen.getByRole("button", { name: /mixtape/i }),
     ).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(
+      screen.queryByRole("group", {
+        name: /modo de visualização dos podcasts/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    openLayoutPicker();
+    expect(
+      screen.getByRole("group", {
+        name: /modo de visualização dos podcasts/i,
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    expect(
+      screen.queryByRole("group", {
+        name: /modo de visualização dos podcasts/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    openLayoutPicker();
+    fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
+
+    expect(screen.getByTestId("pocketfeeds-mixtape-layout")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", {
+        name: /modo de visualização dos podcasts/i,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens the podcast episode modal from grid mode", () => {
@@ -368,11 +440,18 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("uses episode-specific artwork in expanded episode lists", () => {
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
     render(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     const scienceCard = screen
       .getAllByTestId("pocketfeeds-podcast-card")
-      .find((card) => within(card).queryByText("Science Podcast"));
+      .find(
+        (card) => within(card).queryAllByText("Science Podcast").length > 0,
+      );
 
     expect(scienceCard).toBeDefined();
     fireEvent.click(
@@ -394,6 +473,11 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("keeps responsive artwork visible and skips empty episode placeholders", () => {
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
     const textOnlyNewest = {
       ...podcastEpisodes[0],
       title: "Science text-only newest",
@@ -408,7 +492,9 @@ describe("PocketFeedsLayout audio player", () => {
 
     const scienceCard = screen
       .getAllByTestId("pocketfeeds-podcast-card")
-      .find((card) => within(card).queryByText("Science Podcast"));
+      .find(
+        (card) => within(card).queryAllByText("Science Podcast").length > 0,
+      );
 
     expect(scienceCard).toBeDefined();
     expect(within(scienceCard!).getByAltText("Science Podcast")).toHaveAttribute(

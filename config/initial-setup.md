@@ -219,9 +219,12 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### podcasts
 
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 - MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
+- 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
+- Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
@@ -263,8 +266,12 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### podcasts
 
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
+- MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
+- 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
+- Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
@@ -374,6 +381,9 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
+- MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
+- 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
+- Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
 
 ### youtube
 

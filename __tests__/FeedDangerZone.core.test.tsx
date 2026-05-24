@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   ],
   translations: {} as Record<string, string>,
   updateCategory: vi.fn(),
+  validateFeedWithDiscovery: vi.fn(),
   validateFeeds: vi.fn(),
   validateFeed: vi.fn(),
 }));
@@ -78,6 +79,7 @@ vi.mock("../hooks/useFeedCategories", () => ({
 vi.mock("../services/feedValidator", () => ({
   feedValidator: {
     validateFeed: mocks.validateFeed,
+    validateFeedWithDiscovery: mocks.validateFeedWithDiscovery,
     validateFeeds: mocks.validateFeeds,
   },
 }));
@@ -123,6 +125,12 @@ beforeEach(() => {
     isValid: true,
     status: "valid",
     url: "https://one.example/rss",
+  });
+  mocks.validateFeedWithDiscovery.mockResolvedValue({
+    isValid: true,
+    status: "valid",
+    title: "Added feed",
+    url: "https://added.example/rss",
   });
   mocks.validateFeeds.mockResolvedValue([]);
 });
@@ -282,6 +290,50 @@ describe("Feed danger zone flows", () => {
       screen.getByText(/Clique para expandir/),
     ).toBeInTheDocument();
     expect(screen.getByText("Feeds sem categoria")).toBeInTheDocument();
+  });
+
+  it("adds a manual feed hidden from the All view", async () => {
+    const setFeeds = vi.fn();
+    render(
+      <FeedManager
+        currentFeeds={testFeeds}
+        setFeeds={setFeeds}
+        closeModal={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Fontes. Feeds, busca e quarentena",
+      }),
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("https://exemplo.com/feed"), {
+      target: { value: "https://added.example/rss" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Nome opcional"), {
+      target: { value: "Added custom" },
+    });
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "tech" },
+    });
+    fireEvent.click(screen.getByLabelText(/Ocultar da view All/i));
+    fireEvent.click(screen.getByRole("button", { name: /^Adicionar$/i }));
+
+    await waitFor(() => expect(setFeeds).toHaveBeenCalledTimes(1));
+
+    const updater = setFeeds.mock.calls[0][0] as (
+      feeds: FeedSource[],
+    ) => FeedSource[];
+    expect(updater(testFeeds)).toEqual([
+      ...testFeeds,
+      {
+        url: "https://added.example/rss",
+        customTitle: "Added custom",
+        categoryId: "tech",
+        hideFromAll: true,
+      },
+    ]);
   });
 
   it("opens operation overview and anchors submenu sections", async () => {

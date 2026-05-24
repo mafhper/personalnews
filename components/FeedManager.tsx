@@ -144,6 +144,13 @@ type FeedManagerRoute =
   | "diagnostics:health"
   | "diagnostics:infra"
   | "diagnostics:reports";
+type SourceFilterId =
+  | "all"
+  | "attention"
+  | "pending"
+  | "valid"
+  | "quarantine"
+  | "hidden";
 
 const routeAreaMap: Record<FeedManagerRoute, FeedManagerArea> = {
   "feeds:overview": "overview",
@@ -914,6 +921,7 @@ const FeedManagerSourcesPage: React.FC<{
   currentFeedCount: number;
   feedValidations: Map<string, FeedValidationResult>;
   newFeedCategory: string;
+  newFeedHideFromAll: boolean;
   newFeedTitle: string;
   newFeedUrl: string;
   onImportOPML: () => void;
@@ -929,6 +937,7 @@ const FeedManagerSourcesPage: React.FC<{
   processingUrl: string | null;
   quarantineRecommendedUrls: Set<string>;
   setNewFeedCategory: (id: string) => void;
+  setNewFeedHideFromAll: (hideFromAll: boolean) => void;
   setNewFeedTitle: (title: string) => void;
   setNewFeedUrl: (url: string) => void;
 }> = ({
@@ -938,6 +947,7 @@ const FeedManagerSourcesPage: React.FC<{
   currentFeedCount,
   feedValidations,
   newFeedCategory,
+  newFeedHideFromAll,
   newFeedTitle,
   newFeedUrl,
   onImportOPML,
@@ -953,14 +963,14 @@ const FeedManagerSourcesPage: React.FC<{
   processingUrl,
   quarantineRecommendedUrls,
   setNewFeedCategory,
+  setNewFeedHideFromAll,
   setNewFeedTitle,
   setNewFeedUrl,
 }) => {
   const isProcessing = processingUrl !== null;
   const [sourceQuery, setSourceQuery] = React.useState("");
-  const [sourceFilter, setSourceFilter] = React.useState<
-    "all" | "attention" | "pending" | "valid" | "quarantine" | "hidden"
-  >("all");
+  const [sourceFilter, setSourceFilter] =
+    React.useState<SourceFilterId>("all");
   const curatedLists = React.useMemo(getCuratedLists, []);
   const categoryById = React.useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -1051,6 +1061,34 @@ const FeedManagerSourcesPage: React.FC<{
       ),
     },
   ];
+  const sourceStatusCounts = activeFeeds.reduce(
+    (counts, feed) => {
+      const status = getSourceStatus(feed);
+      counts[status] += 1;
+      return counts;
+    },
+    {
+      error: 0,
+      hidden: 0,
+      pending: 0,
+      quarantine: 0,
+      valid: 0,
+    },
+  );
+  const attentionSourceCount =
+    sourceStatusCounts.error + sourceStatusCounts.quarantine;
+  React.useEffect(() => {
+    if (sourceFilter === "pending" && sourceStatusCounts.pending === 0) {
+      setSourceFilter("all");
+    }
+  }, [sourceFilter, sourceStatusCounts.pending]);
+  const visibleSourceGroups = sourceGroups.filter((group) => {
+    if (group.id === "pending" && group.rows.length === 0) return false;
+    if (group.id === "attention" && group.rows.length === 0) {
+      return sourceFilter === "all" || sourceFilter === "attention";
+    }
+    return group.rows.length > 0;
+  });
   const statusLabel = {
     valid: "Válido",
     error: "Erro",
@@ -1065,14 +1103,25 @@ const FeedManagerSourcesPage: React.FC<{
     quarantine: "collection-central-status-dot--warning",
     hidden: "collection-central-status-dot--muted",
   } as const;
-  const filters = [
-    { id: "all", label: "Todos" },
-    { id: "attention", label: "Com erro" },
-    { id: "pending", label: "Pendentes" },
-    { id: "valid", label: "Válidos" },
-    { id: "quarantine", label: "Quarentena" },
-    { id: "hidden", label: "Ocultos" },
-  ] as const;
+  const filterOptions: Array<{
+    count: number;
+    id: SourceFilterId;
+    label: string;
+  }> = [
+    { id: "all", label: "Todos", count: activeFeeds.length },
+    { id: "attention", label: "Com erro", count: attentionSourceCount },
+    { id: "pending", label: "Pendentes", count: sourceStatusCounts.pending },
+    { id: "valid", label: "Válidos", count: sourceStatusCounts.valid },
+    {
+      id: "quarantine",
+      label: "Quarentena",
+      count: sourceStatusCounts.quarantine,
+    },
+    { id: "hidden", label: "Ocultos", count: sourceStatusCounts.hidden },
+  ];
+  const filters = filterOptions.filter(
+    (filter) => filter.id !== "pending" || filter.count > 0,
+  );
   const renderSourceRow = (row: (typeof sourceRows)[number]) => (
     <div key={row.feed.url} className="collection-central-source-row">
       <FeedManagerSourceIcon feed={row.feed} />
@@ -1196,40 +1245,66 @@ const FeedManagerSourcesPage: React.FC<{
                 </div>
               </div>
               <div className="collection-central-manual-source-form__fields">
-                <input
-                  type="url"
-                  required
-                  placeholder="https://exemplo.com/feed"
-                  value={newFeedUrl}
-                  onChange={(event) => setNewFeedUrl(event.target.value)}
-                  disabled={isProcessing}
-                  className={managerFieldClass}
-                />
-                <input
-                  type="text"
-                  placeholder="Nome opcional"
-                  value={newFeedTitle}
-                  onChange={(event) => setNewFeedTitle(event.target.value)}
-                  disabled={isProcessing}
-                  className={managerFieldClass}
-                />
-                <select
-                  value={newFeedCategory}
-                  onChange={(event) => setNewFeedCategory(event.target.value)}
-                  disabled={isProcessing}
-                  className={managerFieldClass}
-                >
-                  <option value="">Sem categoria</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="collection-central-manual-source-form__field collection-central-manual-source-form__field--url">
+                  <span>URL da fonte</span>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://exemplo.com/feed"
+                    value={newFeedUrl}
+                    onChange={(event) => setNewFeedUrl(event.target.value)}
+                    disabled={isProcessing}
+                    className={managerFieldClass}
+                  />
+                </label>
+                <label className="collection-central-manual-source-form__field collection-central-manual-source-form__field--title">
+                  <span>Nome</span>
+                  <input
+                    type="text"
+                    placeholder="Nome opcional"
+                    value={newFeedTitle}
+                    onChange={(event) => setNewFeedTitle(event.target.value)}
+                    disabled={isProcessing}
+                    className={managerFieldClass}
+                  />
+                </label>
+                <label className="collection-central-manual-source-form__field collection-central-manual-source-form__field--category">
+                  <span>Categoria</span>
+                  <select
+                    value={newFeedCategory}
+                    onChange={(event) => setNewFeedCategory(event.target.value)}
+                    disabled={isProcessing}
+                    className={managerFieldClass}
+                  >
+                    <option value="">Sem categoria</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="collection-central-manual-source-form__toggle">
+                  <input
+                    type="checkbox"
+                    checked={newFeedHideFromAll}
+                    onChange={(event) =>
+                      setNewFeedHideFromAll(event.target.checked)
+                    }
+                    disabled={isProcessing}
+                  />
+                  <span className="collection-central-manual-source-form__toggle-box">
+                    <EyeOff className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span>
+                    <strong>Ocultar da view All</strong>
+                    <small>A fonte entra só na categoria escolhida.</small>
+                  </span>
+                </label>
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className={managerPrimaryButtonClass}
+                  className={`${managerPrimaryButtonClass} collection-central-manual-source-form__submit`}
                 >
                   {isProcessing ? (
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1258,14 +1333,26 @@ const FeedManagerSourcesPage: React.FC<{
             <button
               type="button"
               onClick={onImportOPML}
-              className={`${managerSecondaryButtonClass} collection-central-source-add-card__action`}
+              className="collection-central-opml-import-card"
+              aria-label="Importar OPML escolhendo um arquivo"
             >
-              <FileUp className="h-4 w-4" />
-              Escolher arquivo
+              <span className="collection-central-opml-import-card__icon">
+                <FileText className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="collection-central-opml-import-card__copy">
+                <strong>Arquivo OPML ou XML</strong>
+                <small>
+                  Você revisa as fontes detectadas antes de aplicar mudanças.
+                </small>
+              </span>
+              <span className="collection-central-opml-import-card__count">
+                {currentFeedCount} feeds atuais
+              </span>
+              <span className="collection-central-opml-import-card__cta">
+                <FileUp className="h-4 w-4" aria-hidden />
+                Escolher arquivo
+              </span>
             </button>
-            <p className="mt-2 text-[11.5px] opacity-64">
-              Coleção atual: {currentFeedCount} feeds.
-            </p>
           </FeedManagerLightCard>
 
           <FeedManagerLightCard className="collection-central-source-add-card collection-central-source-add-card--curated">
@@ -1320,34 +1407,48 @@ const FeedManagerSourcesPage: React.FC<{
 
       <section>
         <FeedManagerPageTitle title="Fontes da coleção" />
-        <div className="collection-central-source-tools">
-          <label className="collection-central-search-field">
-            <Search className="h-4 w-4" />
-            <input
-              value={sourceQuery}
-              onChange={(event) => setSourceQuery(event.target.value)}
-              placeholder="Buscar por título, URL ou categoria"
-            />
-          </label>
-          <div className="collection-central-filter-row">
-            {filters.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => setSourceFilter(filter.id)}
-                className={
-                  sourceFilter === filter.id
-                    ? "collection-central-filter-chip collection-central-filter-chip--active"
-                    : "collection-central-filter-chip"
-                }
-              >
-                {filter.label}
-              </button>
-            ))}
+        <FeedManagerLightCard className="collection-central-source-directory-card">
+          <div className="collection-central-source-directory-card__header">
+            <div>
+              <h4>Biblioteca ativa</h4>
+              <p>
+                {activeFeeds.length} fontes cadastradas, {attentionSourceCount}{" "}
+                em atenção.
+              </p>
+            </div>
+            <span>{sourceRows.length} visíveis</span>
           </div>
-        </div>
 
-        {sourceGroups.map((group) => (
+          <div className="collection-central-source-tools">
+            <label className="collection-central-search-field">
+              <Search className="h-4 w-4" />
+              <input
+                value={sourceQuery}
+                onChange={(event) => setSourceQuery(event.target.value)}
+                placeholder="Buscar por título, URL ou categoria"
+              />
+            </label>
+            <div className="collection-central-filter-row">
+              {filters.map((filter) => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setSourceFilter(filter.id)}
+                  className={
+                    sourceFilter === filter.id
+                      ? "collection-central-filter-chip collection-central-filter-chip--active"
+                      : "collection-central-filter-chip"
+                  }
+                >
+                  <span>{filter.label}</span>
+                  <small>{filter.count}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        </FeedManagerLightCard>
+
+        {visibleSourceGroups.map((group) => (
           <div key={group.id} className="collection-central-source-group">
             <div className="collection-central-group-heading">
               <h4>{group.title}</h4>
@@ -3045,6 +3146,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedTitle, setNewFeedTitle] = useState("");
   const [newFeedCategory, setNewFeedCategory] = useState<string>("");
+  const [newFeedHideFromAll, setNewFeedHideFromAll] = useState(false);
   const [processingUrl, setProcessingUrl] = useState<string | null>(null);
   const [feedValidations, setFeedValidations] = useState<
     Map<string, FeedValidationResult>
@@ -3754,11 +3856,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             url: result.url,
             customTitle: newFeedTitle.trim() || result.title,
             categoryId: newFeedCategory || undefined,
+            hideFromAll: newFeedHideFromAll || undefined,
           },
         ]);
         setNewFeedUrl("");
         setNewFeedTitle("");
         setNewFeedCategory("");
+        setNewFeedHideFromAll(false);
         await alertSuccess("Feed adicionado com sucesso!");
         return;
       }
@@ -3790,10 +3894,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
             url,
             customTitle: fallbackTitle,
             categoryId: newFeedCategory || undefined,
+            hideFromAll: newFeedHideFromAll || undefined,
           },
         ]);
         setNewFeedUrl("");
         setNewFeedTitle("");
+        setNewFeedCategory("");
+        setNewFeedHideFromAll(false);
         await alertSuccess("Feed adicionado (sem validação).");
       }
     } catch (error) {
@@ -4102,6 +4209,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 currentFeedCount={currentFeeds.length}
                 feedValidations={feedValidations}
                 newFeedCategory={newFeedCategory}
+                newFeedHideFromAll={newFeedHideFromAll}
                 newFeedTitle={newFeedTitle}
                 newFeedUrl={newFeedUrl}
                 onImportOPML={() => fileInputRef.current?.click()}
@@ -4117,6 +4225,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 processingUrl={processingUrl}
                 quarantineRecommendedUrls={quarantineRecommendedUrls}
                 setNewFeedCategory={setNewFeedCategory}
+                setNewFeedHideFromAll={setNewFeedHideFromAll}
                 setNewFeedTitle={setNewFeedTitle}
                 setNewFeedUrl={setNewFeedUrl}
               />
@@ -4244,12 +4353,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
                 url: feed.url,
                 customTitle: newFeedTitle.trim() || feed.title,
                 categoryId: newFeedCategory || undefined,
+                hideFromAll: newFeedHideFromAll || undefined,
               },
             ]);
             setShowDiscoveryModal(false);
             setCurrentDiscoveryResult(null);
             setNewFeedTitle("");
             setNewFeedCategory("");
+            setNewFeedHideFromAll(false);
             await alertSuccess("Feed adicionado!");
           }}
         />

@@ -722,6 +722,10 @@ const AppContent: React.FC = () => {
   ]);
 
   const renderedArticles = paginatedArticles;
+  const hasSparsePaginationPage =
+    renderedArticles.length > 0 &&
+    renderedArticles.length <=
+      Math.min(4, Math.max(1, layoutSettings.articlesPerPage));
   const renderedCategory = selectedCategory;
   const renderedLayoutMode = currentLayoutMode as string;
 
@@ -1409,7 +1413,13 @@ const AppContent: React.FC = () => {
 
               {/* Pagination Area */}
               {!showSkeleton && (
-                <div className="feed-page-frame mt-12 pb-12 flex flex-col items-center space-y-6">
+                <div
+                  className={`feed-page-frame feed-pagination-region flex flex-col items-center space-y-6 ${
+                    hasSparsePaginationPage
+                      ? "feed-pagination-region--sparse"
+                      : ""
+                  }`}
+                >
                   {contentConfig.paginationType === "loadMore"
                     ? // Load More Button
                       pagination.currentPage < pagination.totalPages - 1 && (
