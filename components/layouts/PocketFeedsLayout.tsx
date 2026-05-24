@@ -212,6 +212,14 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<Article | null>(null);
   const [expandedPodcast, setExpandedPodcast] = useState<string | null>(null);
+  const [activeMixtapePodcast, setActiveMixtapePodcast] = useState<
+    string | null
+  >(null);
+  const [hoveredMixtapePodcast, setHoveredMixtapePodcast] = useState<
+    string | null
+  >(null);
+  const [hoveredMixtapeEpisode, setHoveredMixtapeEpisode] =
+    useState<Article | null>(null);
   const [expandedEpisodeKey, setExpandedEpisodeKey] = useState<string | null>(
     null,
   );
@@ -373,6 +381,22 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
     VIEW_MODE_OPTIONS.find((option) => option.id === viewMode) ||
     VIEW_MODE_OPTIONS[1];
   const CurrentViewModeIcon = currentViewModeOption.Icon;
+
+  useEffect(() => {
+    if (viewMode !== "mixtape") return;
+
+    const firstPodcast = podcastGroups[0]?.name || null;
+    if (!firstPodcast) {
+      setActiveMixtapePodcast(null);
+      setHoveredMixtapePodcast(null);
+      setHoveredMixtapeEpisode(null);
+      return;
+    }
+
+    if (!activeMixtapePodcast || !podcastMap[activeMixtapePodcast]) {
+      setActiveMixtapePodcast(firstPodcast);
+    }
+  }, [activeMixtapePodcast, podcastGroups, podcastMap, viewMode]);
 
   const formatPlaybackTime = (seconds: number): string => {
     if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -746,122 +770,302 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
     </div>
   );
 
-  const renderMixtapeLayout = () => (
-    <div
-      className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12"
-      data-testid="pocketfeeds-mixtape-layout"
-    >
-      {podcastGroups.map((group, index) => {
-        const isExpanded =
-          expandedPodcast === group.name || podcastGroups.length === 1;
-        const featured = index % 5 === 0;
-        const panelClass = featured ? "lg:col-span-7" : "lg:col-span-5";
-        const latestEpisode = group.firstEpisode;
-        const artworkEpisode = getPodcastArtworkEpisode(group);
-        const playEpisode = group.playableEpisode;
+  const renderMixtapeLayout = () => {
+    const activeGroup =
+      (activeMixtapePodcast && podcastMap[activeMixtapePodcast]) ||
+      podcastGroups[0];
+    if (!activeGroup) return null;
 
-        return (
-          <article
-            key={group.name}
-            className={`${panelClass} overflow-hidden rounded-[calc(var(--feed-card-radius)*1.25)] border border-[rgb(var(--color-border))] feed-surface`}
-            data-testid="pocketfeeds-mixtape-card"
-          >
-            <div className="grid gap-0 md:grid-cols-[minmax(12rem,17rem)_1fr]">
+    const previewGroup =
+      (hoveredMixtapePodcast && podcastMap[hoveredMixtapePodcast]) ||
+      activeGroup;
+    const activeIndex = Math.max(
+      0,
+      podcastGroups.findIndex((group) => group.name === activeGroup.name),
+    );
+    const previewArtworkEpisode =
+      hoveredMixtapeEpisode || getPodcastArtworkEpisode(previewGroup);
+    const activeArtworkEpisode = getPodcastArtworkEpisode(activeGroup);
+    const latestEpisode = activeGroup.firstEpisode;
+    const playEpisode = activeGroup.playableEpisode;
+    const highlightedEpisodes = activeGroup.episodes.slice(0, 3);
+
+    const setPreviewGroup = (groupName: string | null) => {
+      setHoveredMixtapePodcast(groupName);
+      setHoveredMixtapeEpisode(null);
+    };
+
+    return (
+      <div className="space-y-4" data-testid="pocketfeeds-mixtape-layout">
+        <nav
+          className="custom-scrollbar flex gap-2 overflow-x-auto rounded-[var(--feed-card-radius)] border border-[rgb(var(--color-border))] bg-[rgba(var(--color-surface),0.52)] p-2"
+          aria-label="Feeds da Mixtape"
+          data-testid="pocketfeeds-mixtape-strip"
+        >
+          {podcastGroups.map((group, index) => {
+            const isActive = group.name === activeGroup.name;
+            const artworkEpisode = getPodcastArtworkEpisode(group);
+            const trackNumber = String(index + 1).padStart(2, "0");
+
+            return (
               <button
                 type="button"
-                className="relative aspect-square min-h-0 overflow-hidden text-left md:m-5 md:self-start md:rounded-[var(--feed-card-radius)]"
-                onClick={() => togglePodcast(group.name)}
-                aria-expanded={isExpanded}
-                aria-label={`${isExpanded ? "Recolher" : "Expandir"} ${group.name}`}
+                key={group.name}
+                className={`group flex min-w-[10rem] items-center gap-3 rounded-[calc(var(--feed-card-radius)*0.72)] border px-3 py-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--color-accent),0.7)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--color-background))] sm:min-w-[12rem] ${
+                  isActive
+                    ? "border-[rgba(var(--color-accent),0.62)] bg-[rgba(var(--color-accent),0.14)] text-[rgb(var(--color-text))]"
+                    : "border-transparent bg-[rgba(var(--color-text),0.03)] text-[rgb(var(--color-textSecondary))] hover:bg-[rgba(var(--color-text),0.06)] hover:text-[rgb(var(--color-text))]"
+                }`}
+                onClick={() => setActiveMixtapePodcast(group.name)}
+                onMouseEnter={() => setPreviewGroup(group.name)}
+                onMouseLeave={() => setPreviewGroup(null)}
+                onFocus={() => setPreviewGroup(group.name)}
+                onBlur={() => setPreviewGroup(null)}
+                aria-pressed={isActive}
+                data-testid="pocketfeeds-mixtape-track"
               >
-                {artworkEpisode.imageUrl ? (
-                  <LazyImage
-                    src={artworkEpisode.imageUrl}
-                    className="absolute inset-0 h-full w-full object-cover"
-                    alt={group.name}
-                    priority
-                    aspectRatio="1/1"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[rgba(var(--color-accent),0.58)] to-[rgba(var(--color-primary),0.42)]">
-                    <Disc3 className="h-16 w-16 text-white/80" aria-hidden />
-                  </div>
-                )}
-                <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(var(--color-background),0.05),rgba(var(--color-background),0.78))]" />
-                <span className="absolute bottom-4 left-4 right-4">
-                  <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/78">
-                    Mixtape {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="mt-1 block text-xl font-bold leading-tight text-white">
+                <span className="font-mono text-xs font-semibold text-[rgb(var(--color-accent))]">
+                  {trackNumber}
+                </span>
+                <PodcastArtwork
+                  episode={artworkEpisode}
+                  title={group.name}
+                  className="h-10 w-10"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">
                     {group.name}
+                  </span>
+                  <span className="mt-0.5 flex items-center gap-2 text-xs">
+                    <span>{group.episodes.length} ep.</span>
+                    {group.recentCount > 0 && (
+                      <span className="rounded-full bg-[rgba(var(--color-accent),0.16)] px-1.5 py-0.5 font-bold text-[rgb(var(--color-text))]">
+                        {group.recentCount} novo
+                        {group.recentCount > 1 ? "s" : ""}
+                      </span>
+                    )}
                   </span>
                 </span>
               </button>
+            );
+          })}
+        </nav>
 
-              <div className="flex min-w-0 flex-col p-5">
-                <div className="mb-4 flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(var(--color-accent))]">
-                      {group.episodes.length} {episodeLabel(group.episodes.length)}
-                    </p>
-                    <h2 className="mt-2 line-clamp-2 text-lg font-bold text-[rgb(var(--color-text))]">
-                      {latestEpisode.title}
-                    </h2>
-                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-[rgb(var(--color-textSecondary))]">
-                      {latestEpisode.description ||
-                        `Último episódio de ${group.name}.`}
-                    </p>
-                  </div>
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.04fr)_minmax(20rem,0.64fr)]">
+          <section
+            className="relative overflow-hidden rounded-[calc(var(--feed-card-radius)*1.25)] border border-[rgb(var(--color-border))] bg-[rgba(var(--color-surface),0.58)]"
+            data-testid="pocketfeeds-mixtape-stage"
+            data-active-podcast={activeGroup.name}
+            data-preview-podcast={previewGroup.name}
+            data-preview-episode={previewArtworkEpisode.title}
+          >
+            {previewArtworkEpisode.imageUrl ? (
+              <LazyImage
+                src={previewArtworkEpisode.imageUrl}
+                className="absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.18] blur-2xl"
+                alt=""
+                priority
+                fill
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[rgba(var(--color-accent),0.1)]" />
+            )}
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(var(--color-background),0.94),rgba(var(--color-background),0.84)_48%,rgba(var(--color-surface),0.66))]" />
 
-                  <button
-                    type="button"
-                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-[rgb(var(--color-border))] text-[rgb(var(--color-textSecondary))] transition hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
-                    onClick={() => togglePodcast(group.name)}
-                    aria-label={`${isExpanded ? "Recolher" : "Expandir"} episódios de ${group.name}`}
-                  >
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                      aria-hidden
+            <div className="relative grid grid-cols-[minmax(6.5rem,9rem)_minmax(0,1fr)] gap-4 p-4 lg:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)]">
+              <div className="space-y-3">
+                <div className="relative aspect-square max-w-[9rem] overflow-hidden rounded-[calc(var(--feed-card-radius)*1.05)] border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)] shadow-xl lg:max-w-[14rem]">
+                  {activeArtworkEpisode.imageUrl ? (
+                    <LazyImage
+                      src={activeArtworkEpisode.imageUrl}
+                      className="h-full w-full object-cover"
+                      alt={activeGroup.name}
+                      priority
+                      aspectRatio="1/1"
                     />
-                  </button>
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[rgba(var(--color-accent),0.16)]">
+                      <Disc3
+                        className="h-16 w-16 text-[rgb(var(--color-text))]"
+                        aria-hidden
+                      />
+                    </div>
+                  )}
                 </div>
-
-                <div className="mt-auto flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-3">
                   {renderPlayButton(
                     playEpisode,
                     "h-11 w-11",
                     playEpisode?.title || latestEpisode.title,
                   )}
-                  <button
-                    type="button"
-                    className="rounded-full bg-[rgba(var(--color-text),0.08)] px-3 py-2 text-sm font-medium text-[rgb(var(--color-text))] transition-colors hover:bg-[rgba(var(--color-accent),0.28)]"
-                    onClick={() => setReadingArticle(latestEpisode)}
-                    aria-label={`Abrir detalhes de ${latestEpisode.title}`}
-                  >
-                    Abrir detalhes
-                  </button>
-                  <FavoriteButton
-                    article={latestEpisode}
-                    size="small"
-                    position="inline"
-                    className="text-[rgb(var(--color-textSecondary))] hover:text-white"
-                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-accent))]">
+                      No palco
+                    </p>
+                    <p className="truncate text-sm font-bold text-[rgb(var(--color-text))]">
+                      {playEpisode?.audioUrl
+                        ? "Tocar episódio recente"
+                        : "Sem áudio disponível"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex min-w-0 flex-col gap-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[rgb(var(--color-accent))]">
+                    Mixtape {String(activeIndex + 1).padStart(2, "0")} •{" "}
+                    {activeGroup.episodes.length}{" "}
+                    {episodeLabel(activeGroup.episodes.length)}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold leading-tight text-[rgb(var(--color-text))]">
+                    {activeGroup.name}
+                  </h2>
+                  <div className="mt-3 border-l border-[rgba(var(--color-accent),0.42)] pl-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-textSecondary))]">
+                      Mais recente
+                    </p>
+                    <h3 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-[rgb(var(--color-text))] sm:text-lg">
+                      {latestEpisode.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 max-w-3xl text-sm leading-relaxed text-[rgb(var(--color-textSecondary))]">
+                      {latestEpisode.description ||
+                        `Último episódio de ${activeGroup.name}.`}
+                    </p>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="rounded-full border border-[rgba(var(--color-accent),0.35)] bg-[rgba(var(--color-accent),0.14)] px-4 py-2 text-sm font-bold text-[rgb(var(--color-text))] transition-colors hover:bg-[rgba(var(--color-accent),0.22)]"
+                      onClick={() => setReadingArticle(latestEpisode)}
+                      aria-label={`Abrir detalhes de ${latestEpisode.title}`}
+                    >
+                      Abrir detalhes
+                    </button>
+                    <FavoriteButton
+                      article={latestEpisode}
+                      size="small"
+                      position="inline"
+                      className="text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-textSecondary))]">
+                    Episódios em destaque
+                  </p>
+                  <div className="custom-scrollbar flex gap-2 overflow-x-auto sm:grid sm:grid-cols-3 sm:overflow-visible">
+                    {highlightedEpisodes.map((episode, index) => (
+                      <div
+                        key={getEpisodeKey(episode, index)}
+                        className="group flex min-w-[11rem] items-center gap-2 rounded-[calc(var(--feed-card-radius)*0.82)] border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.035)] p-2 transition-colors hover:bg-[rgba(var(--color-text),0.065)] sm:min-w-0"
+                        onMouseEnter={() => setHoveredMixtapeEpisode(episode)}
+                        onMouseLeave={() => setHoveredMixtapeEpisode(null)}
+                        data-testid="pocketfeeds-mixtape-highlight"
+                      >
+                        {renderPlayButton(episode, "h-8 w-8", episode.title)}
+                        <EpisodeArtwork
+                          episode={episode}
+                          fallbackAlt={activeGroup.name}
+                          className="h-10 w-10"
+                          priority
+                        />
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left"
+                          onClick={() => setReadingArticle(episode)}
+                          onFocus={() => setHoveredMixtapeEpisode(episode)}
+                          onBlur={() => setHoveredMixtapeEpisode(null)}
+                          aria-label={`Abrir episódio ${episode.title}`}
+                        >
+                          <span className="block text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(var(--color-accent))]">
+                            Recente {index + 1}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs font-bold text-[rgb(var(--color-text))]">
+                            {episode.title}
+                          </span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+          </section>
 
-            {isExpanded &&
-              renderInlineEpisodes(group, {
-                compact: false,
-                showArtwork: true,
-              })}
-          </article>
-        );
-      })}
-    </div>
-  );
+          <aside
+            className="overflow-hidden rounded-[calc(var(--feed-card-radius)*1.05)] border border-[rgb(var(--color-border))] bg-[rgba(var(--color-surface),0.58)] xl:sticky xl:top-[calc(var(--feed-layout-top-clearance)+var(--space-6))]"
+            data-testid="pocketfeeds-mixtape-episode-panel"
+            data-active-podcast={activeGroup.name}
+          >
+            <div className="flex items-end justify-between gap-3 border-b border-[rgb(var(--color-border))] p-4">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgb(var(--color-accent))]">
+                  Episódios
+                </p>
+                <h3 className="mt-1 truncate text-lg font-bold text-[rgb(var(--color-text))]">
+                  {activeGroup.name}
+                </h3>
+              </div>
+              <span className="flex-shrink-0 text-xs font-semibold text-[rgb(var(--color-textSecondary))]">
+                {activeGroup.episodes.length} faixas
+              </span>
+            </div>
+
+            <div className="custom-scrollbar max-h-[min(32rem,calc(100vh-var(--space-20)))] overflow-y-auto">
+              {activeGroup.episodes.map((episode, index) => (
+                <div
+                  key={getEpisodeKey(episode, index)}
+                  className="group flex items-center gap-3 border-b border-[rgb(var(--color-border))] p-3 last:border-b-0 hover:bg-[rgba(var(--color-text),0.04)]"
+                  onMouseEnter={() => setHoveredMixtapeEpisode(episode)}
+                  onMouseLeave={() => setHoveredMixtapeEpisode(null)}
+                  data-testid="pocketfeeds-mixtape-panel-episode"
+                >
+                  <span className="w-6 flex-shrink-0 text-right font-mono text-xs text-[rgb(var(--color-textSecondary))]">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  {renderPlayButton(episode, "h-9 w-9", episode.title)}
+                  <EpisodeArtwork
+                    episode={episode}
+                    fallbackAlt={activeGroup.name}
+                    className="h-10 w-10"
+                  />
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => setReadingArticle(episode)}
+                    onFocus={() => setHoveredMixtapeEpisode(episode)}
+                    onBlur={() => setHoveredMixtapeEpisode(null)}
+                    aria-label={`Abrir episódio ${episode.title}`}
+                  >
+                    <span className="block truncate text-sm font-bold text-[rgb(var(--color-text))]">
+                      {episode.title}
+                    </span>
+                    <span className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-xs text-[rgb(var(--color-textSecondary))]">
+                      <span>{new Date(episode.pubDate).toLocaleDateString()}</span>
+                      {episode.audioDuration && (
+                        <>
+                          <span className="opacity-40">•</span>
+                          <span>{formatDuration(episode.audioDuration)}</span>
+                        </>
+                      )}
+                    </span>
+                  </button>
+                  <FavoriteButton
+                    article={episode}
+                    size="small"
+                    position="inline"
+                    className="text-[rgb(var(--color-textSecondary))] opacity-0 transition-opacity hover:text-[rgb(var(--color-text))] group-hover:opacity-100 group-focus-within:opacity-100"
+                  />
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
+      </div>
+    );
+  };
 
   const renderSelectedLayout = () => {
     if (viewMode === "grid") return renderGridLayout();

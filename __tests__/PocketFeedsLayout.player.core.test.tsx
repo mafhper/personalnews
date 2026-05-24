@@ -529,26 +529,126 @@ describe("PocketFeedsLayout audio player", () => {
     );
   });
 
-  it("renders mixtape with stable artwork panels and working podcast playback", async () => {
+  it("renders mixtape as a deck with feed strip, stage and episode panel", async () => {
     render(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     openLayoutPicker();
     fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
 
     expect(screen.getByTestId("pocketfeeds-mixtape-layout")).toBeInTheDocument();
-    expect(screen.getByTestId("pocketfeeds-mixtape-layout")).toHaveClass(
-      "items-start",
+    expect(screen.getByTestId("pocketfeeds-mixtape-strip")).toBeInTheDocument();
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-active-podcast",
+      "Science Podcast",
     );
-    expect(screen.getAllByTestId("pocketfeeds-mixtape-card")[0]).toBeInTheDocument();
+    expect(
+      screen.getByTestId("pocketfeeds-mixtape-episode-panel"),
+    ).toHaveAttribute("data-active-podcast", "Science Podcast");
+    expect(screen.getAllByTestId("pocketfeeds-mixtape-track")).toHaveLength(3);
+    expect(
+      screen.getByRole("button", { name: /Design Podcast/i }),
+    ).toHaveAttribute("aria-pressed", "false");
 
-    fireEvent.click(screen.getByRole("button", { name: /tocar Science newest/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Design Podcast/i }));
+
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-active-podcast",
+      "Design Podcast",
+    );
+    expect(
+      screen.getByTestId("pocketfeeds-mixtape-episode-panel"),
+    ).toHaveAttribute("data-active-podcast", "Design Podcast");
+    expect(
+      screen.getByRole("button", { name: /Design Podcast/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("previews mixtape feed and episode artwork without changing the selected feed", () => {
+    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+
+    openLayoutPicker();
+    fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
+
+    const designTrack = screen.getByRole("button", { name: /Design Podcast/i });
+
+    fireEvent.mouseEnter(designTrack);
+
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-active-podcast",
+      "Science Podcast",
+    );
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-preview-podcast",
+      "Design Podcast",
+    );
+
+    fireEvent.mouseLeave(designTrack);
+
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-preview-podcast",
+      "Science Podcast",
+    );
+
+    const highlight = screen.getAllByTestId("pocketfeeds-mixtape-highlight")[1];
+    fireEvent.focus(
+      within(highlight).getByRole("button", {
+        name: /abrir episódio Science older/i,
+      }),
+    );
+
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-preview-episode",
+      "Science older",
+    );
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-active-podcast",
+      "Science Podcast",
+    );
+  });
+
+  it("plays mixtape highlights and panel episodes through the podcast player", async () => {
+    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+
+    openLayoutPicker();
+    fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
+
+    const firstHighlight = screen.getAllByTestId(
+      "pocketfeeds-mixtape-highlight",
+    )[0];
+
+    fireEvent.click(
+      within(firstHighlight).getByRole("button", {
+        name: /tocar Science newest/i,
+      }),
+    );
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /pausar Science newest/i }),
+        within(firstHighlight).getByRole("button", {
+          name: /pausar Science newest/i,
+        }),
       ).toBeInTheDocument(),
     );
     expect(screen.getByLabelText("Posição da reprodução")).toBeInTheDocument();
+
+    fireEvent.click(
+      within(firstHighlight).getByRole("button", {
+        name: /pausar Science newest/i,
+      }),
+    );
+    fireEvent.click(
+      within(
+        screen.getByTestId("pocketfeeds-mixtape-episode-panel"),
+      ).getByRole("button", { name: /tocar Science older/i }),
+    );
+
+    await waitFor(() =>
+      expect(
+        within(
+          screen.getByTestId("pocketfeeds-mixtape-episode-panel"),
+        ).getByRole("button", { name: /pausar Science older/i }),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("mixtape plays the first available audio episode when the newest entry has no audio", async () => {
@@ -567,11 +667,19 @@ describe("PocketFeedsLayout audio player", () => {
     openLayoutPicker();
     fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /tocar Science older/i }));
+    fireEvent.click(
+      within(screen.getByTestId("pocketfeeds-mixtape-stage")).getAllByRole(
+        "button",
+        { name: /tocar Science older/i },
+      )[0],
+    );
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /pausar Science older/i }),
+        within(screen.getByTestId("pocketfeeds-mixtape-stage")).getAllByRole(
+          "button",
+          { name: /pausar Science older/i },
+        )[0],
       ).toBeInTheDocument(),
     );
   });
