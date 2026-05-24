@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FeedCategory, FeedSource } from "../types";
+import { FeedCategory, FeedSource, HeaderConfig } from "../types";
 import { HeaderIcons } from "./icons";
 import { useFeedCategories } from "../hooks/useFeedCategories";
 import { useNotificationReplacements } from "../hooks/useNotificationReplacements";
@@ -14,7 +14,13 @@ interface FeedDropdownProps {
   onSelectCategory: () => void;
   selectedCategory: string;
   onEditCategory?: (categoryId: string) => void; // Passed categoryId for specific editing
+  isVirtual?: boolean;
+  primaryViewActionLabel?: string;
+  primaryViewActionIcon?: "feeds" | "favorites";
+  onPrimaryViewAction?: () => void;
+  onLayoutChange?: (layoutMode: FeedCategory["layoutMode"] | undefined) => void;
   variant?: 'default' | 'centered' | 'minimal';
+  headerHeight?: HeaderConfig["height"];
 }
 
 // Layout options for dropdown (duplicated from FeedCategoryManager for now)
@@ -60,7 +66,13 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   onSelectCategory,
   selectedCategory,
   onEditCategory,
+  isVirtual = false,
+  primaryViewActionLabel,
+  primaryViewActionIcon,
+  onPrimaryViewAction,
+  onLayoutChange,
   variant = 'default',
+  headerHeight = 'normal',
 }) => {
   const { deleteCategory, updateCategory } = useFeedCategories();
   const { confirmDanger, alertSuccess } = useNotificationReplacements();
@@ -115,17 +127,53 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
   };
 
   const handleLayoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextLayoutMode =
+      e.target.value === ""
+        ? undefined
+        : (e.target.value as FeedCategory["layoutMode"]);
+
+    if (onLayoutChange) {
+      onLayoutChange(nextLayoutMode);
+      return;
+    }
+
+    if (isVirtual) return;
     updateCategory(category.id, {
-      layoutMode: e.target.value as FeedCategory["layoutMode"],
+      layoutMode: nextLayoutMode,
     });
   };
 
   const isSelected = selectedCategory === category.id;
+  const canChangeLayout = !isVirtual || Boolean(onLayoutChange);
+  const selectedLayoutMode = category.layoutMode || "";
+  const layoutActionLabel = "Alterar layout";
+  const PrimaryViewIcon =
+    primaryViewActionIcon === "favorites"
+      ? HeaderIcons.Favorites
+      : HeaderIcons.Feeds;
   const variantBase = {
-    default: 'px-5 py-2.5 rounded-full min-h-[44px]',
-    centered: 'px-4 py-2 rounded-full min-h-[40px]',
-    minimal: 'px-3 py-1.5 rounded-lg min-h-[36px] border-b-2 border-transparent',
-  }[variant];
+    default: {
+      'ultra-compact': 'px-3 py-1 rounded-full min-h-[30px]',
+      tiny: 'px-3.5 py-1.5 rounded-full min-h-[34px]',
+      compact: 'px-4 py-2 rounded-full min-h-[38px]',
+      normal: 'px-4 py-2 rounded-full min-h-[40px]',
+      spacious: 'px-5 py-2.5 rounded-full min-h-[44px]',
+    },
+    centered: {
+      'ultra-compact': 'px-3 py-1 rounded-full min-h-[30px]',
+      tiny: 'px-3.5 py-1.5 rounded-full min-h-[34px]',
+      compact: 'px-4 py-2 rounded-full min-h-[38px]',
+      normal: 'px-4 py-2 rounded-full min-h-[40px]',
+      spacious: 'px-4 py-2 rounded-full min-h-[40px]',
+    },
+    minimal: {
+      'ultra-compact': 'px-2.5 py-1 rounded-lg min-h-[28px] border-b-2 border-transparent',
+      tiny: 'px-3 py-1 rounded-lg min-h-[30px] border-b-2 border-transparent',
+      compact: 'px-3 py-1.5 rounded-lg min-h-[34px] border-b-2 border-transparent',
+      normal: 'px-3 py-1.5 rounded-lg min-h-[36px] border-b-2 border-transparent',
+      spacious: 'px-3 py-1.5 rounded-lg min-h-[36px] border-b-2 border-transparent',
+    },
+  }[variant][headerHeight];
 
   const selectedClass = {
     default: 'bg-white/10 text-white shadow-[0_0_18px_rgba(var(--color-primary),0.28)] border border-white/20 backdrop-blur-md',
@@ -139,7 +187,11 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
     minimal: 'text-gray-400 hover:text-white border-b-2 border-transparent',
   }[variant];
 
-  const dotSizeClass = variant === 'minimal' ? 'w-1.5 h-1.5' : 'w-2 h-2';
+  const isTightHeader =
+    headerHeight === 'ultra-compact' || headerHeight === 'tiny';
+  const dotSizeClass =
+    variant === 'minimal' || isTightHeader ? 'w-1.5 h-1.5' : 'w-2 h-2';
+  const labelSizeClass = isTightHeader ? 'text-[0.8rem]' : 'text-sm';
 
   return (
     <div
@@ -163,7 +215,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
           style={{ backgroundColor: category.color, color: category.color }}
         />
         <span
-          className={`font-medium text-sm tracking-wide transition-all duration-300 ${isSelected ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+          className={`font-medium ${labelSizeClass} tracking-wide transition-all duration-300 ${isSelected ? "text-white" : "text-gray-300 group-hover:text-white"}`}
         >
           {category.name}
         </span>
@@ -191,17 +243,34 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
             <div className="p-1.5">
               <div className="px-4 py-3 border-b border-[rgb(var(--color-border))]/10 mb-1 flex items-center justify-between bg-[rgb(var(--color-background))]/30">
                 <span className="text-[10px] font-bold text-[rgb(var(--color-textSecondary))] uppercase tracking-widest">
-                  {t("feeds.tab.feeds")} de {category.name}
+                  {t("feeds.tab.feeds")}
                 </span>
 
                 <div className="flex items-center space-x-1">
+                  {primaryViewActionLabel && onPrimaryViewAction && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPrimaryViewAction();
+                        setIsOpen(false);
+                      }}
+                      className="p-2 rounded hover:bg-[rgb(var(--color-text))]/10 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] min-w-[32px] min-h-[32px]"
+                      title={primaryViewActionLabel}
+                      aria-label={primaryViewActionLabel}
+                    >
+                      <PrimaryViewIcon showBackground={false} size="sm" />
+                    </button>
+                  )}
+
                   {/* Layout Selector */}
+                  {canChangeLayout && (
                   <div className="relative group/layout">
                     <button
                       onClick={(e) => e.stopPropagation()}
-                      className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.layoutMode ? "text-[rgb(var(--color-accent))]" : "text-[rgb(var(--color-textSecondary))]"}`}
-                      title="Alterar Layout da Categoria"
-                      aria-label="Alterar Layout da Categoria"
+                      className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${selectedLayoutMode ? "text-[rgb(var(--color-accent))]" : "text-[rgb(var(--color-textSecondary))]"}`}
+                      title={layoutActionLabel}
+                      aria-label={layoutActionLabel}
                     >
                       <svg
                         className="w-3.5 h-3.5"
@@ -219,22 +288,24 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     </button>
                     <select
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-black"
-                      value={category.layoutMode || ""}
+                      value={selectedLayoutMode}
                       onChange={handleLayoutChange}
                       onClick={(e) => e.stopPropagation()}
-                      title="Alterar Layout da Categoria"
+                      title={layoutActionLabel}
                     >
                       {layoutOptions.map((option) => (
                         <option key={option.label} value={option.value}>
                           {option.label}{" "}
-                          {(category.layoutMode || "") === option.value
+                          {selectedLayoutMode === option.value
                             ? " (ativo)"
                             : ""}
                         </option>
                       ))}
                     </select>
                   </div>
+                  )}
 
+                  {!isVirtual && (
                   <button
                     onClick={handlePin}
                     className={`p-2 rounded hover:bg-[rgb(var(--color-text))]/10 min-w-[32px] min-h-[32px] ${category.isPinned ? "text-[rgb(var(--color-accent))]" : "text-[rgb(var(--color-textSecondary))]"}`}
@@ -263,8 +334,9 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                       />
                     </svg>
                   </button>
+                  )}
 
-                  {onEditCategory && (
+                  {!isVirtual && onEditCategory && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -291,7 +363,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     </button>
                   )}
 
-                  {!category.isDefault && (
+                  {!isVirtual && !category.isDefault && (
                     <button
                       onClick={handleDelete}
                       className="p-2 rounded hover:bg-red-500/20 text-[rgb(var(--color-textSecondary))] hover:text-red-400 min-w-[32px] min-h-[32px]"
@@ -328,7 +400,7 @@ const FeedDropdown: React.FC<FeedDropdownProps> = ({
                     aria-label={`Select feed ${getFeedDisplayName(feed)}`}
                   >
                     <img
-                      src={getFaviconUrl(feed.url)}
+                      src={getFaviconUrl(feed.faviconUrl || feed.url)}
                       alt=""
                       className="w-4 h-4 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity"
                       onError={(e) => {

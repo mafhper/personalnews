@@ -161,21 +161,14 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
                 key={idx}
                 className="feed-card flex items-stretch gap-4 p-5 rounded-2xl hover:border-[rgba(var(--color-accent),0.25)] transition-all relative group shadow-sm"
               >
-                <div className="flex flex-col gap-3 w-40 sm:w-52 flex-shrink-0 self-stretch">
-                  <div className="relative h-full min-h-[11rem] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
+                <div className="flex flex-col gap-3 w-40 sm:w-52 flex-shrink-0">
+                  <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-inner bg-black/20 group/img">
                     <SmallOptimizedImage
                       src={article.imageUrl}
                       alt={article.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       fallbackText={article.sourceTitle}
                       size={260}
-                    />
-
-                    <FavoriteButton
-                      article={article}
-                      size="small"
-                      position="overlay"
-                      className="top-2 right-2 z-20 bg-black/40 hover:bg-black/60 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
                     />
                   </div>
                 </div>
@@ -218,20 +211,27 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({
                         {article.sourceTitle}
                       </span>
                     )}
-                    {(() => {
-                      const embedUrl = getVideoEmbed(article.link);
-                      return (
-                        <FeedInteractiveActions
-                          articleLink={article.link}
-                          onRead={() => setReadingArticle(article)}
-                          showRead={!embedUrl}
-                          showWatch={!!embedUrl}
-                          showVisit={true}
-                          compact
-                          className="!mt-0 justify-end"
-                        />
-                      );
-                    })()}
+                    <div className="feed-card-action-rail max-w-none justify-end">
+                      {(() => {
+                        const embedUrl = getVideoEmbed(article.link);
+                        return (
+                          <FeedInteractiveActions
+                            articleLink={article.link}
+                            onRead={() => setReadingArticle(article)}
+                            showRead={!embedUrl}
+                            showWatch={!!embedUrl}
+                            showVisit={true}
+                            compact
+                            className="!mt-0 justify-end"
+                          />
+                        );
+                      })()}
+                      <FavoriteButton
+                        article={article}
+                        size="small"
+                        position="inline"
+                      />
+                    </div>
                   </div>
                 </div>
               </article>

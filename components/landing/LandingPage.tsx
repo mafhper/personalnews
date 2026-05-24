@@ -1,4 +1,5 @@
 import React from "react";
+import { Download } from "lucide-react";
 import Logo from "../Logo";
 import { useLanguage } from "../../hooks/useLanguage";
 import {
@@ -32,6 +33,10 @@ const PROMO_HASH_TO_PAGE = Object.entries(PROMO_PAGE_HASHES).reduce(
   },
   {} as Record<string, PromoPageId>,
 );
+
+type PromoHashTarget =
+  | { kind: "page"; page: PromoPageId }
+  | { kind: "element"; elementId: string; activePage: PromoPageId };
 
 const PROMO_UI_TEXT: Record<
   Language,
@@ -74,22 +79,58 @@ const PROMO_UI_TEXT: Record<
   },
 };
 
+const VERSIONS_SECTION_ID = "versions";
+const VERSIONS_SECTION_HASH = "#versions";
+
+const getPromoHashTarget = (hash: string): PromoHashTarget | undefined => {
+  const normalizedHash = hash.toLowerCase();
+  const page = PROMO_HASH_TO_PAGE[normalizedHash];
+  if (page) return { kind: "page", page };
+  if (normalizedHash === VERSIONS_SECTION_HASH) {
+    return {
+      kind: "element",
+      elementId: VERSIONS_SECTION_ID,
+      activePage: "experience",
+    };
+  }
+  return undefined;
+};
+
 const getActiveSectionFromHash = (): PromoPageId => {
   if (typeof window === "undefined") return "home";
-  return PROMO_HASH_TO_PAGE[window.location.hash.toLowerCase()] ?? "home";
+  const target = getPromoHashTarget(window.location.hash);
+  if (!target) return "home";
+  return target.kind === "page" ? target.page : target.activePage;
+};
+
+const scrollToElementId = (elementId: string, behavior: ScrollBehavior) => {
+  if (typeof window === "undefined") return;
+
+  const target = document.getElementById(elementId);
+  if (!target) return;
+
+  const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - 92);
+  window.scrollTo({ top, behavior });
 };
 
 const scrollToPromoSection = (
   section: PromoPageId,
   behavior: ScrollBehavior,
 ) => {
-  if (typeof window === "undefined") return;
+  scrollToElementId(section, behavior);
+};
 
-  const target = document.getElementById(section);
-  if (!target) return;
+const getInstallPlatformLabel = () => {
+  if (typeof navigator === "undefined") return null;
 
-  const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - 92);
-  window.scrollTo({ top, behavior });
+  const signature = `${navigator.platform || ""} ${navigator.userAgent || ""}`;
+  const isTouchMac =
+    /mac/i.test(navigator.platform || "") && (navigator.maxTouchPoints || 0) > 1;
+  if (/(iphone|ipad|ipod|android)/i.test(signature) || isTouchMac) return null;
+  if (/win/i.test(signature)) return "Windows";
+  if (/mac/i.test(signature)) return "macOS";
+  if (/linux/i.test(signature)) return "Linux";
+  return null;
 };
 
 const ArrowIcon = ({ className = "" }: IconProps) => (
@@ -149,10 +190,10 @@ const HERO_SCREENSHOTS = [
 ];
 
 const LAYOUT_SCREENSHOTS: Record<string, string> = {
-  magazine: promoScreenAsset("magazine_01.webp"),
-  editorial: promoScreenAsset("editorial_02.webp"),
-  gallery: promoScreenAsset("galeria_02.webp"),
-  brutalist: promoScreenAsset("brutalist_01.webp"),
+  magazine: promoScreenAsset("promo-layout-magazine.webp"),
+  editorial: promoScreenAsset("promo-layout-editorial.webp"),
+  gallery: promoScreenAsset("promo-layout-gallery.webp"),
+  brutalist: promoScreenAsset("promo-layout-brutalist.webp"),
 };
 
 const SectionIntro = ({
@@ -197,36 +238,84 @@ const ProductFrame = ({
   images: string[];
   alt: string;
 }) => {
-  const [activeIndex, setActiveIndex] = React.useState(0);
-  const [exitingIndex, setExitingIndex] = React.useState<number | null>(null);
-  const [transitionStep, setTransitionStep] = React.useState(0);
+  const [order, setOrder] = React.useState<number[]>(() =>
+    images.map((_, index) => index),
+  );
+  const [isExiting, setIsExiting] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
+  const frameRef = React.useRef<HTMLElement | null>(null);
+  const animationFrameRef = React.useRef<number | null>(null);
+  const isAnimatingRef = React.useRef(false);
   const isPausedRef = React.useRef(false);
   const exitTimeoutRef = React.useRef<number | null>(null);
-  const stackImages = React.useMemo(() => {
-    if (images.length <= 1) return [];
 
-    return [1, 2]
-      .map((offset) => images[(activeIndex + offset) % images.length])
-      .filter((image) => image && image !== images[activeIndex]);
-  }, [activeIndex, images]);
+  const visibleItems = React.useMemo(
+    () => order.slice(0, Math.min(4, images.length)),
+    [images.length, order],
+  );
 
   const showNextImage = React.useCallback(() => {
     if (images.length <= 1 || typeof window === "undefined") return;
+    if (isAnimatingRef.current) return;
 
-    setActiveIndex((current) => {
-      setExitingIndex(current);
-      setTransitionStep((step) => step + 1);
-      return (current + 1) % images.length;
-    });
-
+    isAnimatingRef.current = true;
+    setIsExiting(true);
     if (exitTimeoutRef.current !== null) {
       window.clearTimeout(exitTimeoutRef.current);
     }
+
     exitTimeoutRef.current = window.setTimeout(() => {
-      setExitingIndex(null);
+      setOrder((currentOrder) => {
+        const [firstItem, ...remainingItems] = currentOrder;
+        return typeof firstItem === "number"
+          ? [...remainingItems, firstItem]
+          : currentOrder;
+      });
+      setIsExiting(false);
+      isAnimatingRef.current = false;
       exitTimeoutRef.current = null;
-    }, 2500);
+    }, 620);
   }, [images.length]);
+
+  const resetPointerTilt = React.useCallback(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+
+    frame.style.setProperty("--promo-stack-tilt-x", "0deg");
+    frame.style.setProperty("--promo-stack-tilt-y", "0deg");
+  }, []);
+
+  const updatePointerTilt = React.useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const frame = frameRef.current;
+      if (!frame || typeof window === "undefined") return;
+
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      const { clientX, clientY } = event;
+      animationFrameRef.current = window.requestAnimationFrame(() => {
+        const rect = frame.getBoundingClientRect();
+        const x = ((clientX - rect.left) / rect.width - 0.5) * 2;
+        const y = ((clientY - rect.top) / rect.height - 0.5) * 2;
+        frame.style.setProperty("--promo-stack-tilt-x", `${(-y * 4.8).toFixed(2)}deg`);
+        frame.style.setProperty("--promo-stack-tilt-y", `${(x * 5.8).toFixed(2)}deg`);
+        animationFrameRef.current = null;
+      });
+    },
+    [],
+  );
+
+  React.useEffect(() => {
+    const rafId = window.requestAnimationFrame(() => {
+      setOrder(images.map((_, index) => index));
+      setIsExiting(false);
+      isAnimatingRef.current = false;
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [images]);
 
   React.useEffect(() => {
     if (images.length <= 1 || typeof window === "undefined") return;
@@ -241,6 +330,10 @@ const ProductFrame = ({
 
     return () => {
       window.clearInterval(intervalId);
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
       if (exitTimeoutRef.current !== null) {
         window.clearTimeout(exitTimeoutRef.current);
         exitTimeoutRef.current = null;
@@ -250,10 +343,12 @@ const ProductFrame = ({
 
   return (
     <figure
+      ref={frameRef}
       className={[
         "promo-product-frame promo-product-frame--rotating",
-        exitingIndex !== null ? "is-transitioning" : "",
+        isExiting ? "is-transitioning" : "",
       ].filter(Boolean).join(" ")}
+      data-hover={isHovered ? "true" : undefined}
       role="button"
       tabIndex={0}
       aria-label={`${alt}. Clique para alternar a imagem.`}
@@ -266,43 +361,31 @@ const ProductFrame = ({
       }}
       onPointerEnter={() => {
         isPausedRef.current = true;
+        setIsHovered(true);
       }}
       onPointerLeave={() => {
         isPausedRef.current = false;
+        setIsHovered(false);
+        resetPointerTilt();
       }}
+      onPointerMove={updatePointerTilt}
     >
-      {images.map((image, index) => (
-        <img
-          key={image}
-          src={image}
-          alt={index === activeIndex ? alt : ""}
-          aria-hidden={index === activeIndex ? undefined : true}
-          className={[
-            index === activeIndex ? "is-active" : "",
-            index === exitingIndex ? "is-exiting" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          loading={index === 0 ? "eager" : "lazy"}
-        />
+      {visibleItems.map((imageIndex, slot) => (
+        <div
+          key={imageIndex}
+          className="promo-product-frame__card"
+          data-depth={isExiting && slot === 0 ? "exit" : slot}
+          aria-hidden={slot === 0 ? undefined : true}
+        >
+          <img
+            src={images[imageIndex]}
+            alt={slot === 0 ? alt : ""}
+            loading={slot < 2 ? "eager" : "lazy"}
+            draggable={false}
+          />
+        </div>
       ))}
-      {stackImages.map((image, index) => (
-        <img
-          key={`stack-${image}`}
-          src={image}
-          alt=""
-          aria-hidden="true"
-          className={`promo-product-frame__stack-image promo-product-frame__stack-image--${index + 1}`}
-          loading="lazy"
-        />
-      ))}
-      {transitionStep > 0 ? (
-        <span
-          key={transitionStep}
-          className="promo-product-frame__transition"
-          aria-hidden="true"
-        />
-      ) : null}
+      <span className="promo-product-frame__glow" aria-hidden="true" />
     </figure>
   );
 };
@@ -327,6 +410,10 @@ const LandingPage = ({
   const secondaryVersions = content.versions.items.filter(
     (version) => !version.featured,
   );
+  const installPlatformLabel = React.useMemo(
+    () => getInstallPlatformLabel(),
+    [],
+  );
 
   const scrollToSection = React.useCallback((section: PromoPageId) => {
     if (typeof window === "undefined") return;
@@ -341,18 +428,41 @@ const LandingPage = ({
     scrollToPromoSection(section, "smooth");
   }, []);
 
+  const scrollToHashTarget = React.useCallback(
+    (hash: string, behavior: ScrollBehavior) => {
+      if (typeof window === "undefined") return false;
+
+      const target = getPromoHashTarget(hash);
+      if (!target) return false;
+
+      if (target.kind === "page") {
+        setActiveSection(target.page);
+        scrollToPromoSection(target.page, behavior);
+        return true;
+      }
+
+      setActiveSection(target.activePage);
+      scrollToElementId(target.elementId, behavior);
+      return true;
+    },
+    [],
+  );
+
   const handleHashNavigation = React.useCallback(() => {
     if (typeof window === "undefined") return;
-    const page = PROMO_HASH_TO_PAGE[window.location.hash.toLowerCase()];
-    if (!page) return;
-    setActiveSection(page);
-    scrollToPromoSection(page, "auto");
-  }, []);
+    scrollToHashTarget(window.location.hash, "auto");
+  }, [scrollToHashTarget]);
 
   React.useEffect(() => {
     window.addEventListener("hashchange", handleHashNavigation);
-    handleHashNavigation();
-    return () => window.removeEventListener("hashchange", handleHashNavigation);
+    const rafId = window.requestAnimationFrame(() => {
+      handleHashNavigation();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("hashchange", handleHashNavigation);
+    };
   }, [handleHashNavigation]);
 
   React.useEffect(() => {
@@ -509,14 +619,27 @@ const LandingPage = ({
                 <ArrowIcon />
               </button>
               <a
-                href={PROMO_PAGE_HASHES.experience}
-                className="promo-secondary-button"
+                href="#versions"
+                className="promo-secondary-button promo-install-button"
+                aria-label={
+                  content.hero.installCtaAriaLabel || content.hero.installCta
+                }
                 onClick={(event) => {
                   event.preventDefault();
-                  scrollToSection("experience");
+                  if (typeof window !== "undefined") {
+                    if (
+                      window.location.hash.toLowerCase() !==
+                      VERSIONS_SECTION_HASH
+                    ) {
+                      window.history.pushState(null, "", VERSIONS_SECTION_HASH);
+                    }
+                  }
+                  scrollToHashTarget(VERSIONS_SECTION_HASH, "smooth");
                 }}
               >
-                {content.hero.secondaryCta}
+                <Download className="promo-install-button__icon" />
+                <span>{content.hero.installCta}</span>
+                {installPlatformLabel && <small>{installPlatformLabel}</small>}
               </a>
             </div>
             <dl
@@ -643,7 +766,11 @@ const LandingPage = ({
           </div>
         </section>
 
-        <section className="promo-section promo-versions">
+        <section
+          id={VERSIONS_SECTION_ID}
+          className="promo-section promo-versions"
+          data-testid="promo-section-versions"
+        >
           <div className="promo-shell">
             <SectionIntro
               eyebrow={content.versions.eyebrow}

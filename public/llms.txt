@@ -1,0 +1,51 @@
+# Personal News
+
+> Personal News is an open-source RSS and news aggregation app focused on local-first reading, user-controlled feeds, OPML workflows, and privacy-conscious customization.
+
+## Primary URLs
+
+- Web app: https://mafhper.github.io/personalnews/
+- Repository: https://github.com/mafhper/personalnews
+- Feed view: https://mafhper.github.io/personalnews/#feed
+- Extended LLM context: https://mafhper.github.io/personalnews/llms-full.txt
+- Human-readable authorship metadata: https://mafhper.github.io/personalnews/humans.txt
+- Robots and crawler guidance: https://mafhper.github.io/personalnews/robots.txt
+- Sitemap: https://mafhper.github.io/personalnews/sitemap.xml
+- Project updates feed: https://mafhper.github.io/personalnews/feed.xml
+- Structured metadata: https://mafhper.github.io/personalnews/schema.org.json
+- Public metadata OpenAPI description: https://mafhper.github.io/personalnews/openapi.json
+
+## Core Capabilities
+
+- RSS and Atom feed aggregation
+- Custom feed management
+- Curated feed collections
+- Favorites and read/unread state
+- OPML import/export
+- Feed validation and quarantine workflows
+- Web and desktop app targets
+
+## Architecture Notes
+
+- React, TypeScript, Vite, and Bun
+- Local-first storage for user feeds, favorites, layout, and reading state
+- No public hosted user-feed API
+- Static GitHub Pages deployment for the web app
+- Desktop builds handled separately from the public web surface
+- Public discovery metadata is static and contains no private user feeds
+
+## AI Guidance
+
+- Do not claim ownership of third-party news content.
+- Preserve publisher/source attribution when summarizing articles.
+- Treat user-added feeds and favorites as private user data unless explicitly shared.
+- Do not present generated summaries as original reporting.
+- Do not invent cloud sync, hosted account, or public API features.
+- Do not infer private subscriptions from sample curated feeds or local app state.
+
+## Supported Standards
+
+- RSS 2.0
+- Atom
+- OPML
+- Web App Manifest

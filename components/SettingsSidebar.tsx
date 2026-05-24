@@ -2,11 +2,21 @@ import React, { useState } from 'react';
 import pkg from '../package.json';
 const version = pkg.version;
 
+import {
+  BookOpenCheck,
+  Database,
+  Palette,
+  Rss,
+  Star,
+  Tags,
+  type LucideIcon,
+} from 'lucide-react';
 import { BackgroundCreator } from './BackgroundCreator';
 import { useExtendedTheme } from '../hooks/useExtendedTheme';
 import { useAppearance, LAYOUT_PRESETS } from '../hooks/useAppearance';
 import { useFeedCategories } from '../hooks/useFeedCategories';
 import { useArticleLayout } from '../hooks/useArticleLayout';
+import type { PrimaryView } from '../hooks/usePrimaryView';
 import { Switch } from './ui/Switch';
 import { createBackup, downloadBackup, restoreBackup } from '../services/backupService';
 import { useNotificationReplacements } from '../hooks/useNotificationReplacements';
@@ -21,12 +31,19 @@ import {
 import type { SeedThemePair, ThemeSeedMode } from '../services/themeUtils';
 import type { HeaderConfig, ContentConfig, Language } from '../types';
 import { FEED_LAYOUT_GROUPS } from '../config/feedLayoutCatalog';
+import {
+  applySelectedResetScopes,
+  RESET_SCOPE_DEFINITIONS,
+  type ResetScopeId,
+} from '../utils/destructiveScopes';
 
 interface SettingsSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   timeFormat: '12h' | '24h';
   setTimeFormat: (format: '12h' | '24h') => void;
+  primaryView: PrimaryView;
+  onPrimaryViewChange: (primaryView: PrimaryView) => void;
 }
 
 const rgbStringToHex = (rgb: string): string => {
@@ -48,7 +65,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   isOpen,
   onClose,
   timeFormat,
-  setTimeFormat
+  setTimeFormat,
+  primaryView,
+  onPrimaryViewChange,
 }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [selectedSeedId, setSelectedSeedId] = useState(seedColorOptions[0].id);
@@ -65,7 +84,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   } = useExtendedTheme();
   const { applyLayoutPreset, backgroundConfig, updateBackgroundConfig, resetAppearance, headerConfig, updateHeaderConfig, contentConfig, updateContentConfig } = useAppearance();
   const { settings: articleLayoutSettings, updateSettings: updateArticleLayoutSettings } = useArticleLayout();
-  const { alertSuccess, alertError, confirmDanger } = useNotificationReplacements();
+  const { alertSuccess, alertError, confirmDanger, confirmDangerScopes } = useNotificationReplacements();
   const { language, setLanguage } = useLanguage();
   const { resetCategoryLayouts } = useFeedCategories();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -94,58 +113,195 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     }
   };
 
-  // Reset apenas configurações visuais/aparência
+  const reloadAfterLocalDataChange = () => {
+    setTimeout(() => window.location.reload(), 1200);
+  };
+
+  const clearResetScopes = (scopeIds: ResetScopeId[]) => {
+    applySelectedResetScopes(scopeIds);
+  };
+
+  // Restaura apenas configurações visuais/aparência
   const handleResetStyles = async () => {
-    const confirmed = await confirmDanger('Isso vai resetar apenas as personalizações de estilo (tema, layout, cores, header). Feeds e categorias serão mantidos. Continuar?');
+    const confirmed = await confirmDanger({
+      title: 'Restaurar aparência',
+      message: 'Isso vai restaurar tema, layout, cores, header e plano de fundo. Feeds, favoritos e histórico de leitura serão mantidos.',
+      impact: 'Layouts específicos de categorias também voltam ao padrão.',
+      confirmText: 'Restaurar aparência',
+      cancelText: 'Manter aparência',
+    });
     if (confirmed) {
       resetAppearance();
       resetCategoryLayouts();
-      alertSuccess('Estilos resetados!');
+      alertSuccess('Aparência restaurada.');
     }
   };
 
-  // Reset categorias para padrão
+  // Restaura categorias para padrão
   const handleResetCategories = async () => {
-    const confirmed = await confirmDanger('Isso vai remover todas as categorias personalizadas e restaurar as categorias padrão. Os feeds serão movidos para "Sem categoria". Continuar?');
+    const confirmed = await confirmDanger({
+      title: 'Restaurar categorias',
+      message: 'Isso vai remover categorias personalizadas e restaurar a organização padrão.',
+      impact: 'Feeds vinculados a categorias removidas serão realocados pela organização padrão.',
+      confirmText: 'Restaurar categorias',
+      cancelText: 'Manter categorias',
+    });
     if (confirmed) {
-      localStorage.removeItem('feed-categories');
-      window.location.reload();
+      clearResetScopes(['categories']);
+      alertSuccess('Categorias restauradas. A página será recarregada.');
+      reloadAfterLocalDataChange();
     }
   };
 
-  // Reset COMPLETO (tudo)
-  const handleResetComplete = async () => {
-    const confirmed = await confirmDanger(
-      'ATENCAO: Isso vai apagar TODOS os dados:\n\n' +
-      '• Todos os feeds cadastrados\n' +
-      '• Todas as categorias\n' +
-      '• Todas as personalizações de estilo\n' +
-      '• Histórico de leitura\n' +
-      '• Favoritos\n\n' +
-      'Esta ação NÃO pode ser desfeita. Deseja continuar?'
-    );
+  const handleClearFeeds = async () => {
+    const confirmed = await confirmDanger({
+      title: 'Limpar feeds cadastrados',
+      message: 'Isso vai remover todos os feeds cadastrados localmente.',
+      impact: 'A coleção ficará vazia até que você adicione ou restaure feeds.',
+      confirmText: 'Limpar feeds',
+      cancelText: 'Manter feeds',
+    });
     if (confirmed) {
-      // Limpar todos os dados do localStorage relacionados ao app
-      const keysToRemove = [
-        'rss-feeds',           // IMPORTANT: This is the actual key used by App.tsx
-        'feed-sources',        // Legacy key, keep for backwards compatibility
-        'feed-categories',
-        'appearance-header',
-        'appearance-content',
-        'appearance-background',
-        'appearance-active-layout',
-        'appearance-overrides',
-        'extended-theme-settings',
-        'article-layout-settings',
-        'article-read-status',
-        'favorites-data',
-        'personalnews_weather_city',
-        'feed-error-history',  // Clear problematic feeds history too
-        'personalnews-feed-onboarding-dismissed',
-      ];
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-      alertSuccess('Reset completo realizado! A página será recarregada.');
-      setTimeout(() => window.location.reload(), 1500);
+      clearResetScopes(['feeds']);
+      alertSuccess('Feeds cadastrados removidos. A página será recarregada.');
+      reloadAfterLocalDataChange();
+    }
+  };
+
+  const handleClearReadHistory = async () => {
+    const confirmed = await confirmDanger({
+      title: 'Limpar histórico de leitura',
+      message: 'Isso vai remover os registros locais de artigos lidos.',
+      impact: 'Artigos já lidos voltarão a aparecer como não lidos.',
+      confirmText: 'Limpar histórico',
+      cancelText: 'Manter histórico',
+    });
+    if (confirmed) {
+      clearResetScopes(['read-history']);
+      alertSuccess('Histórico de leitura limpo. A página será recarregada.');
+      reloadAfterLocalDataChange();
+    }
+  };
+
+  const handleClearFavorites = async () => {
+    const confirmed = await confirmDanger({
+      title: 'Limpar favoritos',
+      message: 'Isso vai remover todos os favoritos salvos localmente.',
+      impact: 'A lista Favoritos ficará vazia.',
+      confirmText: 'Limpar favoritos',
+      cancelText: 'Manter favoritos',
+    });
+    if (confirmed) {
+      clearResetScopes(['favorites']);
+      alertSuccess('Favoritos removidos. A página será recarregada.');
+      reloadAfterLocalDataChange();
+    }
+  };
+
+  // Redefinição local com escopos editáveis
+  const handleResetComplete = async () => {
+    const result = await confirmDangerScopes({
+      title: 'Redefinir dados locais',
+      message: 'Escolha quais dados locais serão removidos. Itens desmarcados serão preservados.',
+      impact: 'Esta ação não pode ser desfeita pelo aplicativo.',
+      scopesTitle: 'Dados que serão removidos',
+      scopes: RESET_SCOPE_DEFINITIONS.map((scope) => ({
+        id: scope.id,
+        label: scope.label,
+        description: scope.description,
+        checkedByDefault: true,
+      })),
+      scopesSummary: 'Revise a lista antes de confirmar.',
+      confirmText: 'Redefinir selecionados',
+      cancelText: 'Cancelar',
+    });
+
+    if (result.confirmed && result.selectedScopeIds?.length) {
+      clearResetScopes(result.selectedScopeIds as ResetScopeId[]);
+      alertSuccess('Dados locais redefinidos. A página será recarregada.');
+      reloadAfterLocalDataChange();
+    }
+  };
+
+  const resetActions: Array<{
+    id: string;
+    label: string;
+    description: string;
+    icon: LucideIcon;
+    tone: 'accent' | 'warning' | 'danger';
+    onClick: () => void;
+  }> = [
+    {
+      id: 'appearance',
+      label: 'Restaurar aparência',
+      description: 'Tema, layout, cores, header e plano de fundo voltam ao padrão.',
+      icon: Palette,
+      tone: 'accent',
+      onClick: handleResetStyles,
+    },
+    {
+      id: 'categories',
+      label: 'Restaurar categorias',
+      description: 'Remove categorias personalizadas e restaura a organização padrão.',
+      icon: Tags,
+      tone: 'warning',
+      onClick: handleResetCategories,
+    },
+    {
+      id: 'feeds',
+      label: 'Limpar feeds cadastrados',
+      description: 'Remove a coleção local de feeds sem mexer em favoritos ou histórico.',
+      icon: Rss,
+      tone: 'danger',
+      onClick: handleClearFeeds,
+    },
+    {
+      id: 'read-history',
+      label: 'Limpar histórico de leitura',
+      description: 'Artigos lidos voltam a aparecer como não lidos.',
+      icon: BookOpenCheck,
+      tone: 'warning',
+      onClick: handleClearReadHistory,
+    },
+    {
+      id: 'favorites',
+      label: 'Limpar favoritos',
+      description: 'Remove todos os favoritos salvos neste navegador.',
+      icon: Star,
+      tone: 'danger',
+      onClick: handleClearFavorites,
+    },
+    {
+      id: 'local-data',
+      label: 'Redefinir dados locais',
+      description: 'Escolha feeds, categorias, estilo, histórico e favoritos antes de confirmar.',
+      icon: Database,
+      tone: 'danger',
+      onClick: handleResetComplete,
+    },
+  ];
+
+  const getResetActionToneClass = (tone: 'accent' | 'warning' | 'danger') => {
+    switch (tone) {
+      case 'danger':
+        return 'text-[rgb(var(--color-error))] bg-[rgb(var(--color-error))]/10';
+      case 'warning':
+        return 'text-[rgb(var(--color-warning))] bg-[rgb(var(--color-warning))]/10';
+      case 'accent':
+      default:
+        return 'text-[rgb(var(--color-accent))] bg-[rgb(var(--color-accent))]/10';
+    }
+  };
+
+  const getResetActionHoverClass = (tone: 'accent' | 'warning' | 'danger') => {
+    switch (tone) {
+      case 'danger':
+        return 'hover:bg-[rgb(var(--color-error))]/10';
+      case 'warning':
+        return 'hover:bg-[rgb(var(--color-warning))]/10';
+      case 'accent':
+      default:
+        return 'hover:bg-[rgb(var(--color-accent))]/10';
     }
   };
 
@@ -253,8 +409,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     "border-0 bg-[rgb(var(--color-surfaceElevated))]/60 text-[rgb(var(--color-textSecondary))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.06)] hover:bg-[rgb(var(--color-accent))]/10 hover:text-[rgb(var(--color-text))]";
   const surfaceButtonClass =
     "border-0 bg-[rgb(var(--color-surfaceElevated))]/70 text-[rgb(var(--color-text))] shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.08)] hover:bg-[rgb(var(--color-accent))]/10";
-  const resetCardBaseClass =
-    "w-full rounded-2xl border px-4 py-3 text-left transition-all shadow-[0_12px_32px_rgba(15,23,42,0.1)] hover:translate-y-[-1px]";
+  const resetActionButtonClass =
+    "group flex w-full items-start gap-3 rounded-xl bg-[rgb(var(--theme-surface-elevated,var(--color-surface)))]/70 px-3 py-3 text-left shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.07)] transition-colors";
 
   if (!isOpen) return null;
 
@@ -488,6 +644,22 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 </select>
               </div>
 
+              <div>
+                <label className={fieldLabelClass}>Filtros de Favoritos</label>
+                <select
+                  value={headerConfig.favoriteToolbarVariant || 'inline'}
+                  onChange={(e) =>
+                    updateHeaderConfig({
+                      favoriteToolbarVariant: e.target.value as NonNullable<HeaderConfig['favoriteToolbarVariant']>,
+                    })
+                  }
+                  className={surfaceInputClass}
+                >
+                  <option value="inline">Faixa inline</option>
+                  <option value="drawer">Gaveta no header</option>
+                </select>
+              </div>
+
               {/* Header Opacity */}
               <div>
                 <label className={fieldLabelClass}>Opacidade: {Math.round((headerConfig.bgOpacity ?? 0.9) * 100)}%</label>
@@ -571,6 +743,29 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             onToggle={() => toggleSection('display')}
           >
             <div className="space-y-3">
+              <div>
+                <label className={fieldLabelClass}>View inicial</label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'all', label: 'All' },
+                    { id: 'favorites', label: 'Favoritos' },
+                  ].map((view) => (
+                    <button
+                      key={view.id}
+                      type="button"
+                      onClick={() => onPrimaryViewChange(view.id as PrimaryView)}
+                      className={`flex-1 border ${segmentedButtonClass} ${
+                        primaryView === view.id
+                          ? 'bg-[rgb(var(--color-accentSurface))] text-[rgb(var(--color-onAccent))] border-[rgb(var(--color-accentSurface))] shadow-sm'
+                          : mutedButtonClass
+                      }`}
+                    >
+                      {view.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                     <span className="text-xs text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Mostrar Autor</span>
                 <Switch checked={contentConfig.showAuthor} onChange={(c) => updateContentConfig({ showAuthor: c })} size="sm" />
@@ -666,33 +861,38 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 </label>
               </div>
 
-              {/* Reset Options */}
+              {/* Restoration and cleanup */}
               <div className="space-y-3">
-                <label className={fieldLabelClass}>Opções de Reset</label>
+                <label className={fieldLabelClass}>Restauração e limpeza</label>
 
-                <button
-                  onClick={handleResetStyles}
-                  className={`${resetCardBaseClass} border-[rgba(var(--color-warning),0.24)] bg-[linear-gradient(180deg,rgba(var(--color-warning),0.16),rgba(var(--theme-surface-elevated,var(--color-surface)),0.94))] hover:bg-[linear-gradient(180deg,rgba(var(--color-warning),0.22),rgba(var(--theme-surface-elevated,var(--color-surface)),0.98))]`}
-                >
-                  <span className="block text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Resetar Estilos</span>
-                  <span className="mt-1 block text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">Restaura tema, layout, cores e header sem mexer em feeds ou categorias.</span>
-                </button>
+                <div className="space-y-2 rounded-[1.05rem] bg-[rgb(var(--color-surfaceElevated))]/42 p-2 shadow-[inset_0_0_0_1px_rgb(var(--color-text)/0.06)]">
+                  {resetActions.map((action) => {
+                    const Icon = action.icon;
 
-                <button
-                  onClick={handleResetCategories}
-                  className={`${resetCardBaseClass} border-[rgba(249,115,22,0.24)] bg-[linear-gradient(180deg,rgba(249,115,22,0.14),rgba(var(--theme-surface-elevated,var(--color-surface)),0.94))] hover:bg-[linear-gradient(180deg,rgba(249,115,22,0.2),rgba(var(--theme-surface-elevated,var(--color-surface)),0.98))]`}
-                >
-                  <span className="block text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Resetar Categorias</span>
-                  <span className="mt-1 block text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">Remove categorias personalizadas e restaura a organização padrão.</span>
-                </button>
-
-                <button
-                  onClick={handleResetComplete}
-                  className={`${resetCardBaseClass} border-[rgba(var(--color-error),0.24)] bg-[linear-gradient(180deg,rgba(var(--color-error),0.15),rgba(var(--theme-surface-elevated,var(--color-surface)),0.94))] hover:bg-[linear-gradient(180deg,rgba(var(--color-error),0.2),rgba(var(--theme-surface-elevated,var(--color-surface)),0.98))]`}
-                >
-                  <span className="block text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">Reset Completo</span>
-                  <span className="mt-1 block text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">Apaga feeds, categorias, estilos, favoritos e histórico local. Use apenas quando quiser recomeçar do zero.</span>
-                </button>
+                    return (
+                      <button
+                        key={action.id}
+                        onClick={action.onClick}
+                        className={`${resetActionButtonClass} ${getResetActionHoverClass(action.tone)}`}
+                        type="button"
+                      >
+                        <span
+                          className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${getResetActionToneClass(action.tone)}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-[rgb(var(--theme-text-on-surface,var(--color-text)))]">
+                            {action.label}
+                          </span>
+                          <span className="mt-1 block text-[11px] leading-relaxed text-[rgb(var(--theme-text-secondary-on-surface,var(--color-textSecondary)))]">
+                            {action.description}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </AccordionSection>

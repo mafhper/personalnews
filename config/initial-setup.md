@@ -22,7 +22,7 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Layout Global - Define como os artigos são organizados na grade
 
-- Layout Global: magazine;
+- Layout Global: masonry;
   Opções:
 - `list`: Lista limpa estilo portal
 - `masonry`: Cards com alturas variáveis
@@ -61,10 +61,11 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### Aparência do Header - Define dimensões e transparência iniciais
 
-- Altura do Header: compact;
+- Altura do Header: tiny;
 - Opacidade do Header: 60;
 - Blur do Header: 20;
 - Tamanho do Logo: md;
+- Filtros de Favoritos: inline;
   Opções:
 - `ultra-compact`: Cabeçalho muito baixo
 - `tiny`: Cabeçalho pequeno
@@ -74,6 +75,8 @@ O formato é rigoroso para permitir a sincronização automática.
 - `sm`: Logo pequeno
 - `md`: Logo médio
 - `lg`: Logo grande
+- `inline`: Filtros de Favoritos em faixa compacta no header
+- `drawer`: Filtros de Favoritos em gaveta no header
 
 ---
 
@@ -95,7 +98,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Tipo de Paginação: numbered;
 - Destaques Principais: 15;
 - Intervalo de Atualização Automática: 15;
-- Cache Temporário de Feeds: 10;
+- Cache Temporário de Feeds: 15;
   Opções:
 - `numbered`: Paginação numerada
 - `loadMore`: Botão para carregar mais
@@ -120,7 +123,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Tecnologia;
 - ID: tech;
 - Cor: #0078D7;
-- Layout: masonry;
+- Layout: minimal;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
@@ -132,7 +135,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Design;
 - ID: design;
 - Cor: #663399;
-- Layout: immersive;
+- Layout: gallery;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Inspiração visual, UX/UI e tendências de design.;
@@ -156,7 +159,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Política;
 - ID: politics;
 - Cor: #E13111;
-- Layout: magazine;
+- Layout: newspaper;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Cobertura política nacional e internacional.;
@@ -216,9 +219,12 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### podcasts
 
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 - MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
+- 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
+- Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
@@ -260,8 +266,12 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### podcasts
 
+- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
+- MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
+- 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
+- Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
@@ -371,6 +381,9 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
+- MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
+- 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
+- Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
 
 ### youtube
 

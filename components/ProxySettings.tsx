@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  ArrowDown,
+  ArrowUp,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -16,6 +18,7 @@ import {
   type ProxyDashboardSnapshot,
 } from "../hooks/useProxyDashboard";
 import { ProxyManager, type ProxyTestResult } from "../services/proxyManager";
+import type { ProxyRouteMode } from "../services/proxyManager";
 
 export interface ProxySettingsProps {
   detailed?: boolean;
@@ -76,6 +79,30 @@ const routeLabels: Record<ProxyTestResult["route"], string> = {
   "backend-fetch": "backend local",
   "client-proxy": "proxy em nuvem",
 };
+
+const routeModeLabels: Record<
+  ProxyRouteMode,
+  { label: string; detail: string }
+> = {
+  "full-local": {
+    label: "Somente local",
+    detail: "Backend local sem fallback externo",
+  },
+  mixed: {
+    label: "Local + fallback",
+    detail: "Backend local primeiro, proxies depois",
+  },
+  "full-external-proxies": {
+    label: "Somente proxies",
+    detail: "Ignora backend local para feeds",
+  },
+};
+
+const routeModeOptions: ProxyRouteMode[] = [
+  "full-local",
+  "mixed",
+  "full-external-proxies",
+];
 
 const formatRuntimeNotice = (
   runtime: ReturnType<typeof useProxyDashboard>["snapshot"]["runtime"],
@@ -143,6 +170,10 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
     apiKeys,
     validationErrors,
     isLoading,
+    routingMode,
+    clientProxyOrder,
+    setRoutingMode,
+    moveClientProxy,
     setProxyEnabled,
     setApiKey,
     clearApiKey,
@@ -164,6 +195,9 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
   const displayedProxies = useMemo(() => {
     const all = getAllProxiesStatus();
     const filtered = apiKeysOnly ? all.filter((proxy) => proxy.hasApiKey) : all;
+    const clientOrderIndex = new Map(
+      clientProxyOrder.map((proxyId, index) => [proxyId, index]),
+    );
 
     return filtered
       .map((proxy) => ({
@@ -175,20 +209,22 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
         ),
       }))
       .sort((a, b) => {
+        if (a.proxy.id === "local-proxy") return -1;
+        if (b.proxy.id === "local-proxy") return 1;
+
         const disabledA = !a.proxy.enabled || a.runtimeRoute?.status === "disabled";
         const disabledB = !b.proxy.enabled || b.runtimeRoute?.status === "disabled";
         if (disabledA !== disabledB) return disabledA ? 1 : -1;
 
-        const scoreA = a.runtimeRoute?.healthScore ?? a.proxy.health.score;
-        const scoreB = b.runtimeRoute?.healthScore ?? b.proxy.health.score;
-        if (scoreA !== scoreB) return scoreA - scoreB;
-
-        if (a.proxy.id === "local-proxy") return -1;
-        if (b.proxy.id === "local-proxy") return 1;
+        const orderA = clientOrderIndex.get(a.proxy.id);
+        const orderB = clientOrderIndex.get(b.proxy.id);
+        if (orderA !== undefined && orderB !== undefined) return orderA - orderB;
+        if (orderA !== undefined) return -1;
+        if (orderB !== undefined) return 1;
         return a.proxy.name.localeCompare(b.proxy.name);
       })
       .map((item) => item.proxy);
-  }, [apiKeysOnly, getAllProxiesStatus, snapshot.routes]);
+  }, [apiKeysOnly, clientProxyOrder, getAllProxiesStatus, snapshot.routes]);
 
   const isLocalBackendRuntime = snapshot.backend.enabled;
   const isTauriRuntime =
@@ -198,6 +234,17 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
         .__TAURI_INTERNALS__);
   const localRuntimeLabel = isTauriRuntime ? "desktop" : "modo local";
   const panelClass = embedded ? EMBEDDED_PANEL_CLASS : PANEL_CLASS;
+  const orderedFallbackNames =
+    snapshot.runtime.fallbackOrder.length > 0
+      ? snapshot.runtime.fallbackOrder
+      : clientProxyOrder
+          .map((proxyId) => PROXY_CONFIGS[proxyId]?.name)
+          .filter((proxyName): proxyName is string => Boolean(proxyName));
+  const primaryRouteLabel =
+    snapshot.runtime.primaryRoute ||
+    (routingMode === "full-external-proxies"
+      ? orderedFallbackNames[0]
+      : "LocalBackend");
 
   useEffect(() => {
     if (!detailed) return;
@@ -313,6 +360,8 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
             <p className={`mt-2 text-base font-semibold ${MANAGER_TEXT_CLASS}`}>
               {snapshot.summary.fallbackActive
                 ? "Fallback em nuvem"
+                : routingMode === "full-external-proxies"
+                  ? "Proxies externos"
                 : isLocalBackendRuntime
                   ? "Backend local"
                   : "Cliente / proxies"}
@@ -344,6 +393,65 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
             </p>
           </div>
         </div>
+
+          <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className={MANAGER_CARD_CLASS}>
+              <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
+                Modo de roteamento
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                {routeModeOptions.map((mode) => {
+                  const selected = routingMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setRoutingMode(mode)}
+                      className={`rounded-[14px] border px-3 py-2 text-left transition ${
+                        selected
+                          ? "border-[rgba(var(--color-primary),0.38)] bg-[rgba(var(--color-primary),0.16)] text-[rgb(var(--color-primary))]"
+                          : "border-[rgb(var(--color-border))]/14 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] hover:border-[rgba(var(--color-primary),0.24)]"
+                      }`}
+                    >
+                      <span className="block text-sm font-semibold">
+                        {routeModeLabels[mode].label}
+                      </span>
+                      <span className="mt-1 block text-xs opacity-80">
+                        {routeModeLabels[mode].detail}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={MANAGER_CARD_CLASS}>
+              <p className={`text-[11px] uppercase tracking-[0.18em] ${MANAGER_TEXT_SECONDARY_CLASS}`}>
+                Ordem efetiva
+              </p>
+              <p className={`mt-2 text-sm font-semibold ${MANAGER_TEXT_CLASS}`}>
+                Primária: {primaryRouteLabel || "não definida"}
+              </p>
+              <p className={`mt-2 text-sm ${MANAGER_TEXT_SECONDARY_CLASS}`}>
+                {routingMode === "full-local"
+                  ? "Fallback externo desativado neste modo."
+                  : orderedFallbackNames.length > 0
+                    ? orderedFallbackNames.join(" → ")
+                    : "Nenhum proxy externo habilitado para fallback."}
+              </p>
+            </div>
+          </div>
+
+          {routingMode !== "full-local" && (
+            <div className="mt-3 flex items-start gap-3 rounded-[18px] border border-[rgba(var(--color-warning),0.22)] bg-[rgba(var(--color-warning),0.1)] p-4 text-sm text-[rgb(var(--theme-manager-text,var(--theme-text-on-surface,var(--color-text))))]">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(var(--color-warning))]" />
+              <p>
+                URLs dos feeds podem passar por proxies externos neste modo.
+                Use Somente local quando quiser manter as requisições restritas
+                ao backend do desktop.
+              </p>
+            </div>
+          )}
       </section>
       )}
 
@@ -368,6 +476,8 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
               const canDisableProxy = ProxyManager.canDisableRuntimeProxy(
                 proxy.name,
               );
+              const routeOrder = clientProxyOrder.indexOf(proxy.id);
+              const canMoveProxy = proxy.id !== "local-proxy" && routeOrder >= 0;
               const isDisabled =
                 !proxy.enabled || runtimeRoute?.status === "disabled";
               const healthScore =
@@ -417,6 +527,11 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                             }`}
                           >
                             api key
+                          </span>
+                        )}
+                        {canMoveProxy && (
+                          <span className="rounded-full border border-[rgb(var(--color-border))]/18 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))]">
+                            ordem {routeOrder + 1}
                           </span>
                         )}
                         {!proxy.enabled && (
@@ -567,6 +682,28 @@ export const ProxySettings: React.FC<ProxySettingsProps> = ({
                       )}
 
                       <div className="mt-4 flex flex-wrap items-center gap-3">
+                        {canMoveProxy && (
+                          <div className="inline-flex overflow-hidden rounded-full border border-[rgb(var(--color-border))]/16 bg-[rgb(var(--theme-manager-control,var(--theme-control-bg,var(--color-surface))))]">
+                            <button
+                              type="button"
+                              onClick={() => moveClientProxy(proxy.id, "up")}
+                              disabled={routeOrder === 0}
+                              title="Subir na ordem de fallback"
+                              className="inline-flex h-10 w-10 items-center justify-center text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] transition hover:text-[rgb(var(--color-primary))] disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveClientProxy(proxy.id, "down")}
+                              disabled={routeOrder === clientProxyOrder.length - 1}
+                              title="Descer na ordem de fallback"
+                              className="inline-flex h-10 w-10 items-center justify-center border-l border-[rgb(var(--color-border))]/12 text-[rgb(var(--theme-manager-text-secondary,var(--theme-text-secondary-on-surface,var(--color-textSecondary))))] transition hover:text-[rgb(var(--color-primary))] disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              <ArrowDown className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={() => setProxyEnabled(proxy.id, !proxy.enabled)}

@@ -39,6 +39,8 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
     width: placeholderWidth,
     height: placeholderHeight,
     label: article.sourceTitle || 'Personal News',
+    feedUrl: article.feedUrl,
+    headline: article.title,
     tone: 'brand',
     variant: 'ambient',
   });
@@ -46,6 +48,8 @@ export const ArticleImage: React.FC<ArticleImageProps> = memo(({
     width: placeholderWidth,
     height: placeholderHeight,
     label: article.sourceTitle || 'Personal News',
+    feedUrl: article.feedUrl,
+    headline: article.title,
     tone: 'neutral',
     variant: 'ambient',
   });

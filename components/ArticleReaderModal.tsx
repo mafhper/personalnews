@@ -4,6 +4,7 @@ import { getVideoEmbedDetails } from "../utils/videoEmbed";
 import { useLanguage } from "../hooks/useLanguage";
 import { useModal } from "../hooks/useModal";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useReadStatus } from "../hooks/useReadStatus";
 import { useDocumentScrollLock } from "../hooks/useDocumentScrollLock";
 import { openExternalLink } from "../utils/openExternalLink";
 import { sanitizeFeedHtmlForRender, sanitizeUrl } from "../utils/sanitization";
@@ -41,6 +42,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   hasPrev,
 }) => {
   const { isTauri } = detectEnvironment();
+  const { markAsRead } = useReadStatus();
   const videoDetails = getVideoEmbedDetails(article.link, {
     origin: typeof window !== "undefined" ? window.location.origin : null,
     runtime: isTauri ? "desktop" : "web",
@@ -69,6 +71,10 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     "reader-preferences",
     defaultPreferences,
   );
+
+  useEffect(() => {
+    markAsRead(article);
+  }, [article, markAsRead]);
 
   // Font size classes
   const fontSizeClasses = {

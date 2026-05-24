@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { migrateFeeds } from "../utils/feedMigration";
 import { FeedSource } from "../types";
 
@@ -38,16 +39,10 @@ describe("[CORE][MIGRATION] state migration logic", () => {
     expect(result.feeds[0].categoryId).toBe("tech");
   });
 
-  it("should NOT migrate if feeds are already up to date", () => {
-    const upToDateFeeds: FeedSource[] = [
-      {
-        url: "https://www.xda-developers.com/feed/",
-        title: "XDA",
-        categoryId: "tech",
-        active: true,
-        customTitle: "XDA",
-      }
-    ];
+  it("should NOT migrate if the full default collection is already up to date", () => {
+    const upToDateFeeds: FeedSource[] = DEFAULT_FEEDS.map((feed) => ({
+      ...feed,
+    }));
 
     const result = migrateFeeds(upToDateFeeds);
 
@@ -66,6 +61,64 @@ describe("[CORE][MIGRATION] state migration logic", () => {
     const result = migrateFeeds([customFeed]);
 
     expect(result.feeds).toContainEqual(customFeed);
+  });
+
+  it("should repair missing initial feeds in a saved collection", () => {
+    const defaultYouTubeFeeds = DEFAULT_FEEDS.filter(
+      (feed) => feed.categoryId === "youtube",
+    );
+    const oldCollection: FeedSource[] = [defaultYouTubeFeeds[0]];
+
+    const result = migrateFeeds(oldCollection);
+    const migratedYouTubeFeeds = result.feeds.filter(
+      (feed) => feed.categoryId === "youtube",
+    );
+
+    expect(result.migrated).toBe(true);
+    expect(migratedYouTubeFeeds).toHaveLength(defaultYouTubeFeeds.length);
+    expect(migratedYouTubeFeeds.map((feed) => feed.url)).toEqual(
+      defaultYouTubeFeeds.map((feed) => feed.url),
+    );
+  });
+
+  it("should preserve distinct YouTube channel feeds during dedupe", () => {
+    const defaultYouTubeFeeds = DEFAULT_FEEDS.filter(
+      (feed) => feed.categoryId === "youtube",
+    );
+    const collectionWithMetadataDrift = DEFAULT_FEEDS.map((feed, index) =>
+      index === 0 ? { ...feed, customTitle: undefined } : { ...feed },
+    );
+
+    const result = migrateFeeds(collectionWithMetadataDrift);
+    const migratedYouTubeFeeds = result.feeds.filter(
+      (feed) => feed.categoryId === "youtube",
+    );
+
+    expect(result.migrated).toBe(true);
+    expect(migratedYouTubeFeeds).toHaveLength(defaultYouTubeFeeds.length);
+    expect(new Set(migratedYouTubeFeeds.map((feed) => feed.url)).size).toBe(
+      defaultYouTubeFeeds.length,
+    );
+  });
+
+  it("should still deduplicate truly equivalent feed URLs", () => {
+    const xdaFeed = DEFAULT_FEEDS.find((feed) =>
+      feed.url.includes("xda-developers.com"),
+    );
+    expect(xdaFeed).toBeDefined();
+
+    const result = migrateFeeds([
+      { ...xdaFeed! },
+      {
+        ...xdaFeed!,
+        url: `${xdaFeed!.url}?utm_source=newsletter#top`,
+      },
+    ]);
+
+    expect(result.migrated).toBe(true);
+    expect(
+      result.feeds.filter((feed) => feed.url.includes("xda-developers.com")),
+    ).toHaveLength(1);
   });
 
   it("should migrate stale Foro de Teresina post feeds to the podcast RSS", () => {
@@ -97,8 +150,12 @@ describe("[CORE][MIGRATION] state migration logic", () => {
 
     const result = migrateFeeds(feeds);
 
-    expect(result.migrated).toBe(false);
-    expect(result.feeds).toBe(feeds);
+    expect(result.feeds).toContainEqual(customForoFeed);
+    expect(
+      result.feeds.filter(
+        (feed) => feed.url === "https://feeds.megaphone.fm/NPP2619427256",
+      ),
+    ).toHaveLength(1);
   });
 
   it("should deduplicate feeds after a stale Foro feed is canonicalized", () => {

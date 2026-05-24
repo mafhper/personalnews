@@ -51,16 +51,31 @@ import { useUI } from "../hooks/useUI";
 import { useKeyboardNavigation } from "../hooks/useKeyboardNavigation";
 import { useAppearance } from "../hooks/useAppearance";
 import { useFeedCategories } from "../hooks/useFeedCategories";
+import { favoriteToArticle, useFavorites } from "../hooks/useFavorites";
 import { usePagination } from "../hooks/usePagination";
+import { useReadStatus } from "../hooks/useReadStatus";
+import {
+  FAVORITES_VIEW_ID,
+  type PrimaryView,
+  readPrimaryViewPreference,
+  usePrimaryViewPreference,
+} from "../hooks/usePrimaryView";
 import { useSwipeGestures } from "../hooks/useSwipeGestures";
 import { useArticleLayout } from "../hooks/useArticleLayout";
-import type { Article } from "../types";
+import type { Article, FeedCategory } from "../types";
 import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
 const BackgroundLayer = lazy(() =>
   import("./BackgroundLayer").then((m) => ({ default: m.BackgroundLayer })),
 );
 import { useLogger } from "../services/logger";
+import {
+  filterAndSortFavorites,
+  type FavoriteMediaFilter,
+  type FavoriteReadFilter,
+  type FavoriteSortMode,
+} from "../utils/favoriteViewFilters";
 import { areUrlsEqual } from "../utils/urlUtils";
+import { isFeedActive } from "../utils/feedQuarantine";
 import type { FeedLoadRequest } from "../types";
 
 // Lazy load non-critical components
@@ -169,10 +184,78 @@ const AppContent: React.FC = () => {
     string | null
   >(null);
 
-  const [selectedCategory, setSelectedCategory] = useState<string>(
-    () => new URLSearchParams(window.location.search).get("category") || "all",
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    const categoryParam = new URLSearchParams(window.location.search).get(
+      "category",
+    );
+    if (categoryParam) return categoryParam;
+    return readPrimaryViewPreference() === "favorites"
+      ? FAVORITES_VIEW_ID
+      : "all";
+  });
   const [selectedFeedUrl, setSelectedFeedUrl] = useState<string | null>(null);
+  const [selectedFavoriteSourceKey, setSelectedFavoriteSourceKey] = useState<
+    string | null
+  >(null);
+  const [primaryView, setPrimaryView] = usePrimaryViewPreference();
+  const { favorites } = useFavorites();
+  const { getUnreadCount, isArticleRead } = useReadStatus();
+  const [favoriteReadFilter, setFavoriteReadFilter] =
+    useState<FavoriteReadFilter>("all");
+  const [favoriteMediaFilter, setFavoriteMediaFilter] =
+    useState<FavoriteMediaFilter>("all");
+  const [favoriteCategoryFilter, setFavoriteCategoryFilter] =
+    useState<string>("all");
+  const [favoriteSortMode, setFavoriteSortMode] =
+    useState<FavoriteSortMode>("saved-desc");
+  const favoriteArticles = useMemo(
+    () => favorites.map(favoriteToArticle),
+    [favorites],
+  );
+  const filteredFavorites = useMemo(
+    () =>
+      filterAndSortFavorites(favorites, {
+        readFilter: favoriteReadFilter,
+        mediaFilter: favoriteMediaFilter,
+        categoryFilter: favoriteCategoryFilter,
+        sourceKey: selectedFavoriteSourceKey,
+        sortMode: favoriteSortMode,
+        isArticleRead,
+      }),
+    [
+      favorites,
+      favoriteReadFilter,
+      favoriteMediaFilter,
+      favoriteCategoryFilter,
+      selectedFavoriteSourceKey,
+      favoriteSortMode,
+      isArticleRead,
+    ],
+  );
+  const filteredFavoriteArticles = useMemo(
+    () => filteredFavorites.map(favoriteToArticle),
+    [filteredFavorites],
+  );
+  const favoriteUnreadCount = useMemo(
+    () => getUnreadCount(favoriteArticles),
+    [favoriteArticles, getUnreadCount],
+  );
+  const hasActiveFavoriteFilters =
+    favoriteReadFilter !== "all" ||
+    favoriteMediaFilter !== "all" ||
+    favoriteSortMode !== "saved-desc" ||
+    favoriteCategoryFilter !== "all" ||
+    selectedFavoriteSourceKey !== null;
+  const activeFavoriteFilterCount =
+    (favoriteReadFilter !== "all" ? 1 : 0) +
+    (favoriteMediaFilter !== "all" ? 1 : 0) +
+    (favoriteSortMode !== "saved-desc" ? 1 : 0) +
+    (favoriteCategoryFilter !== "all" ? 1 : 0) +
+    (selectedFavoriteSourceKey !== null ? 1 : 0);
+  const isFavoritesView = selectedCategory === FAVORITES_VIEW_ID;
+  const sourceArticlesForView = isFavoritesView
+    ? filteredFavoriteArticles
+    : articles;
 
   // Extended theme system
   const {
@@ -186,7 +269,8 @@ const AppContent: React.FC = () => {
   } = useAppearance();
 
   // Feed categories system
-  const { categories, getCategorizedFeeds } = useFeedCategories();
+  const { categories, getCategorizedFeeds, updateCategory } =
+    useFeedCategories();
   const categorizedFeeds = getCategorizedFeeds(feeds);
 
   // T35: SMART LAYOUT DETECTION - ATOMIC & EQUALITARIAN
@@ -197,7 +281,7 @@ const AppContent: React.FC = () => {
     }
 
     // 2. Category Priority (from Context)
-    const categoryId = selectedCategory || "all";
+    const categoryId = isFavoritesView ? "all" : selectedCategory || "all";
     const activeCatObj = categories.find((c) => c.id === categoryId);
     if (activeCatObj?.layoutMode) {
       return activeCatObj.layoutMode;
@@ -207,6 +291,7 @@ const AppContent: React.FC = () => {
     return resolveBaseLayoutMode();
   }, [
     activeTransitionLayout,
+    isFavoritesView,
     selectedCategory,
     categories,
     resolveBaseLayoutMode,
@@ -247,7 +332,11 @@ const AppContent: React.FC = () => {
 
   // Auto-refresh logic (simplified using refreshFeeds from context)
   useEffect(() => {
-    if (layoutSettings.autoRefreshInterval > 0 && feeds.length > 0) {
+    if (
+      !isFavoritesView &&
+      layoutSettings.autoRefreshInterval > 0 &&
+      feeds.length > 0
+    ) {
       const intervalMs = layoutSettings.autoRefreshInterval * 60 * 1000;
       logger.debugTag(
         "SYSTEM",
@@ -264,6 +353,7 @@ const AppContent: React.FC = () => {
   }, [
     buildLoadRequest,
     feeds.length,
+    isFavoritesView,
     layoutSettings.autoRefreshInterval,
     logger,
     refreshFeeds,
@@ -273,8 +363,15 @@ const AppContent: React.FC = () => {
 
   // Pass selectedCategory to prioritize feeds from the current category
   const handleRefresh = useCallback(() => {
+    if (isFavoritesView) return;
     refreshFeeds(buildLoadRequest(selectedCategory, selectedFeedUrl));
-  }, [buildLoadRequest, refreshFeeds, selectedCategory, selectedFeedUrl]);
+  }, [
+    buildLoadRequest,
+    isFavoritesView,
+    refreshFeeds,
+    selectedCategory,
+    selectedFeedUrl,
+  ]);
 
   // T36: Release the lock once content is confirmed to be on screen
   const handleContentMounted = useCallback(() => {
@@ -300,14 +397,16 @@ const AppContent: React.FC = () => {
     setSearchResults([]);
   }, []);
 
-  const handleCategoryNavigation = useCallback(
-    (categoryIndex: number) => {
-      if (categoryIndex >= 0 && categoryIndex < categories.length) {
-        setSelectedCategory(categories[categoryIndex].id);
-      }
-    },
-    [categories],
-  );
+  const keyboardCategoryIds = useMemo(() => {
+    const categoryIds = categories.map((category) => category.id);
+    if (primaryView === "favorites") {
+      return [
+        FAVORITES_VIEW_ID,
+        ...categoryIds.filter((categoryId) => categoryId !== "all"),
+      ];
+    }
+    return categoryIds;
+  }, [categories, primaryView]);
 
   // Focus search input
   const focusSearch = useCallback(() => {
@@ -321,7 +420,7 @@ const AppContent: React.FC = () => {
 
   // Determine which articles to display based on search state and read status filter
   const displayArticles = useMemo(() => {
-    const sourceArticles = articles;
+    const sourceArticles = sourceArticlesForView;
     const isSystemNotice = (article: Article) => {
       const title = (article.title || "").toLowerCase();
       if (title.includes("rss feed temporarily unavailable")) return true;
@@ -357,9 +456,20 @@ const AppContent: React.FC = () => {
           article.sourceTitle === selectedFeedUrl,
       );
     } else if (isSearchActive && searchResults.length >= 0) {
-      filteredArticles = searchResults;
+      if (isFavoritesView) {
+        const searchResultLinks = new Set(
+          searchResults.map((article) => article.link),
+        );
+        filteredArticles = sourceArticles.filter((article) =>
+          searchResultLinks.has(article.link),
+        );
+      } else {
+        filteredArticles = searchResults;
+      }
     } else {
-      if (selectedCategory === "all" || selectedCategory === "All") {
+      if (isFavoritesView) {
+        filteredArticles = sourceArticles;
+      } else if (selectedCategory === "all" || selectedCategory === "All") {
         // "All" category logic: show all feeds unless they are explicitly hidden from all
         filteredArticles = sourceArticles.filter((a: Article) => {
           const feed = feeds.find(
@@ -369,7 +479,7 @@ const AppContent: React.FC = () => {
           );
           // If no feed found, show it anyway in 'all' to avoid blackout
           if (!feed) return true;
-          return !feed.hideFromAll;
+          return isFeedActive(feed) && !feed.hideFromAll;
         });
       } else {
         const selectedCategoryObj = categories.find(
@@ -385,7 +495,7 @@ const AppContent: React.FC = () => {
             );
 
             if (feed) {
-              return feed.categoryId === selectedCategory;
+              return isFeedActive(feed) && feed.categoryId === selectedCategory;
             }
 
             if (selectedCategoryObj.autoDiscovery === false) {
@@ -435,7 +545,8 @@ const AppContent: React.FC = () => {
   }, [
     isSearchActive,
     searchResults,
-    articles,
+    sourceArticlesForView,
+    isFavoritesView,
     selectedCategory,
     categories,
     feeds,
@@ -477,11 +588,12 @@ const AppContent: React.FC = () => {
   }, [currentErrorKey, dismissedErrorKey]);
 
   const selectedCategoryDisplayName = useMemo(() => {
+    if (isFavoritesView) return "Favoritos";
     return (
       categories.find((category) => category.id === selectedCategory)?.name ||
       selectedCategory
     );
-  }, [categories, selectedCategory]);
+  }, [categories, isFavoritesView, selectedCategory]);
 
   const openFeedManagerFocus = useCallback(
     (payload: {
@@ -579,12 +691,22 @@ const AppContent: React.FC = () => {
       persistInUrl: true,
       resetTriggers: [
         selectedCategory,
+        selectedFavoriteSourceKey,
+        favoriteReadFilter,
+        favoriteMediaFilter,
+        favoriteCategoryFilter,
+        favoriteSortMode,
         isSearchActive,
         searchQuery,
         contentConfig.paginationType,
       ],
     },
   );
+
+  const renderedCategory = selectedCategory;
+  const renderedLayoutMode = currentLayoutMode as string;
+  const shouldBypassGlobalPagination =
+    renderedLayoutMode === "pocketfeeds" && !isSearchActive && !isFavoritesView;
 
   // T12 & T36: Progressive pagination support
   const paginatedArticles = useMemo(() => {
@@ -604,12 +726,18 @@ const AppContent: React.FC = () => {
     contentConfig.paginationType,
   ]);
 
-  const renderedArticles = paginatedArticles;
-  const renderedCategory = selectedCategory;
-  const renderedLayoutMode = currentLayoutMode as string;
+  const renderedArticles = shouldBypassGlobalPagination
+    ? displayArticles
+    : paginatedArticles;
+  const hasSparsePaginationPage =
+    !shouldBypassGlobalPagination &&
+    renderedArticles.length > 0 &&
+    renderedArticles.length <=
+      Math.min(4, Math.max(1, layoutSettings.articlesPerPage));
 
   const shouldShowCategoryUnavailableMessage =
     !isSearchActive &&
+    !isFavoritesView &&
     selectedCategory !== "all" &&
     selectedCategory !== "All" &&
     scopedFeedUrls.length > 0 &&
@@ -620,6 +748,21 @@ const AppContent: React.FC = () => {
   const handleNavigation = useCallback(
     (category: string, feedUrl?: string) => {
       const nextFeedUrl = feedUrl || null;
+
+      if (category === FAVORITES_VIEW_ID) {
+        const allCategory = categories.find((item) => item.id === "all");
+        setActiveTransitionLayout(
+          allCategory?.layoutMode || resolveBaseLayoutMode(),
+        );
+        setSelectedCategory(FAVORITES_VIEW_ID);
+        setSelectedFeedUrl(null);
+        setSelectedFavoriteSourceKey(nextFeedUrl);
+        clearSearch();
+        pagination.resetPagination();
+        window.scrollTo({ top: 0, behavior: "auto" });
+        return;
+      }
+
       const isSameFeedSelection =
         (selectedFeedUrl === null && nextFeedUrl === null) ||
         (!!selectedFeedUrl &&
@@ -649,6 +792,7 @@ const AppContent: React.FC = () => {
 
       setSelectedCategory(category);
       setSelectedFeedUrl(nextFeedUrl);
+      setSelectedFavoriteSourceKey(null);
 
       // TRIGGER CONTENT LOAD
       loadFeeds(buildLoadRequest(category, feedUrl));
@@ -674,6 +818,7 @@ const AppContent: React.FC = () => {
       pagination,
       applyLayoutPreset,
       buildLoadRequest,
+      clearSearch,
       refreshAppearance,
       resolveBaseLayoutMode,
       loadFeeds,
@@ -700,6 +845,7 @@ const AppContent: React.FC = () => {
     setActiveTransitionLayout(targetMode);
     setSelectedCategory(category);
     setSelectedFeedUrl(null);
+    setSelectedFavoriteSourceKey(null);
     loadFeeds(buildLoadRequest(category));
 
     if (categoryObj && categoryObj.layoutMode) {
@@ -727,6 +873,56 @@ const AppContent: React.FC = () => {
     selectedFeedUrl,
   ]);
 
+  const handlePrimaryViewChange = useCallback(
+    (nextPrimaryView: PrimaryView) => {
+      setPrimaryView(nextPrimaryView);
+
+      if (nextPrimaryView === "favorites") {
+        handleNavigation(FAVORITES_VIEW_ID);
+        return;
+      }
+
+      handleTitleNavigation();
+    },
+    [handleNavigation, handleTitleNavigation, setPrimaryView],
+  );
+
+  const clearFavoriteFilters = useCallback(() => {
+    setFavoriteReadFilter("all");
+    setFavoriteMediaFilter("all");
+    setFavoriteCategoryFilter("all");
+    setSelectedFavoriteSourceKey(null);
+    setFavoriteSortMode("saved-desc");
+  }, []);
+
+  const headerFavoriteToolbar =
+    isFavoritesView && favorites.length > 0 && !showSkeleton
+      ? {
+          totalCount: favorites.length,
+          visibleCount: filteredFavorites.length,
+          unreadCount: favoriteUnreadCount,
+          readFilter: favoriteReadFilter,
+          mediaFilter: favoriteMediaFilter,
+          sortMode: favoriteSortMode,
+          hasActiveFilters: hasActiveFavoriteFilters,
+          activeFilterCount: activeFavoriteFilterCount,
+          onReadFilterChange: setFavoriteReadFilter,
+          onMediaFilterChange: setFavoriteMediaFilter,
+          onSortModeChange: setFavoriteSortMode,
+          onClearFilters: clearFavoriteFilters,
+        }
+      : undefined;
+
+  const handleCategoryNavigation = useCallback(
+    (categoryIndex: number) => {
+      const categoryId = keyboardCategoryIds[categoryIndex];
+      if (!categoryId) return;
+
+      handleNavigation(categoryId);
+    },
+    [handleNavigation, keyboardCategoryIds],
+  );
+
   const handleLogoToLanding = useCallback(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash) {
@@ -735,6 +931,16 @@ const AppContent: React.FC = () => {
       window.location.hash = "";
     }
   }, []);
+
+  const handleCategoryLayoutChange = useCallback(
+    (
+      categoryId: string,
+      layoutMode: FeedCategory["layoutMode"] | undefined,
+    ) => {
+      updateCategory(categoryId, { layoutMode });
+    },
+    [updateCategory],
+  );
 
   // Keyboard shortcuts configuration
   const keyboardShortcuts = useMemo(
@@ -898,19 +1104,25 @@ const AppContent: React.FC = () => {
               categorizedFeeds={categorizedFeeds}
               onOpenSettings={openSettings}
               onOpenFavorites={openFavorites}
-              articles={articles}
+              favoriteArticles={favoriteArticles}
               onSearch={handleSearch}
               onSearchResultsChange={handleSearchResultsChange}
               categories={categories}
+              primaryView={primaryView}
+              onPrimaryViewChange={handlePrimaryViewChange}
+              onCategoryLayoutChange={handleCategoryLayoutChange}
               onGoAll={handleTitleNavigation}
               onGoLanding={handleLogoToLanding}
+              favoriteToolbar={headerFavoriteToolbar}
             />
           </Suspense>
         )}
         <main
           ref={swipeRef}
           id="main-content"
-          className={`w-full min-h-screen relative z-10 flex-grow ${headerPaddingClass} pb-6 lg:pb-8 transition-[padding] duration-300`}
+          className={`w-full min-h-screen relative z-10 flex-grow ${headerPaddingClass} ${
+            headerFavoriteToolbar ? "favorites-header-toolbar-integrated" : ""
+          } pb-6 lg:pb-8 transition-[padding] duration-300`}
           style={{
             paddingTop:
               "calc(var(--feed-header-offset, 0px) + var(--feed-header-gap, 0px))",
@@ -1008,7 +1220,7 @@ const AppContent: React.FC = () => {
                     }
                   >
                     <FeedContent
-                      key={`${renderedCategory}-${selectedFeedUrl || "all"}-${renderedLayoutMode}`}
+                      key={`${renderedCategory}-${selectedFavoriteSourceKey || selectedFeedUrl || "all"}-${renderedLayoutMode}`}
                       articles={renderedArticles}
                       timeFormat={timeFormat}
                       selectedCategory={renderedCategory}
@@ -1019,7 +1231,43 @@ const AppContent: React.FC = () => {
                 </>
               ) : (
                 <div className="feed-page-frame">
-                  {isSearchActive ? (
+                  {isFavoritesView ? (
+                    favorites.length === 0 ? (
+                      <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.04)] px-6 py-10 text-center">
+                        <h3 className="text-xl font-semibold text-[rgb(var(--color-text))]">
+                          Favoritos vazio
+                        </h3>
+                        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          Favorite noticias, videos ou episodios para
+                          transformar esta tela na sua fila pessoal.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handlePrimaryViewChange("all")}
+                          className="mt-6 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition hover:bg-[rgba(var(--color-primary),0.18)]"
+                        >
+                          Usar All como inicio
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mx-auto max-w-2xl rounded-[24px] border border-[rgb(var(--color-border))]/18 bg-[rgba(var(--color-text),0.04)] px-6 py-10 text-center">
+                        <h3 className="text-xl font-semibold text-[rgb(var(--color-text))]">
+                          Nenhum favorito encontrado
+                        </h3>
+                        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[rgb(var(--theme-text-secondary-readable,var(--color-textSecondary)))]">
+                          Ajuste ou limpe os filtros para ver novamente seus
+                          favoritos salvos.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={clearFavoriteFilters}
+                          className="mt-6 rounded-full border border-[rgba(var(--color-primary),0.28)] bg-[rgba(var(--color-primary),0.12)] px-4 py-2 text-sm font-semibold text-[rgb(var(--color-primary))] transition hover:bg-[rgba(var(--color-primary),0.18)]"
+                        >
+                          Limpar filtros
+                        </button>
+                      </div>
+                    )
+                  ) : isSearchActive ? (
                     <div className="text-center text-[rgb(var(--color-textSecondary))] py-20">
                       <div className="mb-4">
                         <svg
@@ -1170,8 +1418,14 @@ const AppContent: React.FC = () => {
               )}
 
               {/* Pagination Area */}
-              {!showSkeleton && (
-                <div className="feed-page-frame mt-12 pb-12 flex flex-col items-center space-y-6">
+              {!showSkeleton && !shouldBypassGlobalPagination && (
+                <div
+                  className={`feed-page-frame feed-pagination-region flex flex-col items-center space-y-6 ${
+                    hasSparsePaginationPage
+                      ? "feed-pagination-region--sparse"
+                      : ""
+                  }`}
+                >
                   {contentConfig.paginationType === "loadMore"
                     ? // Load More Button
                       pagination.currentPage < pagination.totalPages - 1 && (
@@ -1258,7 +1512,11 @@ const AppContent: React.FC = () => {
               articles={articles}
               onRefreshFeeds={() =>
                 loadFeeds(
-                  buildLoadRequest(selectedCategory, selectedFeedUrl, true),
+                  buildLoadRequest(
+                    isFavoritesView ? "all" : selectedCategory,
+                    selectedFeedUrl,
+                    true,
+                  ),
                 )
               }
             />
@@ -1268,6 +1526,8 @@ const AppContent: React.FC = () => {
             onClose={closeSettings}
             timeFormat={timeFormat}
             setTimeFormat={setTimeFormat}
+            primaryView={primaryView}
+            onPrimaryViewChange={handlePrimaryViewChange}
           />
           <FavoritesModal isOpen={isFavoritesOpen} onClose={closeFavorites} />
           <KeyboardShortcutsModal

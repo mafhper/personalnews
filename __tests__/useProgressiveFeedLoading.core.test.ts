@@ -38,6 +38,18 @@ const feeds: FeedSource[] = [
     categoryId: "games",
     customTitle: "Games",
   },
+  {
+    url: "https://example.com/quarantined.xml",
+    categoryId: "tech",
+    customTitle: "Quarantined",
+    status: "quarantined",
+    quarantine: {
+      enteredAt: "2026-05-20T12:00:00.000Z",
+      reason: "Falhas recorrentes",
+      failureCountAtEntry: 3,
+      recoverySuccesses: 0,
+    },
+  },
 ];
 
 describe("feedLoadingStrategy", () => {
@@ -62,6 +74,17 @@ describe("feedLoadingStrategy", () => {
   describe("resolveFeedLoadScope", () => {
     it("returns every feed for all mode", () => {
       expect(resolveFeedLoadScope(feeds, { mode: "all" })).toHaveLength(3);
+    });
+
+    it("keeps quarantined feeds out of load scopes", () => {
+      expect(resolveFeedLoadScope(feeds, { mode: "all" }).map((feed) => feed.url))
+        .not.toContain("https://example.com/quarantined.xml");
+      expect(
+        resolveFeedLoadScope(feeds, {
+          categoryId: "tech",
+          mode: "category",
+        }).map((feed) => feed.url),
+      ).toEqual(["https://example.com/tech.xml"]);
     });
 
     it("filters feeds by category mode", () => {

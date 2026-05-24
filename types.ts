@@ -30,6 +30,7 @@ export interface HeaderConfig {
   style: "default" | "centered" | "minimal";
   position: "static" | "sticky" | "floating" | "hidden";
   height: "ultra-compact" | "tiny" | "compact" | "normal" | "spacious";
+  favoriteToolbarVariant?: "inline" | "drawer";
   showTitle: boolean;
   showLogo?: boolean;
   customTitle: string;
@@ -67,7 +68,20 @@ export interface FeedSource {
   url: string;
   categoryId?: string;
   customTitle?: string;
+  faviconUrl?: string;
   hideFromAll?: boolean;
+  status?: "active" | "quarantined" | "inactive";
+  quarantine?: {
+    enteredAt: string;
+    reason: string;
+    failureCountAtEntry: number;
+    lastCheckedAt?: string;
+    nextCheckAt?: string;
+    recoverySuccesses: number;
+    inactiveAfter?: string;
+    lastErrorType?: string;
+    lastError?: string;
+  };
 }
 
 export interface FeedLoadRequest {
@@ -303,7 +317,30 @@ export interface Notification {
 export interface ConfirmDialogOptions {
   title?: string;
   message: string;
+  impact?: string;
+  details?: string[];
   confirmText?: string;
   cancelText?: string;
   type?: "danger" | "warning" | "info";
+  scopes?: ConfirmDialogScope[];
+  scopesTitle?: string;
+  scopesCollapsed?: boolean;
+  scopesCollapseThreshold?: number;
+  scopesSummary?: string;
 }
+
+export interface ConfirmDialogScope {
+  id: string;
+  label: string;
+  description?: string;
+  checkedByDefault?: boolean;
+  required?: boolean;
+  disabledReason?: string;
+}
+
+export interface ConfirmDialogResult {
+  confirmed: boolean;
+  selectedScopeIds?: string[];
+}
+
+export type ConfirmDialogCloseResult = boolean | ConfirmDialogResult;

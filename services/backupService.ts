@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   CATEGORIES: 'feed-categories',
   FAVORITES: 'favorites-data',
   READ_STATUS: 'article-read-status',
+  PRIMARY_VIEW: 'personalnews-primary-view',
 
   // Appearance & Settings
   HEADER: 'appearance-header',
@@ -34,6 +35,16 @@ export interface BackupData {
   timestamp: string;
   data: Record<string, unknown>;
 }
+
+const JSON_STORAGE_KEYS = new Set<string>(Object.values(STORAGE_KEYS));
+
+const serializeRestoredValue = (key: string, value: unknown): string | undefined => {
+  if (JSON_STORAGE_KEYS.has(key) || typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+};
 
 export const createBackup = (): BackupData => {
   const data: Record<string, unknown> = {};
@@ -83,10 +94,9 @@ export const restoreBackup = (backup: BackupData): boolean => {
 
   try {
     Object.entries(backup.data).forEach(([key, value]) => {
-      if (typeof value === 'object') {
-        localStorage.setItem(key, JSON.stringify(value));
-      } else {
-        localStorage.setItem(key, String(value));
+      const serializedValue = serializeRestoredValue(key, value);
+      if (serializedValue !== undefined) {
+        localStorage.setItem(key, serializedValue);
       }
     });
     return true;

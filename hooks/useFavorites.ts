@@ -2,17 +2,32 @@ import { useCallback, useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import type { Article } from '../types';
 
+export type FavoriteMediaType = "article" | "podcast" | "video" | "unknown";
+
 export interface FavoriteArticle {
   id: string; // Generated from article link
   title: string;
   link: string;
   pubDate: string; // Stored as ISO string
   sourceTitle: string;
+  feedUrl?: string;
   imageUrl?: string;
   description?: string;
+  content?: string;
   author?: string;
   categories?: string[];
+  audioUrl?: string;
+  audioDuration?: string;
+  mediaType?: FavoriteMediaType;
   favoritedAt: string; // ISO timestamp when favorited
+}
+
+interface FavoriteMediaInput {
+  link?: string;
+  sourceTitle?: string;
+  feedUrl?: string;
+  audioUrl?: string;
+  mediaType?: FavoriteMediaType;
 }
 
 interface FavoritesData {
@@ -48,17 +63,41 @@ const generateArticleId = (article: Article): string => {
   return Math.abs(hash).toString(36);
 };
 
+export const inferFavoriteMediaType = (
+  article: FavoriteMediaInput,
+): FavoriteMediaType => {
+  if (article.audioUrl) {
+    return "podcast";
+  }
+
+  const youtubePattern = /(?:\byoutube\b|youtube\.com|youtu\.be)/i;
+  if (
+    youtubePattern.test(article.link || "") ||
+    youtubePattern.test(article.sourceTitle || "") ||
+    youtubePattern.test(article.feedUrl || "")
+  ) {
+    return "video";
+  }
+
+  return article.mediaType || "article";
+};
+
 // Convert Article to FavoriteArticle
-const articleToFavorite = (article: Article): FavoriteArticle => ({
+export const articleToFavorite = (article: Article): FavoriteArticle => ({
   id: generateArticleId(article),
   title: article.title,
   link: article.link,
   pubDate: article.pubDate.toISOString(),
   sourceTitle: article.sourceTitle,
+  feedUrl: article.feedUrl,
   imageUrl: article.imageUrl,
   description: article.description,
+  content: article.content,
   author: article.author,
   categories: article.categories,
+  audioUrl: article.audioUrl,
+  audioDuration: article.audioDuration,
+  mediaType: inferFavoriteMediaType(article),
   favoritedAt: new Date().toISOString()
 });
 
@@ -68,10 +107,19 @@ export const favoriteToArticle = (favorite: FavoriteArticle): Article => ({
   link: favorite.link,
   pubDate: new Date(favorite.pubDate),
   sourceTitle: favorite.sourceTitle,
+  feedUrl: favorite.feedUrl,
   imageUrl: favorite.imageUrl,
   description: favorite.description,
+  content: favorite.content,
   author: favorite.author,
-  categories: favorite.categories
+  categories: favorite.categories,
+  audioUrl: favorite.audioUrl,
+  audioDuration: favorite.audioDuration
+});
+
+const normalizeFavoriteArticle = (favorite: FavoriteArticle): FavoriteArticle => ({
+  ...favorite,
+  mediaType: favorite.mediaType || inferFavoriteMediaType(favorite),
 });
 
 export const useFavorites = (): UseFavoritesReturn => {
@@ -80,7 +128,10 @@ export const useFavorites = (): UseFavoritesReturn => {
     lastUpdated: new Date().toISOString()
   });
 
-  const favorites = useMemo(() => favoritesData.articles, [favoritesData.articles]);
+  const favorites = useMemo(
+    () => favoritesData.articles.map(normalizeFavoriteArticle),
+    [favoritesData.articles],
+  );
 
   const isFavorite = useCallback((article: Article): boolean => {
     const articleId = generateArticleId(article);
@@ -152,7 +203,7 @@ export const useFavorites = (): UseFavoritesReturn => {
       }
 
       setFavoritesData({
-        articles: importedData.articles,
+        articles: importedData.articles.map(normalizeFavoriteArticle),
         lastUpdated: new Date().toISOString()
       });
 

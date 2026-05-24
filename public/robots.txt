@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mafhper.github.io/personalnews/sitemap.xml
+
+# AI and semantic discovery context:
+# https://mafhper.github.io/personalnews/llms.txt
+# https://mafhper.github.io/personalnews/llms-full.txt
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /

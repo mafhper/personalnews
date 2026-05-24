@@ -103,7 +103,8 @@ type PromoContent = {
     title: string;
     lead: string;
     primaryCta: string;
-    secondaryCta: string;
+    installCta: string;
+    installCtaAriaLabel?: string;
     imageAlt: string;
     stats: PromoStat[];
   };
@@ -175,9 +176,10 @@ const ptBR: PromoContent = {
     eyebrow: "Sem anúncios. Sem rastreadores. Só suas fontes.",
     title: "Notícias no seu ritmo.",
     lead:
-      "Organize suas fontes e leia em uma página rápida, bonita e sem distrações.",
+      "Teste a demonstração online funcional; instale no desktop para a experiência completa.",
     primaryCta: "Abrir feed",
-    secondaryCta: "Ver experiência",
+    installCta: "Instalar app",
+    installCtaAriaLabel: "Instalar app",
     imageAlt:
       "Interface do Personal News com cards de notícias em um layout editorial escuro.",
     stats: [
@@ -461,9 +463,10 @@ const enUS: PromoContent = {
     eyebrow: "No ads. No trackers. Just your sources.",
     title: "News at your pace.",
     lead:
-      "Collect your favorite sources and read them in a fast, calm, distraction-free page.",
+      "Try the working online demo; install the desktop app for the complete experience.",
     primaryCta: "Open feed",
-    secondaryCta: "See experience",
+    installCta: "Install app",
+    installCtaAriaLabel: "Install app",
     imageAlt:
       "Personal News interface with news cards arranged in a dark editorial layout.",
     stats: [
@@ -746,9 +749,10 @@ const es: PromoContent = {
     eyebrow: "Sin anuncios. Sin rastreadores. Solo tus fuentes.",
     title: "Noticias a tu ritmo.",
     lead:
-      "Organiza tus fuentes y lee en una página rápida, clara y sin distracciones.",
+      "Prueba la demo online funcional; instala la app de escritorio para la experiencia completa.",
     primaryCta: "Abrir feed",
-    secondaryCta: "Ver experiencia",
+    installCta: "Instalar app",
+    installCtaAriaLabel: "Instalar app",
     imageAlt:
       "Interfaz de Personal News con tarjetas de noticias en un layout editorial oscuro.",
     stats: [

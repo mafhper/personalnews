@@ -23,6 +23,10 @@ import {
   List,
   CheckSquare,
   Square,
+  Bookmark,
+  Layers,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 
 interface IconProps {
@@ -125,5 +129,21 @@ export const ActionIcons = {
 
   Square: ({ className = "w-4 h-4", size }: IconProps) => (
     <Square className={className} size={size} />
+  ),
+
+  Bookmark: ({ className = "w-4 h-4", size }: IconProps) => (
+    <Bookmark className={className} size={size} />
+  ),
+
+  Layers: ({ className = "w-4 h-4", size }: IconProps) => (
+    <Layers className={className} size={size} />
+  ),
+
+  SlidersHorizontal: ({ className = "w-4 h-4", size }: IconProps) => (
+    <SlidersHorizontal className={className} size={size} />
+  ),
+
+  ChevronDown: ({ className = "w-4 h-4", size }: IconProps) => (
+    <ChevronDown className={className} size={size} />
   ),
 };

@@ -55,6 +55,10 @@ jobs:
       - name: prepare backend
         run: node scripts/prepare-backend.mjs
 
+      - name: Validate installer assets
+        if: runner.os == 'Windows'
+        run: bun run desktop:installer-assets:check
+
       - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -63,7 +67,22 @@ jobs:
           projectPath: apps/desktop
           tagName: v__VERSION__ # tauri-action will replace this
           releaseName: "Personal News v__VERSION__"
-          releaseBody: "Automated release of Personal News desktop version."
+          releaseBody: |
+            ## Downloads
+
+            ### Windows
+            - **Setup EXE** - recommended for most users.
+            - **MSI** - recommended for managed environments.
+
+            ### Linux
+            - **DEB** - recommended for Ubuntu/Debian.
+
+            ### macOS
+            - **DMG** - manual installation by dragging the app to Applications.
+
+            ## Notes
+            - Windows installation uses current-user mode.
+            - Windows installers are generated with NSIS and MSI/WiX.
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: false

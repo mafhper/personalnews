@@ -40,9 +40,103 @@ describe("Header responsive navigation rules", () => {
     );
   });
 
-  it("keeps the default category pill proportion from the main header baseline", () => {
+  it("keeps category pill proportions synchronized with header height", () => {
     const source = readProjectFile("components/FeedDropdown.tsx");
 
-    expect(source).toContain("default: 'px-5 py-2.5 rounded-full min-h-[44px]'");
+    expect(source).toContain('headerHeight?: HeaderConfig["height"]');
+    expect(source).toContain("'ultra-compact': 'px-3 py-1 rounded-full min-h-[30px]'");
+    expect(source).toContain("spacious: 'px-5 py-2.5 rounded-full min-h-[44px]'");
+  });
+
+  it("replaces All with the virtual Favorites slot instead of rendering both", () => {
+    const source = readProjectFile("components/Header.tsx");
+
+    expect(source).toContain('props.primaryView !== "favorites"');
+    expect(source).toContain('id: FAVORITES_VIEW_ID');
+    expect(source).toContain(
+      '...activeCategories.filter((category) => category.id !== "all")',
+    );
+    expect(source).toContain("visibleCategories.map");
+  });
+
+  it("keeps category-only actions hidden for the virtual Favorites dropdown", () => {
+    const source = readProjectFile("components/FeedDropdown.tsx");
+
+    expect(source).toContain("isVirtual = false");
+    expect(source).toContain("!isVirtual && onEditCategory");
+    expect(source).toContain("!isVirtual && !category.isDefault");
+  });
+
+  it("renders Favorites dropdown feeds from favorited articles", () => {
+    const source = readProjectFile("components/Header.tsx");
+
+    expect(source).toContain("favoriteDropdownFeeds");
+    expect(source).toContain("props.favoriteArticles.forEach");
+    expect(source).toContain("buildFavoriteSourceKey");
+    expect(source).toContain("categoryId: FAVORITES_VIEW_ID");
+    expect(source).toContain(
+      "isFavoritesSlot\n                  ? favoriteDropdownFeeds",
+    );
+  });
+
+  it("hosts favorites filters inside the header contract", () => {
+    const source = readProjectFile("components/Header.tsx");
+
+    expect(source).toContain("favoriteToolbar?: HeaderFavoriteToolbarProps");
+    expect(source).toContain("FavoritesHeaderToolbar");
+    expect(source).toContain("favoriteToolbarVariant");
+    expect(source).toContain("favorites-header-toolbar-drawer");
+    expect(source).toContain("feed-header-reveal-cluster");
+  });
+
+  it("exposes the favorites toolbar variant in layout settings", () => {
+    const settingsSource = readProjectFile("components/SettingsSidebar.tsx");
+    const typesSource = readProjectFile("types.ts");
+    const defaultsSource = readProjectFile("config/defaultConfig.ts");
+    const initialSetup = readProjectFile("config/initial-setup.md");
+    const generatedConfig = readProjectFile("constants/curatedFeeds.ts");
+
+    expect(typesSource).toContain('favoriteToolbarVariant?: "inline" | "drawer"');
+    expect(defaultsSource).toContain("initialConfig.favoriteToolbarVariant");
+    expect(generatedConfig).toContain('"favoriteToolbarVariant": "inline"');
+    expect(initialSetup).toContain("- Filtros de Favoritos: inline;");
+    expect(settingsSource).toContain("Filtros de Favoritos");
+    expect(settingsSource).toContain("Faixa inline");
+    expect(settingsSource).toContain("Gaveta no header");
+  });
+
+  it("keeps the hidden header recoverable from a compact reveal cluster", () => {
+    const source = readProjectFile("components/Header.tsx");
+    const styles = readProjectFile("index.css");
+
+    expect(source).toContain("Mostrar cabeçalho");
+    expect(source).toContain("Abrir filtros de favoritos");
+    expect(source).toContain("Esconder cabeçalho");
+    expect(styles).toContain(".feed-header-reveal-cluster");
+    expect(styles).toContain(".feed-header-reveal-control--filters");
+  });
+
+  it("keeps dropdown headers category-agnostic and primary actions icon-only", () => {
+    const source = readProjectFile("components/FeedDropdown.tsx");
+
+    expect(source).not.toContain('`View ${category.name}`');
+    expect(source).not.toContain(
+      '`${t("feeds.tab.feeds")} de ${category.name}`',
+    );
+    expect(source).toContain("primaryViewActionIcon");
+    expect(source).toContain(
+      '<PrimaryViewIcon showBackground={false} size="sm" />',
+    );
+  });
+
+  it("keeps Favorites source filtering separate from real feed URL selection", () => {
+    const appContent = readProjectFile("components/AppContent.tsx");
+    const filters = readProjectFile("utils/favoriteViewFilters.ts");
+
+    expect(appContent).toContain("selectedFavoriteSourceKey");
+    expect(appContent).toContain("setSelectedFeedUrl(null)");
+    expect(appContent).toContain("filterAndSortFavorites");
+    expect(appContent).toContain("sourceKey: selectedFavoriteSourceKey");
+    expect(filters).toContain("matchesFavoriteSourceKey");
   });
 });

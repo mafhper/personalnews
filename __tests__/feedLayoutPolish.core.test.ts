@@ -20,6 +20,13 @@ describe("feed layout polish wiring", () => {
     expect(source).not.toContain("brightness-90");
   });
 
+  it("labels Brutalist as a reusable layout instead of a video-only feed", () => {
+    const source = read("components/layouts/BrutalistLayout.tsx");
+
+    expect(source).toContain("BRUTALIST");
+    expect(source).not.toContain("VIDEO_FEED");
+  });
+
   it("uses the requested Magazine slice counts", () => {
     const source = read("components/layouts/MagazineLayout.tsx");
     expect(source).toContain("visibleArticles.slice(1, 7)");
@@ -132,5 +139,72 @@ describe("feed layout polish wiring", () => {
     ]) {
       expect(read(path)).toContain("feed-card-title-clamp");
     }
+  });
+
+  it("caps tall viewport media surfaces instead of scaling with viewport height", () => {
+    const css = read("index.css");
+    expect(css).toContain("min-height: min(calc(100svh - 72px), 920px)");
+    expect(css).toContain(
+      "@media (min-width: 981px) and (orientation: portrait)",
+    );
+
+    const immersive = read("components/layouts/ImmersiveLayout.tsx");
+    expect(immersive).toContain("h-[clamp(24rem,52vw,38rem)]");
+    expect(immersive).toContain("h-[clamp(22rem,42vw,32rem)]");
+    expect(immersive).not.toContain("min-h-[46vh]");
+    expect(immersive).not.toContain("min-h-[45vh]");
+
+    const masonry = read("components/layouts/MasonryLayout.tsx");
+    expect(masonry).toContain("h-[clamp(24rem,46vw,40rem)]");
+    expect(masonry).not.toContain("h-[60vh]");
+  });
+
+  it("normalizes feed top clearance through the main header offset", () => {
+    const css = read("index.css");
+    const header = read("components/Header.tsx");
+
+    expect(css).toContain("--feed-header-content-gap: 2.5rem");
+    expect(css).toContain("--feed-layout-top-clearance: var(--space-6)");
+    expect(css).toContain(".feed-layout[data-layout=\"modern\"]");
+    expect(css).toContain("--feed-layout-top-clearance: var(--space-8)");
+    expect(css).toContain(".feed-layout[data-layout=\"compact\"]");
+    expect(css).toContain("--feed-layout-top-clearance: var(--space-5)");
+    expect(css).toContain("padding-top: var(--feed-layout-top-clearance)");
+    expect(css).toContain('.feed-layout[data-layout="immersive"] > div');
+    expect(header).toContain("var(--feed-header-content-gap, 2.5rem)");
+    expect(header).not.toContain("showFavoriteToolbar ? Math.min");
+    expect(css).not.toContain("var(--feed-header-offset, 64px)\n  );");
+    expect(css).not.toContain("var(--feed-header-offset, 56px) + 0.25rem");
+  });
+
+  it("keeps favorite actions grouped with read and visit controls where requested", () => {
+    for (const path of [
+      "components/layouts/BentoLayout.tsx",
+      "components/layouts/FocusLayout.tsx",
+      "components/layouts/PortalLayout.tsx",
+      "components/layouts/SplitLayout.tsx",
+      "components/layouts/TimelineLayout.tsx",
+    ]) {
+      const source = read(path);
+      expect(source).toContain("feed-card-action-rail");
+      expect(source).toContain("FeedInteractiveActions");
+      expect(source).toContain("FavoriteButton");
+    }
+
+    const gallery = read("components/layouts/GalleryLayout.tsx");
+    expect(gallery.indexOf("feed-image-story-bottom-copy")).toBeLessThan(
+      gallery.indexOf("feed-card-action-rail mb-2 justify-start"),
+    );
+
+    const compact = read("components/layouts/CompactLayout.tsx");
+    expect(compact).toContain("opacity-0 group-hover:opacity-100");
+    expect(compact).not.toContain("opacity-60 group-hover:opacity-100");
+  });
+
+  it("keeps the first Modern stories actions in the top right of their media", () => {
+    const source = read("components/layouts/ModernPortalLayout.tsx");
+    expect(source).toContain("absolute right-5 top-5");
+    expect(source).toContain("absolute right-3 top-3");
+    expect(source).not.toContain("absolute bottom-5 right-5");
   });
 });

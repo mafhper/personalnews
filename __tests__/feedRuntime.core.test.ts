@@ -9,6 +9,9 @@ const {
   mockParseRssUrlDetailed,
   mockGetPreferLocalProxy,
   mockShouldUseClientProxyFallback,
+  mockGetRoutingMode,
+  mockGetClientProxyOrder,
+  mockDiscoverFromWebsite,
 } = vi.hoisted(() => ({
   mockDetectEnvironment: vi.fn(),
   mockIsEnabled: vi.fn(),
@@ -18,6 +21,9 @@ const {
   mockParseRssUrlDetailed: vi.fn(),
   mockGetPreferLocalProxy: vi.fn(),
   mockShouldUseClientProxyFallback: vi.fn(),
+  mockGetRoutingMode: vi.fn(),
+  mockGetClientProxyOrder: vi.fn(),
+  mockDiscoverFromWebsite: vi.fn(),
 }));
 
 vi.mock("../services/environmentDetector", () => ({
@@ -41,10 +47,23 @@ vi.mock("../services/proxyManager", () => ({
   ProxyManager: {
     getPreferLocalProxy: mockGetPreferLocalProxy,
     shouldUseClientProxyFallback: mockShouldUseClientProxyFallback,
+    getRoutingMode: mockGetRoutingMode,
+  },
+  proxyManager: {
+    getClientProxyOrder: mockGetClientProxyOrder,
   },
 }));
 
-import { loadFeedWithRuntime } from "../services/feedRuntime";
+vi.mock("../services/feedDiscoveryService", () => ({
+  feedDiscoveryService: {
+    discoverFromWebsite: mockDiscoverFromWebsite,
+  },
+}));
+
+import {
+  loadFeedWithRuntime,
+  loadFeedWithRuntimeAndDiscovery,
+} from "../services/feedRuntime";
 
 describe("feedRuntime", () => {
   beforeEach(() => {
@@ -52,6 +71,22 @@ describe("feedRuntime", () => {
     mockIsEnabled.mockReturnValue(true);
     mockGetPreferLocalProxy.mockReturnValue(true);
     mockShouldUseClientProxyFallback.mockReturnValue(false);
+    mockGetRoutingMode.mockReturnValue("full-local");
+    mockGetClientProxyOrder.mockReturnValue([
+      "CorsProxy.io",
+      "RSS2JSON",
+      "CodeTabs",
+      "AllOrigins",
+    ]);
+    mockDiscoverFromWebsite.mockResolvedValue({
+      originalUrl: "https://example.com",
+      discoveredFeeds: [],
+      discoveryMethods: [],
+      totalAttempts: 0,
+      successfulAttempts: 0,
+      discoveryTime: 0,
+      suggestions: [],
+    });
   });
 
   it("uses the desktop backend first when the backend is healthy", async () => {
@@ -131,9 +166,10 @@ describe("feedRuntime", () => {
     );
   });
 
-  it("uses client proxies when the desktop local route is not preferred", async () => {
+  it("uses client proxies in full external proxy mode", async () => {
     mockGetPreferLocalProxy.mockReturnValue(false);
     mockShouldUseClientProxyFallback.mockReturnValue(true);
+    mockGetRoutingMode.mockReturnValue("full-external-proxies");
     mockDetectEnvironment.mockReturnValue({
       isDevelopment: false,
       isProduction: true,
@@ -161,10 +197,70 @@ describe("feedRuntime", () => {
     const result = await loadFeedWithRuntime("https://example.com/rss.xml");
 
     expect(mockCheckHealth).not.toHaveBeenCalled();
-    expect(mockParseRssUrlDetailed).toHaveBeenCalled();
+    expect(mockParseRssUrlDetailed).toHaveBeenCalledWith(
+      "https://example.com/rss.xml",
+      expect.objectContaining({
+        forceClientFallback: true,
+        externalOnly: true,
+        routeMode: "full-external-proxies",
+      }),
+    );
     expect(result.source).toBe("client");
     expect(result.route.routeName).toBe("CodeTabs");
+    expect(result.route.viaFallback).toBe(false);
+  });
+
+  it("falls back to cloud proxies in mixed mode when the backend is unavailable", async () => {
+    mockGetRoutingMode.mockReturnValue("mixed");
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: false,
+      isLocalhost: false,
+      isTauri: true,
+      proxyUrl: null,
+      useProductionParser: false,
+      corsMode: "public-apis",
+    });
+    mockCheckHealth.mockResolvedValue({
+      available: false,
+      checkedAt: Date.now(),
+      error: "connect ECONNREFUSED 127.0.0.1:3001",
+    });
+    mockParseRssUrlDetailed.mockResolvedValue({
+      title: "Fallback Feed",
+      articles: [],
+      route: {
+        transport: "client",
+        routeKind: "proxy",
+        routeName: "RSS2JSON",
+        viaFallback: false,
+        checkedAt: Date.now(),
+      },
+      cached: false,
+      attempts: [],
+    });
+
+    const result = await loadFeedWithRuntime("https://example.com/rss.xml");
+
+    expect(mockParseRssUrlDetailed).toHaveBeenCalledWith(
+      "https://example.com/rss.xml",
+      expect.objectContaining({
+        forceClientFallback: true,
+        externalOnly: true,
+        routeMode: "full-external-proxies",
+      }),
+    );
+    expect(result.source).toBe("client-fallback");
     expect(result.route.viaFallback).toBe(true);
+    expect(mockSetRuntimeState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeMode: "cloud-fallback",
+        proxyRouteMode: "mixed",
+        primaryRoute: "LocalBackend",
+        fallbackOrder: ["CorsProxy.io", "RSS2JSON", "CodeTabs", "AllOrigins"],
+      }),
+    );
   });
 
   it("does not fall back to cloud proxies in desktop local mode when backend fetch loses reachability", async () => {
@@ -295,5 +391,289 @@ describe("feedRuntime", () => {
     expect(mockFetchFeed).not.toHaveBeenCalled();
     expect(result.source).toBe("client");
     expect(result.route.routeKind).toBe("direct");
+  });
+
+  it("loads a discovered RSS URL when the saved URL responds like HTML", async () => {
+    mockIsEnabled.mockReturnValue(false);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: true,
+      isLocalhost: false,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: true,
+      corsMode: "public-apis",
+    });
+    mockParseRssUrlDetailed
+      .mockRejectedValueOnce(new Error("Invalid response format from proxy"))
+      .mockResolvedValueOnce({
+        title: "Discovered Feed",
+        articles: [
+          {
+            title: "Article from discovered feed",
+            link: "https://example.com/article",
+            pubDate: new Date("2026-05-22T12:00:00.000Z"),
+            sourceTitle: "Discovered Feed",
+          },
+        ],
+        route: {
+          transport: "client",
+          routeKind: "proxy",
+          routeName: "RSS2JSON",
+          viaFallback: true,
+          checkedAt: Date.now(),
+        },
+        cached: false,
+        attempts: [],
+      });
+    mockDiscoverFromWebsite.mockResolvedValue({
+      originalUrl: "https://example.com",
+      discoveredFeeds: [
+        {
+          url: "https://example.com/feed.xml",
+          title: "Discovered Feed",
+          type: "rss",
+          discoveryMethod: "link-tag",
+          confidence: 0.95,
+        },
+      ],
+      discoveryMethods: ["html-parsing"],
+      totalAttempts: 1,
+      successfulAttempts: 1,
+      discoveryTime: 12,
+      suggestions: ["Found one RSS feed on this website"],
+    });
+
+    const result = await loadFeedWithRuntimeAndDiscovery(
+      "https://example.com",
+      { discoverHtmlFallback: true },
+    );
+
+    expect(mockDiscoverFromWebsite).toHaveBeenCalledWith("https://example.com");
+    expect(mockParseRssUrlDetailed).toHaveBeenNthCalledWith(
+      1,
+      "https://example.com",
+      expect.any(Object),
+    );
+    expect(mockParseRssUrlDetailed).toHaveBeenNthCalledWith(
+      2,
+      "https://example.com/feed.xml",
+      expect.any(Object),
+    );
+    expect(result.discovery).toMatchObject({
+      originalUrl: "https://example.com",
+      discoveredUrl: "https://example.com/feed.xml",
+      status: "used",
+    });
+    expect(result.articles).toHaveLength(1);
+  });
+
+  it("tries multiple discovered feeds until one loads", async () => {
+    mockIsEnabled.mockReturnValue(false);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: true,
+      isLocalhost: false,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: true,
+      corsMode: "public-apis",
+    });
+    mockParseRssUrlDetailed
+      .mockRejectedValueOnce(new Error("Unsupported RSS format"))
+      .mockRejectedValueOnce(new Error("XML parsing error"))
+      .mockResolvedValueOnce({
+        title: "Working Atom",
+        articles: [
+          {
+            title: "Atom article",
+            link: "https://example.com/atom-article",
+            pubDate: new Date("2026-05-22T12:00:00.000Z"),
+            sourceTitle: "Working Atom",
+          },
+        ],
+        route: {
+          transport: "client",
+          routeKind: "direct",
+          routeName: "DirectFetch",
+          viaFallback: false,
+          checkedAt: Date.now(),
+        },
+        cached: false,
+        attempts: [],
+      });
+    mockDiscoverFromWebsite.mockResolvedValue({
+      originalUrl: "https://example.com",
+      discoveredFeeds: [
+        {
+          url: "https://example.com/weak.xml",
+          type: "rss",
+          discoveryMethod: "content-scan",
+          confidence: 0.4,
+        },
+        {
+          url: "https://example.com/atom.xml",
+          title: "Working Atom",
+          type: "atom",
+          discoveryMethod: "link-tag",
+          confidence: 0.9,
+        },
+      ],
+      discoveryMethods: ["html-parsing"],
+      totalAttempts: 1,
+      successfulAttempts: 2,
+      discoveryTime: 14,
+      suggestions: ["Found 2 RSS feeds on this website"],
+    });
+
+    const result = await loadFeedWithRuntimeAndDiscovery(
+      "https://example.com",
+      { discoverHtmlFallback: true },
+    );
+
+    expect(mockParseRssUrlDetailed).toHaveBeenNthCalledWith(
+      2,
+      "https://example.com/atom.xml",
+      expect.any(Object),
+    );
+    expect(mockParseRssUrlDetailed).toHaveBeenNthCalledWith(
+      3,
+      "https://example.com/weak.xml",
+      expect.any(Object),
+    );
+    expect(result.discovery?.discoveredUrl).toBe("https://example.com/weak.xml");
+    expect(result.title).toBe("Working Atom");
+  });
+
+  it("reports a clear discovery failure when HTML has no feed candidates", async () => {
+    mockIsEnabled.mockReturnValue(false);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: true,
+      isLocalhost: false,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: true,
+      corsMode: "public-apis",
+    });
+    mockParseRssUrlDetailed.mockRejectedValue(
+      new Error("Invalid response format from proxy"),
+    );
+
+    await expect(
+      loadFeedWithRuntimeAndDiscovery("https://example.com", {
+        discoverHtmlFallback: true,
+      }),
+    ).rejects.toThrow("nenhum feed RSS/Atom");
+  });
+
+  it("attempts discovery for HTML podcast feed URLs captured from the large OPML run", async () => {
+    mockIsEnabled.mockReturnValue(false);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: true,
+      isLocalhost: false,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: true,
+      corsMode: "public-apis",
+    });
+    const htmlPodcastFeeds = [
+      "https://www.amigosdoforum.com.br/podcast/rebobinando/feed.xml",
+      "https://debatedebolso.com/podcast",
+      "https://naosalvo.com.br/podcast/seeufossevoce/feed.xml",
+      "http://temacast.com.br/feed.xml",
+      "https://republicadomedo.com.br/feed/podcast/",
+      "https://podcastnbw.com/?feed=podcast",
+    ];
+
+    for (const feedUrl of htmlPodcastFeeds) {
+      mockParseRssUrlDetailed.mockRejectedValueOnce(
+        new Error(
+          `Unexpected feed Content-Type: text/html; charset=utf-8 for ${feedUrl}`,
+        ),
+      );
+      mockDiscoverFromWebsite.mockResolvedValueOnce({
+        originalUrl: feedUrl,
+        discoveredFeeds: [],
+        discoveryMethods: ["html-parsing"],
+        totalAttempts: 1,
+        successfulAttempts: 0,
+        discoveryTime: 1,
+        suggestions: [],
+      });
+
+      await expect(
+        loadFeedWithRuntimeAndDiscovery(feedUrl, {
+          discoverHtmlFallback: true,
+        }),
+      ).rejects.toThrow("nenhum feed RSS/Atom");
+    }
+
+    expect(mockDiscoverFromWebsite).toHaveBeenCalledTimes(
+      htmlPodcastFeeds.length,
+    );
+    for (const feedUrl of htmlPodcastFeeds) {
+      expect(mockDiscoverFromWebsite).toHaveBeenCalledWith(feedUrl);
+    }
+  });
+
+  it("does not attempt discovery for normal RSS loads, including feeds served as text/html", async () => {
+    mockIsEnabled.mockReturnValue(false);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: true,
+      isLocalhost: false,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: true,
+      corsMode: "public-apis",
+    });
+    mockParseRssUrlDetailed.mockResolvedValue({
+      title: "Valid Feed",
+      articles: [],
+      route: {
+        transport: "client",
+        routeKind: "direct",
+        routeName: "DirectFetch",
+        viaFallback: false,
+        checkedAt: Date.now(),
+      },
+      cached: false,
+      attempts: [],
+    });
+
+    await loadFeedWithRuntimeAndDiscovery("https://example.com/feed.xml", {
+      discoverHtmlFallback: true,
+    });
+
+    expect(mockDiscoverFromWebsite).not.toHaveBeenCalled();
+  });
+
+  it("keeps non-discovery network failures on the original error path", async () => {
+    mockIsEnabled.mockReturnValue(false);
+    mockDetectEnvironment.mockReturnValue({
+      isDevelopment: false,
+      isProduction: true,
+      isGitHubPages: true,
+      isLocalhost: false,
+      isTauri: false,
+      proxyUrl: null,
+      useProductionParser: true,
+      corsMode: "public-apis",
+    });
+    mockParseRssUrlDetailed.mockRejectedValue(new Error("404 not found"));
+
+    await expect(
+      loadFeedWithRuntimeAndDiscovery("https://example.com/missing.xml", {
+        discoverHtmlFallback: true,
+      }),
+    ).rejects.toThrow("404 not found");
+    expect(mockDiscoverFromWebsite).not.toHaveBeenCalled();
   });
 });

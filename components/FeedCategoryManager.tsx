@@ -21,6 +21,11 @@ import { useAppearance } from "../hooks/useAppearance";
 import { OPMLExportService } from "../services/opmlExportService";
 import { parseOpml } from "../services/rssParser";
 import { Switch } from "./ui/Switch";
+import {
+  buildDeleteCategoryConfirmation,
+  buildRemoveFeedConfirmation,
+  buildResetCategoriesConfirmation,
+} from "../utils/feedDangerConfirmation";
 
 interface FeedCategoryManagerProps {
   feeds: FeedSource[];
@@ -308,23 +313,15 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       const feedsInCategory = categorizedFeeds[categoryId] || [];
       const feedCount = feedsInCategory.length;
 
-      let confirmMessage = `Tem certeza que deseja excluir a categoria "${category?.name}"?`;
-
-      if (feedCount > 0) {
-        confirmMessage += `\n\nEsta ação irá mover ${feedCount} feed${
-          feedCount > 1 ? "s" : ""
-        } para "Não categorizados":`;
-        feedsInCategory.slice(0, 3).forEach((feed) => {
-          confirmMessage += `\n• ${feed.customTitle || feed.url}`;
-        });
-        if (feedCount > 3) {
-          confirmMessage += `\n• ... e mais ${feedCount - 3} feed${
-            feedCount - 3 > 1 ? "s" : ""
-          }`;
-        }
-      }
-
-      if (await confirmDanger(confirmMessage)) {
+      if (
+        category &&
+        (await confirmDanger(
+          buildDeleteCategoryConfirmation({
+            category,
+            feedsInCategory,
+          }),
+        ))
+      ) {
         // Move feeds from deleted category to uncategorized
         feedsInCategory.forEach((feed) => {
           moveFeedToCategory(feed.url, "uncategorized", feeds, setFeeds);
@@ -485,7 +482,10 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
   const handleResetToDefaults = useCallback(async () => {
     if (
       await confirmDanger(
-        "Tem certeza que deseja restaurar as categorias padrao? Isso removera categorias personalizadas e redefinira as associacoes dos feeds.",
+        buildResetCategoriesConfirmation({
+          categories,
+          feedCount: feeds.length,
+        }),
       )
     ) {
       resetToDefaults();
@@ -497,13 +497,16 @@ export const FeedCategoryManager: React.FC<FeedCategoryManagerProps> = ({
       }));
       setFeeds(resetFeeds);
     }
-  }, [resetToDefaults, feeds, setFeeds, confirmDanger, refreshAppearance]);
+  }, [categories, resetToDefaults, feeds, setFeeds, confirmDanger, refreshAppearance]);
 
   const handleDeleteFeed = useCallback(
     async (feedUrl: string, feedTitle?: string) => {
       if (
         await confirmDanger(
-          `Tem certeza que deseja remover o feed "${feedTitle || feedUrl}"?`,
+          buildRemoveFeedConfirmation({
+            url: feedUrl,
+            customTitle: feedTitle,
+          }),
         )
       ) {
         setFeeds(feeds.filter((f) => f.url !== feedUrl));

@@ -126,7 +126,7 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
 
     const overlay = (
       <div
-        className={`fixed bottom-8 left-0 right-0 z-[100] pointer-events-none flex justify-center px-4 ${className}`}
+        className={`feed-loading-progress-overlay fixed bottom-8 left-0 right-0 z-[100] pointer-events-none flex justify-center px-4 ${className}`}
       >
         <div className="pointer-events-auto flex w-full max-w-sm flex-col gap-2 rounded-2xl border border-white/10 bg-[rgba(13,17,23,0.96)] p-4 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-8">
           <div className="flex w-full items-center gap-3">
@@ -149,8 +149,8 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
 
             {/* Dynamic text */}
             <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/95 text-center">
-              {isComplete && hasErrors 
-                ? `${errors.length} fonte(s) com erro` 
+              {isComplete && hasErrors
+                ? `${errors.length} fonte(s) com erro`
                 : statusText}
             </span>
 
@@ -249,20 +249,20 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         )}
-        
+
         {/* Status text */}
         <div className="flex-1 min-w-0">
           <p className="text-xs text-white/80 truncate">
             {currentAction || (isBackgroundRefresh ? "Updating..." : "Loading...")}
           </p>
         </div>
-        
+
         {/* Stats */}
         <div className="flex items-center gap-2 text-xs text-white/60 font-mono shrink-0">
           <span>{loadedFeeds}/{totalFeeds}</span>
           <span className="text-[rgb(var(--color-accent))]">{Math.round(progress)}%</span>
         </div>
-        
+
         {/* Cancel button */}
         {!isComplete && onCancel && (
           <button onClick={onCancel} className="text-white/50 hover:text-white text-xs transition-colors">
@@ -272,15 +272,15 @@ export const FeedLoadingProgress: React.FC<FeedLoadingProgressProps> = ({
           </button>
         )}
       </div>
-      
+
       {/* Slim progress bar */}
       <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden mt-1">
-        <div 
+        <div
           className={`h-full rounded-full transition-all duration-200 ease-out ${hasErrors ? "bg-yellow-500" : "bg-[rgb(var(--color-accent))]"}`}
           style={{ width: `${progress}%` }}
         />
       </div>
-      
+
       {/* Error summary (only if errors) */}
       {hasErrors && isComplete && (
         <div className="flex items-center justify-between mt-2 text-xs text-yellow-400/80">

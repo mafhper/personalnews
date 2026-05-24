@@ -2,6 +2,7 @@ import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppContent from "../components/AppContent";
+import { useKeyboardNavigation } from "../hooks/useKeyboardNavigation";
 import type { Article, FeedSource } from "../types";
 
 const techFeed: FeedSource = {
@@ -22,6 +23,13 @@ const videoFeed: FeedSource = {
   customTitle: "Videos",
 };
 
+const podcastFeeds: FeedSource[] = Array.from({ length: 6 }, (_, index) => ({
+  url: `https://example.com/podcast-${index + 1}.xml`,
+  categoryId: "podcasts",
+  customTitle: `Podcast ${index + 1}`,
+  hideFromAll: index === 5,
+}));
+
 const categories = [
   { id: "all", name: "All", color: "#fff", order: 0, isDefault: true },
   { id: "tech", name: "Tech", color: "#0ea5e9", order: 1, isDefault: true },
@@ -39,6 +47,15 @@ const categories = [
     order: 3,
     isDefault: true,
     layoutMode: "brutalist",
+    autoDiscovery: false,
+  },
+  {
+    id: "podcasts",
+    name: "Podcasts",
+    color: "#fb923c",
+    order: 4,
+    isDefault: true,
+    layoutMode: "pocketfeeds",
     autoDiscovery: false,
   },
 ];
@@ -59,12 +76,27 @@ const makeArticle = (
 const techArticle = makeArticle("Tech One", techFeed, "tech");
 const designArticle = makeArticle("Design One", designFeed, "design");
 const videoArticle = makeArticle("Video One", videoFeed, "youtube");
+const podcastArticles = podcastFeeds.flatMap((feed, feedIndex) =>
+  Array.from({ length: 2 }, (_, episodeIndex) =>
+    makeArticle(
+      `${feed.customTitle} Episode ${episodeIndex + 1}`,
+      feed,
+      "podcasts",
+    ),
+  ).map((article) => ({
+    ...article,
+    audioUrl: `https://cdn.example.com/podcast-${feedIndex + 1}-${article.title}.mp3`,
+  })),
+);
 
 const mockLoadFeeds = vi.fn(async () => {});
 const mockRefreshFeeds = vi.fn();
 const mockRetryFailedFeeds = vi.fn(async () => {});
 const mockCancelLoading = vi.fn();
 const mockSetFeeds = vi.fn();
+const mockSetPrimaryView = vi.fn((nextPrimaryView: "all" | "favorites") => {
+  mockPrimaryView = nextPrimaryView;
+});
 
 type MockFeedState = {
   feeds: FeedSource[];
@@ -90,6 +122,20 @@ type MockFeedState = {
 };
 
 let mockFeedState: MockFeedState;
+let mockPrimaryView: "all" | "favorites" = "all";
+let mockFavorites: Array<{
+  title: string;
+  link: string;
+  pubDate: string;
+  sourceTitle: string;
+  feedUrl?: string;
+  content?: string;
+  categories?: string[];
+  mediaType?: "article" | "podcast" | "video" | "unknown";
+  audioUrl?: string;
+  audioDuration?: string;
+}> = [];
+let mockReadLinks = new Set<string>();
 const mockApplyLayoutPreset = vi.fn();
 const mockRefreshAppearance = vi.fn();
 const mockResolveBaseLayoutMode = vi.fn();
@@ -155,25 +201,30 @@ vi.mock("../hooks/useFeedCategories", () => ({
       tech: feeds.filter((feed) => feed.categoryId === "tech"),
       design: feeds.filter((feed) => feed.categoryId === "design"),
       youtube: feeds.filter((feed) => feed.categoryId === "youtube"),
+      podcasts: feeds.filter((feed) => feed.categoryId === "podcasts"),
     }),
   }),
 }));
 
 vi.mock("../hooks/usePagination", () => ({
-  usePagination: (totalItems: number) => ({
-    currentPage: 0,
-    totalPages: Math.max(1, totalItems > 0 ? 1 : 1),
-    articlesPerPage: totalItems || 10,
-    isNavigating: false,
-    setPage: vi.fn(),
-    nextPage: vi.fn(),
-    prevPage: vi.fn(),
-    resetPagination: vi.fn(),
-    canGoNext: false,
-    canGoPrev: false,
-    startIndex: 0,
-    endIndex: totalItems,
-  }),
+  usePagination: (totalItems: number, articlesPerPage?: number) => {
+    const pageSize =
+      articlesPerPage || mockArticleLayoutSettings.articlesPerPage;
+    return {
+      currentPage: 0,
+      totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+      articlesPerPage: pageSize,
+      isNavigating: false,
+      setPage: vi.fn(),
+      nextPage: vi.fn(),
+      prevPage: vi.fn(),
+      resetPagination: vi.fn(),
+      canGoNext: false,
+      canGoPrev: false,
+      startIndex: 0,
+      endIndex: Math.min(totalItems, pageSize),
+    };
+  },
 }));
 
 vi.mock("../hooks/useArticleLayout", () => ({
@@ -184,6 +235,42 @@ vi.mock("../hooks/useArticleLayout", () => ({
 
 vi.mock("../hooks/useLocalStorage", () => ({
   useLocalStorage: () => ["24h", vi.fn()],
+}));
+
+vi.mock("../hooks/usePrimaryView", () => ({
+  FAVORITES_VIEW_ID: "favorites",
+  readPrimaryViewPreference: () => mockPrimaryView,
+  usePrimaryViewPreference: () => [mockPrimaryView, mockSetPrimaryView],
+}));
+
+vi.mock("../hooks/useFavorites", () => ({
+  useFavorites: () => ({
+    favorites: mockFavorites,
+  }),
+  inferFavoriteMediaType: (favorite: (typeof mockFavorites)[number]) => {
+    if (favorite.audioUrl) return "podcast";
+    if (favorite.mediaType) return favorite.mediaType;
+    return "article";
+  },
+  favoriteToArticle: (favorite: (typeof mockFavorites)[number]) => ({
+    title: favorite.title,
+    link: favorite.link,
+    pubDate: new Date(favorite.pubDate),
+    sourceTitle: favorite.sourceTitle,
+    feedUrl: favorite.feedUrl,
+    content: favorite.content,
+    categories: favorite.categories,
+    audioUrl: favorite.audioUrl,
+    audioDuration: favorite.audioDuration,
+  }),
+}));
+
+vi.mock("../hooks/useReadStatus", () => ({
+  useReadStatus: () => ({
+    isArticleRead: (article: Article) => mockReadLinks.has(article.link),
+    getUnreadCount: (articles: Article[]) =>
+      articles.filter((article) => !mockReadLinks.has(article.link)).length,
+  }),
 }));
 
 vi.mock("../hooks/useModal", () => ({
@@ -240,14 +327,120 @@ vi.mock("../config/layoutPresets.config", () => ({
 vi.mock("../components/Header", () => ({
   default: (props: {
     onNavigation: (category: string) => void;
+    primaryView?: "all" | "favorites";
+    onPrimaryViewChange?: (primaryView: "all" | "favorites") => void;
     onGoAll?: () => void;
     onRefreshClick?: () => void;
+    onSearch?: (query: string, filters: Record<string, never>) => void;
+    onSearchResultsChange?: (results: Article[]) => void;
+    favoriteToolbar?: {
+      readFilter: "all" | "unread" | "read";
+      mediaFilter: "all" | "article" | "podcast" | "video" | "unknown";
+      sortMode: "saved-desc" | "published-desc" | "source-asc";
+      hasActiveFilters: boolean;
+      activeFilterCount: number;
+      onReadFilterChange: (filter: "all" | "unread" | "read") => void;
+      onMediaFilterChange: (
+        filter: "all" | "article" | "podcast" | "video" | "unknown",
+      ) => void;
+      onSortModeChange: (
+        mode: "saved-desc" | "published-desc" | "source-asc",
+      ) => void;
+      onClearFilters: () => void;
+    };
   }) => (
     <div data-testid="header">
+      <div data-testid="primary-view">{props.primaryView || "all"}</div>
       <button onClick={() => props.onNavigation("design")}>Go design</button>
       <button onClick={() => props.onNavigation("youtube")}>Go videos</button>
+      <button onClick={() => props.onNavigation("podcasts")}>
+        Go podcasts
+      </button>
+      <button onClick={() => props.onNavigation("favorites")}>
+        Go favorites
+      </button>
+      <button onClick={() => props.onPrimaryViewChange?.("favorites")}>
+        Use favorites first
+      </button>
+      <button onClick={() => props.onPrimaryViewChange?.("all")}>
+        Use all first
+      </button>
       <button onClick={() => props.onGoAll?.()}>Go all</button>
       <button onClick={() => props.onRefreshClick?.()}>Refresh</button>
+      {props.favoriteToolbar && (
+        <div data-testid="favorite-header-toolbar">
+          <button
+            onClick={() => props.favoriteToolbar?.onReadFilterChange("unread")}
+          >
+            Não lidos
+          </button>
+          <select
+            aria-label="Tipo de favorito"
+            value={props.favoriteToolbar.mediaFilter}
+            onChange={(event) =>
+              props.favoriteToolbar?.onMediaFilterChange(
+                event.target.value as
+                  | "all"
+                  | "article"
+                  | "podcast"
+                  | "video"
+                  | "unknown",
+              )
+            }
+          >
+            <option value="all">Todos os tipos</option>
+            <option value="article">Artigos</option>
+            <option value="podcast">Podcasts</option>
+          </select>
+          <select
+            aria-label="Ordenação de favoritos"
+            value={props.favoriteToolbar.sortMode}
+            onChange={(event) =>
+              props.favoriteToolbar?.onSortModeChange(
+                event.target.value as
+                  | "saved-desc"
+                  | "published-desc"
+                  | "source-asc",
+              )
+            }
+          >
+            <option value="saved-desc">Salvos recentemente</option>
+            <option value="published-desc">Publicados recentemente</option>
+            <option value="source-asc">Fonte A-Z</option>
+          </select>
+          {props.favoriteToolbar.hasActiveFilters && (
+            <button
+              aria-label="Limpar filtros"
+              onClick={() => props.favoriteToolbar?.onClearFilters()}
+            >
+              Limpar filtros ({props.favoriteToolbar.activeFilterCount})
+            </button>
+          )}
+        </div>
+      )}
+      <button
+        onClick={() => {
+          props.onSearch?.("favorite", {});
+          props.onSearchResultsChange?.([
+            {
+              title: "Read favorite",
+              link: "https://example.com/read-favorite",
+              pubDate: new Date("2026-03-22T12:00:00.000Z"),
+              sourceTitle: "Saved Source",
+              categories: ["Tech"],
+            },
+            {
+              title: "Unread favorite",
+              link: "https://example.com/unread-favorite",
+              pubDate: new Date("2026-03-22T12:00:00.000Z"),
+              sourceTitle: "Saved Source",
+              categories: ["Tech"],
+            },
+          ]);
+        }}
+      >
+        Search favorites
+      </button>
     </div>
   ),
 }));
@@ -329,7 +522,7 @@ vi.mock("../components/SkipLinks", () => ({
 }));
 
 vi.mock("../components/PaginationControls", () => ({
-  PaginationControls: () => null,
+  PaginationControls: () => <div data-testid="pagination-controls" />,
 }));
 
 vi.mock("../components/BackgroundLayer", () => ({
@@ -352,6 +545,9 @@ describe("AppContent cache-first rendering", () => {
     mockRefreshAppearance.mockImplementation(() => {
       mockAppearanceState.contentConfig.layoutMode = "modern";
     });
+    mockPrimaryView = "all";
+    mockFavorites = [];
+    mockReadLinks = new Set<string>();
 
     mockFeedState = {
       feeds: [techFeed, designFeed, videoFeed],
@@ -405,6 +601,308 @@ describe("AppContent cache-first rendering", () => {
       }),
     );
     expect(mockLoadFeeds).not.toHaveBeenCalled();
+  });
+
+  it("opens new users on All by default", async () => {
+    window.history.replaceState({}, "", "/");
+    mockFeedState.articles = [techArticle, designArticle];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId("primary-view")).toHaveTextContent("all");
+    expect(screen.getAllByText("all").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Tech One")).toBeInTheDocument();
+  });
+
+  it("opens the persisted favorites view without loading feeds", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Saved podcast",
+        link: "https://example.com/saved-podcast",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Show",
+        feedUrl: "https://example.com/podcast.xml",
+        content: "<p>Episode notes</p>",
+        audioUrl: "https://cdn.example.com/saved.mp3",
+        audioDuration: "00:42:00",
+      },
+    ];
+    mockFeedState.articles = [techArticle, designArticle];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId("primary-view")).toHaveTextContent("favorites");
+    expect(screen.getAllByText("favorites").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Saved podcast")).toBeInTheDocument();
+    expect(screen.queryByText("Tech One")).not.toBeInTheDocument();
+    expect(mockLoadFeeds).not.toHaveBeenCalled();
+    expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("passes every podcast category episode to PocketFeeds and keeps hidden All feeds in their category", async () => {
+    window.history.replaceState({}, "", "/?category=all");
+    mockFeedState.feeds = [
+      techFeed,
+      designFeed,
+      videoFeed,
+      ...podcastFeeds,
+    ];
+    mockFeedState.articles = [techArticle, ...podcastArticles];
+
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Tech One")).toBeInTheDocument();
+    expect(screen.queryByText("Podcast 6 Episode 1")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Go podcasts"));
+      view.rerender(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Podcast 6 Episode 1")).toBeInTheDocument();
+    expect(screen.getByText("pocketfeeds")).toBeInTheDocument();
+    expect(screen.queryByTestId("pagination-controls")).not.toBeInTheDocument();
+  });
+
+  it("filters unread favorites without loading feeds", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Read favorite",
+        link: "https://example.com/read-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+      {
+        title: "Unread favorite",
+        link: "https://example.com/unread-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+    ];
+    mockReadLinks = new Set(["https://example.com/read-favorite"]);
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Read favorite")).toBeInTheDocument();
+    expect(screen.getByText("Unread favorite")).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Não lidos" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText("Read favorite")).not.toBeInTheDocument();
+    expect(screen.getByText("Unread favorite")).toBeInTheDocument();
+    expect(mockLoadFeeds).not.toHaveBeenCalled();
+    expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("keeps favorites toolbar filters applied while search is active", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Read favorite",
+        link: "https://example.com/read-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+      {
+        title: "Unread favorite",
+        link: "https://example.com/unread-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+    ];
+    mockReadLinks = new Set(["https://example.com/read-favorite"]);
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Não lidos" }));
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Search favorites"));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText("Read favorite")).not.toBeInTheDocument();
+    expect(screen.getByText("Unread favorite")).toBeInTheDocument();
+  });
+
+  it("shows the filtered favorites empty state when filters have no results", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Article favorite",
+        link: "https://example.com/article-favorite",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+        categories: ["Tech"],
+        mediaType: "article",
+      },
+    ];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Tipo de favorito"), {
+        target: { value: "podcast" },
+      });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Nenhum favorito encontrado")).toBeInTheDocument();
+    expect(screen.queryByText("Favoritos vazio")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getAllByRole("button", { name: "Limpar filtros" })[0],
+      );
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Article favorite")).toBeInTheDocument();
+  });
+
+  it("does not refresh feeds while the favorites view is active", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Saved article",
+        link: "https://example.com/saved-article",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+      },
+    ];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Refresh"));
+      await Promise.resolve();
+    });
+
+    expect(mockRefreshFeeds).not.toHaveBeenCalled();
+    expect(mockLoadFeeds).not.toHaveBeenCalled();
+  });
+
+  it("loads real categories selected by keyboard after starting on favorites", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Saved article",
+        link: "https://example.com/saved-article",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+      },
+    ];
+    mockFeedState.articles = [];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    const keyboardOptions = vi.mocked(useKeyboardNavigation).mock.calls.at(-1)
+      ?.[0];
+    const techShortcut = keyboardOptions?.shortcuts?.find(
+      (shortcut) => shortcut.key === "2",
+    );
+
+    expect(techShortcut).toBeDefined();
+
+    await act(async () => {
+      techShortcut?.action();
+      await Promise.resolve();
+    });
+
+    expect(mockLoadFeeds).toHaveBeenCalledTimes(1);
+    expect(mockLoadFeeds).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categoryId: "tech",
+        mode: "category",
+        forceRefresh: false,
+        cacheTtlMinutes: 10,
+      }),
+    );
+    expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("keeps keyboard navigation to favorites local without loading feeds", async () => {
+    window.history.replaceState({}, "", "/");
+    mockPrimaryView = "favorites";
+    mockFavorites = [
+      {
+        title: "Saved article",
+        link: "https://example.com/saved-article",
+        pubDate: "2026-03-22T12:00:00.000Z",
+        sourceTitle: "Saved Source",
+      },
+    ];
+    mockFeedState.articles = [techArticle];
+
+    await act(async () => {
+      render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    const keyboardOptions = vi.mocked(useKeyboardNavigation).mock.calls.at(-1)
+      ?.[0];
+    const favoritesShortcut = keyboardOptions?.shortcuts?.find(
+      (shortcut) => shortcut.key === "1",
+    );
+
+    expect(favoritesShortcut).toBeDefined();
+
+    await act(async () => {
+      favoritesShortcut?.action();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Saved article")).toBeInTheDocument();
+    expect(mockLoadFeeds).not.toHaveBeenCalled();
+    expect(mockRefreshFeeds).not.toHaveBeenCalled();
   });
 
   it("shows the dominant skeleton on cold start without cache", async () => {
@@ -558,7 +1056,7 @@ describe("AppContent cache-first rendering", () => {
     });
 
     expect(mockRefreshAppearance).toHaveBeenCalled();
-    expect(await screen.findByText("all")).toBeInTheDocument();
+    expect(screen.getAllByText("all").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("modern")).toBeInTheDocument();
     expect(screen.queryByText("brutalist")).not.toBeInTheDocument();
   });

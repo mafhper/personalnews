@@ -16,6 +16,7 @@ import {
 import {
   ProxyManager,
   proxyManager,
+  type ProxyRouteMode,
   type ProxyTestResult,
 } from "../services/proxyManager";
 
@@ -45,6 +46,11 @@ const isRuntimeSupportedProxy = (proxyId: string) => {
   return getRuntimeProxyNameSet().has(config.name);
 };
 
+const getProxyIdByRuntimeName = (runtimeName: string) =>
+  Object.entries(PROXY_CONFIGS).find(
+    ([, config]) => config.name === runtimeName,
+  )?.[0];
+
 /**
  * Hook for managing proxy configurations and API keys
  */
@@ -61,11 +67,28 @@ export function useProxyConfig() {
     ProxyManager.loadPreferences();
     return ProxyManager.getPreferLocalProxy();
   });
+  const [routingMode, setRoutingModeState] = useState<ProxyRouteMode>(() => {
+    ProxyManager.loadPreferences();
+    return ProxyManager.getRoutingMode();
+  });
+  const [clientProxyOrder, setClientProxyOrderState] = useState<string[]>(() =>
+    proxyManager
+      .getClientProxyOrder()
+      .map((proxyName) => getProxyIdByRuntimeName(proxyName))
+      .filter((proxyId): proxyId is string => Boolean(proxyId)),
+  );
 
   const syncFromManager = useCallback(() => {
     ProxyManager.loadPreferences();
     setApiKeys(buildKeyState());
     setPreferLocalProxyState(ProxyManager.getPreferLocalProxy());
+    setRoutingModeState(ProxyManager.getRoutingMode());
+    setClientProxyOrderState(
+      proxyManager
+        .getClientProxyOrder()
+        .map((proxyName) => getProxyIdByRuntimeName(proxyName))
+        .filter((proxyId): proxyId is string => Boolean(proxyId)),
+    );
   }, []);
 
   useEffect(() => {
@@ -136,7 +159,25 @@ export function useProxyConfig() {
   const setPreferLocalProxy = useCallback((prefer: boolean) => {
     ProxyManager.setPreferLocalProxy(prefer);
     setPreferLocalProxyState(prefer);
+    setRoutingModeState(ProxyManager.getRoutingMode());
   }, []);
+
+  const setRoutingMode = useCallback((mode: ProxyRouteMode) => {
+    ProxyManager.setRoutingMode(mode);
+    setRoutingModeState(mode);
+    setPreferLocalProxyState(ProxyManager.getPreferLocalProxy());
+  }, []);
+
+  const moveClientProxy = useCallback(
+    (proxyId: string, direction: "up" | "down") => {
+      const config = PROXY_CONFIGS[proxyId];
+      if (!config || !isRuntimeSupportedProxy(proxyId)) return;
+
+      proxyManager.moveClientProxy(config.name, direction);
+      syncFromManager();
+    },
+    [syncFromManager],
+  );
 
   const setProxyEnabled = useCallback((proxyId: string, enabled: boolean) => {
     const config = PROXY_CONFIGS[proxyId];
@@ -252,9 +293,13 @@ export function useProxyConfig() {
                 : fallbackHealth.recommendation,
           },
           apiKeyStatus,
+          routeOrder:
+            proxyId === "local-proxy"
+              ? -1
+              : clientProxyOrder.indexOf(proxyId),
         };
       });
-  }, [getApiKeyStatus]);
+  }, [clientProxyOrder, getApiKeyStatus]);
 
   /**
    * Test a proxy with a real request
@@ -297,7 +342,11 @@ export function useProxyConfig() {
     validationErrors,
     isLoading,
     preferLocalProxy,
+    routingMode,
+    clientProxyOrder,
     setPreferLocalProxy,
+    setRoutingMode,
+    moveClientProxy,
     setProxyEnabled,
     setApiKey,
     clearApiKey,

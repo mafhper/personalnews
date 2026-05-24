@@ -1,5 +1,6 @@
 import { Article } from '../types';
 import { logger as serviceLogger } from './logger';
+import { CACHE_POLICY_V1 } from './cachePolicy';
 
 // Simple logger wrapper to match existing usage but use standardized system
 const logger = {
@@ -31,10 +32,10 @@ export interface ArticleCacheOptions {
 }
 
 const DEFAULT_OPTIONS: ArticleCacheOptions = {
-  maxSize: 500, // Maximum number of articles to store
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-  memoryLimit: 50, // 50 MB
-  autoCleanupInterval: 5 * 60 * 1000, // 5 minutes
+  maxSize: CACHE_POLICY_V1.articles.maxSize,
+  maxAge: CACHE_POLICY_V1.articles.maxAgeMs,
+  memoryLimit: CACHE_POLICY_V1.articles.memoryLimitMb,
+  autoCleanupInterval: CACHE_POLICY_V1.articles.autoCleanupIntervalMs,
 };
 
 interface PerformanceWithMemory extends Performance {
