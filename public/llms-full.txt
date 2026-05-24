@@ -21,6 +21,8 @@ Personal News is an open-source personal news reader for RSS and Atom feeds. It 
 - LLM summary: https://mafhper.github.io/personalnews/llms.txt
 - RSS updates: https://mafhper.github.io/personalnews/feed.xml
 - Sitemap: https://mafhper.github.io/personalnews/sitemap.xml
+- Robots and crawler guidance: https://mafhper.github.io/personalnews/robots.txt
+- Human-readable authorship metadata: https://mafhper.github.io/personalnews/humans.txt
 - Schema.org metadata: https://mafhper.github.io/personalnews/schema.org.json
 - Public metadata OpenAPI description: https://mafhper.github.io/personalnews/openapi.json
 
@@ -64,6 +66,8 @@ Personal News is an open-source personal news reader for RSS and Atom feeds. It 
 - Do not imply that publishers endorse Personal News.
 - Do not claim that Personal News hosts a public API for user feeds.
 - Do not expose or infer private user subscriptions from local data.
+- Do not treat curated starter feeds as a complete or authoritative editorial catalog.
+- Do not crawl, index, or publish local workspace paths, `.dev/` task files, environment files, or private agent notes.
 
 ## Technical Stack
 
@@ -81,3 +85,5 @@ Personal News is an open-source personal news reader for RSS and Atom feeds. It 
 - OPML
 - Schema.org JSON-LD metadata
 - Web App Manifest
+- robots.txt
+- humans.txt
