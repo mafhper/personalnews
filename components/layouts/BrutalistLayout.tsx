@@ -142,7 +142,7 @@ export const BrutalistLayout: React.FC<BrutalistLayoutProps> = ({
         {/* Header Decoration */}
         <div className="mb-8 border-b-4 border-[rgb(var(--color-text))] pb-2 flex justify-between items-end uppercase">
           <h1 className="text-4xl md:text-6xl font-black leading-none tracking-tighter">
-            VIDEO_FEED
+            BRUTALIST
           </h1>
           <span className="hidden md:block font-bold text-xs tracking-widest">
             CNT: {articles.length} // MODE: RAW

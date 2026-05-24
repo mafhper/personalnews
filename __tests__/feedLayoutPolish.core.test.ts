@@ -20,6 +20,13 @@ describe("feed layout polish wiring", () => {
     expect(source).not.toContain("brightness-90");
   });
 
+  it("labels Brutalist as a reusable layout instead of a video-only feed", () => {
+    const source = read("components/layouts/BrutalistLayout.tsx");
+
+    expect(source).toContain("BRUTALIST");
+    expect(source).not.toContain("VIDEO_FEED");
+  });
+
   it("uses the requested Magazine slice counts", () => {
     const source = read("components/layouts/MagazineLayout.tsx");
     expect(source).toContain("visibleArticles.slice(1, 7)");
