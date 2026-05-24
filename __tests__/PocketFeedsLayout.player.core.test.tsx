@@ -290,6 +290,17 @@ describe("PocketFeedsLayout audio player", () => {
     );
   });
 
+  it("caps grid artwork when a single selected podcast is rendered", () => {
+    window.localStorage.setItem("pocketfeeds-view-mode", JSON.stringify("grid"));
+
+    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+
+    expect(screen.getByTestId("pocketfeeds-grid-layout")).toHaveStyle({
+      gridTemplateColumns: "minmax(min(100%, 18rem), 18rem)",
+      justifyContent: "start",
+    });
+  });
+
   it("hides the two-column option when the measured layout width is too narrow", async () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")

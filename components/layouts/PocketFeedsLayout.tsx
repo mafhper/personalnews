@@ -689,10 +689,13 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
 
   const renderGridLayout = () => (
     <div
-      className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+      className="grid gap-4"
       style={{
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr))",
+          podcastGroups.length === 1
+            ? "minmax(min(100%, 18rem), 18rem)"
+            : "repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr))",
+        justifyContent: podcastGroups.length === 1 ? "start" : "stretch",
       }}
       data-testid="pocketfeeds-grid-layout"
     >

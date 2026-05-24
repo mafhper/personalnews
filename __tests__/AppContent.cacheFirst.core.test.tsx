@@ -23,6 +23,13 @@ const videoFeed: FeedSource = {
   customTitle: "Videos",
 };
 
+const podcastFeeds: FeedSource[] = Array.from({ length: 6 }, (_, index) => ({
+  url: `https://example.com/podcast-${index + 1}.xml`,
+  categoryId: "podcasts",
+  customTitle: `Podcast ${index + 1}`,
+  hideFromAll: index === 5,
+}));
+
 const categories = [
   { id: "all", name: "All", color: "#fff", order: 0, isDefault: true },
   { id: "tech", name: "Tech", color: "#0ea5e9", order: 1, isDefault: true },
@@ -40,6 +47,15 @@ const categories = [
     order: 3,
     isDefault: true,
     layoutMode: "brutalist",
+    autoDiscovery: false,
+  },
+  {
+    id: "podcasts",
+    name: "Podcasts",
+    color: "#fb923c",
+    order: 4,
+    isDefault: true,
+    layoutMode: "pocketfeeds",
     autoDiscovery: false,
   },
 ];
@@ -60,6 +76,18 @@ const makeArticle = (
 const techArticle = makeArticle("Tech One", techFeed, "tech");
 const designArticle = makeArticle("Design One", designFeed, "design");
 const videoArticle = makeArticle("Video One", videoFeed, "youtube");
+const podcastArticles = podcastFeeds.flatMap((feed, feedIndex) =>
+  Array.from({ length: 2 }, (_, episodeIndex) =>
+    makeArticle(
+      `${feed.customTitle} Episode ${episodeIndex + 1}`,
+      feed,
+      "podcasts",
+    ),
+  ).map((article) => ({
+    ...article,
+    audioUrl: `https://cdn.example.com/podcast-${feedIndex + 1}-${article.title}.mp3`,
+  })),
+);
 
 const mockLoadFeeds = vi.fn(async () => {});
 const mockRefreshFeeds = vi.fn();
@@ -173,25 +201,30 @@ vi.mock("../hooks/useFeedCategories", () => ({
       tech: feeds.filter((feed) => feed.categoryId === "tech"),
       design: feeds.filter((feed) => feed.categoryId === "design"),
       youtube: feeds.filter((feed) => feed.categoryId === "youtube"),
+      podcasts: feeds.filter((feed) => feed.categoryId === "podcasts"),
     }),
   }),
 }));
 
 vi.mock("../hooks/usePagination", () => ({
-  usePagination: (totalItems: number) => ({
-    currentPage: 0,
-    totalPages: Math.max(1, totalItems > 0 ? 1 : 1),
-    articlesPerPage: totalItems || 10,
-    isNavigating: false,
-    setPage: vi.fn(),
-    nextPage: vi.fn(),
-    prevPage: vi.fn(),
-    resetPagination: vi.fn(),
-    canGoNext: false,
-    canGoPrev: false,
-    startIndex: 0,
-    endIndex: totalItems,
-  }),
+  usePagination: (totalItems: number, articlesPerPage?: number) => {
+    const pageSize =
+      articlesPerPage || mockArticleLayoutSettings.articlesPerPage;
+    return {
+      currentPage: 0,
+      totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+      articlesPerPage: pageSize,
+      isNavigating: false,
+      setPage: vi.fn(),
+      nextPage: vi.fn(),
+      prevPage: vi.fn(),
+      resetPagination: vi.fn(),
+      canGoNext: false,
+      canGoPrev: false,
+      startIndex: 0,
+      endIndex: Math.min(totalItems, pageSize),
+    };
+  },
 }));
 
 vi.mock("../hooks/useArticleLayout", () => ({
@@ -320,6 +353,9 @@ vi.mock("../components/Header", () => ({
       <div data-testid="primary-view">{props.primaryView || "all"}</div>
       <button onClick={() => props.onNavigation("design")}>Go design</button>
       <button onClick={() => props.onNavigation("youtube")}>Go videos</button>
+      <button onClick={() => props.onNavigation("podcasts")}>
+        Go podcasts
+      </button>
       <button onClick={() => props.onNavigation("favorites")}>
         Go favorites
       </button>
@@ -486,7 +522,7 @@ vi.mock("../components/SkipLinks", () => ({
 }));
 
 vi.mock("../components/PaginationControls", () => ({
-  PaginationControls: () => null,
+  PaginationControls: () => <div data-testid="pagination-controls" />,
 }));
 
 vi.mock("../components/BackgroundLayer", () => ({
@@ -609,6 +645,36 @@ describe("AppContent cache-first rendering", () => {
     expect(screen.queryByText("Tech One")).not.toBeInTheDocument();
     expect(mockLoadFeeds).not.toHaveBeenCalled();
     expect(mockRefreshFeeds).not.toHaveBeenCalled();
+  });
+
+  it("passes every podcast category episode to PocketFeeds and keeps hidden All feeds in their category", async () => {
+    window.history.replaceState({}, "", "/?category=all");
+    mockFeedState.feeds = [
+      techFeed,
+      designFeed,
+      videoFeed,
+      ...podcastFeeds,
+    ];
+    mockFeedState.articles = [techArticle, ...podcastArticles];
+
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Tech One")).toBeInTheDocument();
+    expect(screen.queryByText("Podcast 6 Episode 1")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Go podcasts"));
+      view.rerender(<AppContent />);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Podcast 6 Episode 1")).toBeInTheDocument();
+    expect(screen.getByText("pocketfeeds")).toBeInTheDocument();
+    expect(screen.queryByTestId("pagination-controls")).not.toBeInTheDocument();
   });
 
   it("filters unread favorites without loading feeds", async () => {

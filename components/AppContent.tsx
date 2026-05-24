@@ -703,6 +703,11 @@ const AppContent: React.FC = () => {
     },
   );
 
+  const renderedCategory = selectedCategory;
+  const renderedLayoutMode = currentLayoutMode as string;
+  const shouldBypassGlobalPagination =
+    renderedLayoutMode === "pocketfeeds" && !isSearchActive && !isFavoritesView;
+
   // T12 & T36: Progressive pagination support
   const paginatedArticles = useMemo(() => {
     if (contentConfig.paginationType === "loadMore") {
@@ -721,13 +726,14 @@ const AppContent: React.FC = () => {
     contentConfig.paginationType,
   ]);
 
-  const renderedArticles = paginatedArticles;
+  const renderedArticles = shouldBypassGlobalPagination
+    ? displayArticles
+    : paginatedArticles;
   const hasSparsePaginationPage =
+    !shouldBypassGlobalPagination &&
     renderedArticles.length > 0 &&
     renderedArticles.length <=
       Math.min(4, Math.max(1, layoutSettings.articlesPerPage));
-  const renderedCategory = selectedCategory;
-  const renderedLayoutMode = currentLayoutMode as string;
 
   const shouldShowCategoryUnavailableMessage =
     !isSearchActive &&
@@ -1412,7 +1418,7 @@ const AppContent: React.FC = () => {
               )}
 
               {/* Pagination Area */}
-              {!showSkeleton && (
+              {!showSkeleton && !shouldBypassGlobalPagination && (
                 <div
                   className={`feed-page-frame feed-pagination-region flex flex-col items-center space-y-6 ${
                     hasSparsePaginationPage
