@@ -188,6 +188,9 @@ describe("PocketFeedsLayout audio player", () => {
     expect(screen.getByTestId("pocketfeeds-double-layout")).toHaveClass(
       "items-start",
     );
+    expect(screen.getByTestId("pocketfeeds-double-layout")).toHaveClass(
+      "md:grid-cols-2",
+    );
     expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
       "max-w-6xl",
     );
@@ -202,9 +205,57 @@ describe("PocketFeedsLayout audio player", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /grid/i }));
     expect(screen.getByTestId("pocketfeeds-grid-layout")).toBeInTheDocument();
+    expect(screen.getByTestId("pocketfeeds-grid-layout")).toHaveStyle({
+      gridTemplateColumns:
+        "repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr))",
+    });
     expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
       "max-w-screen-2xl",
     );
+  });
+
+  it("hides the two-column option when the measured layout width is too narrow", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getBoundingClientRectMock() {
+        const element = this as HTMLElement;
+        const width =
+          element.dataset.testid === "pocketfeeds-layout-measure" ? 640 : 0;
+
+        return {
+          bottom: 0,
+          height: 0,
+          left: 0,
+          right: width,
+          top: 0,
+          width,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+
+    try {
+      render(<PocketFeedsLayout articles={podcastEpisodes} />);
+
+      await waitFor(() =>
+        expect(
+          screen.getByTestId("pocketfeeds-single-layout"),
+        ).toBeInTheDocument(),
+      );
+
+      openLayoutPicker();
+
+      expect(
+        screen.queryByRole("button", { name: /2 colunas/i }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /1 coluna/i })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    } finally {
+      rectSpy.mockRestore();
+    }
   });
 
   it("persists the selected podcast layout mode", async () => {
@@ -289,6 +340,45 @@ describe("PocketFeedsLayout audio player", () => {
     expect(within(scienceEpisodes).getByAltText("Science older")).toHaveAttribute(
       "src",
       "https://cdn.example.com/science-older-art.jpg",
+    );
+  });
+
+  it("keeps responsive artwork visible and skips empty episode placeholders", () => {
+    const textOnlyNewest = {
+      ...podcastEpisodes[0],
+      title: "Science text-only newest",
+      imageUrl: undefined,
+    };
+
+    render(
+      <PocketFeedsLayout
+        articles={[textOnlyNewest, podcastEpisodes[1], ...podcastEpisodes.slice(2)]}
+      />,
+    );
+
+    const scienceCard = screen
+      .getAllByTestId("pocketfeeds-podcast-card")
+      .find((card) => within(card).queryByText("Science Podcast"));
+
+    expect(scienceCard).toBeDefined();
+    expect(within(scienceCard!).getByAltText("Science Podcast")).toHaveAttribute(
+      "src",
+      "https://cdn.example.com/science-older-art.jpg",
+    );
+
+    fireEvent.click(
+      within(scienceCard!).getByRole("button", { name: /Science Podcast/i }),
+    );
+
+    const scienceEpisodes = screen.getByTestId(
+      "pocketfeeds-inline-episodes-Science Podcast",
+    );
+
+    expect(
+      within(scienceEpisodes).queryByAltText("Science text-only newest"),
+    ).not.toBeInTheDocument();
+    expect(within(scienceEpisodes).getByAltText("Science older")).not.toHaveClass(
+      "hidden",
     );
   });
 

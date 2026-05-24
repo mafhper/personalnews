@@ -37,6 +37,7 @@ const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
 
 const MAX_TIMELINE_EPISODES = 120;
 const MAX_INLINE_EPISODES = 10;
+const DOUBLE_LAYOUT_MIN_WIDTH = 760;
 const POCKETFEEDS_VIEW_STORAGE_KEY = "pocketfeeds-view-mode";
 const DEFAULT_POCKETFEEDS_VIEW_MODE: PocketFeedsViewMode = "double";
 
@@ -91,6 +92,10 @@ const getEpisodeByline = (episode: Article) =>
     ? `${episode.sourceTitle} • ${episode.author}`
     : episode.sourceTitle;
 
+const getPodcastArtworkEpisode = (group: PodcastGroup) =>
+  group.episodes.find((episode) => Boolean(episode.imageUrl)) ||
+  group.firstEpisode;
+
 const isRecentEpisode = (episode: Article) => {
   const dayAgo = new Date();
   dayAgo.setDate(dayAgo.getDate() - 7);
@@ -121,26 +126,25 @@ const EpisodeArtwork: React.FC<{
 }> = ({
   episode,
   fallbackAlt,
-  className = "hidden h-12 w-12 sm:block",
+  className = "h-11 w-11 sm:h-12 sm:w-12",
   priority = false,
-}) => (
-  <div
-    className={`${className} flex-shrink-0 overflow-hidden rounded-lg border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)]`}
-  >
-    {episode.imageUrl ? (
+}) => {
+  if (!episode.imageUrl) return null;
+
+  return (
+    <div
+      className={`${className} flex-shrink-0 overflow-hidden rounded-lg border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)]`}
+    >
       <LazyImage
         src={episode.imageUrl}
         className="h-full w-full object-cover"
         alt={episode.title || fallbackAlt}
         priority={priority}
+        aspectRatio="1/1"
       />
-    ) : (
-      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[rgba(var(--color-accent),0.45)] to-[rgba(var(--color-primary),0.45)]">
-        <Music2 className="h-5 w-5 text-white/80" aria-hidden />
-      </div>
-    )}
-  </div>
-);
+    </div>
+  );
+};
 
 const PodcastArtwork: React.FC<{
   episode: Article;
@@ -197,6 +201,7 @@ export const PocketFeedsSkeleton: React.FC = () => {
 export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   articles,
 }) => {
+  const layoutMeasureRef = useRef<HTMLDivElement | null>(null);
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<Article | null>(null);
@@ -205,6 +210,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
     null,
   );
   const [isLayoutPickerOpen, setLayoutPickerOpen] = useState(false);
+  const [layoutWidth, setLayoutWidth] = useState(0);
   const [storedViewMode, setStoredViewMode] =
     useLocalStorage<PocketFeedsViewMode>(
       POCKETFEEDS_VIEW_STORAGE_KEY,
@@ -217,9 +223,18 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const viewMode = isPocketFeedsViewMode(storedViewMode)
+  const selectedViewMode = isPocketFeedsViewMode(storedViewMode)
     ? storedViewMode
     : DEFAULT_POCKETFEEDS_VIEW_MODE;
+  const canUseDoubleLayout =
+    layoutWidth === 0 || layoutWidth >= DOUBLE_LAYOUT_MIN_WIDTH;
+  const viewMode =
+    selectedViewMode === "double" && !canUseDoubleLayout
+      ? "single"
+      : selectedViewMode;
+  const availableViewModeOptions = VIEW_MODE_OPTIONS.filter(
+    (option) => option.id !== "double" || canUseDoubleLayout,
+  );
   const currentViewModeOption =
     VIEW_MODE_OPTIONS.find((option) => option.id === viewMode) ||
     VIEW_MODE_OPTIONS[1];
@@ -230,6 +245,26 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       setStoredViewMode(DEFAULT_POCKETFEEDS_VIEW_MODE);
     }
   }, [setStoredViewMode, storedViewMode]);
+
+  useEffect(() => {
+    const element = layoutMeasureRef.current;
+    if (!element) return;
+
+    const updateLayoutWidth = () => {
+      setLayoutWidth(element.getBoundingClientRect().width);
+    };
+
+    updateLayoutWidth();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateLayoutWidth);
+      return () => window.removeEventListener("resize", updateLayoutWidth);
+    }
+
+    const observer = new ResizeObserver(updateLayoutWidth);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const podcastGroups = useMemo<PodcastGroup[]>(() => {
     const groups = new Map<string, Article[]>();
@@ -499,8 +534,9 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   ) => {
     const isExpanded =
       expandedPodcast === group.name || podcastGroups.length === 1;
+    const artworkEpisode = getPodcastArtworkEpisode(group);
     const artworkClass = options.compact
-      ? "h-20 w-20 sm:h-24 sm:w-24"
+      ? "h-16 w-16 sm:h-24 sm:w-24"
       : "h-24 w-24 md:h-28 md:w-28";
 
     return (
@@ -516,7 +552,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
           aria-expanded={isExpanded}
         >
           <PodcastArtwork
-            episode={group.firstEpisode}
+            episode={artworkEpisode}
             title={group.name}
             className={artworkClass}
           />
@@ -551,6 +587,10 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   const renderGridLayout = () => (
     <div
       className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+      style={{
+        gridTemplateColumns:
+          "repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr))",
+      }}
       data-testid="pocketfeeds-grid-layout"
     >
       {podcastGroups.map((group) => (
@@ -562,12 +602,13 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
           aria-label={`Ver episódios de ${group.name}`}
         >
           <div className="relative aspect-square overflow-hidden rounded-[var(--feed-card-radius)] bg-[rgba(var(--color-text),0.04)] shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">
-            {group.firstEpisode.imageUrl ? (
+            {getPodcastArtworkEpisode(group).imageUrl ? (
               <LazyImage
-                src={group.firstEpisode.imageUrl}
+                src={getPodcastArtworkEpisode(group).imageUrl}
                 className="h-full w-full object-cover"
                 alt={group.name}
                 priority
+                aspectRatio="1/1"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[rgba(var(--color-accent),0.6)] to-[rgba(var(--color-primary),0.6)]">
@@ -610,6 +651,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
         const featured = index % 5 === 0;
         const panelClass = featured ? "lg:col-span-7" : "lg:col-span-5";
         const latestEpisode = group.firstEpisode;
+        const artworkEpisode = getPodcastArtworkEpisode(group);
         const playEpisode = group.playableEpisode;
 
         return (
@@ -626,12 +668,13 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
                 aria-expanded={isExpanded}
                 aria-label={`${isExpanded ? "Recolher" : "Expandir"} ${group.name}`}
               >
-                {latestEpisode.imageUrl ? (
+                {artworkEpisode.imageUrl ? (
                   <LazyImage
-                    src={latestEpisode.imageUrl}
+                    src={artworkEpisode.imageUrl}
                     className="absolute inset-0 h-full w-full object-cover"
                     alt={group.name}
                     priority
+                    aspectRatio="1/1"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[rgba(var(--color-accent),0.58)] to-[rgba(var(--color-primary),0.42)]">
@@ -723,7 +766,12 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
         className={
           viewMode === "single"
             ? "grid grid-cols-1 items-start gap-5"
-            : "grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
+            : "grid grid-cols-1 items-start gap-5 md:grid-cols-2"
+        }
+        style={
+          viewMode === "double"
+            ? { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }
+            : undefined
         }
         data-testid={`pocketfeeds-${viewMode}-layout`}
       >
@@ -744,7 +792,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
         : "mx-auto w-full max-w-screen-2xl";
 
   return (
-    <div className="feed-top-clearance w-full bg-[rgba(var(--color-background),0.5)] px-4 pb-8 sm:px-6 md:px-8">
+    <div
+      ref={layoutMeasureRef}
+      className="feed-top-clearance w-full bg-[rgba(var(--color-background),0.5)] px-4 pb-8 sm:px-6 md:px-8"
+      data-testid="pocketfeeds-layout-measure"
+    >
       <audio
         ref={audioRef}
         onLoadedMetadata={(event) =>
@@ -795,7 +847,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
               aria-label="Modo de visualização dos podcasts"
               role="group"
             >
-              {VIEW_MODE_OPTIONS.map(
+              {availableViewModeOptions.map(
                 ({ id, label, shortLabel, title, Icon }) => {
                   const isActive = viewMode === id;
                   return (
