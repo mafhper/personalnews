@@ -2,17 +2,28 @@ import React, { useMemo, useRef, useState } from "react";
 import type { FeedCategory } from "../../types";
 import type { ImportCandidate } from "../../services/opmlImportPreview";
 import {
+  buildLargeImportPlan,
+  canImportCandidate,
+  isLargeImportCount,
+  type LargeImportPlan,
+} from "../../services/largeImportPlanner";
+import {
   buildOpmlImportConfirmationSummary,
   normalizeCategoryName,
 } from "../../services/opmlImportPreview";
 import { Modal } from "../Modal";
+
+export type OpmlImportConfirmAction = "commit-only" | "validate-background";
 
 interface OpmlImportPreviewModalProps {
   isOpen: boolean;
   candidates: ImportCandidate[];
   categories: FeedCategory[];
   onClose: () => void;
-  onConfirm: (candidates: ImportCandidate[]) => void | Promise<void>;
+  onConfirm: (
+    candidates: ImportCandidate[],
+    action: OpmlImportConfirmAction,
+  ) => void | Promise<void>;
 }
 
 type OpmlImportStep = "edit" | "confirm";
@@ -56,6 +67,32 @@ const candidateCategoryName = (candidate: ImportCandidate) => {
   return candidate.categoryOverrideName || candidate.suggestedCategoryName;
 };
 
+const hasDestinationCategory = (candidate: ImportCandidate) =>
+  Boolean(
+    !candidate.categoryOverrideCleared &&
+      (candidate.categoryOverrideId ||
+        candidate.suggestedCategoryId ||
+        candidate.categoryOverrideName ||
+        candidate.suggestedCategoryName),
+  );
+
+const shouldRecommendHideFromAll = (plan: LargeImportPlan): boolean =>
+  isLargeImportCount(plan.importableCount) ||
+  plan.warnings.includes("podcast-heavy-import");
+
+const applyLargeImportVisibilityDefaults = (
+  candidates: ImportCandidate[],
+): ImportCandidate[] => {
+  const plan = buildLargeImportPlan(candidates);
+  if (!shouldRecommendHideFromAll(plan)) return candidates;
+
+  return candidates.map((candidate) =>
+    canImportCandidate(candidate) && hasDestinationCategory(candidate)
+      ? { ...candidate, hideFromAll: true }
+      : candidate,
+  );
+};
+
 export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
   isOpen,
   candidates,
@@ -75,12 +112,11 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
   const [categoryToApply, setCategoryToApply] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<OpmlImportStep>("edit");
-  const [loadImmediately, setLoadImmediately] = useState(true);
   const isSubmittingRef = useRef(false);
 
   React.useEffect(() => {
     if (!isOpen) return;
-    setDraftCandidates(candidates);
+    setDraftCandidates(applyLargeImportVisibilityDefaults(candidates));
     setSelectedIds(
       new Set(
         candidates
@@ -126,6 +162,16 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       ).size,
     };
   }, [categories, draftCandidates]);
+
+  const largeImportPlan = useMemo(
+    () => buildLargeImportPlan(draftCandidates),
+    [draftCandidates],
+  );
+
+  const isLargeImport = isLargeImportCount(largeImportPlan.importableCount);
+  const isPodcastHeavy =
+    largeImportPlan.warnings.includes("podcast-heavy-import");
+  const topHosts = largeImportPlan.hosts.slice(0, 4);
 
   const confirmationSummary = useMemo(
     () => buildOpmlImportConfirmationSummary(draftCandidates, categories),
@@ -255,12 +301,14 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
     });
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (
+    action: OpmlImportConfirmAction = "commit-only",
+  ) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      await onConfirm(draftCandidates);
+      await onConfirm(draftCandidates, action);
     } catch (error) {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -269,11 +317,6 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
   };
 
   const goToConfirmation = () => {
-    const nextSummary = buildOpmlImportConfirmationSummary(
-      draftCandidates,
-      categories,
-    );
-    setLoadImmediately(!nextSummary.isLargeImport);
     setStep("confirm");
   };
 
@@ -318,10 +361,24 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
             >
               Cancelar
             </button>
+            {step === "confirm" && isLargeImport && (
+              <button
+                type="button"
+                onClick={() => void handleConfirm("commit-only")}
+                disabled={isSubmitting || summary.importing === 0}
+                className="rounded-lg border border-[rgba(var(--color-accent),0.34)] px-4 py-2 text-sm font-bold text-[rgb(var(--color-accent))] transition hover:bg-[rgba(var(--color-accent),0.1)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? "Importando..." : "Importar agora"}
+              </button>
+            )}
             <button
               type="button"
               onClick={() =>
-                step === "confirm" ? void handleConfirm() : goToConfirmation()
+                step === "confirm"
+                  ? void handleConfirm(
+                      isLargeImport ? "validate-background" : "commit-only",
+                    )
+                  : goToConfirmation()
               }
               disabled={isSubmitting || summary.importing === 0}
               className="rounded-lg border border-[rgb(var(--color-accentSurface))] bg-[rgb(var(--color-accentSurface))] px-4 py-2 text-sm font-bold text-[rgb(var(--color-onAccent))] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
@@ -329,7 +386,9 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
               {isSubmitting
                 ? "Importando..."
                 : step === "confirm"
-                  ? "Confirmar importação"
+                  ? isLargeImport
+                    ? "Importar + Validar"
+                    : "Confirmar importação"
                   : "Importar selecionados"}
             </button>
           </div>
@@ -355,28 +414,38 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
 
           {confirmationSummary.isLargeImport && (
             <div className="rounded-[16px] border border-[rgba(var(--color-warning),0.28)] bg-[rgba(var(--color-warning),0.12)] p-3 text-sm text-[rgb(var(--color-warning))]">
-              Esta importação tem mais de 50 feeds. Para evitar travamentos, o
+              Esta importação tem 50 feeds ou mais. Para evitar travamentos, o
               padrão seguro é gravar a coleção sem carregar tudo imediatamente.
             </div>
           )}
 
-          <label className="flex items-start gap-3 rounded-[16px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))]">
-            <input
-              type="checkbox"
-              checked={loadImmediately}
-              onChange={(event) => setLoadImmediately(event.target.checked)}
-              className="mt-1"
-            />
-            <span>
-              <span className="block font-bold">
-                Carregar artigos e episódios agora
-              </span>
-              <span className="text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
-                Esta rodada apenas registra a escolha no resumo. O carregamento
-                controlado será implementado em um ciclo de escala separado.
-              </span>
-            </span>
-          </label>
+          {isLargeImport && (
+            <div className="rounded-[16px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+              <h3 className="font-bold">
+                {isPodcastHeavy
+                  ? "Provável coleção de podcasts"
+                  : "Importação grande detectada"}
+              </h3>
+              <p className="mt-1 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                {largeImportPlan.podcastLikelyCount} podcasts prováveis de{" "}
+                {largeImportPlan.importableCount} feeds. A recomendação é
+                importar primeiro e validar em segundo plano, sem aquecer cache
+                automaticamente.
+              </p>
+              {topHosts.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {topHosts.map((host) => (
+                    <span
+                      key={host.host}
+                      className="rounded-full border border-[rgba(var(--color-border),0.2)] px-2.5 py-1 text-xs font-bold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]"
+                    >
+                      {host.host} · {host.count}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {confirmationSummary.newCategories.length > 0 && (
             <div className="rounded-[16px] bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] p-3">
@@ -445,6 +514,37 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
         {summary.invalid > 0 && (
           <div className="rounded-[16px] border border-[rgba(var(--color-error),0.22)] bg-[rgba(var(--color-error),0.1)] p-3 text-sm text-[rgb(var(--color-error))]">
             {summary.invalid} URLs invalidas foram mantidas fora da importacao.
+          </div>
+        )}
+
+        {isLargeImport && (
+          <div className="rounded-[18px] border border-[rgba(var(--color-warning),0.26)] bg-[rgba(var(--color-warning),0.1)] p-4 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h3 className="font-bold">Importação grande detectada</h3>
+                <p className="mt-1 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                  {largeImportPlan.importableCount} feeds serão importados.{" "}
+                  {largeImportPlan.podcastLikelyCount} parecem podcasts; eles
+                  ficam ocultos da All por padrão para evitar recarregar tudo ao
+                  abrir a página All.
+                </p>
+                {topHosts.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {topHosts.map((host) => (
+                      <span
+                        key={host.host}
+                        className="rounded-full border border-[rgba(var(--color-border),0.22)] bg-[rgba(var(--color-surface),0.36)] px-2.5 py-1 text-xs font-bold"
+                      >
+                        {host.host} · {host.count}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="text-xs font-bold uppercase tracking-[0.12em] text-[rgb(var(--color-warning))]">
+                Sem warmup automático
+              </div>
+            </div>
           </div>
         )}
 

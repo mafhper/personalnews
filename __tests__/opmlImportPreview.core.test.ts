@@ -245,7 +245,7 @@ describe("opmlImportPreview", () => {
     ]);
   });
 
-  it("marks confirmation summaries as large only above the configured threshold", () => {
+  it("marks confirmation summaries as large at the configured threshold", () => {
     const candidates = buildImportCandidates({
       opmlFeeds: Array.from({ length: 3 }, (_, index) => ({
         url: `https://bulk.example.com/${index}.xml`,
@@ -256,7 +256,7 @@ describe("opmlImportPreview", () => {
     });
 
     expect(buildOpmlImportConfirmationSummary(candidates, categories, 3).isLargeImport).toBe(
-      false,
+      true,
     );
     expect(buildOpmlImportConfirmationSummary(candidates, categories, 2).isLargeImport).toBe(
       true,

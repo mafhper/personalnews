@@ -122,6 +122,132 @@ describe("desktopBackendClient local discovery", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("rejects backend feed batches larger than the backend contract", async () => {
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    await expect(
+      desktopBackendClient.fetchFeedsBatch(
+        Array.from({ length: 26 }, (_, index) => `https://example.com/${index}.xml`),
+      ),
+    ).rejects.toThrow("at most 25");
+  });
+
+  it("sends batches with up to 25 URLs and exposes degraded backend state", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "http://127.0.0.1:3001/health") {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+
+      if (url === "http://127.0.0.1:3001/api/v1/feeds/batch") {
+        const body = JSON.parse(String(init?.body));
+        expect(body.urls).toHaveLength(25);
+        return {
+          ok: true,
+          json: async () => ({
+            total: 25,
+            success: 1,
+            failed: 24,
+            items: body.urls.map((feedUrl: string, index: number) => ({
+              url: feedUrl,
+              success: index === 0,
+              result:
+                index === 0
+                  ? {
+                      title: "Example",
+                      articles: [],
+                      meta: {
+                        source: "backend",
+                        cached: false,
+                        fetchedAt: new Date().toISOString(),
+                        latencyMs: 3,
+                      },
+                    }
+                  : undefined,
+              error: index === 0 ? undefined : "failed",
+              latencyMs: 3,
+              cached: index === 0 ? false : undefined,
+              statusCode: index === 0 ? 200 : 500,
+              errorType: index === 0 ? undefined : "http",
+            })),
+          }),
+        } as Response;
+      }
+
+      throw new Error(`Unexpected URL ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    const response = await desktopBackendClient.fetchFeedsBatch(
+      Array.from({ length: 25 }, (_, index) => `https://example.com/${index}.xml`),
+    );
+
+    expect(response.items).toHaveLength(25);
+    expect(desktopBackendClient.getBackendHealthState()).toMatchObject({
+      available: true,
+      circuitOpen: false,
+    });
+  });
+
+  it("opens a circuit after repeated backend request failures", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "http://127.0.0.1:3001/health") {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: false,
+        status: 500,
+        json: async () => ({ error: "backend exploded" }),
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    for (let index = 0; index < 3; index += 1) {
+      await expect(
+        desktopBackendClient.fetchFeedsBatch(["https://example.com/rss.xml"]),
+      ).rejects.toThrow("backend exploded");
+    }
+
+    expect(desktopBackendClient.getBackendHealthState()).toMatchObject({
+      available: false,
+      circuitOpen: true,
+    });
+    const callsBeforeCircuitRejection = fetchMock.mock.calls.length;
+    await expect(
+      desktopBackendClient.fetchFeedsBatch(["https://example.com/rss.xml"]),
+    ).rejects.toThrow("modo degradado");
+    expect(fetchMock).toHaveBeenCalledTimes(callsBeforeCircuitRejection);
+  });
+
   it("reports warm-up without exposing a cascade of candidate abort errors", async () => {
     const fetchMock = vi.fn(async () => {
       throw new Error("connect ECONNREFUSED");

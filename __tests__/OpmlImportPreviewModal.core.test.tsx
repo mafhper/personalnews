@@ -212,15 +212,18 @@ describe("OpmlImportPreviewModal", () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it("defaults large OPML imports to not loading immediately", () => {
+  it("shows the large import panel and explicit commit or validate actions", () => {
     const candidates = Array.from({ length: 51 }, (_, index) =>
       makeCandidate({
         id: `ready-${index}`,
-        url: `https://example.com/${index}.xml`,
-        normalizedUrl: `https://example.com/${index}.xml`,
+        url: `https://anchor.fm/show-${index}/episodes/feed`,
+        normalizedUrl: `https://anchor.fm/show-${index}/episodes/feed`,
         suggestedTitle: `Feed ${index}`,
+        suggestedCategoryName: "Podcasts",
+        suggestedCategoryId: "podcasts",
       }),
     );
+    const onConfirm = vi.fn();
 
     render(
       <OpmlImportPreviewModal
@@ -228,19 +231,72 @@ describe("OpmlImportPreviewModal", () => {
         candidates={candidates}
         categories={categories}
         onClose={vi.fn()}
-        onConfirm={vi.fn()}
+        onConfirm={onConfirm}
       />,
     );
 
+    expect(screen.getByText("Importação grande detectada")).toBeInTheDocument();
+    expect(screen.getAllByText(/anchor\.fm/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Ocultos da All")).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
 
+    expect(screen.getByText(/50 feeds ou mais/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Esta importação tem mais de 50 feeds/),
+      screen.getByRole("button", { name: "Importar agora" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("checkbox", {
-        name: /Carregar artigos e episódios agora/i,
+      screen.getByRole("button", { name: /Importar \+ Validar/ }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Importar agora" }));
+
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.any(Array),
+      "commit-only",
+    );
+    expect(onConfirm.mock.calls[0][0][0]).toMatchObject({
+      hideFromAll: true,
+    });
+  });
+
+  it("lets the user show a large podcast import in All before confirming", () => {
+    const candidates = Array.from({ length: 51 }, (_, index) =>
+      makeCandidate({
+        id: `ready-${index}`,
+        url: `https://anchor.fm/show-${index}/episodes/feed`,
+        normalizedUrl: `https://anchor.fm/show-${index}/episodes/feed`,
+        suggestedTitle: `Feed ${index}`,
+        suggestedCategoryName: "Podcasts",
+        suggestedCategoryId: "podcasts",
       }),
-    ).not.toBeChecked();
+    );
+    const onConfirm = vi.fn();
+
+    render(
+      <OpmlImportPreviewModal
+        isOpen
+        candidates={candidates}
+        categories={categories}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Mostrar selecionados na All" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
+    fireEvent.click(screen.getByRole("button", { name: /Importar \+ Validar/ }));
+
+    expect(
+      onConfirm.mock.calls[0][0].every(
+        (candidate: ImportCandidate) => !candidate.hideFromAll,
+      ),
+    ).toBe(true);
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.any(Array),
+      "validate-background",
+    );
   });
 });

@@ -1,4 +1,5 @@
 import type { Article, FeedSource } from "../types";
+import { classifyFeedKind } from "./podcastFeedHeuristics";
 
 export const DEFAULT_FEED_BATCH_SIZE = 8;
 export const PODCAST_FEED_BATCH_SIZE = 4;
@@ -15,16 +16,8 @@ const normalizeText = (value?: string) => (value || "").toLowerCase();
 
 export const isPodcastFeedSource = (feed: FeedSource): boolean => {
   const categoryId = normalizeText(feed.categoryId);
-  const title = normalizeText(feed.customTitle);
-  const url = normalizeText(feed.url);
-
   return (
-    categoryId.includes("podcast") ||
-    title.includes("podcast") ||
-    url.includes("podcast") ||
-    url.includes("/podcasts/") ||
-    url.includes("anchor.fm") ||
-    url.includes("spotify.com")
+    classifyFeedKind(feed.url, categoryId, feed.customTitle) === "podcast"
   );
 };
 

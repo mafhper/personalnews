@@ -277,7 +277,7 @@ export function buildOpmlImportConfirmationSummary(
         feeds,
       }),
     ),
-    isLargeImport: importable.length > threshold,
+    isLargeImport: importable.length >= threshold,
   };
 }
 

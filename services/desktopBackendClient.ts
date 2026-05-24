@@ -7,6 +7,7 @@ import {
   BACKEND_RUNTIME_ENABLED,
   BackendHealthSchema,
   DesktopBackendStatusSchema,
+  FeedBatchResponseSchema,
   FeedFetchResponseSchema,
   FeedValidateResponseSchema,
   ProxyStatsResponseSchema,
@@ -17,6 +18,7 @@ import {
   type BackendHealth,
   type BackendMode,
   type DesktopBackendStatus,
+  type FeedBatchResponse,
   type FeedFetchResponse,
   type FeedValidateResponse,
   type ProxyStatsResponse,
@@ -72,6 +74,16 @@ const LOCAL_BACKEND_PORT_START = 3001;
 const LOCAL_BACKEND_PORT_END = 3015;
 const BACKEND_READY_POLL_MS = 750;
 const BACKEND_READY_POLL_DEADLINE_MS = 20_000;
+const BACKEND_CIRCUIT_FAILURE_LIMIT = 3;
+const BACKEND_CIRCUIT_FAILURE_WINDOW_MS = 30_000;
+const BACKEND_CIRCUIT_RETRY_AFTER_MS = 60_000;
+
+export type BackendHealthState = {
+  available: boolean;
+  circuitOpen: boolean;
+  retryAfterMs: number;
+  lastFailure: number | null;
+};
 
 export class BackendRequestError extends Error {
   readonly statusCode: number;
@@ -313,6 +325,12 @@ class DesktopBackendClient {
 
   private backendStatusListenerStarted = false;
 
+  private circuitFailureTimestamps: number[] = [];
+
+  private circuitOpenedAt: number | null = null;
+
+  private circuitLastFailureAt: number | null = null;
+
   constructor() {
     this.startBackendStatusListener();
   }
@@ -330,6 +348,16 @@ class DesktopBackendClient {
   getRuntimeState(): RuntimeState {
     this.startBackendStatusListener();
     return { ...this.runtimeState };
+  }
+
+  getBackendHealthState(): BackendHealthState {
+    const retryAfterMs = this.getCircuitRetryAfterMs();
+    return {
+      available: this.healthState.available && retryAfterMs === 0,
+      circuitOpen: retryAfterMs > 0,
+      retryAfterMs,
+      lastFailure: this.circuitLastFailureAt,
+    };
   }
 
   isDesktopRuntime(): boolean {
@@ -429,6 +457,58 @@ class DesktopBackendClient {
   ): boolean {
     return Boolean(
       health && !health.available && health.initializing === false,
+    );
+  }
+
+  private getCircuitRetryAfterMs(now = Date.now()): number {
+    if (!this.circuitOpenedAt) return 0;
+    const retryAt = this.circuitOpenedAt + BACKEND_CIRCUIT_RETRY_AFTER_MS;
+    if (now >= retryAt) return 0;
+    return retryAt - now;
+  }
+
+  private recordBackendSuccess(): void {
+    this.circuitFailureTimestamps = [];
+    this.circuitOpenedAt = null;
+  }
+
+  private shouldRecordCircuitFailure(error: unknown): boolean {
+    if (error instanceof BackendRequestError) {
+      return error.statusCode >= 500 || error.statusCode === 408;
+    }
+    return true;
+  }
+
+  private recordBackendFailure(error: unknown): void {
+    if (!this.shouldRecordCircuitFailure(error)) return;
+
+    const now = Date.now();
+    this.circuitLastFailureAt = now;
+    this.circuitFailureTimestamps = [
+      ...this.circuitFailureTimestamps.filter(
+        (timestamp) => now - timestamp <= BACKEND_CIRCUIT_FAILURE_WINDOW_MS,
+      ),
+      now,
+    ];
+
+    if (
+      this.circuitFailureTimestamps.length >= BACKEND_CIRCUIT_FAILURE_LIMIT
+    ) {
+      this.circuitOpenedAt = now;
+      appendFrontendLog("backend_circuit_opened", {
+        failures: this.circuitFailureTimestamps.length,
+        retryAfterMs: BACKEND_CIRCUIT_RETRY_AFTER_MS,
+      });
+    }
+  }
+
+  private assertCircuitAllowsRequest(): void {
+    const retryAfterMs = this.getCircuitRetryAfterMs();
+    if (retryAfterMs === 0) return;
+    throw new Error(
+      `Backend local em modo degradado. Nova tentativa em ${Math.ceil(
+        retryAfterMs / 1000,
+      )}s.`,
     );
   }
 
@@ -742,6 +822,7 @@ class DesktopBackendClient {
         health,
         initializing: false,
       };
+      this.recordBackendSuccess();
       this.setRuntimeState({
         activeMode: "desktop-local",
         backendAvailable: true,
@@ -766,6 +847,9 @@ class DesktopBackendClient {
       const message = inWarmup
         ? "Backend local inicializando"
         : normalizeFetchError(error);
+      if (!inWarmup) {
+        this.recordBackendFailure(error);
+      }
 
       this.healthState = {
         available: false,
@@ -850,10 +934,15 @@ class DesktopBackendClient {
     init: RequestInit,
     parse: (value: unknown) => T,
   ): Promise<T> {
+    this.assertCircuitAllowsRequest();
     if (!this.healthState.available) {
       const health = await this.checkHealth(true, init.signal ?? undefined);
       if (!health.available) {
-        throw new Error(health.error || "Backend local indisponível");
+        const error = new Error(health.error || "Backend local indisponível");
+        if (!health.initializing) {
+          this.recordBackendFailure(error);
+        }
+        throw error;
       }
     }
 
@@ -863,23 +952,30 @@ class DesktopBackendClient {
       headers.set(BACKEND_AUTH_TOKEN_HEADER, token);
     }
 
-    const response = await fetch(`${this.getBaseUrl()}${path}`, {
-      ...init,
-      headers,
-    });
-    const body = await response.json().catch(() => null);
+    try {
+      const response = await fetch(`${this.getBaseUrl()}${path}`, {
+        ...init,
+        headers,
+      });
+      const body = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      const message =
-        body && typeof body === "object" && "error" in body
-          ? String(
-              (body as { error?: unknown }).error || `HTTP ${response.status}`,
-            )
-          : `HTTP ${response.status}`;
-      throw new BackendRequestError(message, response.status, body);
+      if (!response.ok) {
+        const message =
+          body && typeof body === "object" && "error" in body
+            ? String(
+                (body as { error?: unknown }).error || `HTTP ${response.status}`,
+              )
+            : `HTTP ${response.status}`;
+        throw new BackendRequestError(message, response.status, body);
+      }
+
+      const parsed = parse(body);
+      this.recordBackendSuccess();
+      return parsed;
+    } catch (error) {
+      this.recordBackendFailure(error);
+      throw error;
     }
-
-    return parse(body);
   }
 
   private async getAuthToken(): Promise<string | null> {
@@ -925,6 +1021,32 @@ class DesktopBackendClient {
         headers,
       },
       (value) => FeedFetchResponseSchema.parse(value),
+    );
+  }
+
+  async fetchFeedsBatch(
+    urls: string[],
+    options: { forceRefresh?: boolean; signal?: AbortSignal } = {},
+  ): Promise<FeedBatchResponse> {
+    if (urls.length > 25) {
+      throw new RangeError("fetchFeedsBatch accepts at most 25 feed URLs.");
+    }
+
+    return this.requestJson(
+      "/api/v1/feeds/batch",
+      {
+        method: "POST",
+        signal: options.signal,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          urls,
+          forceRefresh: options.forceRefresh ?? false,
+        }),
+      },
+      (value) => FeedBatchResponseSchema.parse(value),
     );
   }
 

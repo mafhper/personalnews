@@ -7,6 +7,8 @@ import {
   FeedValidateResponseSchema,
   FeedBatchRequestSchema,
   FeedBatchResponseSchema,
+  type FeedBatchErrorType,
+  type FeedBatchItem,
   FeedFetchQuerySchema,
   FeedFetchResponseSchema,
   LocalStorageMigrationResponseSchema,
@@ -36,6 +38,8 @@ import {
 const BACKEND_VERSION = "0.1.0";
 const PORT = Number.parseInt(process.env.BACKEND_PORT || "3001", 10);
 const HOST = process.env.BACKEND_HOST || "127.0.0.1";
+const BATCH_WORKER_CONCURRENCY = 4;
+const BATCH_ITEM_TIMEOUT_MS = 8_000;
 
 const db = new BackendDatabase(process.env.BACKEND_DB_PATH);
 const startedAt = Date.now();
@@ -53,6 +57,80 @@ function errorResponse(status: number, message: string, req?: Request): Response
 
 function parseForceRefresh(value: string | null): "0" | "1" {
   return value === "1" ? "1" : "0";
+}
+
+class BatchItemTimeoutError extends Error {
+  constructor() {
+    super(`Feed batch item timeout after ${BATCH_ITEM_TIMEOUT_MS}ms`);
+    this.name = "BatchItemTimeoutError";
+  }
+}
+
+function withBatchItemTimeout<T>(promise: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(
+      () => reject(new BatchItemTimeoutError()),
+      BATCH_ITEM_TIMEOUT_MS,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      },
+    );
+  });
+}
+
+function classifyBatchErrorType(error: unknown): FeedBatchErrorType {
+  if (error instanceof BatchItemTimeoutError) return "timeout";
+  if (error instanceof SecurityValidationError) return "security";
+
+  const status = mapUnhandledErrorStatus(error);
+  if (status === 408 || status === 504) return "timeout";
+  if (status === 400 || status === 401 || status === 403) return "security";
+  if (status === 422) return "parse";
+  if (status >= 400 && status < 600) return "http";
+
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  if (
+    message.includes("network") ||
+    message.includes("fetch") ||
+    message.includes("econn") ||
+    message.includes("socket")
+  ) {
+    return "network";
+  }
+  return "unknown";
+}
+
+async function mapWithConcurrency<T, R>(
+  values: T[],
+  concurrency: number,
+  mapper: (value: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(values.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (nextIndex < values.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(values[currentIndex], currentIndex);
+    }
+  };
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(concurrency, values.length) },
+      () => worker(),
+    ),
+  );
+  return results;
 }
 
 async function getFeed(
@@ -184,25 +262,41 @@ async function handleFeedBatchRequest(req: Request): Promise<Response> {
     return errorResponse(400, "Invalid batch payload", req);
   }
 
-  const items: Array<{
-    url: string;
-    success: boolean;
-    result?: FeedFetchResponse;
-    error?: string;
-  }> = [];
-
-  for (const feedUrl of parsedBody.data.urls) {
-    try {
-      const result = await getFeed(feedUrl, parsedBody.data.forceRefresh);
-      items.push({ url: feedUrl, success: true, result });
-    } catch (error) {
-      items.push({
-        url: feedUrl,
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown feed error",
-      });
-    }
-  }
+  const items = await mapWithConcurrency(
+    parsedBody.data.urls,
+    BATCH_WORKER_CONCURRENCY,
+    async (feedUrl): Promise<FeedBatchItem> => {
+      const startedAt = Date.now();
+      try {
+        const result = await withBatchItemTimeout(
+          getFeed(feedUrl, parsedBody.data.forceRefresh),
+        );
+        return {
+          url: feedUrl,
+          success: true,
+          result,
+          latencyMs: Date.now() - startedAt,
+          cached: result.meta.cached,
+          statusCode: 200,
+          revalidated: result.meta.revalidated,
+          notModified: result.meta.notModified,
+        };
+      } catch (error) {
+        const statusCode =
+          error instanceof BatchItemTimeoutError
+            ? 504
+            : mapUnhandledErrorStatus(error);
+        return {
+          url: feedUrl,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown feed error",
+          latencyMs: Date.now() - startedAt,
+          statusCode,
+          errorType: classifyBatchErrorType(error),
+        };
+      }
+    },
+  );
 
   const response = {
     total: items.length,

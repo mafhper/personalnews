@@ -105,7 +105,32 @@ import {
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
-import { OpmlImportPreviewModal } from "./FeedManager/OpmlImportPreviewModal";
+import {
+  OpmlImportPreviewModal,
+  type OpmlImportConfirmAction,
+} from "./FeedManager/OpmlImportPreviewModal";
+import {
+  buildLargeImportPlan,
+  isLargeImportCount,
+  LARGE_IMPORT_LIMITS,
+  type LargeImportPlanItem,
+} from "../services/largeImportPlanner";
+import {
+  clearLargeImportSession,
+  createInitialLargeImportMetrics,
+  createLargeImportSession,
+  logLargeImportMetrics,
+  readLargeImportSession,
+  saveLargeImportSession,
+  updateLargeImportSession,
+  type LargeImportSession,
+} from "../services/largeImportQueue";
+import {
+  createLargeImportValidationQueue,
+  type LargeImportValidationQueue,
+} from "../services/largeImportValidationQueue";
+import { classifyFeedKind, extractHost } from "../services/podcastFeedHeuristics";
+import { loadFeedWithRuntimeAndDiscovery } from "../services/feedRuntime";
 import { FeedToolsTab } from "./FeedManager/FeedToolsTab";
 import {
   managerFieldClass,
@@ -213,6 +238,14 @@ const areaContentMap: Record<
     title: "Diagnóstico",
     description: "Saúde dos feeds, infraestrutura e relatórios.",
   },
+};
+
+const largeImportStatusLabels: Record<LargeImportSession["status"], string> = {
+  committed: "importado",
+  validating: "validando",
+  "warming-cache": "aquecendo cache",
+  completed: "concluído",
+  cancelled: "cancelado",
 };
 
 type FeedManagerAccordionRoute =
@@ -3427,6 +3460,8 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const [editUrlDraft, setEditUrlDraft] = useState("");
   const [editingFeedTitleUrl, setEditingFeedTitleUrl] = useState<string | null>(null);
   const [editTitleDraft, setEditTitleDraft] = useState("");
+  const [largeImportSession, setLargeImportSession] =
+    useState<LargeImportSession | null>(() => readLargeImportSession());
   const activeFeeds = React.useMemo(
     () => currentFeeds.filter(isFeedActive),
     [currentFeeds],
@@ -3443,6 +3478,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileDrawerCloseButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  const largeImportQueueRef = useRef<LargeImportValidationQueue | null>(null);
+  const largeImportAbortControllerRef = useRef<AbortController | null>(null);
+  const suppressAutoValidationUntilRef = useRef(0);
 
   const closeMobileNavigation = React.useCallback(() => {
     setMobileSidebarOpen(false);
@@ -3455,6 +3493,14 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const openMobileNavigation = React.useCallback(() => {
     setMobileSidebarOpen(true);
   }, []);
+
+  useEffect(
+    () => () => {
+      largeImportQueueRef.current?.cancel();
+      largeImportAbortControllerRef.current?.abort();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!mobileSidebarOpen || typeof window === "undefined") return;
@@ -3613,6 +3659,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
   const validateAllFeeds = React.useCallback(async () => {
     if (isValidating) return;
+    if (
+      activeFeeds.length >= LARGE_IMPORT_LIMITS.largeImportThreshold &&
+      (largeImportSession ||
+        Date.now() < suppressAutoValidationUntilRef.current)
+    ) {
+      return;
+    }
     setIsValidating(true);
     const urls = activeFeeds.map((feed) => feed.url);
 
@@ -3626,7 +3679,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     } finally {
       setIsValidating(false);
     }
-  }, [activeFeeds, isValidating, logger]);
+  }, [activeFeeds, isValidating, largeImportSession, logger]);
 
   useEffect(() => {
     if (
@@ -3642,7 +3695,7 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
   }, [activeArea, activeFeeds.length, validateAllFeeds]);
 
-  const validateSingleFeed = async (url: string) => {
+  const validateSingleFeed = React.useCallback(async (url: string) => {
     try {
       const result = await feedValidator.validateFeed(url);
       setFeedValidations((prev) => new Map(prev.set(url, result)));
@@ -3650,7 +3703,237 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     } catch {
       return null;
     }
-  };
+  }, []);
+
+  const persistLargeImportSession = React.useCallback(
+    (updater: (session: LargeImportSession) => LargeImportSession) => {
+      setLargeImportSession((current) => {
+        if (!current) return current;
+        const next = updater(current);
+        saveLargeImportSession(next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const buildLargeImportItemsFromUrls = React.useCallback(
+    (urls: string[]): LargeImportPlanItem[] => {
+      const feedsByUrl = new Map(currentFeeds.map((feed) => [feed.url, feed]));
+      return urls.map((url, index) => {
+        const feed = feedsByUrl.get(url);
+        const host = extractHost(url);
+        const kind = classifyFeedKind(url, feed?.categoryId, feed?.customTitle);
+        return {
+          candidateId: `large-import-${index}-${url}`,
+          url,
+          normalizedUrl: url,
+          title: feed?.customTitle,
+          categoryId: feed?.categoryId,
+          kind,
+          host,
+          priority: index,
+          decision: "import",
+          status: "queued",
+        };
+      });
+    },
+    [currentFeeds],
+  );
+
+  const handleCancelLargeImportWork = React.useCallback(async () => {
+    largeImportQueueRef.current?.cancel();
+    largeImportAbortControllerRef.current?.abort();
+    largeImportQueueRef.current = null;
+    largeImportAbortControllerRef.current = null;
+    persistLargeImportSession((session) =>
+      updateLargeImportSession(session, { status: "cancelled" }),
+    );
+    await alertSuccess("Processamento em segundo plano cancelado.");
+  }, [alertSuccess, persistLargeImportSession]);
+
+  const handleClearLargeImportSession = React.useCallback(() => {
+    largeImportQueueRef.current?.cancel();
+    largeImportAbortControllerRef.current?.abort();
+    largeImportQueueRef.current = null;
+    largeImportAbortControllerRef.current = null;
+    clearLargeImportSession();
+    setLargeImportSession(null);
+  }, []);
+
+  const startLargeImportValidation = React.useCallback(
+    async (session: LargeImportSession, urls = session.pendingValidationUrls) => {
+      if (urls.length === 0) return;
+      largeImportQueueRef.current?.cancel();
+      const items = buildLargeImportItemsFromUrls(urls);
+      const startedAt = Date.now();
+      const planCandidates: ImportCandidate[] = urls.map((url, index) => {
+        const feed = currentFeeds.find((item) => item.url === url);
+        return {
+          id: `validation-${index}`,
+          url,
+          normalizedUrl: url,
+          suggestedTitle: feed?.customTitle,
+          suggestedCategoryId: feed?.categoryId,
+          hideFromAll: feed?.hideFromAll,
+          isDuplicate: false,
+          isDuplicateInFile: false,
+          decision: "import",
+          status: "ready",
+        };
+      });
+      let metrics = createInitialLargeImportMetrics(
+        session,
+        buildLargeImportPlan(planCandidates),
+        0,
+      );
+
+      const queue = createLargeImportValidationQueue(items, {
+        validate: async (item) => validateSingleFeed(item.url),
+        getIsValid: (result) => Boolean(result?.isValid),
+        onResult: (item) => {
+          persistLargeImportSession((current) =>
+            updateLargeImportSession(current, {
+              pendingValidationUrls: current.pendingValidationUrls.filter(
+                (url) => url !== item.url,
+              ),
+            }),
+          );
+        },
+        onError: (item) => {
+          persistLargeImportSession((current) =>
+            updateLargeImportSession(current, {
+              pendingValidationUrls: current.pendingValidationUrls.filter(
+                (url) => url !== item.url,
+              ),
+            }),
+          );
+        },
+        onMetrics: (queueMetrics) => {
+          metrics = {
+            ...metrics,
+            validationDurationMs: Date.now() - startedAt,
+            validationCancelled: queueMetrics.cancelled,
+            validationSucceeded: queueMetrics.succeeded,
+            validationFailed: queueMetrics.failed,
+            maxConcurrencyObserved: queueMetrics.maxConcurrencyObserved,
+          };
+          logLargeImportMetrics(metrics);
+        },
+      });
+
+      largeImportQueueRef.current = queue;
+      const validatingSession = updateLargeImportSession(session, {
+        status: "validating",
+      });
+      setLargeImportSession(validatingSession);
+
+      await queue.start();
+
+      largeImportQueueRef.current = null;
+      persistLargeImportSession((current) =>
+        updateLargeImportSession(current, {
+          status: queue.isCancelled() ? "cancelled" : "completed",
+        }),
+      );
+    },
+    [
+      buildLargeImportItemsFromUrls,
+      currentFeeds,
+      persistLargeImportSession,
+      validateSingleFeed,
+    ],
+  );
+
+  const startLargeImportWarmup = React.useCallback(
+    async (session: LargeImportSession) => {
+      const urls = session.pendingWarmupUrls.slice(
+        0,
+        LARGE_IMPORT_LIMITS.maxAutoWarmupFeeds,
+      );
+      if (urls.length === 0) return;
+      largeImportQueueRef.current?.cancel();
+      largeImportAbortControllerRef.current?.abort();
+
+      const controller = new AbortController();
+      largeImportAbortControllerRef.current = controller;
+      const items = buildLargeImportItemsFromUrls(urls);
+      const startedAt = Date.now();
+
+      const queue = createLargeImportValidationQueue(items, {
+        validationConcurrency: LARGE_IMPORT_LIMITS.cacheWarmupConcurrency,
+        podcastValidationConcurrency:
+          LARGE_IMPORT_LIMITS.podcastWarmupConcurrency,
+        sameHostConcurrency: LARGE_IMPORT_LIMITS.sameHostConcurrency,
+        batchDelayMs: LARGE_IMPORT_LIMITS.cacheWarmupBatchDelayMs,
+        validate: async (item) => {
+          const policy = getEffectiveCachePolicy();
+          const result = await loadFeedWithRuntimeAndDiscovery(item.url, {
+            signal: controller.signal,
+            skipCache: false,
+            forceRefresh: false,
+            offlineFallback: policy.offlineFallback,
+            discoverHtmlFallback: true,
+          });
+          return { ok: result.cached || result.articles.length > 0 };
+        },
+        getIsValid: (result) => result.ok,
+        onResult: (item) => {
+          persistLargeImportSession((current) =>
+            updateLargeImportSession(current, {
+              pendingWarmupUrls: current.pendingWarmupUrls.filter(
+                (url) => url !== item.url,
+              ),
+            }),
+          );
+        },
+        onError: (item) => {
+          persistLargeImportSession((current) =>
+            updateLargeImportSession(current, {
+              pendingWarmupUrls: current.pendingWarmupUrls.filter(
+                (url) => url !== item.url,
+              ),
+            }),
+          );
+        },
+        onMetrics: (queueMetrics) => {
+          logLargeImportMetrics({
+            sessionId: session.id,
+            totalFeeds: session.total,
+            podcastFeeds: items.filter((item) => item.kind === "podcast").length,
+            standardFeeds: items.filter((item) => item.kind !== "podcast").length,
+            commitDurationMs: 0,
+            validationDurationMs: -1,
+            validationCancelled: false,
+            validationSucceeded: 0,
+            validationFailed: 0,
+            warmupFeeds: queueMetrics.succeeded,
+            warmupDurationMs: Date.now() - startedAt,
+            backendCircuitOpenedDuringSession: false,
+            maxConcurrencyObserved: queueMetrics.maxConcurrencyObserved,
+            peakRequestsPerMinute: 0,
+          });
+        },
+      });
+
+      largeImportQueueRef.current = queue;
+      const warmingSession = updateLargeImportSession(session, {
+        status: "warming-cache",
+      });
+      setLargeImportSession(warmingSession);
+
+      await queue.start();
+
+      largeImportQueueRef.current = null;
+      largeImportAbortControllerRef.current = null;
+      persistLargeImportSession((current) =>
+        updateLargeImportSession(current, {
+          status: queue.isCancelled() ? "cancelled" : "completed",
+        }),
+      );
+    },
+    [buildLargeImportItemsFromUrls, persistLargeImportSession],
+  );
 
   const handleEditFeed = (oldUrl: string) => {
     setEditingFeedUrl(oldUrl);
@@ -4037,7 +4320,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     [alertSuccess, confirmWarning, setFeeds],
   );
 
-  const handleConfirmOpmlImport = async (candidates: ImportCandidate[]) => {
+  const handleConfirmOpmlImport = async (
+    candidates: ImportCandidate[],
+    action: OpmlImportConfirmAction,
+  ) => {
+    const commitStartedAt = Date.now();
+    const plan = buildLargeImportPlan(candidates);
+    const isLargeImport = isLargeImportCount(plan.importableCount);
     const firstPass = commitImportCandidates({
       candidates,
       currentFeeds,
@@ -4064,6 +4353,45 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
 
     setShowOpmlPreview(false);
     setOpmlPreviewCandidates([]);
+
+    if (isLargeImport) {
+      const committedUrls = new Set(result.feedsToAdd.map((feed) => feed.url));
+      const pendingUrls = plan.items
+        .filter((item) => committedUrls.has(item.url))
+        .sort((a, b) => a.priority - b.priority || a.url.localeCompare(b.url))
+        .map((item) => item.url);
+      const session = {
+        ...createLargeImportSession(plan, {
+          committed: result.feedsToAdd.length,
+          skipped: result.skipped.length,
+          failed: result.failed.length,
+        }),
+        pendingValidationUrls: pendingUrls,
+        pendingWarmupUrls: pendingUrls.slice(
+          0,
+          LARGE_IMPORT_LIMITS.maxAutoWarmupFeeds,
+        ),
+      };
+      const metrics = createInitialLargeImportMetrics(
+        session,
+        plan,
+        Date.now() - commitStartedAt,
+      );
+      saveLargeImportSession(session);
+      setLargeImportSession(session);
+      suppressAutoValidationUntilRef.current = Date.now() + 10 * 60 * 1000;
+      logLargeImportMetrics(metrics);
+
+      if (action === "validate-background" && pendingUrls.length > 0) {
+        void startLargeImportValidation(session, pendingUrls);
+      }
+
+      await alertSuccess(
+        `${result.feedsToAdd.length} feeds importados. ${result.skipped.length} ignorados. ${result.failed.length} falharam. Validação em massa ficou controlada em segundo plano.`,
+      );
+      return;
+    }
+
     await alertSuccess(
       `${result.feedsToAdd.length} feeds importados. ${result.skipped.length} ignorados. ${result.failed.length} falharam.`,
     );
@@ -4434,6 +4762,80 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
               <h2>{activeAreaContent.title}</h2>
               <p>{activeAreaContent.description}</p>
             </div>
+            {largeImportSession && (
+              <section className="rounded-[18px] border border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.08)] p-4 text-sm text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgb(var(--theme-manager-elevated,var(--color-surface)))] px-3 py-1 text-xs font-bold text-[rgb(var(--color-accent))]">
+                        <Database className="h-3.5 w-3.5" />
+                        Importação OPML
+                      </span>
+                      <span className="text-xs font-bold uppercase tracking-[0.12em] text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                        {largeImportStatusLabels[largeImportSession.status]}
+                      </span>
+                    </div>
+                    <p className="mt-2 font-semibold">
+                      {largeImportSession.committed} feeds gravados.{" "}
+                      {largeImportSession.pendingValidationUrls.length} aguardando
+                      validação e {largeImportSession.pendingWarmupUrls.length} no
+                      limite de warmup opcional.
+                    </p>
+                    <p className="mt-1 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                      A página All não dispara validação completa enquanto esta
+                      sessão estiver ativa.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {largeImportSession.pendingValidationUrls.length > 0 &&
+                      largeImportSession.status !== "validating" && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void startLargeImportValidation(largeImportSession)
+                          }
+                          className="inline-flex items-center gap-2 rounded-lg border border-[rgba(var(--color-accent),0.28)] px-3 py-2 text-xs font-bold text-[rgb(var(--color-accent))] transition hover:bg-[rgba(var(--color-accent),0.1)]"
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          Validar em segundo plano
+                        </button>
+                      )}
+                    {largeImportSession.pendingWarmupUrls.length > 0 &&
+                      largeImportSession.status !== "warming-cache" && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void startLargeImportWarmup(largeImportSession)
+                          }
+                          className="inline-flex items-center gap-2 rounded-lg border border-[rgba(var(--color-border),0.24)] px-3 py-2 text-xs font-bold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          Aquecer cache dos primeiros 25
+                        </button>
+                      )}
+                    {(largeImportSession.status === "validating" ||
+                      largeImportSession.status === "warming-cache") && (
+                      <button
+                        type="button"
+                        onClick={() => void handleCancelLargeImportWork()}
+                        className="inline-flex items-center gap-2 rounded-lg border border-[rgba(var(--color-warning),0.3)] px-3 py-2 text-xs font-bold text-[rgb(var(--color-warning))] transition hover:bg-[rgba(var(--color-warning),0.1)]"
+                      >
+                        <X className="h-4 w-4" />
+                        Cancelar tarefa
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleClearLargeImportSession}
+                      className="inline-flex items-center gap-2 rounded-lg border border-[rgba(var(--color-border),0.24)] px-3 py-2 text-xs font-bold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] transition hover:bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))]"
+                    >
+                      <Check className="h-4 w-4" />
+                      Concluir
+                    </button>
+                  </div>
+                </div>
+              </section>
+            )}
             {activeArea === "overview" && (
               <FeedManagerOverviewPage
                 categoryCount={categories.length}
@@ -4581,7 +4983,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
           setShowOpmlPreview(false);
           setOpmlPreviewCandidates([]);
         }}
-        onConfirm={(candidates) => void handleConfirmOpmlImport(candidates)}
+        onConfirm={(candidates, action) =>
+          void handleConfirmOpmlImport(candidates, action)
+        }
       />
 
       {showDiscoveryModal && currentDiscoveryResult && (

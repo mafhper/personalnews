@@ -41,6 +41,22 @@ describe("feedLoadingQueue", () => {
     ]);
   });
 
+  it("detects podcast-heavy hosts without relying on category names", () => {
+    const feeds = [
+      makeFeed("https://www.spreaker.com/show/123/episodes/feed"),
+      makeFeed("https://www.omnycontent.com/d/playlist/show/podcast.rss"),
+      makeFeed("https://feeds.megaphone.fm/show"),
+      makeFeed("https://news.example.com/rss.xml"),
+    ];
+
+    const batches = buildFeedLoadingBatches(feeds);
+
+    expect(batches.map((batch) => [batch.kind, batch.feeds.length])).toEqual([
+      ["standard", 1],
+      ["podcast", 3],
+    ]);
+  });
+
   it("keeps a recent article window for normal feeds", () => {
     const feed = makeFeed("https://example.com/rss.xml");
     const articles = Array.from(

@@ -153,12 +153,29 @@ export const FeedBatchRequestSchema = z.object({
   forceRefresh: z.boolean().optional().default(false),
 });
 
+export const FeedBatchErrorTypeSchema = z.enum([
+  "timeout",
+  "network",
+  "security",
+  "parse",
+  "http",
+  "unknown",
+]);
+export type FeedBatchErrorType = z.infer<typeof FeedBatchErrorTypeSchema>;
+
 export const FeedBatchItemSchema = z.object({
   url: z.string().url(),
   success: z.boolean(),
   result: FeedFetchResponseSchema.optional(),
   error: z.string().optional(),
+  latencyMs: z.number().nonnegative().optional(),
+  cached: z.boolean().optional(),
+  statusCode: z.number().int().optional(),
+  errorType: FeedBatchErrorTypeSchema.optional(),
+  revalidated: z.boolean().optional(),
+  notModified: z.boolean().optional(),
 });
+export type FeedBatchItem = z.infer<typeof FeedBatchItemSchema>;
 
 export const FeedBatchResponseSchema = z.object({
   total: z.number().int().nonnegative(),
@@ -166,6 +183,7 @@ export const FeedBatchResponseSchema = z.object({
   failed: z.number().int().nonnegative(),
   items: z.array(FeedBatchItemSchema),
 });
+export type FeedBatchResponse = z.infer<typeof FeedBatchResponseSchema>;
 
 export const FeedValidationStatusSchema = z.enum([
   "valid",
