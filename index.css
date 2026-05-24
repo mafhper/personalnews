@@ -2214,28 +2214,42 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
 
 .collection-central-cache-policy {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   max-height: min(68vh, 38rem);
   overflow-y: auto;
   padding: var(--space-4);
 }
 
-.collection-central-cache-notice {
-  display: flex;
+.collection-central-cache-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
   gap: var(--space-2);
-  border: 1px solid rgba(var(--color-warning), 0.3);
+}
+
+.collection-central-cache-status > div {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid var(--feed-manager-border-crisp);
   border-radius: var(--radius-md);
-  background: rgba(var(--color-warning), 0.09);
+  background: color-mix(in oklab, var(--feed-manager-ui-panel-muted) 38%, var(--feed-manager-ui-panel));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--feed-manager-border-crisp) 50%, transparent);
+  padding: 0.65rem var(--space-3);
+}
+
+.collection-central-cache-status span {
+  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.collection-central-cache-status strong {
   color: rgb(var(--theme-manager-text, var(--color-text)));
-  padding: var(--space-3);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.collection-central-cache-notice svg {
-  flex-shrink: 0;
-  color: rgb(var(--color-warning));
-}
-
-.collection-central-cache-notice p,
 .collection-central-cache-control p {
   color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
   font-size: 0.75rem;
@@ -2291,6 +2305,15 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   gap: var(--space-3);
   min-height: 3rem;
   padding: 0.55rem var(--space-3);
+  text-align: left;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.collection-central-cache-toggle:hover,
+.collection-central-cache-toggle:focus-visible {
+  background: var(--feed-manager-ui-hover);
 }
 
 .collection-central-cache-toggle + .collection-central-cache-toggle {
@@ -2314,57 +2337,71 @@ body:has(.feed-manager-shell) .feed-loading-progress-overlay {
   font-size: 0.75rem;
 }
 
-.collection-central-cache-toggle input {
-  height: 1rem;
-  width: 1rem;
-  accent-color: rgb(var(--color-accent));
+.collection-central-cache-switch {
+  position: relative;
+  width: 2.15rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--feed-manager-border-crisp);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--feed-manager-ui-panel-muted) 88%, transparent);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
-.collection-central-cache-tasks {
+.collection-central-cache-switch span {
+  position: absolute;
+  top: 0.16rem;
+  left: 0.16rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.collection-central-cache-switch.is-active {
+  border-color: rgba(var(--color-accent), 0.48);
+  background: rgba(var(--color-accent), 0.28);
+}
+
+.collection-central-cache-switch.is-active span {
+  background: rgb(var(--color-accent));
+  transform: translateX(0.95rem);
+}
+
+.collection-central-cache-info,
+.collection-central-cache-result,
+.collection-central-cache-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
   border: 1px solid var(--feed-manager-border-crisp);
   border-radius: var(--radius-md);
   background: color-mix(in oklab, var(--feed-manager-ui-panel-muted) 38%, var(--feed-manager-ui-panel));
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--feed-manager-border-crisp) 50%, transparent);
-  overflow: hidden;
+  padding: var(--space-3);
 }
 
-.collection-central-cache-tasks__header,
-.collection-central-cache-task-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0.48rem var(--space-3);
-}
-
-.collection-central-cache-tasks__header {
-  justify-content: space-between;
-  box-shadow: inset 0 -1px 0 var(--feed-manager-border-crisp);
-}
-
-.collection-central-cache-tasks__header strong {
-  color: rgb(var(--theme-manager-text, var(--color-text)));
-  font-size: 0.8125rem;
-}
-
-.collection-central-cache-tasks__header span {
-  color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-}
-
-.collection-central-cache-task-row + .collection-central-cache-task-row {
-  border-top: 0;
-  box-shadow: inset 0 1px 0 var(--feed-manager-border-subtle);
-}
-
-.collection-central-cache-task-row svg {
+.collection-central-cache-info svg,
+.collection-central-cache-result svg,
+.collection-central-cache-error svg {
   flex-shrink: 0;
   color: rgb(var(--color-accent));
 }
 
-.collection-central-cache-task-row span {
+.collection-central-cache-error svg {
+  color: rgb(var(--color-error));
+}
+
+.collection-central-cache-info p,
+.collection-central-cache-result p,
+.collection-central-cache-error p {
   color: rgb(var(--theme-manager-text-secondary, var(--color-textSecondary)));
   font-size: 0.75rem;
+  line-height: 1.45;
 }
 
 @media (min-width: 768px) {

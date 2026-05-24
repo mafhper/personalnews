@@ -16,6 +16,7 @@ import {
   type ProxyRouteMode,
 } from "./proxyManager";
 import { parseRssUrlDetailed } from "./rssParser";
+import { getFeedValidators } from "./cacheManager";
 
 export interface FeedRuntimeResult {
   title: string;
@@ -209,6 +210,7 @@ export async function loadFeedWithRuntime(
     forceRefresh?: boolean;
     signal?: AbortSignal;
     skipCache?: boolean;
+    offlineFallback?: boolean;
   } = {},
 ): Promise<FeedRuntimeResult> {
   const env = detectEnvironment();
@@ -216,12 +218,22 @@ export async function loadFeedWithRuntime(
   const proxyRouteMode = ProxyManager.getRoutingMode();
   const fallbackOrder = proxyManager.getClientProxyOrder();
   const allowClientProxyFallback = proxyRouteMode === "mixed";
-  const { forceRefresh = false, signal, skipCache = false } = options;
+  const {
+    forceRefresh = false,
+    signal,
+    skipCache = false,
+    offlineFallback = true,
+  } = options;
+  const validators = getFeedValidators(url);
+  const conditionalValidators =
+    validators.etag || validators.lastModified ? validators : undefined;
 
   if (hasBackendRuntime && proxyRouteMode === "full-external-proxies") {
     const result = await parseRssUrlDetailed(url, {
       signal,
       skipCache,
+      offlineFallback,
+      validators: conditionalValidators,
       forceClientFallback: true,
       externalOnly: true,
       routeMode: "full-external-proxies",
@@ -268,6 +280,7 @@ export async function loadFeedWithRuntime(
         const response = await desktopBackendClient.fetchFeed(url, {
           forceRefresh: forceRefresh || skipCache,
           signal,
+          validators: conditionalValidators,
         });
         const route = buildBackendRoute(response.meta.cached);
         updateRuntimeState({
@@ -369,6 +382,8 @@ export async function loadFeedWithRuntime(
         const fallback = await parseRssUrlDetailed(url, {
           signal,
           skipCache,
+          offlineFallback,
+          validators: conditionalValidators,
           forceClientFallback: true,
           externalOnly: true,
           routeMode: "full-external-proxies",
@@ -451,6 +466,8 @@ export async function loadFeedWithRuntime(
     const fallback = await parseRssUrlDetailed(url, {
       signal,
       skipCache,
+      offlineFallback,
+      validators: conditionalValidators,
       forceClientFallback: true,
       externalOnly: true,
       routeMode: "full-external-proxies",
@@ -492,6 +509,8 @@ export async function loadFeedWithRuntime(
   const result = await parseRssUrlDetailed(url, {
     signal,
     skipCache,
+    offlineFallback,
+    validators: conditionalValidators,
     forceClientFallback: true,
     externalOnly: !env.isTauri,
     routeMode: env.isTauri ? proxyRouteMode : "full-external-proxies",
@@ -521,6 +540,7 @@ export async function loadFeedWithRuntimeAndDiscovery(
     forceRefresh?: boolean;
     signal?: AbortSignal;
     skipCache?: boolean;
+    offlineFallback?: boolean;
     discoverHtmlFallback?: boolean;
   } = {},
 ): Promise<FeedRuntimeResult> {

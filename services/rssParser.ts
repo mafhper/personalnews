@@ -14,7 +14,12 @@
 
 import type { Article } from "../types";
 import { getLogger } from "./logger";
-import { getCachedArticles, setCachedArticles } from "./smartCache";
+import {
+  getCachedArticles,
+  markCacheNotModified,
+  recordCacheRevalidation,
+  setCachedArticles,
+} from "./smartCache";
 import { parseSecureOpmlXml, parseSecureRssXml } from "./secureXmlParser";
 import {
   proxyManager,
@@ -42,6 +47,7 @@ export interface DetailedFeedParseResult {
   route: FeedRouteInfo;
   attempts: ProxyAttempt[];
   cached: boolean;
+  headers?: Headers;
 }
 
 interface FeedParseOptions {
@@ -52,6 +58,8 @@ interface FeedParseOptions {
   forceClientFallback?: boolean;
   externalOnly?: boolean;
   routeMode?: ProxyRouteMode;
+  offlineFallback?: boolean;
+  validators?: { etag?: string; lastModified?: string };
 }
 
 // --- HELPERS ---
@@ -1194,7 +1202,7 @@ async function fetchRssFeed(
   _signal?: AbortSignal,
   proxyOptions: Pick<
     FeedParseOptions,
-    "forceClientFallback" | "externalOnly" | "routeMode"
+    "forceClientFallback" | "externalOnly" | "routeMode" | "validators"
   > = {},
 ): Promise<DetailedFeedParseResult> {
   const urlsToTry = getAlternativeUrls(url);
@@ -1219,17 +1227,49 @@ async function fetchRssFeed(
           const timeout = 8000;
           const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+          const requestHeaders: Record<string, string> = {
+            "User-Agent": "Personal News Dashboard/1.0",
+            Accept:
+              "application/rss+xml, application/atom+xml, application/xml, text/xml",
+          };
+          if (proxyOptions.validators?.etag) {
+            requestHeaders["If-None-Match"] = proxyOptions.validators.etag;
+          }
+          if (proxyOptions.validators?.lastModified) {
+            requestHeaders["If-Modified-Since"] =
+              proxyOptions.validators.lastModified;
+          }
+
           const directResp = await fetch(currentUrl, {
             method: "GET",
             signal: controller.signal,
-            headers: {
-              "User-Agent": "Personal News Dashboard/1.0",
-              Accept:
-                "application/rss+xml, application/atom+xml, application/xml, text/xml",
-            },
+            headers: requestHeaders,
           });
 
           clearTimeout(timeoutId);
+
+          if (directResp.status === 304) {
+            const notModifiedArticles = markCacheNotModified(
+              url,
+              directResp.headers,
+            );
+            if (notModifiedArticles && notModifiedArticles.length > 0) {
+              return {
+                title: notModifiedArticles[0].sourceTitle || "Cached Feed",
+                articles: notModifiedArticles,
+                route: {
+                  transport: "client",
+                  routeKind: "cache",
+                  routeName: "DirectFetch",
+                  viaFallback: false,
+                  checkedAt: Date.now(),
+                },
+                attempts: [],
+                cached: true,
+                headers: directResp.headers,
+              };
+            }
+          }
 
           if (directResp.ok) {
             const directContent = await directResp.text();
@@ -1253,6 +1293,7 @@ async function fetchRssFeed(
                       },
                       attempts: [],
                       cached: false,
+                      headers: directResp.headers,
                     };
                   }
                 } catch {
@@ -1276,6 +1317,7 @@ async function fetchRssFeed(
                   },
                   attempts: [],
                   cached: false,
+                  headers: directResp.headers,
                 };
               }
             }
@@ -1296,7 +1338,10 @@ async function fetchRssFeed(
       // If direct fetch didn't succeed, use ProxyManager for robust fetching with failover
       const result = await proxyManager.tryProxiesWithFailover(
         currentUrl,
-        proxyOptions,
+        {
+          ...proxyOptions,
+          conditionalHeaders: proxyOptions.validators,
+        },
       );
 
       // Parse the content returned by the proxy
@@ -1323,9 +1368,10 @@ async function fetchRssFeed(
                 viaFallback: true,
                 checkedAt: Date.now(),
               },
-              attempts: result.attempts,
-              cached: false,
-            };
+            attempts: result.attempts,
+            cached: false,
+            headers: result.headers,
+          };
           }
         } catch {
           // proceed to XML parsing
@@ -1346,6 +1392,7 @@ async function fetchRssFeed(
           },
           attempts: result.attempts,
           cached: false,
+          headers: result.headers,
         };
       }
     } catch (error) {
@@ -1376,6 +1423,7 @@ async function parseRssUrlWithRetry(
     forceClientFallback,
     externalOnly,
     routeMode,
+    validators,
   } = options;
   let lastError: Error = new Error("Unknown error");
 
@@ -1385,10 +1433,12 @@ async function parseRssUrlWithRetry(
         forceClientFallback,
         externalOnly,
         routeMode,
+        validators,
       });
 
       if (result.articles.length > 0) {
-        setCachedArticles(url, result.articles, result.title);
+        setCachedArticles(url, result.articles, result.title, result.headers);
+        recordCacheRevalidation(url, result.headers);
       }
 
       return result;
@@ -1416,7 +1466,8 @@ async function parseRssUrlWithRetry(
   });
 
   // Try to use cached content before failing completely
-  const cachedArticles = skipCache ? null : getCachedArticles(url);
+  const cachedArticles =
+    skipCache || options.offlineFallback === false ? null : getCachedArticles(url);
   if (cachedArticles && cachedArticles.length > 0) {
     logger.warn(`Using stale cache as fallback for ${url}`, {
       component: "rssParser",

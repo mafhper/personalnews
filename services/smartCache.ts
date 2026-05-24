@@ -10,6 +10,10 @@
  */
 
 import type { Article } from '../types';
+import {
+  CACHE_POLICY_V1,
+  type CachePolicySettingsV1,
+} from './cachePolicy';
 import { logger } from './logger';
 
 export interface CacheEntry {
@@ -38,12 +42,20 @@ export interface CacheStats {
   hitRate: number;
   oldestEntry: number;
   newestEntry: number;
+  hits: number;
+  misses: number;
+  sets: number;
+  evictions: number;
+  staleHits: number;
+  revalidations: number;
+  notModified: number;
 }
 
-const DEFAULT_TTL = 10 * 60 * 1000; // 10 minutes (reduzido de 15)
-const DEFAULT_MAX_ENTRIES = 100; // Aumentado para mais feeds
-const DEFAULT_STALE_WHILE_REVALIDATE = 2 * 60 * 60 * 1000; // 2 horas (aumentado)
-const STORAGE_KEY = 'smart-feed-cache-v2';
+const DEFAULT_TTL = CACHE_POLICY_V1.feeds.freshTtlMs;
+const DEFAULT_MAX_ENTRIES = CACHE_POLICY_V1.feeds.maxEntries;
+const DEFAULT_STALE_WHILE_REVALIDATE =
+  CACHE_POLICY_V1.feeds.staleWhileRevalidateMs;
+const STORAGE_KEY = CACHE_POLICY_V1.keys.smartFeedCache;
 
 /**
  * Gera um hash simples para validação de integridade
@@ -86,6 +98,9 @@ export class SmartCache {
     misses: 0,
     sets: 0,
     evictions: 0,
+    staleHits: 0,
+    revalidations: 0,
+    notModified: 0,
   };
   private persistenceTimeout: NodeJS.Timeout | null = null;
 
@@ -104,6 +119,38 @@ export class SmartCache {
 
     // Set up periodic cleanup
     this.setupPeriodicCleanup();
+  }
+
+  configure(options: CacheOptions): void {
+    this.options = {
+      ...this.options,
+      ...options,
+      ttl: options.ttl ?? this.options.ttl,
+      maxEntries: options.maxEntries ?? this.options.maxEntries,
+      enablePersistence:
+        options.enablePersistence ?? this.options.enablePersistence,
+      enableStaleWhileRevalidate:
+        options.enableStaleWhileRevalidate ??
+        this.options.enableStaleWhileRevalidate,
+    };
+
+    if (this.cache.size > this.options.maxEntries) {
+      while (this.cache.size > this.options.maxEntries) {
+        this.evictLeastRecentlyUsed();
+      }
+      if (this.options.enablePersistence) {
+        this.persistToStorageDebounced();
+      }
+    }
+  }
+
+  applyPolicy(settings: CachePolicySettingsV1): void {
+    this.configure({
+      ttl: settings.feedFreshTtlMinutes * 60 * 1000,
+      maxEntries: settings.maxFeedEntries,
+      enableStaleWhileRevalidate:
+        settings.staleWhileRevalidateMinutes * 60 * 1000,
+    });
   }
 
   /**
@@ -146,6 +193,7 @@ export class SmartCache {
     // Check if we can serve stale content
     if (age <= this.options.enableStaleWhileRevalidate) {
       this.stats.hits++;
+      this.stats.staleHits++;
       logger.debug(`Cache hit for feed (stale)`, {
         component: 'SmartCache',
         additionalData: {
@@ -194,6 +242,7 @@ export class SmartCache {
     // Return stale content if within stale-while-revalidate window
     if (age <= this.options.enableStaleWhileRevalidate) {
       entry.lastAccessed = now;
+      this.stats.staleHits++;
 
       logger.debug(`Serving stale content while revalidating`, {
         component: 'SmartCache',
@@ -322,16 +371,22 @@ export class SmartCache {
   /**
    * Clear all cache entries
    */
-  clear(): void {
+  clear(options: { removeStorage?: boolean } = {}): void {
     const size = this.cache.size;
     this.cache.clear();
+    if (this.persistenceTimeout) {
+      clearTimeout(this.persistenceTimeout);
+      this.persistenceTimeout = null;
+    }
 
     logger.info(`Cleared all cache entries`, {
       component: 'SmartCache',
       additionalData: { clearedEntries: size }
     });
 
-    if (this.options.enablePersistence) {
+    if (this.options.enablePersistence && options.removeStorage) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else if (this.options.enablePersistence) {
       this.persistToStorageDebounced();
     }
   }
@@ -355,6 +410,13 @@ export class SmartCache {
       hitRate,
       oldestEntry: timestamps.length > 0 ? Math.min(...timestamps) : 0,
       newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : 0,
+      hits: this.stats.hits,
+      misses: this.stats.misses,
+      sets: this.stats.sets,
+      evictions: this.stats.evictions,
+      staleHits: this.stats.staleHits,
+      revalidations: this.stats.revalidations,
+      notModified: this.stats.notModified,
     };
   }
 
@@ -384,6 +446,57 @@ export class SmartCache {
 
     const { articles: _, ...metadata } = entry;
     return metadata;
+  }
+
+  getValidators(feedUrl: string): { etag?: string; lastModified?: string } {
+    const entry = this.cache.get(feedUrl);
+    if (!entry) return {};
+    return {
+      etag: entry.etag,
+      lastModified: entry.lastModified,
+    };
+  }
+
+  recordRevalidation(feedUrl: string, headers?: Headers): void {
+    const entry = this.cache.get(feedUrl);
+    if (!entry) return;
+    const etag = headers?.get("etag") || entry.etag;
+    const lastModified = headers?.get("last-modified") || entry.lastModified;
+    this.cache.set(feedUrl, {
+      ...entry,
+      etag,
+      lastModified,
+      lastAccessed: Date.now(),
+    });
+    this.stats.revalidations++;
+    if (this.options.enablePersistence) {
+      this.persistToStorageDebounced();
+    }
+  }
+
+  markNotModified(feedUrl: string, headers?: Headers): Article[] | null {
+    const entry = this.cache.get(feedUrl);
+    if (!entry) return null;
+    const now = Date.now();
+    const etag = headers?.get("etag") || entry.etag;
+    const lastModified = headers?.get("last-modified") || entry.lastModified;
+    const refreshed = {
+      ...entry,
+      timestamp: now,
+      lastAccessed: now,
+      etag,
+      lastModified,
+    };
+    this.cache.set(feedUrl, refreshed);
+    this.stats.notModified++;
+    this.stats.revalidations++;
+    if (this.options.enablePersistence) {
+      this.persistToStorageDebounced();
+    }
+    return refreshed.articles.map(article => ({
+      ...article,
+      feedUrl: refreshed.feedUrl || feedUrl
+    }));
   }
 
   /**
@@ -481,7 +594,7 @@ export class SmartCache {
         if (entryData.checksum) {
           const { checksum, ...entryWithoutChecksum } = entryData;
           const expectedChecksum = calculateChecksum(entryWithoutChecksum);
-          
+
           if (checksum !== expectedChecksum) {
             logger.warn(`Cache integrity check failed for ${key}, skipping entry`, {
               component: 'SmartCache',
@@ -518,7 +631,7 @@ export class SmartCache {
         loadedEntries: this.cache.size,
         totalStored: data.entries?.length || 0,
       };
-      
+
       if (import.meta.env.DEV) {
         console.debug(`[SmartCache] Loaded cache from storage`, stats);
       }
@@ -538,7 +651,7 @@ export class SmartCache {
     if (this.persistenceTimeout) {
       clearTimeout(this.persistenceTimeout);
     }
-    
+
     this.persistenceTimeout = setTimeout(() => {
       this.persistToStorage();
       this.persistenceTimeout = null;
@@ -627,6 +740,26 @@ export const isCacheFresh = (feedUrl: string): boolean => {
 
 export const getCacheStats = (): CacheStats => {
   return smartCache.getStats();
+};
+
+export const getCacheValidators = (
+  feedUrl: string,
+): { etag?: string; lastModified?: string } => {
+  return smartCache.getValidators(feedUrl);
+};
+
+export const markCacheNotModified = (
+  feedUrl: string,
+  headers?: Headers,
+): Article[] | null => {
+  return smartCache.markNotModified(feedUrl, headers);
+};
+
+export const recordCacheRevalidation = (
+  feedUrl: string,
+  headers?: Headers,
+): void => {
+  smartCache.recordRevalidation(feedUrl, headers);
 };
 
 export const clearCache = (): void => {

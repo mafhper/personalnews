@@ -20,6 +20,7 @@ import {
   GripVertical,
   Globe,
   Inbox,
+  Info,
   Key,
   Layers,
   LayoutGrid,
@@ -36,9 +37,11 @@ import {
   Search,
   Settings2,
   ShieldAlert,
+  ShieldCheck,
   Tags,
   Trash2,
   Wifi,
+  WifiOff,
   Wrench,
   X,
 } from "lucide-react";
@@ -78,6 +81,15 @@ import {
   type ProxyRouteMode,
   type ProxyTestResult,
 } from "../services/proxyManager";
+import {
+  clearManagedCache,
+  getCacheStatsSnapshot,
+  getEffectiveCachePolicy,
+  saveCachePolicy,
+  type CacheCleanupResult,
+  type CacheStatsSnapshot,
+} from "../services/cacheManager";
+import type { CachePolicySettingsV1 } from "../services/cachePolicy";
 import {
   resetToDefaultFeeds,
   addFeedsToCollection,
@@ -2351,47 +2363,169 @@ const ProxyApiKeyDialog: React.FC<{
       />
       <p>Deixe em branco para remover a chave atual.</p>
       {error && <strong>{error}</strong>}
-    </div>
-  </CollectionDialog>
+  </div>
+</CollectionDialog>
 );
+
+const cacheStorageLabel: Record<CacheStatsSnapshot["storageKind"], string> = {
+  localStorage: "localStorage",
+  indexedDB: "IndexedDB",
+  mixed: "misto",
+  backend: "backend",
+  fallback: "sem cache",
+};
+
+const formatCacheBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  const kib = bytes / 1024;
+  if (kib < 1024) return `${kib.toFixed(kib >= 10 ? 0 : 1)} KB`;
+  const mib = kib / 1024;
+  return `${mib.toFixed(mib >= 10 ? 0 : 1)} MB`;
+};
 
 const CollectionCachePolicyDialog: React.FC<{
   isOpen: boolean;
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
-  const [ttl, setTtl] = React.useState(10);
-  const [maxSize, setMaxSize] = React.useState(50);
-  const [respectEtag, setRespectEtag] = React.useState(true);
-  const [staleWhileRevalidate, setStaleWhileRevalidate] = React.useState(true);
-  const [offlineFallback, setOfflineFallback] = React.useState(true);
+  const [draft, setDraft] = React.useState<CachePolicySettingsV1>(() =>
+    getEffectiveCachePolicy(),
+  );
+  const [savedPolicy, setSavedPolicy] = React.useState<CachePolicySettingsV1>(
+    () => getEffectiveCachePolicy(),
+  );
+  const [stats, setStats] = React.useState<CacheStatsSnapshot | null>(null);
+  const [cleanupResult, setCleanupResult] =
+    React.useState<CacheCleanupResult | null>(null);
+  const [saveState, setSaveState] = React.useState<
+    "idle" | "dirty" | "saving" | "saved" | "error"
+  >("idle");
+  const [cleanupState, setCleanupState] = React.useState<
+    "idle" | "cleaning" | "cleaned" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  const plannedTasks = [
-    "Persistir TTL por coleção e por feed",
-    "Aplicar stale-while-revalidate no fetch de feeds",
-    "Adicionar limpeza manual e limites de armazenamento",
-    "Registrar métricas de hit, miss e revalidação",
-  ];
-  const toggleRows = [
+  const refreshStats = React.useCallback(async () => {
+    const snapshot = await getCacheStatsSnapshot();
+    setStats(snapshot);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const policy = getEffectiveCachePolicy();
+    setDraft(policy);
+    setSavedPolicy(policy);
+    setCleanupResult(null);
+    setSaveState("idle");
+    setCleanupState("idle");
+    setErrorMessage(null);
+    void refreshStats();
+  }, [isOpen, refreshStats]);
+
+  React.useEffect(() => {
+    if (saveState === "saving") return;
+    const dirty = JSON.stringify(draft) !== JSON.stringify(savedPolicy);
+    setSaveState((current) => {
+      if (current === "error" && dirty) return "dirty";
+      if (current === "saved" && !dirty) return "saved";
+      return dirty ? "dirty" : "idle";
+    });
+  }, [draft, savedPolicy, saveState]);
+
+  const updateDraft = React.useCallback(
+    (updates: Partial<CachePolicySettingsV1>) => {
+      setDraft((current) => ({ ...current, ...updates, version: 1 }));
+      setCleanupResult(null);
+      setErrorMessage(null);
+    },
+    [],
+  );
+
+  const handleSavePolicy = async () => {
+    setSaveState("saving");
+    setErrorMessage(null);
+    try {
+      const saved = saveCachePolicy(draft);
+      setSavedPolicy(saved);
+      setDraft(saved);
+      setSaveState("saved");
+      await refreshStats();
+    } catch (error) {
+      setSaveState("error");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Erro ao salvar política",
+      );
+    }
+  };
+
+  const handleClearCache = async () => {
+    setCleanupState("cleaning");
+    setErrorMessage(null);
+    try {
+      const result = await clearManagedCache();
+      setCleanupResult(result);
+      setCleanupState("cleaned");
+      await refreshStats();
+    } catch (error) {
+      setCleanupState("error");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Erro ao limpar cache",
+      );
+    }
+  };
+
+  const storageLabel = stats ? cacheStorageLabel[stats.storageKind] : "lendo";
+  const saveLabel =
+    saveState === "saving"
+      ? "Salvando..."
+      : saveState === "saved"
+        ? "Salvo"
+        : saveState === "error"
+          ? "Erro ao salvar"
+          : saveState === "dirty"
+            ? "Alterações não salvas"
+            : "Sem alterações";
+  const cleanupLabel =
+    cleanupState === "cleaning"
+      ? "Limpando cache..."
+      : cleanupState === "cleaned"
+        ? "Cache limpo com segurança"
+        : cleanupState === "error"
+          ? "Erro ao limpar cache"
+          : "Limpar cache agora";
+
+  const toggleRows: Array<{
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    checked: boolean;
+    onChange: (value: boolean) => void;
+  }> = [
     {
-      icon: <ShieldAlert className="h-4 w-4" />,
+      icon: <ShieldCheck className="h-4 w-4" />,
       title: "Respeitar ETag e Last-Modified",
       description: "Usa cabeçalhos condicionais para reduzir downloads.",
-      checked: respectEtag,
-      onChange: setRespectEtag,
+      checked: draft.respectHttpValidators,
+      onChange: (value) => updateDraft({ respectHttpValidators: value }),
     },
     {
       icon: <RefreshCw className="h-4 w-4" />,
       title: "Stale-while-revalidate",
       description: "Mostra cache recente enquanto revalida em segundo plano.",
-      checked: staleWhileRevalidate,
-      onChange: setStaleWhileRevalidate,
+      checked: draft.staleWhileRevalidateMinutes > 0,
+      onChange: (value) =>
+        updateDraft({
+          staleWhileRevalidateMinutes: value
+            ? Math.max(savedPolicy.staleWhileRevalidateMinutes, 30)
+            : 0,
+        }),
     },
     {
-      icon: <Wifi className="h-4 w-4" />,
+      icon: <WifiOff className="h-4 w-4" />,
       title: "Fallback offline",
       description: "Mantém artigos disponíveis quando a rede falhar.",
-      checked: offlineFallback,
-      onChange: setOfflineFallback,
+      checked: draft.offlineFallback,
+      onChange: (value) => updateDraft({ offlineFallback: value }),
     },
   ];
 
@@ -2400,67 +2534,136 @@ const CollectionCachePolicyDialog: React.FC<{
       isOpen={isOpen}
       onClose={onClose}
       title="Política de cache"
-      description="Pré-visualização funcional das opções planejadas para o cache de feeds."
+      description="Controle local de retenção, revalidação e limpeza segura dos caches."
       icon={<Database className="h-4 w-4" />}
       wide
       footer={
         <div className="collection-central-dialog__actions">
           <button
             type="button"
+            onClick={() => void handleClearCache()}
+            disabled={cleanupState === "cleaning"}
+            className={`${managerSecondaryButtonClass} h-9 px-3`}
+          >
+            <X className="h-4 w-4" />
+            {cleanupLabel}
+          </button>
+          <button
+            type="button"
             onClick={onClose}
             className={`${managerSecondaryButtonClass} h-9 px-3`}
           >
-            Fechar
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSavePolicy()}
+            disabled={saveState === "saving" || saveState === "idle"}
+            className={`${managerPrimaryButtonClass} h-9 px-3`}
+          >
+            {saveState === "saving" ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            Salvar política
           </button>
         </div>
       }
     >
       <div className="collection-central-cache-policy">
-        <div className="collection-central-cache-notice">
-          <AlertTriangle className="h-4 w-4" />
-          <p>
-            Este painel é um placeholder de implementação: os controles abaixo
-            não alteram o motor de cache atual.
-          </p>
+        <div className="collection-central-cache-status">
+          <div>
+            <span>Estado</span>
+            <strong>{saveLabel}</strong>
+          </div>
+          <div>
+            <span>Storage</span>
+            <strong>{storageLabel}</strong>
+          </div>
+          <div>
+            <span>Uso estimado</span>
+            <strong>
+              {stats ? formatCacheBytes(stats.estimatedSizeBytes) : "lendo"}
+            </strong>
+          </div>
+          <div>
+            <span>Entradas</span>
+            <strong>{stats ? `${stats.totalFeeds} feeds` : "lendo"}</strong>
+          </div>
         </div>
 
         <div className="collection-central-cache-control">
           <div>
             <label htmlFor="collection-cache-ttl">Tempo de vida (TTL)</label>
-            <span>{ttl} min</span>
+            <span>{draft.feedFreshTtlMinutes} min</span>
           </div>
           <input
             id="collection-cache-ttl"
             type="range"
             min={1}
-            max={60}
-            value={ttl}
-            onChange={(event) => setTtl(Number(event.target.value))}
+            max={720}
+            value={draft.feedFreshTtlMinutes}
+            onChange={(event) =>
+              updateDraft({ feedFreshTtlMinutes: Number(event.target.value) })
+            }
           />
           <p>Duração padrão antes de revalidar uma fonte.</p>
         </div>
 
         <div className="collection-central-cache-toggle-group">
           {toggleRows.map((row) => (
-            <label key={row.title} className="collection-central-cache-toggle">
+            <button
+              key={row.title}
+              type="button"
+              aria-pressed={row.checked}
+              onClick={() => row.onChange(!row.checked)}
+              className="collection-central-cache-toggle"
+            >
               <span className="feed-manager-light-row__icon">{row.icon}</span>
               <span className="min-w-0 flex-1">
                 <strong>{row.title}</strong>
                 <small>{row.description}</small>
               </span>
-              <input
-                type="checkbox"
-                checked={row.checked}
-                onChange={(event) => row.onChange(event.target.checked)}
-              />
-            </label>
+              <span
+                className={`collection-central-cache-switch ${
+                  row.checked ? "is-active" : ""
+                }`}
+                aria-hidden="true"
+              >
+                <span />
+              </span>
+            </button>
           ))}
         </div>
 
         <div className="collection-central-cache-control">
           <div>
+            <label htmlFor="collection-cache-stale">
+              Janela stale-while-revalidate
+            </label>
+            <span>{draft.staleWhileRevalidateMinutes} min</span>
+          </div>
+          <input
+            id="collection-cache-stale"
+            type="range"
+            min={0}
+            max={1440}
+            step={10}
+            value={draft.staleWhileRevalidateMinutes}
+            onChange={(event) =>
+              updateDraft({
+                staleWhileRevalidateMinutes: Number(event.target.value),
+              })
+            }
+          />
+          <p>Tempo máximo para servir cache stale enquanto a fonte revalida.</p>
+        </div>
+
+        <div className="collection-central-cache-control">
+          <div>
             <label htmlFor="collection-cache-size">Limite de armazenamento</label>
-            <span>{maxSize} MB</span>
+            <span>{draft.maxStorageMb} MB</span>
           </div>
           <input
             id="collection-cache-size"
@@ -2468,26 +2671,75 @@ const CollectionCachePolicyDialog: React.FC<{
             min={10}
             max={500}
             step={10}
-            value={maxSize}
-            onChange={(event) => setMaxSize(Number(event.target.value))}
+            value={draft.maxStorageMb}
+            onChange={(event) =>
+              updateDraft({ maxStorageMb: Number(event.target.value) })
+            }
           />
-          <p>Limite previsto para retenção local de respostas e metadados.</p>
+          <p>Limite de retenção local para respostas, artigos e metadados.</p>
         </div>
 
-        <div className="collection-central-cache-tasks">
-          <div className="collection-central-cache-tasks__header">
-            <strong>Tarefas para acelerar implementação</strong>
-            <span>preview</span>
-          </div>
-          {plannedTasks.map((task) => (
-            <div key={task} className="collection-central-cache-task-row">
-              <Check className="h-4 w-4" />
-              <span>{task}</span>
-            </div>
-          ))}
+        <div className="collection-central-cache-info">
+          <Info className="h-4 w-4" />
+          <p>
+            Limpar o cache remove apenas dados descartáveis. Feeds, categorias,
+            favoritos, histórico de leitura, aparência, proxies e chaves de API
+            permanecem preservados.
+          </p>
         </div>
+
+        {cleanupResult && (
+          <div className="collection-central-cache-result">
+            <Check className="h-4 w-4" />
+            <p>
+              {cleanupResult.feedsCacheRemoved} caches de feed,{" "}
+              {cleanupResult.articlesCacheRemoved} caches de artigo e{" "}
+              {formatCacheBytes(cleanupResult.bytesEstimatedFreed)} liberados.
+            </p>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="collection-central-cache-error">
+            <AlertTriangle className="h-4 w-4" />
+            <p>{errorMessage}</p>
+          </div>
+        )}
       </div>
     </CollectionDialog>
+  );
+};
+
+const CollectionCachePolicyRow: React.FC<{ onClick: () => void }> = ({
+  onClick,
+}) => {
+  const [stats, setStats] = React.useState<CacheStatsSnapshot | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    void getCacheStatsSnapshot().then((snapshot) => {
+      if (active) setStats(snapshot);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const description = stats
+    ? `TTL ${stats.policy.feedFreshTtlMinutes} min · ${
+        cacheStorageLabel[stats.storageKind]
+      } · ${formatCacheBytes(stats.estimatedSizeBytes)} · ${
+        stats.totalFeeds
+      } feeds`
+    : "Lendo política, storage e uso local do cache";
+
+  return (
+    <FeedManagerLightRow
+      icon={<Database className="h-[18px] w-[18px]" />}
+      title="Política de cache"
+      description={description}
+      onClick={onClick}
+    />
   );
 };
 
@@ -2782,12 +3034,7 @@ const CollectionProxyPanel: React.FC = () => {
       </FeedManagerLightCard>
 
       <FeedManagerLightCard>
-        <FeedManagerLightRow
-          icon={<Database className="h-[18px] w-[18px]" />}
-          title="Política de cache"
-          description="TTL configurável · respeita cache local · stale-while-revalidate quando disponível"
-          onClick={() => setCacheDialogOpen(true)}
-        />
+        <CollectionCachePolicyRow onClick={() => setCacheDialogOpen(true)} />
       </FeedManagerLightCard>
 
       <ProxyApiKeyDialog

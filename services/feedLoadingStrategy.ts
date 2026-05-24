@@ -40,7 +40,7 @@ export const resolveFeedLoadScope = (
     return activeFeeds.filter((feed) => feed.categoryId === request.categoryId);
   }
 
-  return activeFeeds;
+  return activeFeeds.filter((feed) => !feed.hideFromAll);
 };
 
 export interface FeedVisibilityResolutionInput {

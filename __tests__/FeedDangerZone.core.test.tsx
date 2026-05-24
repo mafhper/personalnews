@@ -603,7 +603,7 @@ describe("Feed danger zone flows", () => {
     testProxySpy.mockRestore();
   });
 
-  it("opens the cache policy preview from diagnostics", async () => {
+  it("opens the operational cache policy panel from diagnostics", async () => {
     render(
       <FeedManager
         currentFeeds={testFeeds}
@@ -623,10 +623,22 @@ describe("Feed danger zone flows", () => {
       screen.getByRole("dialog", { name: "Política de cache" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/placeholder de implementação/i),
+      screen.queryByText(/placeholder de implementação/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Tempo de vida (TTL)"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Persistir TTL por coleção e por feed"),
+      screen.getByText("Respeitar ETag e Last-Modified"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Fallback offline"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Limpar cache agora/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Salvar política" }),
     ).toBeInTheDocument();
   });
 

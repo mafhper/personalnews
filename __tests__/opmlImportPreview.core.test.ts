@@ -134,6 +134,36 @@ describe("opmlImportPreview", () => {
     expect(secondPass.skipped).toHaveLength(1);
   });
 
+  it("persists imports hidden from All without affecting category assignment", () => {
+    const [candidate] = buildImportCandidates({
+      opmlFeeds: [
+        {
+          url: "https://podcast.example.com/feed",
+          title: "Podcast",
+          category: "Podcasts",
+        },
+      ],
+      currentFeeds: [],
+      categories,
+    });
+
+    const result = commitImportCandidates({
+      candidates: [{ ...candidate, hideFromAll: true }],
+      currentFeeds: [],
+      categories,
+      categoryIdsByName: { podcasts: "podcasts" },
+    });
+
+    expect(result.feedsToAdd).toEqual([
+      {
+        url: "https://podcast.example.com/feed",
+        customTitle: "Podcast",
+        categoryId: "podcasts",
+        hideFromAll: true,
+      },
+    ]);
+  });
+
   it("honors clearing a suggested category during commit", () => {
     const [candidate] = buildImportCandidates({
       opmlFeeds: [
@@ -187,6 +217,7 @@ describe("opmlImportPreview", () => {
 
     expect(summary.importCount).toBe(2);
     expect(summary.invalidCount).toBe(1);
+    expect(summary.hiddenFromAllCount).toBe(0);
     expect(summary.newCategories).toEqual(["Research"]);
     expect(summary.groupsByCategory).toEqual([
       {

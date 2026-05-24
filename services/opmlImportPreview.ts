@@ -71,6 +71,7 @@ export interface OpmlImportConfirmationSummary {
   duplicateCount: number;
   duplicateInFileCount: number;
   invalidCount: number;
+  hiddenFromAllCount: number;
   newCategories: string[];
   groupsByCategory: OpmlImportConfirmationGroup[];
   isLargeImport: boolean;
@@ -267,6 +268,8 @@ export function buildOpmlImportConfirmationSummary(
     invalidCount: candidates.filter(
       (candidate) => candidate.status === "invalid-url",
     ).length,
+    hiddenFromAllCount: importable.filter((candidate) => candidate.hideFromAll)
+      .length,
     newCategories: Array.from(newCategories.values()),
     groupsByCategory: Array.from(groupsByCategory.entries()).map(
       ([categoryLabel, feeds]) => ({

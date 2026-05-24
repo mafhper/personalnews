@@ -10,6 +10,8 @@ import {
   FeedFetchResponseSchema,
   FeedValidateResponseSchema,
   ProxyStatsResponseSchema,
+  CacheClearResponseSchema,
+  CacheStatsSchema,
   SettingsGetResponseSchema,
   SettingsPutSchema,
   type BackendHealth,
@@ -18,6 +20,7 @@ import {
   type FeedFetchResponse,
   type FeedValidateResponse,
   type ProxyStatsResponse,
+  type CacheStats,
 } from "../shared/contracts/backend";
 import {
   buildFeedDiagnosticInfo,
@@ -897,17 +900,29 @@ class DesktopBackendClient {
 
   async fetchFeed(
     url: string,
-    options: { forceRefresh?: boolean; signal?: AbortSignal } = {},
+    options: {
+      forceRefresh?: boolean;
+      signal?: AbortSignal;
+      validators?: { etag?: string; lastModified?: string };
+    } = {},
   ): Promise<FeedFetchResponse> {
     const forceRefresh = options.forceRefresh ? "1" : "0";
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (options.validators?.etag) {
+      headers["If-None-Match"] = options.validators.etag;
+    }
+    if (options.validators?.lastModified) {
+      headers["If-Modified-Since"] = options.validators.lastModified;
+    }
+
     return this.requestJson(
       `/api/v1/feed?url=${encodeURIComponent(url)}&forceRefresh=${forceRefresh}`,
       {
         method: "GET",
         signal: options.signal,
-        headers: {
-          Accept: "application/json",
-        },
+        headers,
       },
       (value) => FeedFetchResponseSchema.parse(value),
     );
@@ -947,6 +962,35 @@ class DesktopBackendClient {
       },
       (value) => ProxyStatsResponseSchema.parse(value),
     );
+  }
+
+  async getCacheStats(signal?: AbortSignal): Promise<CacheStats> {
+    return this.requestJson(
+      "/api/v1/cache/stats",
+      {
+        method: "GET",
+        signal,
+        headers: {
+          Accept: "application/json",
+        },
+      },
+      (value) => CacheStatsSchema.parse(value),
+    );
+  }
+
+  async clearCache(signal?: AbortSignal): Promise<number> {
+    const response = await this.requestJson(
+      "/api/v1/cache/clear",
+      {
+        method: "POST",
+        signal,
+        headers: {
+          Accept: "application/json",
+        },
+      },
+      (value) => CacheClearResponseSchema.parse(value),
+    );
+    return response.cleared;
   }
 
   async getSettings(signal?: AbortSignal): Promise<BackendMode> {

@@ -1,5 +1,6 @@
 import { Readability } from '@mozilla/readability';
 import DOMPurify from 'dompurify';
+import { CACHE_POLICY_V1 } from './cachePolicy';
 
 const PROXIES = [
   {
@@ -12,7 +13,7 @@ const PROXIES = [
   }
 ];
 
-const CACHE_PREFIX = 'article_cache_v2_';
+const CACHE_PREFIX = CACHE_POLICY_V1.keys.articleContentPrefix;
 
 const logger = console; // Fallback if getLogger not available, or import it
 
@@ -71,7 +72,7 @@ export async function fetchFullContent(url: string): Promise<FullContentFetchRes
                     errorMessage: "O site bloqueou a leitura completa. Exibindo o conteúdo do feed.",
                 };
             }
-            
+
             // 1. Pre-process to remove problematic tags BEFORE DOM parsing
             // This prevents the browser from trying to load external stylesheets/scripts that violate CSP
             html = html
@@ -82,7 +83,7 @@ export async function fetchFullContent(url: string): Promise<FullContentFetchRes
 
             // 2. Parse HTML
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            
+
             // 3. Fix relative URLs (images, links)
             // Readability needs absolute URLs to work best or we fix them manually
             const base = document.createElement('base');
@@ -108,7 +109,7 @@ export async function fetchFullContent(url: string): Promise<FullContentFetchRes
                     FORBID_TAGS: ['style', 'link', 'script', 'iframe', 'frame', 'object', 'embed', 'form', 'input', 'button'],
                     FORBID_ATTR: ['style', 'class', 'id', 'onmouseover', 'onclick'] // Strip inline styles/classes to force our reader theme
                 });
-                
+
                 try {
                     localStorage.setItem(cacheKey, sanitized);
                 } catch {

@@ -21,6 +21,8 @@ export type FeedCacheRecord = {
   expiresAt: string;
   hitCount: number;
   lastUsedAt: string;
+  etag?: string | null;
+  lastModified?: string | null;
 };
 
 export type FeedCacheEntry = {
@@ -102,6 +104,13 @@ const MIGRATIONS: Array<{ version: number; sql: string }> = [
       CREATE INDEX IF NOT EXISTS idx_proxy_telemetry_created_at ON proxy_telemetry (created_at);
     `,
   },
+  {
+    version: 2,
+    sql: `
+      ALTER TABLE feed_cache ADD COLUMN etag TEXT;
+      ALTER TABLE feed_cache ADD COLUMN last_modified TEXT;
+    `,
+  },
 ];
 
 const DEFAULT_SETTINGS: Omit<UserPreferencesV2, "updatedAt"> = {
@@ -163,7 +172,7 @@ export class BackendDatabase {
 
   getCache(url: string): FeedCacheRecord | null {
     const stmt = this.db.query(
-      "SELECT url, title, payload_json, fetched_at, expires_at, hit_count, last_used_at FROM feed_cache WHERE url = ?"
+      "SELECT url, title, payload_json, fetched_at, expires_at, hit_count, last_used_at, etag, last_modified FROM feed_cache WHERE url = ?"
     );
     const row = stmt.get(url) as
       | {
@@ -174,6 +183,8 @@ export class BackendDatabase {
           expires_at: string;
           hit_count: number;
           last_used_at: string;
+          etag: string | null;
+          last_modified: string | null;
         }
       | null;
 
@@ -187,6 +198,8 @@ export class BackendDatabase {
       expiresAt: row.expires_at,
       hitCount: row.hit_count,
       lastUsedAt: row.last_used_at,
+      etag: row.etag,
+      lastModified: row.last_modified,
     };
   }
 
@@ -198,16 +211,47 @@ export class BackendDatabase {
     stmt.run(now, url);
   }
 
-  setCache(url: string, title: string, payloadJson: string, ttlMinutes: number) {
+  setCache(
+    url: string,
+    title: string,
+    payloadJson: string,
+    ttlMinutes: number,
+    validators: { etag?: string | null; lastModified?: string | null } = {},
+  ) {
     const now = new Date();
     const expires = new Date(now.getTime() + ttlMinutes * 60_000);
     const nowIso = now.toISOString();
     const expiresIso = expires.toISOString();
 
     const stmt = this.db.query(
-      "INSERT INTO feed_cache (url, title, payload_json, fetched_at, expires_at, hit_count, last_used_at) VALUES (?, ?, ?, ?, ?, 0, ?) ON CONFLICT(url) DO UPDATE SET title=excluded.title, payload_json=excluded.payload_json, fetched_at=excluded.fetched_at, expires_at=excluded.expires_at, last_used_at=excluded.last_used_at"
+      "INSERT INTO feed_cache (url, title, payload_json, fetched_at, expires_at, hit_count, last_used_at, etag, last_modified) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?) ON CONFLICT(url) DO UPDATE SET title=excluded.title, payload_json=excluded.payload_json, fetched_at=excluded.fetched_at, expires_at=excluded.expires_at, last_used_at=excluded.last_used_at, etag=excluded.etag, last_modified=excluded.last_modified"
     );
-    stmt.run(url, title, payloadJson, nowIso, expiresIso, nowIso);
+    stmt.run(
+      url,
+      title,
+      payloadJson,
+      nowIso,
+      expiresIso,
+      nowIso,
+      validators.etag ?? null,
+      validators.lastModified ?? null,
+    );
+  }
+
+  refreshCache(url: string, ttlMinutes: number, validators: { etag?: string | null; lastModified?: string | null } = {}) {
+    const now = new Date();
+    const expires = new Date(now.getTime() + ttlMinutes * 60_000);
+    const stmt = this.db.query(
+      "UPDATE feed_cache SET fetched_at = ?, expires_at = ?, last_used_at = ?, etag = COALESCE(?, etag), last_modified = COALESCE(?, last_modified) WHERE url = ?"
+    );
+    stmt.run(
+      now.toISOString(),
+      expires.toISOString(),
+      now.toISOString(),
+      validators.etag ?? null,
+      validators.lastModified ?? null,
+      url,
+    );
   }
 
   clearCache(): number {

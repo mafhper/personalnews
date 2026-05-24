@@ -135,6 +135,10 @@ export const FeedFetchResponseSchema = z.object({
     cached: z.boolean(),
     fetchedAt: z.string(),
     latencyMs: z.number().nonnegative(),
+    revalidated: z.boolean().optional(),
+    notModified: z.boolean().optional(),
+    etag: z.string().nullable().optional(),
+    lastModified: z.string().nullable().optional(),
   }),
 });
 export type FeedFetchResponse = z.infer<typeof FeedFetchResponseSchema>;

@@ -109,6 +109,9 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
       invalid: draftCandidates.filter(
         (candidate) => candidate.status === "invalid-url",
       ).length,
+      hiddenFromAll: draftCandidates.filter(
+        (candidate) => candidate.decision === "import" && candidate.hideFromAll,
+      ).length,
       newCategories: new Set(
         draftCandidates
           .filter((candidate) => candidate.decision === "import")
@@ -167,6 +170,20 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
               categoryOverrideCleared: false,
               categoryOverrideId: categoryToApply,
               categoryOverrideName: undefined,
+            }
+          : candidate,
+      ),
+    );
+  };
+
+  const applyHideFromAllToSelected = (hideFromAll: boolean) => {
+    if (selectedIds.size === 0) return;
+    setDraftCandidates((current) =>
+      current.map((candidate) =>
+        selectedIds.has(candidate.id)
+          ? {
+              ...candidate,
+              hideFromAll,
             }
           : candidate,
       ),
@@ -321,11 +338,15 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
     >
       {step === "confirm" ? (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <PreviewStat label="Importar" value={confirmationSummary.importCount} />
             <PreviewStat label="Ignorados" value={confirmationSummary.ignoredCount} />
             <PreviewStat label="Duplicados" value={confirmationSummary.duplicateCount} />
             <PreviewStat label="Inválidos" value={confirmationSummary.invalidCount} />
+            <PreviewStat
+              label="Ocultos da All"
+              value={confirmationSummary.hiddenFromAllCount}
+            />
             <PreviewStat
               label="Novas categorias"
               value={confirmationSummary.newCategories.length}
@@ -412,11 +433,12 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
         </div>
       ) : (
       <div className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <PreviewStat label="Total" value={summary.total} />
           <PreviewStat label="Importar" value={summary.importing} />
           <PreviewStat label="Duplicados" value={summary.duplicates} />
           <PreviewStat label="Repetidos" value={summary.duplicateInFile} />
+          <PreviewStat label="Ocultos da All" value={summary.hiddenFromAll} />
           <PreviewStat label="Novas categorias" value={summary.newCategories} />
         </div>
 
@@ -441,6 +463,22 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
               className="rounded-full border border-[rgba(var(--color-warning),0.24)] bg-[rgba(var(--color-warning),0.12)] px-3 py-2 text-xs font-bold text-[rgb(var(--color-warning))]"
             >
               Ignorar duplicados
+            </button>
+            <button
+              type="button"
+              onClick={() => applyHideFromAllToSelected(true)}
+              disabled={selectedIds.size === 0}
+              className="rounded-full border border-[rgba(var(--color-accent),0.24)] bg-[rgba(var(--color-accent),0.12)] px-3 py-2 text-xs font-bold text-[rgb(var(--color-accent))] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Ocultar selecionados da All
+            </button>
+            <button
+              type="button"
+              onClick={() => applyHideFromAllToSelected(false)}
+              disabled={selectedIds.size === 0}
+              className="rounded-full border border-[rgba(var(--color-border),0.24)] px-3 py-2 text-xs font-bold text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Mostrar selecionados na All
             </button>
           </div>
 
@@ -549,6 +587,28 @@ export const OpmlImportPreviewModal: React.FC<OpmlImportPreviewModalProps> = ({
                       )}
                   </select>
                 </div>
+                <label className="mt-3 flex items-start gap-2 rounded-lg bg-[rgb(var(--theme-manager-control,var(--color-surfaceElevated)))] px-3 py-2 text-xs text-[rgb(var(--theme-manager-text-secondary,var(--color-textSecondary)))]">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(candidate.hideFromAll)}
+                    disabled={!canImport || candidate.decision !== "import"}
+                    onChange={(event) =>
+                      updateCandidate(candidate.id, {
+                        hideFromAll: event.target.checked,
+                      })
+                    }
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="block font-bold text-[rgb(var(--theme-manager-text,var(--color-text)))]">
+                      Ocultar da All
+                    </span>
+                    <span>
+                      Mantém este feed apenas na categoria escolhida e evita
+                      carregamento automático na página All.
+                    </span>
+                  </span>
+                </label>
               </div>
             );
           })}

@@ -104,6 +104,33 @@ describe("OpmlImportPreviewModal", () => {
     });
   });
 
+  it("can hide selected imports from All while keeping them in their category", () => {
+    const onConfirm = vi.fn();
+    render(
+      <OpmlImportPreviewModal
+        isOpen
+        candidates={[makeCandidate({ id: "ready" })]}
+        categories={categories}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ocultar selecionados da All" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Importar selecionados" }));
+
+    expect(screen.getByText("Ocultos da All")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar importação" }));
+
+    expect(onConfirm.mock.calls[0][0][0]).toMatchObject({
+      id: "ready",
+      suggestedCategoryId: "tech",
+      hideFromAll: true,
+    });
+  });
+
   it("keeps Sem categoria as an explicit override for suggested categories", () => {
     const onConfirm = vi.fn();
     render(

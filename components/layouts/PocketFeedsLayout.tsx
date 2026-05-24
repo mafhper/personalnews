@@ -17,6 +17,7 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { LazyImage } from "../LazyImage";
 import { ArticleReaderModal } from "../ArticleReaderModal";
 import { FavoriteButton } from "../FavoriteButton";
+import { buildImagePlaceholderDataUri } from "../../utils/imagePlaceholders";
 
 interface PocketFeedsLayoutProps {
   articles: Article[];
@@ -101,6 +102,18 @@ const getPodcastArtworkEpisode = (group: PodcastGroup) =>
   group.episodes.find((episode) => Boolean(episode.imageUrl)) ||
   group.firstEpisode;
 
+const buildPodcastArtworkFallback = (episode: Article, label: string) =>
+  buildImagePlaceholderDataUri({
+    width: 800,
+    height: 800,
+    label,
+    eyebrow: "Podcast",
+    feedUrl: episode.feedUrl,
+    headline: episode.title,
+    tone: "neutral",
+    variant: "ambient",
+  });
+
 const isRecentEpisode = (episode: Article) => {
   const dayAgo = new Date();
   dayAgo.setDate(dayAgo.getDate() - 7);
@@ -136,6 +149,8 @@ const EpisodeArtwork: React.FC<{
 }) => {
   if (!episode.imageUrl) return null;
 
+  const fallback = buildPodcastArtworkFallback(episode, fallbackAlt);
+
   return (
     <div
       className={`${className} flex-shrink-0 overflow-hidden rounded-lg border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)]`}
@@ -146,6 +161,9 @@ const EpisodeArtwork: React.FC<{
         alt={episode.title || fallbackAlt}
         priority={priority}
         aspectRatio="1/1"
+        placeholder={fallback}
+        fallbacks={[fallback]}
+        retryAttempts={1}
       />
     </div>
   );
@@ -155,24 +173,35 @@ const PodcastArtwork: React.FC<{
   episode: Article;
   title: string;
   className?: string;
-}> = ({ episode, title, className = "h-24 w-24 md:h-32 md:w-32" }) => (
-  <div
-    className={`${className} flex-shrink-0 overflow-hidden rounded-[var(--feed-card-radius)] bg-[rgba(var(--color-text),0.04)] shadow-lg`}
-  >
-    {episode.imageUrl ? (
-      <LazyImage
-        src={episode.imageUrl}
-        className="h-full w-full object-cover"
-        alt={title}
-        priority
-      />
-    ) : (
-      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[rgba(var(--color-accent),0.58)] to-[rgba(var(--color-primary),0.42)]">
-        <Music2 className="h-10 w-10 text-white/80" aria-hidden />
-      </div>
-    )}
-  </div>
-);
+}> = ({ episode, title, className = "h-24 w-24 md:h-32 md:w-32" }) => {
+  const fallback = buildPodcastArtworkFallback(episode, title);
+
+  return (
+    <div
+      className={`${className} flex-shrink-0 overflow-hidden rounded-[var(--feed-card-radius)] bg-[rgba(var(--color-text),0.04)] shadow-lg`}
+    >
+      {episode.imageUrl ? (
+        <LazyImage
+          src={episode.imageUrl}
+          className="h-full w-full object-cover"
+          alt={title}
+          priority
+          placeholder={fallback}
+          fallbacks={[fallback]}
+          retryAttempts={1}
+        />
+      ) : (
+        <LazyImage
+          src={fallback}
+          className="h-full w-full object-cover"
+          alt={title}
+          priority
+          retryAttempts={0}
+        />
+      )}
+    </div>
+  );
+};
 
 export const PocketFeedsSkeleton: React.FC = () => {
   return (
@@ -732,19 +761,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
           aria-label={`Ver episódios de ${group.name}`}
         >
           <div className="relative aspect-square overflow-hidden rounded-[var(--feed-card-radius)] bg-[rgba(var(--color-text),0.04)] shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">
-            {getPodcastArtworkEpisode(group).imageUrl ? (
-              <LazyImage
-                src={getPodcastArtworkEpisode(group).imageUrl}
-                className="h-full w-full object-cover"
-                alt={group.name}
-                priority
-                aspectRatio="1/1"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[rgba(var(--color-accent),0.6)] to-[rgba(var(--color-primary),0.6)]">
-                <Music2 className="h-12 w-12 text-white/80" aria-hidden />
-              </div>
-            )}
+            <PodcastArtwork
+              episode={getPodcastArtworkEpisode(group)}
+              title={group.name}
+              className="h-full w-full"
+            />
 
             {group.recentCount > 0 && (
               <div className="absolute right-2 top-2 rounded-full bg-[rgba(var(--color-accent),0.7)] px-2 py-0.5 text-xs font-bold text-white">
@@ -784,6 +805,10 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       podcastGroups.findIndex((group) => group.name === activeGroup.name),
     );
     const activeArtworkEpisode = getPodcastArtworkEpisode(activeGroup);
+    const activeArtworkFallback = buildPodcastArtworkFallback(
+      activeArtworkEpisode,
+      activeGroup.name,
+    );
     const previewArtworkEpisode =
       hoveredMixtapeEpisode || getPodcastArtworkEpisode(previewGroup);
     const latestEpisode = activeGroup.firstEpisode;
@@ -867,31 +892,30 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
                 alt=""
                 priority
                 fill
+                placeholder={activeArtworkFallback}
+                fallbacks={[activeArtworkFallback]}
+                retryAttempts={1}
               />
             ) : (
-              <div className="absolute inset-0 bg-[rgba(var(--color-accent),0.1)]" />
+              <LazyImage
+                src={activeArtworkFallback}
+                className="absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.18] blur-2xl"
+                alt=""
+                priority
+                fill
+                retryAttempts={0}
+              />
             )}
             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(var(--color-background),0.94),rgba(var(--color-background),0.84)_48%,rgba(var(--color-surface),0.66))]" />
 
             <div className="relative grid grid-cols-[minmax(6.5rem,9rem)_minmax(0,1fr)] gap-4 p-4 lg:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)]">
               <div className="space-y-3">
                 <div className="relative aspect-square max-w-[9rem] overflow-hidden rounded-[calc(var(--feed-card-radius)*1.05)] border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.04)] shadow-xl lg:max-w-[14rem]">
-                  {activeArtworkEpisode.imageUrl ? (
-                    <LazyImage
-                      src={activeArtworkEpisode.imageUrl}
-                      className="h-full w-full object-cover"
-                      alt={activeGroup.name}
-                      priority
-                      aspectRatio="1/1"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[rgba(var(--color-accent),0.16)]">
-                      <Disc3
-                        className="h-16 w-16 text-[rgb(var(--color-text))]"
-                        aria-hidden
-                      />
-                    </div>
-                  )}
+                  <PodcastArtwork
+                    episode={activeArtworkEpisode}
+                    title={activeGroup.name}
+                    className="h-full w-full"
+                  />
                 </div>
                 <div className="flex items-center gap-3">
                   {renderPlayButton(

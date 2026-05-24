@@ -55,7 +55,11 @@ function parseForceRefresh(value: string | null): "0" | "1" {
   return value === "1" ? "1" : "0";
 }
 
-async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchResponse> {
+async function getFeed(
+  url: string,
+  forceRefresh: boolean,
+  validators: { etag?: string | null; lastModified?: string | null } = {},
+): Promise<FeedFetchResponse> {
   const validatedUrl = await validateTargetFeedUrl(url);
   const targetHost = validatedUrl.hostname || "unknown";
   const cacheRecord = db.getCache(validatedUrl.toString());
@@ -73,6 +77,8 @@ async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchRes
         cached: true,
         fetchedAt: cacheRecord.fetchedAt,
         latencyMs: 0,
+        etag: cacheRecord.etag ?? null,
+        lastModified: cacheRecord.lastModified ?? null,
       },
     };
 
@@ -83,9 +89,41 @@ async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchRes
   try {
     const parsedFeed = await fetchAndParseFeed(validatedUrl.toString(), {
       validateUrl: validateTargetFeedUrl,
+      validators: {
+        etag: validators.etag ?? cacheRecord?.etag,
+        lastModified: validators.lastModified ?? cacheRecord?.lastModified,
+      },
     });
     const elapsedMs = Date.now() - started;
     db.recordProxyTelemetry("LocalProxy", targetHost, true, elapsedMs);
+
+    if (parsedFeed.notModified && cacheRecord) {
+      db.refreshCache(validatedUrl.toString(), settings.cacheTtlMinutes, {
+        etag: parsedFeed.etag,
+        lastModified: parsedFeed.lastModified,
+      });
+      db.touchCacheHit(validatedUrl.toString());
+      const parsed = JSON.parse(cacheRecord.payloadJson);
+      const response: FeedFetchResponse = {
+        ...parsed,
+        meta: {
+          source: "backend",
+          cached: true,
+          fetchedAt: new Date().toISOString(),
+          latencyMs: elapsedMs,
+          revalidated: true,
+          notModified: true,
+          etag: parsedFeed.etag ?? cacheRecord.etag ?? null,
+          lastModified:
+            parsedFeed.lastModified ?? cacheRecord.lastModified ?? null,
+        },
+      };
+      return FeedFetchResponseSchema.parse(response);
+    }
+
+    if (parsedFeed.notModified) {
+      throw new Error("Upstream returned 304 without a local cache record");
+    }
 
     const response: FeedFetchResponse = {
       title: parsedFeed.title,
@@ -95,6 +133,9 @@ async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchRes
         cached: false,
         fetchedAt: new Date().toISOString(),
         latencyMs: elapsedMs,
+        revalidated: Boolean(cacheRecord),
+        etag: parsedFeed.etag ?? null,
+        lastModified: parsedFeed.lastModified ?? null,
       },
     };
 
@@ -103,7 +144,11 @@ async function getFeed(url: string, forceRefresh: boolean): Promise<FeedFetchRes
       validatedUrl.toString(),
       parsedFeed.title,
       JSON.stringify(response),
-      settings.cacheTtlMinutes
+      settings.cacheTtlMinutes,
+      {
+        etag: parsedFeed.etag,
+        lastModified: parsedFeed.lastModified,
+      }
     );
 
     return response;
@@ -124,7 +169,10 @@ async function handleFeedRequest(req: Request, reqUrl: URL): Promise<Response> {
   }
 
   const forceRefresh = parsedQuery.data.forceRefresh === "1";
-  const result = await getFeed(parsedQuery.data.url, forceRefresh);
+  const result = await getFeed(parsedQuery.data.url, forceRefresh, {
+    etag: req.headers.get("if-none-match"),
+    lastModified: req.headers.get("if-modified-since"),
+  });
   return json(result, 200, req);
 }
 
@@ -191,7 +239,7 @@ async function handleFeedValidateRequest(req: Request): Promise<Response> {
     const checkedAt = new Date().toISOString();
 
     try {
-      const feed = await getFeed(feedUrl, parsedBody.data.forceRefresh);
+        const feed = await getFeed(feedUrl, parsedBody.data.forceRefresh);
       items.push({
         url: feedUrl,
         isValid: true,

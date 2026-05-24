@@ -53,6 +53,7 @@ const MAX_REDIRECTS = 5;
 export type FeedFetchOptions = {
   validateUrl?: (targetUrl: string) => Promise<URL | void>;
   maxRedirects?: number;
+  validators?: { etag?: string | null; lastModified?: string | null };
 };
 
 function extractYouTubeVideoId(value: string | null | undefined): string | null {
@@ -570,6 +571,12 @@ async function fetchWithValidatedRedirects(
       headers: {
         "user-agent": USER_AGENT,
         accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+        ...(options.validators?.etag
+          ? { "if-none-match": options.validators.etag }
+          : {}),
+        ...(options.validators?.lastModified
+          ? { "if-modified-since": options.validators.lastModified }
+          : {}),
       },
     });
 
@@ -588,7 +595,13 @@ async function fetchWithValidatedRedirects(
 export async function fetchAndParseFeed(
   url: string,
   options: FeedFetchOptions = {}
-): Promise<{ title: string; articles: ArticleWire[] }> {
+): Promise<{
+  title: string;
+  articles: ArticleWire[];
+  etag?: string | null;
+  lastModified?: string | null;
+  notModified?: boolean;
+}> {
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), UPSTREAM_FETCH_TIMEOUT_MS);
   let response: Response;
@@ -604,6 +617,16 @@ export async function fetchAndParseFeed(
     throw error;
   } finally {
     clearTimeout(timeoutId);
+  }
+
+  if (response.status === 304) {
+    return {
+      title: "",
+      articles: [],
+      etag: response.headers.get("etag"),
+      lastModified: response.headers.get("last-modified"),
+      notModified: true,
+    };
   }
 
   if (!response.ok) {
@@ -629,5 +652,9 @@ export async function fetchAndParseFeed(
 
   atomParsed.articles.sort((a, b) => +new Date(b.pubDate) - +new Date(a.pubDate));
 
-  return atomParsed;
+  return {
+    ...atomParsed,
+    etag: response.headers.get("etag"),
+    lastModified: response.headers.get("last-modified"),
+  };
 }

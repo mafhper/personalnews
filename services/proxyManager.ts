@@ -691,7 +691,11 @@ export class ProxyManager {
   /**
    * Try to fetch content through a specific proxy
    */
-  async tryProxy(proxyConfig: ProxyConfig, targetUrl: string): Promise<string> {
+  private async tryProxyWithHeaders(
+    proxyConfig: ProxyConfig,
+    targetUrl: string,
+    options: { conditionalHeaders?: { etag?: string; lastModified?: string } } = {},
+  ): Promise<{ content: string; headers: Headers }> {
     const startTime = Date.now();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let timedOut = false;
@@ -714,7 +718,15 @@ export class ProxyManager {
       const response = await fetch(proxyUrl, {
         method: "GET",
         signal: controller.signal,
-        headers: proxyConfig.headers || {},
+        headers: {
+          ...(proxyConfig.headers || {}),
+          ...(options.conditionalHeaders?.etag
+            ? { "If-None-Match": options.conditionalHeaders.etag }
+            : {}),
+          ...(options.conditionalHeaders?.lastModified
+            ? { "If-Modified-Since": options.conditionalHeaders.lastModified }
+            : {}),
+        },
       });
 
       clearTimeout(timeoutId);
@@ -781,7 +793,7 @@ export class ProxyManager {
         statusCode: response.status,
       });
 
-      return content;
+      return { content, headers: response.headers };
     } catch (error: unknown) {
       if (timeoutId) clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
@@ -813,6 +825,15 @@ export class ProxyManager {
     }
   }
 
+  async tryProxy(
+    proxyConfig: ProxyConfig,
+    targetUrl: string,
+    options: { conditionalHeaders?: { etag?: string; lastModified?: string } } = {},
+  ): Promise<string> {
+    const result = await this.tryProxyWithHeaders(proxyConfig, targetUrl, options);
+    return result.content;
+  }
+
   /**
    * Try multiple proxies with automatic failover
    */
@@ -822,11 +843,13 @@ export class ProxyManager {
       forceClientFallback?: boolean;
       externalOnly?: boolean;
       routeMode?: ProxyRouteMode;
+      conditionalHeaders?: { etag?: string; lastModified?: string };
     } = {},
   ): Promise<{
     content: string;
     proxyUsed: string;
     attempts: ProxyAttempt[];
+    headers?: Headers;
   }> {
     const availableProxies = this.getAvailableProxies(options);
     const attempts: ProxyAttempt[] = [];
@@ -843,7 +866,13 @@ export class ProxyManager {
       const startTime = Date.now();
 
       try {
-        const content = await this.tryProxy(proxy, targetUrl);
+        const { content, headers } = await this.tryProxyWithHeaders(
+          proxy,
+          targetUrl,
+          {
+            conditionalHeaders: options.conditionalHeaders,
+          },
+        );
 
         // Record successful attempt
         const attempt: ProxyAttempt = {
@@ -864,6 +893,7 @@ export class ProxyManager {
           content,
           proxyUsed: proxy.name,
           attempts,
+          headers,
         };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));

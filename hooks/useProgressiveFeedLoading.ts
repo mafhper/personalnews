@@ -33,7 +33,7 @@ import {
   buildFeedLoadingBatches,
   limitArticlesForFeedLoad,
 } from "../services/feedLoadingQueue";
-import { CACHE_POLICY_V1 } from "../services/cachePolicy";
+import { getEffectiveCachePolicy } from "../services/cacheManager";
 import {
   getFeedDisplayName,
   resolveFeedSourceTitle,
@@ -301,6 +301,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
     ): Promise<FeedResult> => {
       const timeoutController = new AbortController();
       const cachedSnapshot = skipCache ? getCachedArticles(feed.url) : null;
+      const policy = getEffectiveCachePolicy();
       const timeoutMs = resolveFeedTimeoutMs();
 
       // Set timeout
@@ -318,6 +319,7 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
             : timeoutController.signal,
           skipCache,
           forceRefresh: skipCache,
+          offlineFallback: policy.offlineFallback,
           discoverHtmlFallback: true,
         });
 
@@ -403,6 +405,27 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
           error instanceof Error ? error.message : "Unknown error";
         const isTimeout =
           errorMessage.includes("abort") || errorMessage.includes("timeout");
+        const fallbackSnapshot = policy.offlineFallback
+          ? getCachedArticles(feed.url)
+          : null;
+
+        if (fallbackSnapshot && fallbackSnapshot.length > 0) {
+          const normalizedCachedSnapshot = limitArticlesForFeedLoad(
+            feed,
+            fallbackSnapshot,
+          ).map((article) => normalizeArticleForFeed(feed, article));
+
+          return {
+            url: feed.url,
+            articles: normalizedCachedSnapshot,
+            title: getFeedDisplayName(
+              feed,
+              normalizedCachedSnapshot[0]?.sourceTitle,
+            ),
+            success: true,
+            error: undefined,
+          };
+        }
 
         logger.warn(`Failed to load feed: ${feed.url}`, {
           additionalData: {
@@ -464,8 +487,9 @@ export const useProgressiveFeedLoading = (feeds: FeedSource[]) => {
       const priorityCategoryId =
         mode === "category" ? request.categoryId : undefined;
       const forceRefresh = request.forceRefresh ?? false;
+      const policy = getEffectiveCachePolicy();
       const cacheTtlMinutes =
-        request.cacheTtlMinutes ?? CACHE_POLICY_V1.feeds.scopedFreshTtlMinutes;
+        request.cacheTtlMinutes ?? policy.feedFreshTtlMinutes;
       const cacheTtlMs = cacheTtlMinutes * 60 * 1000;
       const previousArticles = articlesRef.current;
       const previousScopeKey = visibleScopeKeyRef.current;

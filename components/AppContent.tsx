@@ -651,11 +651,13 @@ const AppContent: React.FC = () => {
       selectedCategory === "all" ||
       selectedCategory === "All"
     ) {
-      return feeds.map((feed) => feed.url);
+      return feeds
+        .filter((feed) => isFeedActive(feed) && !feed.hideFromAll)
+        .map((feed) => feed.url);
     }
 
     return feeds
-      .filter((feed) => feed.categoryId === selectedCategory)
+      .filter((feed) => isFeedActive(feed) && feed.categoryId === selectedCategory)
       .map((feed) => feed.url);
   }, [feeds, selectedCategory, selectedFeedUrl]);
 

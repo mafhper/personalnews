@@ -105,6 +105,75 @@ export const getIndexedDbCacheRecord = async (
   }
 };
 
+export const listIndexedDbCacheRecords = async (): Promise<
+  IndexedDbCacheRecord[]
+> => {
+  const db = await openIndexedDbCache();
+
+  try {
+    return await new Promise<IndexedDbCacheRecord[]>((resolve, reject) => {
+      const transaction = db.transaction(INDEXEDDB_CACHE_STORE_NAME, "readonly");
+      const store = transaction.objectStore(INDEXEDDB_CACHE_STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        resolve((request.result as IndexedDbCacheRecord[] | undefined) ?? []);
+      };
+      request.onerror = () => {
+        reject(transaction.error ?? new Error("Failed to list cache records"));
+      };
+    });
+  } finally {
+    db.close();
+  }
+};
+
+export const estimateIndexedDbCacheSize = async (): Promise<number> => {
+  const records = await listIndexedDbCacheRecords();
+  return records.reduce((total, record) => {
+    return total + JSON.stringify(record).length * 2;
+  }, 0);
+};
+
+export const clearIndexedDbCacheRecords = async (): Promise<number> => {
+  const db = await openIndexedDbCache();
+
+  try {
+    const records = await listIndexedDbCacheRecords();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(INDEXEDDB_CACHE_STORE_NAME, "readwrite");
+      const store = transaction.objectStore(INDEXEDDB_CACHE_STORE_NAME);
+      store.clear();
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => {
+        reject(transaction.error ?? new Error("Failed to clear cache records"));
+      };
+      transaction.onabort = () => {
+        reject(transaction.error ?? new Error("Cache records clear was aborted"));
+      };
+    });
+    return records.length;
+  } finally {
+    db.close();
+  }
+};
+
+export const deleteIndexedDbCacheDatabase = async (): Promise<boolean> => {
+  if (!isIndexedDbCacheAvailable()) return false;
+
+  await new Promise<void>((resolve, reject) => {
+    const request = window.indexedDB.deleteDatabase(INDEXEDDB_CACHE_DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onblocked = () => resolve();
+    request.onerror = () => {
+      reject(request.error ?? new Error("Failed to delete IndexedDB cache"));
+    };
+  });
+
+  return true;
+};
+
 export const migrateSmartFeedCacheToIndexedDb = async (
   options: { removeLegacy?: boolean } = {},
 ): Promise<IndexedDbMigrationResult> => {

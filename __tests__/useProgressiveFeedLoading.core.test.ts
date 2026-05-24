@@ -39,6 +39,12 @@ const feeds: FeedSource[] = [
     customTitle: "Games",
   },
   {
+    url: "https://example.com/podcast.xml",
+    categoryId: "podcasts",
+    customTitle: "Podcast",
+    hideFromAll: true,
+  },
+  {
     url: "https://example.com/quarantined.xml",
     categoryId: "tech",
     customTitle: "Quarantined",
@@ -72,8 +78,10 @@ describe("feedLoadingStrategy", () => {
   });
 
   describe("resolveFeedLoadScope", () => {
-    it("returns every feed for all mode", () => {
+    it("returns every All-visible feed for all mode", () => {
       expect(resolveFeedLoadScope(feeds, { mode: "all" })).toHaveLength(3);
+      expect(resolveFeedLoadScope(feeds, { mode: "all" }).map((feed) => feed.url))
+        .not.toContain("https://example.com/podcast.xml");
     });
 
     it("keeps quarantined feeds out of load scopes", () => {
@@ -94,6 +102,15 @@ describe("feedLoadingStrategy", () => {
           mode: "category",
         }),
       ).toEqual([feeds[1]]);
+    });
+
+    it("keeps feeds hidden from All available in their own category", () => {
+      expect(
+        resolveFeedLoadScope(feeds, {
+          categoryId: "podcasts",
+          mode: "category",
+        }),
+      ).toEqual([feeds[3]]);
     });
 
     it("loads only the selected feed in single-feed mode", () => {
