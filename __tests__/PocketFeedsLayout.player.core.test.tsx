@@ -112,6 +112,56 @@ describe("PocketFeedsLayout audio player", () => {
     expect(screen.getByLabelText("Velocidade de reprodução")).toHaveValue("1.5");
   });
 
+  it("minimizes and expands the podcast player without stopping playback", async () => {
+    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("pocketfeeds-player-expanded"),
+      ).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /minimizar player/i }));
+
+    expect(screen.getByTestId("pocketfeeds-player-minimized")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Posição da reprodução")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /pausar episódio/i }).length,
+    ).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /expandir player/i }));
+
+    expect(screen.getByTestId("pocketfeeds-player-expanded")).toBeInTheDocument();
+    expect(screen.getByLabelText("Posição da reprodução")).toBeInTheDocument();
+  });
+
+  it("closes the podcast player and stops playback", async () => {
+    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("pocketfeeds-player-expanded"),
+      ).toBeInTheDocument(),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /fechar player e parar reprodução/i,
+      }),
+    );
+
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+    expect(screen.queryByTestId("pocketfeeds-player-expanded")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("pocketfeeds-player-minimized")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /tocar episódio/i }).length,
+    ).toBeGreaterThan(0);
+  });
+
   it("does not mark an episode as playing when the browser rejects playback", async () => {
     Object.defineProperty(HTMLMediaElement.prototype, "play", {
       configurable: true,
