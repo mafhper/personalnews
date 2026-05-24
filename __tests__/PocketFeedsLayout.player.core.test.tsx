@@ -581,6 +581,10 @@ describe("PocketFeedsLayout audio player", () => {
       "data-preview-podcast",
       "Design Podcast",
     );
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-backdrop-episode",
+      "Science newest",
+    );
 
     fireEvent.mouseLeave(designTrack);
 
@@ -599,6 +603,10 @@ describe("PocketFeedsLayout audio player", () => {
     expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
       "data-preview-episode",
       "Science older",
+    );
+    expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
+      "data-backdrop-episode",
+      "Science newest",
     );
     expect(screen.getByTestId("pocketfeeds-mixtape-stage")).toHaveAttribute(
       "data-active-podcast",

@@ -783,9 +783,9 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       0,
       podcastGroups.findIndex((group) => group.name === activeGroup.name),
     );
+    const activeArtworkEpisode = getPodcastArtworkEpisode(activeGroup);
     const previewArtworkEpisode =
       hoveredMixtapeEpisode || getPodcastArtworkEpisode(previewGroup);
-    const activeArtworkEpisode = getPodcastArtworkEpisode(activeGroup);
     const latestEpisode = activeGroup.firstEpisode;
     const playEpisode = activeGroup.playableEpisode;
     const highlightedEpisodes = activeGroup.episodes.slice(0, 3);
@@ -858,10 +858,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
             data-active-podcast={activeGroup.name}
             data-preview-podcast={previewGroup.name}
             data-preview-episode={previewArtworkEpisode.title}
+            data-backdrop-episode={activeArtworkEpisode.title}
           >
-            {previewArtworkEpisode.imageUrl ? (
+            {activeArtworkEpisode.imageUrl ? (
               <LazyImage
-                src={previewArtworkEpisode.imageUrl}
+                src={activeArtworkEpisode.imageUrl}
                 className="absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.18] blur-2xl"
                 alt=""
                 priority
