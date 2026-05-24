@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_ARTICLE_LAYOUT, DEFAULT_CONTENT_CONFIG, DEFAULT_HEADER_CONFIG } from "../config/defaultConfig";
-import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
+import {
+  CURATED_LISTS,
+  DEFAULT_FEEDS,
+  INITIAL_APP_CONFIG,
+} from "../constants/curatedFeeds";
 
 describe("initial app configuration", () => {
   it("syncs release setup defaults into generated config", () => {
@@ -29,5 +33,27 @@ describe("initial app configuration", () => {
     expect(DEFAULT_ARTICLE_LAYOUT.articlesPerPage).toBe(21);
     expect(DEFAULT_ARTICLE_LAYOUT.autoRefreshInterval).toBe(15);
     expect(DEFAULT_ARTICLE_LAYOUT.feedCacheTtlMinutes).toBe(10);
+  });
+
+  it("keeps initial YouTube feeds scoped to the default collection", () => {
+    const defaultYouTubeFeeds = DEFAULT_FEEDS.filter(
+      (feed) => feed.categoryId === "youtube",
+    );
+    const curatedYouTubeFeeds = Object.values(CURATED_LISTS)
+      .flat()
+      .filter((feed) => feed.categoryId === "youtube");
+
+    expect(defaultYouTubeFeeds.map((feed) => feed.customTitle)).toEqual([
+      "1155 do ET",
+      "Corridor Crew",
+      "Diolinux",
+      "Tecnologia e Classe",
+    ]);
+    expect(curatedYouTubeFeeds.some((feed) => feed.customTitle === "Alex Ziskind")).toBe(
+      true,
+    );
+    expect(defaultYouTubeFeeds.some((feed) => feed.customTitle === "Alex Ziskind")).toBe(
+      false,
+    );
   });
 });

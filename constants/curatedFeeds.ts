@@ -167,6 +167,12 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "XDA"
   },
   {
+    "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+    "categoryId": "podcasts",
+    "customTitle": "Medo e Delírio em Brasília",
+    "hideFromAll": true
+  },
+  {
     "url": "https://feeds.megaphone.fm/NPP2619427256",
     "categoryId": "podcasts",
     "customTitle": "Foro de Teresina",
@@ -182,6 +188,18 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://feeds.simplecast.com/kfPT8_s8",
     "categoryId": "podcasts",
     "customTitle": "MIDCast Política",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/f0480b34/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "99Vidas",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/1075f6ce0/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "Tecnocast",
     "hideFromAll": true
   },
   {
@@ -268,6 +286,12 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Tecnoblog"
     },
     {
+      "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+      "categoryId": "podcasts",
+      "customTitle": "Medo e Delírio em Brasília",
+      "hideFromAll": true
+    },
+    {
       "url": "https://feeds.megaphone.fm/NPP2619427256",
       "categoryId": "podcasts",
       "customTitle": "Foro de Teresina",
@@ -277,6 +301,24 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://anchor.fm/s/f064cfa8/podcast/rss",
       "categoryId": "podcasts",
       "customTitle": "RapaduraCast",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://feeds.simplecast.com/kfPT8_s8",
+      "categoryId": "podcasts",
+      "customTitle": "MIDCast Política",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://anchor.fm/s/f0480b34/podcast/rss",
+      "categoryId": "podcasts",
+      "customTitle": "99Vidas",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://anchor.fm/s/1075f6ce0/podcast/rss",
+      "categoryId": "podcasts",
+      "customTitle": "Tecnocast",
       "hideFromAll": true
     },
     {
@@ -671,6 +713,24 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://anchor.fm/s/f064cfa8/podcast/rss",
       "categoryId": "podcasts",
       "customTitle": "RapaduraCast",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://feeds.simplecast.com/kfPT8_s8",
+      "categoryId": "podcasts",
+      "customTitle": "MIDCast Política",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://anchor.fm/s/f0480b34/podcast/rss",
+      "categoryId": "podcasts",
+      "customTitle": "99Vidas",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://anchor.fm/s/1075f6ce0/podcast/rss",
+      "categoryId": "podcasts",
+      "customTitle": "Tecnocast",
       "hideFromAll": true
     },
     {

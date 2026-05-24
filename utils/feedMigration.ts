@@ -17,9 +17,28 @@ const normalizeFeedUrlForMigration = (url: string): string => {
   try {
     const parsed = new URL(url.trim());
     parsed.hash = '';
-    parsed.search = '';
+    parsed.hostname = parsed.hostname.toLowerCase();
     parsed.pathname = parsed.pathname.replace(/\/+$/, '') || '/';
-    return parsed.toString().replace(/\/$/, '').toLowerCase();
+
+    const normalizedParams = new URLSearchParams();
+    Array.from(parsed.searchParams.entries())
+      .filter(([key]) => {
+        const normalizedKey = key.toLowerCase();
+        return (
+          !normalizedKey.startsWith('utm_') &&
+          normalizedKey !== 'ref' &&
+          normalizedKey !== 'source'
+        );
+      })
+      .sort(([keyA, valueA], [keyB, valueB]) =>
+        keyA === keyB
+          ? valueA.localeCompare(valueB)
+          : keyA.localeCompare(keyB)
+      )
+      .forEach(([key, value]) => normalizedParams.append(key, value));
+    parsed.search = normalizedParams.toString();
+
+    return parsed.toString().replace(/\/$/, '');
   } catch {
     return url.trim().replace(/\/+$/, '').toLowerCase();
   }
@@ -67,6 +86,12 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
 
   // Sync metadata from DEFAULT_FEEDS to existing feeds
   let hasChanges = false;
+  const defaultFeedsByNormalizedUrl = new Map(
+    DEFAULT_FEEDS.map((feed) => [
+      normalizeFeedUrlForMigration(feed.url),
+      feed,
+    ]),
+  );
   const migratedFeeds = currentFeeds.map(feed => {
     const canonicalReplacement = CANONICAL_FEED_REPLACEMENTS.find((replacement) => {
       const title = feed.customTitle || feed.url;
@@ -87,7 +112,9 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
       hasChanges = true;
     }
 
-    const knownFeed = DEFAULT_FEEDS.find(df => df.url === feedToSync.url);
+    const knownFeed = defaultFeedsByNormalizedUrl.get(
+      normalizeFeedUrlForMigration(feedToSync.url),
+    );
     if (knownFeed) {
       const updatedFeed = { ...feedToSync };
       let changed = false;
@@ -132,10 +159,20 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
     dedupedFeeds.push(feed);
   }
 
+  const repairedFeeds = [...dedupedFeeds];
+  for (const defaultFeed of DEFAULT_FEEDS) {
+    const normalizedUrl = normalizeFeedUrlForMigration(defaultFeed.url);
+    if (seenUrls.has(normalizedUrl)) continue;
+
+    hasChanges = true;
+    seenUrls.add(normalizedUrl);
+    repairedFeeds.push({ ...defaultFeed });
+  }
+
   if (hasChanges) {
     return {
       migrated: true,
-      feeds: dedupedFeeds,
+      feeds: repairedFeeds,
       reason: 'Synchronized metadata with default configurations'
     };
   }
