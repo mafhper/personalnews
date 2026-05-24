@@ -45,6 +45,7 @@ const VALID_LAYOUTS = new Set([
 ]);
 const VALID_HEADER_POSITIONS = new Set(['static', 'sticky', 'floating', 'hidden']);
 const VALID_HEADER_HEIGHTS = new Set(['ultra-compact', 'tiny', 'compact', 'normal', 'spacious']);
+const VALID_FAVORITE_TOOLBAR_VARIANTS = new Set(['inline', 'drawer']);
 const VALID_LOGO_SIZES = new Set(['sm', 'md', 'lg']);
 const VALID_PAGINATION_TYPES = new Set(['numbered', 'loadMore', 'infinite']);
 const VALID_TIME_FORMATS = new Set(['12h', '24h']);
@@ -117,6 +118,7 @@ function sync() {
     headerHeight: 'normal',
     headerOpacity: 0.6,
     headerBlur: 20,
+    favoriteToolbarVariant: 'inline',
     logoSize: 'md',
     paginationType: 'numbered',
     topStoriesCount: 15,
@@ -209,6 +211,13 @@ function sync() {
           globalConfig.headerBlur = blur;
         } else {
           log.warn(`Blur do header inválido: "${value}" — mantendo padrão.`);
+        }
+      }
+      if (key === 'filtros de favoritos') {
+        if (VALID_FAVORITE_TOOLBAR_VARIANTS.has(normalizedValue)) {
+          globalConfig.favoriteToolbarVariant = normalizedValue;
+        } else {
+          log.warn(`Filtros de favoritos inválido: "${value}" — mantendo padrão.`);
         }
       }
       if (key === 'tamanho do logo') {

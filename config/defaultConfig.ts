@@ -76,6 +76,7 @@ export const DEFAULT_HEADER_CONFIG: HeaderConfig = {
     style: 'default',           // 'default' | 'minimal' | 'centered' | 'transparent'
     position: defaultHeaderPosition,       // 'static' | 'sticky' | 'floating' | 'hidden'
     height: resolveOneOf(initialConfig.headerHeight, ['ultra-compact', 'tiny', 'compact', 'normal', 'spacious'] as const, 'normal'),
+    favoriteToolbarVariant: resolveOneOf(initialConfig.favoriteToolbarVariant, ['inline', 'drawer'] as const, 'inline'),
     showTitle: true,           // Mostrar título no header
     showLogo: true,             // Mostrar logo no header
     customTitle: 'Personal News',

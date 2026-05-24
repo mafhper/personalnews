@@ -644,6 +644,22 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 </select>
               </div>
 
+              <div>
+                <label className={fieldLabelClass}>Filtros de Favoritos</label>
+                <select
+                  value={headerConfig.favoriteToolbarVariant || 'inline'}
+                  onChange={(e) =>
+                    updateHeaderConfig({
+                      favoriteToolbarVariant: e.target.value as NonNullable<HeaderConfig['favoriteToolbarVariant']>,
+                    })
+                  }
+                  className={surfaceInputClass}
+                >
+                  <option value="inline">Faixa inline</option>
+                  <option value="drawer">Gaveta no header</option>
+                </select>
+              </div>
+
               {/* Header Opacity */}
               <div>
                 <label className={fieldLabelClass}>Opacidade: {Math.round((headerConfig.bgOpacity ?? 0.9) * 100)}%</label>

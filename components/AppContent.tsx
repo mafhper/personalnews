@@ -64,14 +64,12 @@ import { useSwipeGestures } from "../hooks/useSwipeGestures";
 import { useArticleLayout } from "../hooks/useArticleLayout";
 import type { Article, FeedCategory } from "../types";
 import { INITIAL_APP_CONFIG } from "../constants/curatedFeeds";
-import { FavoritesViewToolbar } from "./FavoritesViewToolbar";
 const BackgroundLayer = lazy(() =>
   import("./BackgroundLayer").then((m) => ({ default: m.BackgroundLayer })),
 );
 import { useLogger } from "../services/logger";
 import {
   filterAndSortFavorites,
-  getFavoriteToolbarOptions,
   type FavoriteMediaFilter,
   type FavoriteReadFilter,
   type FavoriteSortMode,
@@ -214,10 +212,6 @@ const AppContent: React.FC = () => {
     () => favorites.map(favoriteToArticle),
     [favorites],
   );
-  const favoriteToolbarOptions = useMemo(
-    () => getFavoriteToolbarOptions(favorites),
-    [favorites],
-  );
   const filteredFavorites = useMemo(
     () =>
       filterAndSortFavorites(favorites, {
@@ -249,8 +243,15 @@ const AppContent: React.FC = () => {
   const hasActiveFavoriteFilters =
     favoriteReadFilter !== "all" ||
     favoriteMediaFilter !== "all" ||
+    favoriteSortMode !== "saved-desc" ||
     favoriteCategoryFilter !== "all" ||
     selectedFavoriteSourceKey !== null;
+  const activeFavoriteFilterCount =
+    (favoriteReadFilter !== "all" ? 1 : 0) +
+    (favoriteMediaFilter !== "all" ? 1 : 0) +
+    (favoriteSortMode !== "saved-desc" ? 1 : 0) +
+    (favoriteCategoryFilter !== "all" ? 1 : 0) +
+    (selectedFavoriteSourceKey !== null ? 1 : 0);
   const isFavoritesView = selectedCategory === FAVORITES_VIEW_ID;
   const sourceArticlesForView = isFavoritesView
     ? filteredFavoriteArticles
@@ -884,6 +885,24 @@ const AppContent: React.FC = () => {
     setFavoriteSortMode("saved-desc");
   }, []);
 
+  const headerFavoriteToolbar =
+    isFavoritesView && favorites.length > 0 && !showSkeleton
+      ? {
+          totalCount: favorites.length,
+          visibleCount: filteredFavorites.length,
+          unreadCount: favoriteUnreadCount,
+          readFilter: favoriteReadFilter,
+          mediaFilter: favoriteMediaFilter,
+          sortMode: favoriteSortMode,
+          hasActiveFilters: hasActiveFavoriteFilters,
+          activeFilterCount: activeFavoriteFilterCount,
+          onReadFilterChange: setFavoriteReadFilter,
+          onMediaFilterChange: setFavoriteMediaFilter,
+          onSortModeChange: setFavoriteSortMode,
+          onClearFilters: clearFavoriteFilters,
+        }
+      : undefined;
+
   const handleCategoryNavigation = useCallback(
     (categoryIndex: number) => {
       const categoryId = keyboardCategoryIds[categoryIndex];
@@ -1084,13 +1103,16 @@ const AppContent: React.FC = () => {
               onCategoryLayoutChange={handleCategoryLayoutChange}
               onGoAll={handleTitleNavigation}
               onGoLanding={handleLogoToLanding}
+              favoriteToolbar={headerFavoriteToolbar}
             />
           </Suspense>
         )}
         <main
           ref={swipeRef}
           id="main-content"
-          className={`w-full min-h-screen relative z-10 flex-grow ${headerPaddingClass} pb-6 lg:pb-8 transition-[padding] duration-300`}
+          className={`w-full min-h-screen relative z-10 flex-grow ${headerPaddingClass} ${
+            headerFavoriteToolbar ? "favorites-header-toolbar-integrated" : ""
+          } pb-6 lg:pb-8 transition-[padding] duration-300`}
           style={{
             paddingTop:
               "calc(var(--feed-header-offset, 0px) + var(--feed-header-gap, 0px))",
@@ -1164,28 +1186,6 @@ const AppContent: React.FC = () => {
                 </button>
               </div>
             </div>
-          )}
-
-          {isFavoritesView && favorites.length > 0 && !showSkeleton && (
-            <FavoritesViewToolbar
-              totalCount={favorites.length}
-              visibleCount={filteredFavorites.length}
-              unreadCount={favoriteUnreadCount}
-              readFilter={favoriteReadFilter}
-              mediaFilter={favoriteMediaFilter}
-              categoryFilter={favoriteCategoryFilter}
-              sourceKey={selectedFavoriteSourceKey}
-              sortMode={favoriteSortMode}
-              categoryOptions={favoriteToolbarOptions.categories}
-              sourceOptions={favoriteToolbarOptions.sources}
-              hasActiveFilters={hasActiveFavoriteFilters}
-              onReadFilterChange={setFavoriteReadFilter}
-              onMediaFilterChange={setFavoriteMediaFilter}
-              onCategoryFilterChange={setFavoriteCategoryFilter}
-              onSourceKeyChange={setSelectedFavoriteSourceKey}
-              onSortModeChange={setFavoriteSortMode}
-              onClearFilters={clearFavoriteFilters}
-            />
           )}
 
           {showSkeleton ? (

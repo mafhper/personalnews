@@ -2,8 +2,12 @@ import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from "re
 import type { SearchFilters } from "./SearchBar";
 import { Article, FeedCategory, FeedSource } from "../types";
 import Logo from "./Logo";
-import { HeaderIcons } from "./icons";
+import { ActionIcons, HeaderIcons } from "./icons";
 import FeedDropdown from "./FeedDropdown";
+import {
+  FavoritesHeaderToolbar,
+  type HeaderFavoriteToolbarProps,
+} from "./FavoritesHeaderToolbar";
 import { useAppearance } from "../hooks/useAppearance";
 import { useLanguage } from "../hooks/useLanguage";
 import { APP_BRAND_NAME } from "../config/brand";
@@ -33,6 +37,7 @@ interface HeaderProps {
   onGoHome?: () => void;
   onGoLanding?: () => void;
   onGoAll?: () => void;
+  favoriteToolbar?: HeaderFavoriteToolbarProps;
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
@@ -114,6 +119,22 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [mobileExpandedCategory, setMobileExpandedCategory] = useState<string | null>(null);
   const [desktopActionsOpen, setDesktopActionsOpen] = useState(false);
+  const [favoriteDrawerOpen, setFavoriteDrawerOpen] = useState(false);
+  const [isFavoriteToolbarCompact, setIsFavoriteToolbarCompact] =
+    useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateCompactState = () =>
+      setIsFavoriteToolbarCompact(mediaQuery.matches);
+
+    updateCompactState();
+    mediaQuery.addEventListener("change", updateCompactState);
+    return () =>
+      mediaQuery.removeEventListener("change", updateCompactState);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -320,9 +341,42 @@ const Header: React.FC<HeaderProps> = (props) => {
     return Array.from(feedsBySource.values());
   }, [props.favoriteArticles, props.primaryView]);
   const hasManyCategories = visibleCategories.length >= 7;
+  const showFavoriteToolbar = Boolean(props.favoriteToolbar);
+  const configuredFavoriteToolbarVariant =
+    headerConfig.favoriteToolbarVariant || "inline";
+  const effectiveFavoriteToolbarVariant = isFavoriteToolbarCompact
+    ? "drawer"
+    : configuredFavoriteToolbarVariant;
+  const showFavoriteDrawer =
+    showFavoriteToolbar && effectiveFavoriteToolbarVariant === "drawer";
+  const showFavoriteInlineToolbar =
+    showFavoriteToolbar && effectiveFavoriteToolbarVariant === "inline";
+  const activeFavoriteFilterCount =
+    props.favoriteToolbar?.activeFilterCount || 0;
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
   const closeDesktopActions = () => setDesktopActionsOpen(false);
+
+  useEffect(() => {
+    if (!showFavoriteDrawer) {
+      setFavoriteDrawerOpen(false);
+    }
+  }, [showFavoriteDrawer]);
+
+  const revealHiddenHeader = () => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    setIsHeaderVisible(true);
+  };
+
+  const hideHeaderImmediately = () => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    setIsHeaderVisible(false);
+  };
+
+  const openHiddenFavoriteFilters = () => {
+    revealHiddenHeader();
+    setFavoriteDrawerOpen(true);
+  };
 
   const drawerAdminShortcuts = [
     {
@@ -514,17 +568,17 @@ const Header: React.FC<HeaderProps> = (props) => {
               ? 16
               : 12
           : 0;
-      // Gap entre menu e conteúdo: usa variável CSS --feed-header-content-gap (ex.: 1.3125rem em index.css)
+      // Gap entre menu e conteúdo: usa variável CSS --feed-header-content-gap.
       const gapPx = (() => {
         const cssGap = typeof getComputedStyle !== "undefined"
           ? getComputedStyle(document.documentElement).getPropertyValue("--feed-header-content-gap").trim()
           : "";
         if (cssGap && /^\d+(\.\d+)?(px|rem|em)$/.test(cssGap)) {
           if (cssGap.endsWith("px")) return parseFloat(cssGap) || 21;
-          const rem = parseFloat(cssGap) || 1.3125;
+          const rem = parseFloat(cssGap) || 2.5;
           return Math.round(rem * 16);
         }
-        return 21;
+        return 40;
       })();
       // +2px safety buffer to avoid occasional overlap during dynamic reflow.
       const offset = isFixedMode ? Math.max(0, rect.height + 2) : 0;
@@ -553,7 +607,7 @@ const Header: React.FC<HeaderProps> = (props) => {
         resizeObserver.disconnect();
       }
       document.documentElement.style.setProperty('--feed-header-offset', '0px');
-      document.documentElement.style.setProperty('--feed-header-gap', 'var(--feed-header-content-gap, 1.3125rem)');
+      document.documentElement.style.setProperty('--feed-header-gap', 'var(--feed-header-content-gap, 2.5rem)');
       document.documentElement.style.setProperty('--feed-header-top-gap', '0px');
     };
   }, [
@@ -563,8 +617,14 @@ const Header: React.FC<HeaderProps> = (props) => {
     mobileCategoriesOpen,
     visibleCategories.length,
     headerConfig.height,
+    headerConfig.favoriteToolbarVariant,
     headerConfig.showLogo,
     headerConfig.showTitle,
+    favoriteDrawerOpen,
+    showFavoriteToolbar,
+    showFavoriteDrawer,
+    showFavoriteInlineToolbar,
+    isFavoriteToolbarCompact,
   ]);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -707,6 +767,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                           : undefined
                       }
                       variant={headerStyleVariant}
+                      headerHeight={headerConfig.height}
                     />
                   </div>
                 );
@@ -763,6 +824,43 @@ const Header: React.FC<HeaderProps> = (props) => {
 
   return (
     <>
+      {headerPosition === "hidden" && !effectiveHeaderVisible && (
+        <div
+          className="feed-header-reveal-cluster"
+          role="group"
+          aria-label="Controles do cabeçalho oculto"
+        >
+          <button
+            type="button"
+            className="feed-header-reveal-control"
+            onClick={revealHiddenHeader}
+            aria-label="Mostrar cabeçalho"
+          >
+            <HeaderIcons.ChevronDown showBackground={false} size="xs" />
+            <span>Header</span>
+          </button>
+          {showFavoriteToolbar && (
+            <button
+              type="button"
+              className="feed-header-reveal-control feed-header-reveal-control--filters"
+              onClick={openHiddenFavoriteFilters}
+              aria-label={
+                activeFavoriteFilterCount > 0
+                  ? `Abrir filtros de favoritos (${activeFavoriteFilterCount} ativos)`
+                  : "Abrir filtros de favoritos"
+              }
+            >
+              <ActionIcons.SlidersHorizontal className="h-3.5 w-3.5" />
+              <span>Filtros</span>
+              {activeFavoriteFilterCount > 0 && (
+                <span className="feed-header-reveal-control__badge">
+                  {activeFavoriteFilterCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+      )}
       <header
         ref={headerRef}
         className={`app-system-font ${headerPositionClasses[headerPosition]} z-30 transition-[transform,opacity,top,margin,box-shadow,background-color,border-color] duration-300 ${
@@ -771,6 +869,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           isScrolled && !isFloating ? 'border-b' : ''
         }`}
         style={headerInlineStyle}
+        data-header-height={headerConfig.height}
       >
         <div
           className={`pointer-events-none absolute inset-0 rounded-[inherit] ${
@@ -845,6 +944,25 @@ const Header: React.FC<HeaderProps> = (props) => {
 
             {/* Right Section: Actions */}
             <div className="feed-header-actions relative z-10 flex flex-shrink-0 items-center justify-end space-x-2" ref={desktopActionsRef}>
+              {showFavoriteDrawer && (
+                <button
+                  type="button"
+                  onClick={() => setFavoriteDrawerOpen((open) => !open)}
+                  className={`feed-header-control hidden md:inline-flex ${
+                    favoriteDrawerOpen ? "feed-header-control--active" : ""
+                  }`}
+                  title="Filtros de favoritos"
+                  aria-label="Filtros de favoritos"
+                  aria-expanded={favoriteDrawerOpen}
+                >
+                  <ActionIcons.SlidersHorizontal className="h-4 w-4" />
+                  {activeFavoriteFilterCount > 0 && (
+                    <span className="feed-header-control__badge">
+                      {activeFavoriteFilterCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* Desktop Actions */}
               <div className={`${desktopFullActionsClass} items-center space-x-1`}>
@@ -898,6 +1016,21 @@ const Header: React.FC<HeaderProps> = (props) => {
                   </div>
                 )}
               </div>
+              {headerPosition === "hidden" && effectiveHeaderVisible && (
+                <button
+                  type="button"
+                  onClick={hideHeaderImmediately}
+                  className="feed-header-control hidden md:inline-flex"
+                  title="Esconder cabeçalho"
+                  aria-label="Esconder cabeçalho"
+                >
+                  <HeaderIcons.ChevronDown
+                    showBackground={false}
+                    size="sm"
+                    className="rotate-180"
+                  />
+                </button>
+              )}
             </div>
           </div>
 
@@ -939,6 +1072,36 @@ const Header: React.FC<HeaderProps> = (props) => {
                   </div>
                 </div>
               </div>
+              {showFavoriteDrawer && (
+                <button
+                  onClick={() => setFavoriteDrawerOpen((open) => !open)}
+                  className={`feed-header-control feed-header-control--filled shrink-0 ${
+                    favoriteDrawerOpen ? "feed-header-control--active" : ""
+                  }`}
+                  aria-label="Filtros de favoritos"
+                  aria-expanded={favoriteDrawerOpen}
+                >
+                  <ActionIcons.SlidersHorizontal className="h-4 w-4" />
+                  {activeFavoriteFilterCount > 0 && (
+                    <span className="feed-header-control__badge">
+                      {activeFavoriteFilterCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {headerPosition === "hidden" && effectiveHeaderVisible && (
+                <button
+                  onClick={hideHeaderImmediately}
+                  className="feed-header-control feed-header-control--filled shrink-0"
+                  aria-label="Esconder cabeçalho"
+                >
+                  <HeaderIcons.ChevronDown
+                    showBackground={false}
+                    size="sm"
+                    className="rotate-180"
+                  />
+                </button>
+              )}
               <button
                 onClick={() => setMobileCategoriesOpen((prev) => !prev)}
                 className="feed-header-control feed-header-control--filled shrink-0"
@@ -1025,7 +1188,28 @@ const Header: React.FC<HeaderProps> = (props) => {
             )}
           </div>
 
+          {showFavoriteInlineToolbar && props.favoriteToolbar && (
+            <div className="favorites-header-toolbar-row favorites-header-toolbar-row--inline hidden md:block">
+              <FavoritesHeaderToolbar {...props.favoriteToolbar} />
+            </div>
+          )}
+
         </div>
+        {showFavoriteDrawer && props.favoriteToolbar && (
+          <div
+            className={`favorites-header-toolbar-drawer ${
+              favoriteDrawerOpen ? "favorites-header-toolbar-drawer--open" : ""
+            }`}
+          >
+            <div
+              className={`favorites-header-toolbar-drawer__inner mx-auto px-3 sm:px-4 ${
+                !isFloating ? "container" : "max-w-7xl"
+              }`}
+            >
+              <FavoritesHeaderToolbar {...props.favoriteToolbar} />
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Mobile Drawer */}

@@ -65,6 +65,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Opacidade do Header: 60;
 - Blur do Header: 20;
 - Tamanho do Logo: md;
+- Filtros de Favoritos: inline;
   Opções:
 - `ultra-compact`: Cabeçalho muito baixo
 - `tiny`: Cabeçalho pequeno
@@ -74,6 +75,8 @@ O formato é rigoroso para permitir a sincronização automática.
 - `sm`: Logo pequeno
 - `md`: Logo médio
 - `lg`: Logo grande
+- `inline`: Filtros de Favoritos em faixa compacta no header
+- `drawer`: Filtros de Favoritos em gaveta no header
 
 ---
 

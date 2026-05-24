@@ -312,16 +312,18 @@ describe("theme contrast hotspots", () => {
   it("uses scoped semantic classes for the favorites toolbar", () => {
     const cssSource = readFileSync(resolve(process.cwd(), "index.css"), "utf8");
     const toolbarSource = readFileSync(
-      resolve(process.cwd(), "components/FavoritesViewToolbar.tsx"),
+      resolve(process.cwd(), "components/FavoritesHeaderToolbar.tsx"),
       "utf8",
     );
 
-    expect(cssSource).toContain(".favorites-toolbar-frame");
-    expect(cssSource).toContain(".favorites-toolbar-frame + .feed-layout");
-    expect(cssSource).toContain(".favorites-toolbar__controls");
-    expect(cssSource).toContain(".favorites-toolbar__segment--active");
-    expect(cssSource).toContain("background: rgba(var(--color-accent), 0.14);");
-    expect(toolbarSource).toContain("favorites-toolbar-frame");
+    expect(cssSource).toContain(".favorites-header-toolbar-row");
+    expect(cssSource).toContain(".favorites-header-toolbar-drawer");
+    expect(cssSource).toContain(".favorites-header-toolbar__control");
+    expect(cssSource).toContain(
+      ".favorites-header-toolbar__control[data-tone=\"unread\"]",
+    );
+    expect(cssSource).toContain("background: rgb(var(--color-accent) / 0.14);");
+    expect(toolbarSource).toContain("favorites-header-toolbar");
     expect(toolbarSource).not.toContain("feed-page-frame");
   });
 

@@ -9,6 +9,7 @@ describe("initial app configuration", () => {
       headerHeight: "tiny",
       headerOpacity: 0.6,
       headerBlur: 20,
+      favoriteToolbarVariant: "inline",
       logoSize: "md",
       paginationType: "numbered",
       topStoriesCount: 15,
@@ -21,6 +22,7 @@ describe("initial app configuration", () => {
     expect(DEFAULT_HEADER_CONFIG.height).toBe("tiny");
     expect(DEFAULT_HEADER_CONFIG.bgOpacity).toBe(0.6);
     expect(DEFAULT_HEADER_CONFIG.blur).toBe(20);
+    expect(DEFAULT_HEADER_CONFIG.favoriteToolbarVariant).toBe("inline");
     expect(DEFAULT_HEADER_CONFIG.logoSize).toBe("md");
     expect(DEFAULT_CONTENT_CONFIG.paginationType).toBe("numbered");
     expect(DEFAULT_ARTICLE_LAYOUT.topStoriesCount).toBe(15);

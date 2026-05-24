@@ -30,6 +30,7 @@ export interface HeaderConfig {
   style: "default" | "centered" | "minimal";
   position: "static" | "sticky" | "floating" | "hidden";
   height: "ultra-compact" | "tiny" | "compact" | "normal" | "spacious";
+  favoriteToolbarVariant?: "inline" | "drawer";
   showTitle: boolean;
   showLogo?: boolean;
   customTitle: string;

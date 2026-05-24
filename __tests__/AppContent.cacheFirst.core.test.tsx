@@ -300,6 +300,21 @@ vi.mock("../components/Header", () => ({
     onRefreshClick?: () => void;
     onSearch?: (query: string, filters: Record<string, never>) => void;
     onSearchResultsChange?: (results: Article[]) => void;
+    favoriteToolbar?: {
+      readFilter: "all" | "unread" | "read";
+      mediaFilter: "all" | "article" | "podcast" | "video" | "unknown";
+      sortMode: "saved-desc" | "published-desc" | "source-asc";
+      hasActiveFilters: boolean;
+      activeFilterCount: number;
+      onReadFilterChange: (filter: "all" | "unread" | "read") => void;
+      onMediaFilterChange: (
+        filter: "all" | "article" | "podcast" | "video" | "unknown",
+      ) => void;
+      onSortModeChange: (
+        mode: "saved-desc" | "published-desc" | "source-asc",
+      ) => void;
+      onClearFilters: () => void;
+    };
   }) => (
     <div data-testid="header">
       <div data-testid="primary-view">{props.primaryView || "all"}</div>
@@ -316,6 +331,57 @@ vi.mock("../components/Header", () => ({
       </button>
       <button onClick={() => props.onGoAll?.()}>Go all</button>
       <button onClick={() => props.onRefreshClick?.()}>Refresh</button>
+      {props.favoriteToolbar && (
+        <div data-testid="favorite-header-toolbar">
+          <button
+            onClick={() => props.favoriteToolbar?.onReadFilterChange("unread")}
+          >
+            Não lidos
+          </button>
+          <select
+            aria-label="Tipo de favorito"
+            value={props.favoriteToolbar.mediaFilter}
+            onChange={(event) =>
+              props.favoriteToolbar?.onMediaFilterChange(
+                event.target.value as
+                  | "all"
+                  | "article"
+                  | "podcast"
+                  | "video"
+                  | "unknown",
+              )
+            }
+          >
+            <option value="all">Todos os tipos</option>
+            <option value="article">Artigos</option>
+            <option value="podcast">Podcasts</option>
+          </select>
+          <select
+            aria-label="Ordenação de favoritos"
+            value={props.favoriteToolbar.sortMode}
+            onChange={(event) =>
+              props.favoriteToolbar?.onSortModeChange(
+                event.target.value as
+                  | "saved-desc"
+                  | "published-desc"
+                  | "source-asc",
+              )
+            }
+          >
+            <option value="saved-desc">Salvos recentemente</option>
+            <option value="published-desc">Publicados recentemente</option>
+            <option value="source-asc">Fonte A-Z</option>
+          </select>
+          {props.favoriteToolbar.hasActiveFilters && (
+            <button
+              aria-label="Limpar filtros"
+              onClick={() => props.favoriteToolbar?.onClearFilters()}
+            >
+              Limpar filtros ({props.favoriteToolbar.activeFilterCount})
+            </button>
+          )}
+        </div>
+      )}
       <button
         onClick={() => {
           props.onSearch?.("favorite", {});
@@ -659,7 +725,9 @@ describe("AppContent cache-first rendering", () => {
     expect(screen.queryByText("Favoritos vazio")).not.toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
+      fireEvent.click(
+        screen.getAllByRole("button", { name: "Limpar filtros" })[0],
+      );
       await Promise.resolve();
     });
 

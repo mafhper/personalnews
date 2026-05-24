@@ -12,6 +12,7 @@ export const INITIAL_APP_CONFIG = {
   "headerHeight": "tiny",
   "headerOpacity": 0.6,
   "headerBlur": 20,
+  "favoriteToolbarVariant": "inline",
   "logoSize": "md",
   "paginationType": "numbered",
   "topStoriesCount": 15,

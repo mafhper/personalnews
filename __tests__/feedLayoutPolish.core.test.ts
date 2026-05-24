@@ -152,6 +152,24 @@ describe("feed layout polish wiring", () => {
     expect(masonry).not.toContain("h-[60vh]");
   });
 
+  it("normalizes feed top clearance through the main header offset", () => {
+    const css = read("index.css");
+    const header = read("components/Header.tsx");
+
+    expect(css).toContain("--feed-header-content-gap: 2.5rem");
+    expect(css).toContain("--feed-layout-top-clearance: var(--space-6)");
+    expect(css).toContain(".feed-layout[data-layout=\"modern\"]");
+    expect(css).toContain("--feed-layout-top-clearance: var(--space-8)");
+    expect(css).toContain(".feed-layout[data-layout=\"compact\"]");
+    expect(css).toContain("--feed-layout-top-clearance: var(--space-5)");
+    expect(css).toContain("padding-top: var(--feed-layout-top-clearance)");
+    expect(css).toContain('.feed-layout[data-layout="immersive"] > div');
+    expect(header).toContain("var(--feed-header-content-gap, 2.5rem)");
+    expect(header).not.toContain("showFavoriteToolbar ? Math.min");
+    expect(css).not.toContain("var(--feed-header-offset, 64px)\n  );");
+    expect(css).not.toContain("var(--feed-header-offset, 56px) + 0.25rem");
+  });
+
   it("keeps favorite actions grouped with read and visit controls where requested", () => {
     for (const path of [
       "components/layouts/BentoLayout.tsx",

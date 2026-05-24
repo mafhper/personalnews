@@ -1,7 +1,7 @@
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { FavoritesViewToolbar } from "../components/FavoritesViewToolbar";
+import { FavoritesHeaderToolbar } from "../components/FavoritesHeaderToolbar";
 
 const defaultProps = {
   totalCount: 5,
@@ -9,102 +9,99 @@ const defaultProps = {
   unreadCount: 2,
   readFilter: "all" as const,
   mediaFilter: "all" as const,
-  categoryFilter: "all",
-  sourceKey: null,
   sortMode: "saved-desc" as const,
-  categoryOptions: [
-    { value: "all", label: "Todas as categorias" },
-    { value: "Tech", label: "Tech" },
-  ],
-  sourceOptions: [
-    { value: "all", label: "Todas as fontes" },
-    { value: "favorite-source:example", label: "Example" },
-  ],
   hasActiveFilters: false,
+  activeFilterCount: 0,
   onReadFilterChange: vi.fn(),
   onMediaFilterChange: vi.fn(),
-  onCategoryFilterChange: vi.fn(),
-  onSourceKeyChange: vi.fn(),
   onSortModeChange: vi.fn(),
   onClearFilters: vi.fn(),
 };
 
-describe("FavoritesViewToolbar", () => {
-  it("renders total and visible counts", () => {
-    render(<FavoritesViewToolbar {...defaultProps} />);
+describe("FavoritesHeaderToolbar", () => {
+  it("renders compact favorites filters without category or source controls", () => {
+    render(<FavoritesHeaderToolbar {...defaultProps} />);
 
-    expect(screen.getByText("3 de 5 visíveis")).toBeInTheDocument();
-    expect(screen.getByText("2 não lidos")).toBeInTheDocument();
     expect(
-      screen.getByLabelText("Filtros de favoritos"),
-    ).toHaveClass("favorites-toolbar-frame");
-    expect(
-      screen.getByLabelText("Filtros de favoritos"),
-    ).not.toHaveClass("feed-page-frame");
+      screen.getByRole("toolbar", { name: "Filtros de favoritos" }),
+    ).toHaveClass("favorites-header-toolbar");
+    expect(screen.getByText("Todos")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tipo de favorito" }))
+      .toHaveTextContent("Todos os tipos");
+    expect(screen.getByRole("button", { name: "Ordenação de favoritos" }))
+      .toHaveTextContent("Salvos recentemente");
+    expect(screen.queryByLabelText("Categoria de favorito")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Fonte de favorito")).not.toBeInTheDocument();
   });
 
-  it("calls handlers when filters change", () => {
+  it("cycles the read filter through the next state", () => {
     const onReadFilterChange = vi.fn();
+
+    render(
+      <FavoritesHeaderToolbar
+        {...defaultProps}
+        onReadFilterChange={onReadFilterChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Mostrando todos/ }));
+
+    expect(onReadFilterChange).toHaveBeenCalledWith("unread");
+  });
+
+  it("calls handlers from type and sort dropdowns", () => {
     const onMediaFilterChange = vi.fn();
-    const onCategoryFilterChange = vi.fn();
-    const onSourceKeyChange = vi.fn();
     const onSortModeChange = vi.fn();
 
     render(
-      <FavoritesViewToolbar
+      <FavoritesHeaderToolbar
         {...defaultProps}
-        onReadFilterChange={onReadFilterChange}
         onMediaFilterChange={onMediaFilterChange}
-        onCategoryFilterChange={onCategoryFilterChange}
-        onSourceKeyChange={onSourceKeyChange}
         onSortModeChange={onSortModeChange}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Não lidos" }));
-    fireEvent.change(screen.getByLabelText("Tipo de favorito"), {
-      target: { value: "podcast" },
-    });
-    fireEvent.change(screen.getByLabelText("Categoria de favorito"), {
-      target: { value: "Tech" },
-    });
-    fireEvent.change(screen.getByLabelText("Fonte de favorito"), {
-      target: { value: "favorite-source:example" },
-    });
-    fireEvent.change(screen.getByLabelText("Ordenação de favoritos"), {
-      target: { value: "source-asc" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Tipo de favorito" }));
+    const mediaMenu = screen.getByRole("listbox", { name: "Tipo de favorito" });
+    expect(
+      screen.getByRole("toolbar", { name: "Filtros de favoritos" }),
+    ).not.toContainElement(mediaMenu);
+    expect(mediaMenu.parentElement).toBe(document.body);
+    fireEvent.click(screen.getByRole("option", { name: "Podcasts" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ordenação de favoritos" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Fonte A-Z" }));
 
-    expect(onReadFilterChange).toHaveBeenCalledWith("unread");
     expect(onMediaFilterChange).toHaveBeenCalledWith("podcast");
-    expect(onCategoryFilterChange).toHaveBeenCalledWith("Tech");
-    expect(onSourceKeyChange).toHaveBeenCalledWith("favorite-source:example");
     expect(onSortModeChange).toHaveBeenCalledWith("source-asc");
   });
 
   it("shows the clear filters button only when a filter is active", () => {
     const onClearFilters = vi.fn();
     const { rerender } = render(
-      <FavoritesViewToolbar
+      <FavoritesHeaderToolbar
         {...defaultProps}
         onClearFilters={onClearFilters}
       />,
     );
 
     expect(
-      screen.queryByRole("button", { name: "Limpar" }),
+      screen.queryByRole("button", { name: "Limpar filtros" }),
     ).not.toBeInTheDocument();
 
     rerender(
-      <FavoritesViewToolbar
+      <FavoritesHeaderToolbar
         {...defaultProps}
         hasActiveFilters
+        activeFilterCount={2}
         readFilter="unread"
         onClearFilters={onClearFilters}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Limpar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
 
     expect(onClearFilters).toHaveBeenCalledTimes(1);
   });
