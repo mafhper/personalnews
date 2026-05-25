@@ -195,7 +195,6 @@ O formato é rigoroso para permitir a sincronização automática.
 ### design
 
 - B9: <https://www.b9.com.br/feed/>
-- Awwwards: <https://www.awwwards.com/feed/>
 
 ### games
 
@@ -219,12 +218,28 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### podcasts
 
-- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
+- Medo e Delírio em Brasília: <https://www.spreaker.com/show/4711842/episodes/feed> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 - MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
 - 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
 - Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
+- Compilado do Código Fonte TV: <https://anchor.fm/s/4f366e84/podcast/rss> | Hide-from-All: true
+- Pouco Pixel: <https://anchor.fm/s/6cfe134/podcast/rss> | Hide-from-All: true
+- Braincast: <https://www.omnycontent.com/d/playlist/651a251e-06e1-47e0-9336-ac5a00f41628/fc243b66-f34c-4656-9042-acd400edcca5/d4c8e398-446c-447a-ad41-acd400edccc1/podcast.rss> | Hide-from-All: true
+- História em Meia Hora: <https://anchor.fm/s/122df228/podcast/rss> | Hide-from-All: true
+- Ilustríssima Conversa: <https://www.omnycontent.com/d/playlist/2f6a79aa-d181-48a4-92e0-ac5d00c8eb1d/ec318888-d896-417d-ad48-ac61001abdf2/0076bab0-fc8d-4f81-b535-ac61001abe00/podcast.rss> | Hide-from-All: true
+- Cinemático: <https://feeds.acast.com/public/shows/639392cb6c25ea001115e06a> | Hide-from-All: true
+- MotherChip - Overloadr: <https://feeds.acast.com/public/shows/63cff75b688779001117ba6a> | Hide-from-All: true
+- A Hora: <https://feeds.megaphone.fm/ADSMOVILESPAASL6537792662> | Hide-from-All: true
+- Boletim Folha: <https://www.omnycontent.com/d/playlist/2f6a79aa-d181-48a4-92e0-ac5d00c8eb1d/3d46b2bc-0503-4d56-8c8a-ac5d0168cd1f/bd27a0a8-30b2-4cc8-b2e8-ac5d0168cd32/podcast.rss> | Hide-from-All: true
+- Fabuloso Podcast: <https://anchor.fm/s/5c0806cc/podcast/rss> | Hide-from-All: true
+- Giro do Loop: <https://loopmatinal.libsyn.com/rss> | Hide-from-All: true
+- Lambda3 Podcast: <https://anchor.fm/s/1033521c8/podcast/rss> | Hide-from-All: true
+- MacMagazine no Ar: <https://macmagazine.com.br/feed/podcast/> | Hide-from-All: true
+- Mundo Freak Confidencial: <https://www.mundofreak.com.br/feed/podcast/> | Hide-from-All: true
+- No Pé do Ouvido: <https://www.omnycontent.com/d/playlist/4dc4c11a-5a07-47d5-a5d5-b3b50010fd77/cf293613-84e5-44b6-9082-b42000d2f90a/e4397c51-35ca-4b3c-8f13-b42000d2f918/podcast.rss> | Hide-from-All: true
+- O É da Coisa: <https://www.spreaker.com/show/4881239/episodes/feed> | Hide-from-All: true
 
 ### youtube
 
@@ -266,7 +281,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### podcasts
 
-- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
+- Medo e Delírio em Brasília: <https://www.spreaker.com/show/4711842/episodes/feed> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 - MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
@@ -285,7 +300,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - UX Collective: <https://uxdesign.cc/feed>
 - This is Colossal: <https://www.thisiscolossal.com/feed/>
-- Awwwards: <https://www.awwwards.com/feed/>
 - Thedieline: <https://thedieline.com/feed/>
 
 ### games
@@ -329,7 +343,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - UX Collective: <https://uxdesign.cc/feed>
 - B9: <https://www.b9.com.br/feed/>
 - This is Colossal: <https://www.thisiscolossal.com/feed/>
-- Awwwards: <https://www.awwwards.com/feed/>
 - Thedieline: <https://thedieline.com/feed/>
 
 ### games
@@ -378,7 +391,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### podcasts
 
-- Medo e Delírio em Brasília: <https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast> | Hide-from-All: true
+- Medo e Delírio em Brasília: <https://www.spreaker.com/show/4711842/episodes/feed> | Hide-from-All: true
 - Foro de Teresina: <https://feeds.megaphone.fm/NPP2619427256> | Hide-from-All: true
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 - MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true

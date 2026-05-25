@@ -104,6 +104,11 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("opens player controls with play, seek, volume and speed", async () => {
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
     render(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
@@ -121,6 +126,11 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("minimizes and expands the podcast player without stopping playback", async () => {
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
     render(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
@@ -146,6 +156,11 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("closes the podcast player and stops playback", async () => {
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
     render(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
@@ -175,6 +190,10 @@ describe("PocketFeedsLayout audio player", () => {
       configurable: true,
       value: vi.fn().mockRejectedValue(new Error("CSP blocked media")),
     });
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
 
     render(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
@@ -186,6 +205,11 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("renders episode artwork, author, summary and duration metadata", () => {
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
     render(<PocketFeedsLayout articles={[richPodcastEpisode]} />);
 
     expect(screen.getByAltText("Science Podcast")).toBeInTheDocument();
@@ -244,9 +268,29 @@ describe("PocketFeedsLayout audio player", () => {
     ).toBeInTheDocument();
   });
 
-  it("uses two columns by default and sizes the podcast header per layout", () => {
+  it("uses grid by default and sizes the podcast header per layout", () => {
     render(<PocketFeedsLayout articles={podcastEpisodes} />);
 
+    expect(screen.getByTestId("pocketfeeds-grid-layout")).toBeInTheDocument();
+    expect(screen.getByTestId("pocketfeeds-grid-layout")).toHaveStyle({
+      gridTemplateColumns:
+        "repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr))",
+    });
+    expect(screen.queryByText("Linha do tempo")).not.toBeInTheDocument();
+    expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
+      "max-w-screen-2xl",
+    );
+
+    openLayoutPicker();
+
+    fireEvent.click(screen.getByRole("button", { name: /1 coluna/i }));
+    expect(screen.getByTestId("pocketfeeds-single-layout")).toBeInTheDocument();
+    expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
+      "max-w-4xl",
+    );
+
+    openLayoutPicker();
+    fireEvent.click(screen.getByRole("button", { name: /2 colunas/i }));
     expect(screen.getByTestId("pocketfeeds-double-layout")).toBeInTheDocument();
     expect(screen.getByTestId("pocketfeeds-double-layout")).toHaveClass(
       "items-start",
@@ -254,7 +298,6 @@ describe("PocketFeedsLayout audio player", () => {
     expect(screen.getByTestId("pocketfeeds-double-layout")).toHaveClass(
       "md:grid-cols-2",
     );
-    expect(screen.queryByText("Linha do tempo")).not.toBeInTheDocument();
     const scienceDoublePanel = screen.getByTestId(
       "pocketfeeds-double-episodes-Science Podcast",
     );
@@ -268,25 +311,6 @@ describe("PocketFeedsLayout audio player", () => {
     expect(gamesCard).toHaveClass("md:col-span-2");
     expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
       "max-w-6xl",
-    );
-
-    openLayoutPicker();
-
-    fireEvent.click(screen.getByRole("button", { name: /1 coluna/i }));
-    expect(screen.getByTestId("pocketfeeds-single-layout")).toBeInTheDocument();
-    expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
-      "max-w-4xl",
-    );
-
-    openLayoutPicker();
-    fireEvent.click(screen.getByRole("button", { name: /grid/i }));
-    expect(screen.getByTestId("pocketfeeds-grid-layout")).toBeInTheDocument();
-    expect(screen.getByTestId("pocketfeeds-grid-layout")).toHaveStyle({
-      gridTemplateColumns:
-        "repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr))",
-    });
-    expect(screen.getByTestId("pocketfeeds-layout-header")).toHaveClass(
-      "max-w-screen-2xl",
     );
   });
 
@@ -323,6 +347,11 @@ describe("PocketFeedsLayout audio player", () => {
       });
 
     try {
+      window.localStorage.setItem(
+        "pocketfeeds-view-mode",
+        JSON.stringify("double"),
+      );
+
       render(<PocketFeedsLayout articles={podcastEpisodes} />);
 
       await waitFor(() =>
@@ -436,8 +465,6 @@ describe("PocketFeedsLayout audio player", () => {
   it("opens the podcast episode modal from grid mode", () => {
     render(<PocketFeedsLayout articles={podcastEpisodes} />);
 
-    openLayoutPicker();
-    fireEvent.click(screen.getByRole("button", { name: /grid/i }));
     fireEvent.click(
       screen.getByRole("button", { name: /ver episódios de science podcast/i }),
     );
