@@ -45,7 +45,7 @@ const DOUBLE_LAYOUT_MIN_WIDTH = 760;
 const DOUBLE_LAYOUT_MIN_PODCASTS = 2;
 const DOUBLE_LAYOUT_MAX_PODCASTS = 6;
 const POCKETFEEDS_VIEW_STORAGE_KEY = "pocketfeeds-view-mode";
-const DEFAULT_POCKETFEEDS_VIEW_MODE: PocketFeedsViewMode = "double";
+const DEFAULT_POCKETFEEDS_VIEW_MODE: PocketFeedsViewMode = "grid";
 
 const VIEW_MODE_OPTIONS: Array<{
   id: PocketFeedsViewMode;

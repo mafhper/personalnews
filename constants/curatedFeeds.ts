@@ -107,11 +107,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "B9"
   },
   {
-    "url": "https://www.awwwards.com/feed/",
-    "categoryId": "design",
-    "customTitle": "Awwwards"
-  },
-  {
     "url": "https://kotaku.com/rss",
     "categoryId": "games",
     "customTitle": "Kotaku"
@@ -167,7 +162,7 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "XDA"
   },
   {
-    "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+    "url": "https://www.spreaker.com/show/4711842/episodes/feed",
     "categoryId": "podcasts",
     "customTitle": "Medo e Delírio em Brasília",
     "hideFromAll": true
@@ -200,6 +195,102 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://anchor.fm/s/1075f6ce0/podcast/rss",
     "categoryId": "podcasts",
     "customTitle": "Tecnocast",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/4f366e84/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "Compilado do Código Fonte TV",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/6cfe134/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "Pouco Pixel",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.omnycontent.com/d/playlist/651a251e-06e1-47e0-9336-ac5a00f41628/fc243b66-f34c-4656-9042-acd400edcca5/d4c8e398-446c-447a-ad41-acd400edccc1/podcast.rss",
+    "categoryId": "podcasts",
+    "customTitle": "Braincast",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/122df228/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "História em Meia Hora",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.omnycontent.com/d/playlist/2f6a79aa-d181-48a4-92e0-ac5d00c8eb1d/ec318888-d896-417d-ad48-ac61001abdf2/0076bab0-fc8d-4f81-b535-ac61001abe00/podcast.rss",
+    "categoryId": "podcasts",
+    "customTitle": "Ilustríssima Conversa",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://feeds.acast.com/public/shows/639392cb6c25ea001115e06a",
+    "categoryId": "podcasts",
+    "customTitle": "Cinemático",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://feeds.acast.com/public/shows/63cff75b688779001117ba6a",
+    "categoryId": "podcasts",
+    "customTitle": "MotherChip - Overloadr",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://feeds.megaphone.fm/ADSMOVILESPAASL6537792662",
+    "categoryId": "podcasts",
+    "customTitle": "A Hora",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.omnycontent.com/d/playlist/2f6a79aa-d181-48a4-92e0-ac5d00c8eb1d/3d46b2bc-0503-4d56-8c8a-ac5d0168cd1f/bd27a0a8-30b2-4cc8-b2e8-ac5d0168cd32/podcast.rss",
+    "categoryId": "podcasts",
+    "customTitle": "Boletim Folha",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/5c0806cc/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "Fabuloso Podcast",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://loopmatinal.libsyn.com/rss",
+    "categoryId": "podcasts",
+    "customTitle": "Giro do Loop",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://anchor.fm/s/1033521c8/podcast/rss",
+    "categoryId": "podcasts",
+    "customTitle": "Lambda3 Podcast",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://macmagazine.com.br/feed/podcast/",
+    "categoryId": "podcasts",
+    "customTitle": "MacMagazine no Ar",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.mundofreak.com.br/feed/podcast/",
+    "categoryId": "podcasts",
+    "customTitle": "Mundo Freak Confidencial",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.omnycontent.com/d/playlist/4dc4c11a-5a07-47d5-a5d5-b3b50010fd77/cf293613-84e5-44b6-9082-b42000d2f90a/e4397c51-35ca-4b3c-8f13-b42000d2f918/podcast.rss",
+    "categoryId": "podcasts",
+    "customTitle": "No Pé do Ouvido",
+    "hideFromAll": true
+  },
+  {
+    "url": "https://www.spreaker.com/show/4881239/episodes/feed",
+    "categoryId": "podcasts",
+    "customTitle": "O É da Coisa",
     "hideFromAll": true
   },
   {
@@ -286,7 +377,7 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Tecnoblog"
     },
     {
-      "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+      "url": "https://www.spreaker.com/show/4711842/episodes/feed",
       "categoryId": "podcasts",
       "customTitle": "Medo e Delírio em Brasília",
       "hideFromAll": true
@@ -350,11 +441,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.thisiscolossal.com/feed/",
       "categoryId": "design",
       "customTitle": "This is Colossal"
-    },
-    {
-      "url": "https://www.awwwards.com/feed/",
-      "categoryId": "design",
-      "customTitle": "Awwwards"
     },
     {
       "url": "https://thedieline.com/feed/",
@@ -511,11 +597,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.thisiscolossal.com/feed/",
       "categoryId": "design",
       "customTitle": "This is Colossal"
-    },
-    {
-      "url": "https://www.awwwards.com/feed/",
-      "categoryId": "design",
-      "customTitle": "Awwwards"
     },
     {
       "url": "https://thedieline.com/feed/",
@@ -698,7 +779,7 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "XDA"
     },
     {
-      "url": "https://www.central3.com.br/category/podcasts/medo-e-delirio/feed/podcast",
+      "url": "https://www.spreaker.com/show/4711842/episodes/feed",
       "categoryId": "podcasts",
       "customTitle": "Medo e Delírio em Brasília",
       "hideFromAll": true

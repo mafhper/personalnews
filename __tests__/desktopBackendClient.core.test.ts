@@ -248,6 +248,95 @@ describe("desktopBackendClient local discovery", () => {
     expect(fetchMock).toHaveBeenCalledTimes(callsBeforeCircuitRejection);
   });
 
+  it("does not open the backend circuit for repeated upstream feed timeouts", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "http://127.0.0.1:3001/health") {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+
+      if (url.startsWith("http://127.0.0.1:3001/api/v1/feed?")) {
+        return {
+          ok: false,
+          status: 504,
+          json: async () => ({
+            error: "Upstream feed timeout after 12000ms",
+          }),
+        } as Response;
+      }
+
+      throw new Error(`Unexpected URL ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    for (let index = 0; index < 4; index += 1) {
+      await expect(
+        desktopBackendClient.fetchFeed(`https://example.com/feed-${index}.xml`),
+      ).rejects.toThrow("Upstream feed timeout");
+    }
+
+    expect(desktopBackendClient.getBackendHealthState()).toMatchObject({
+      available: true,
+      circuitOpen: false,
+      lastFailure: null,
+    });
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes("/api/v1/feed?"),
+      ),
+    ).toHaveLength(4);
+  });
+
+  it("does not open the backend circuit when navigation aborts pending feed requests", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "http://127.0.0.1:3001/health") {
+        return {
+          ok: true,
+          json: async () => ({
+            status: "ok",
+            service: "personalnews-backend",
+            version: "0.1.0",
+            uptimeMs: 10,
+            dbPath: "memory",
+            now: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+
+      throw new DOMException("Request was cancelled", "AbortError");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { desktopBackendClient } =
+      await import("../services/desktopBackendClient");
+
+    for (let index = 0; index < 4; index += 1) {
+      await expect(
+        desktopBackendClient.fetchFeed(`https://example.com/feed-${index}.xml`),
+      ).rejects.toThrow("Request was cancelled");
+    }
+
+    expect(desktopBackendClient.getBackendHealthState()).toMatchObject({
+      available: true,
+      circuitOpen: false,
+      lastFailure: null,
+    });
+  });
+
   it("reports warm-up without exposing a cascade of candidate abort errors", async () => {
     const fetchMock = vi.fn(async () => {
       throw new Error("connect ECONNREFUSED");

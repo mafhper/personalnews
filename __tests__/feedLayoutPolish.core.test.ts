@@ -143,7 +143,7 @@ describe("feed layout polish wiring", () => {
 
   it("caps tall viewport media surfaces instead of scaling with viewport height", () => {
     const css = read("index.css");
-    expect(css).toContain("min-height: min(calc(100svh - 72px), 920px)");
+    expect(css).toContain("min-height: min(calc(100svh - 144px), 820px)");
     expect(css).toContain(
       "@media (min-width: 981px) and (orientation: portrait)",
     );

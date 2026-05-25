@@ -53,7 +53,7 @@ const PROMO_UI_TEXT: Record<
   "pt-BR": {
     navLabel: "Navegação promocional",
     heroStatsLabel: "Resumo do Personal News",
-    layoutsLabel: "Layouts disponíveis",
+    layoutsLabel: "Ferramentas disponíveis",
     openSourceSummary: "Código aberto para ler, adaptar e acompanhar.",
     repositoryLabel: "Ver repositório",
     downloadsLabel: "Downloads por sistema",
@@ -62,7 +62,7 @@ const PROMO_UI_TEXT: Record<
   "en-US": {
     navLabel: "Promo navigation",
     heroStatsLabel: "Personal News facts",
-    layoutsLabel: "Available layouts",
+    layoutsLabel: "Available tools",
     openSourceSummary: "Open code to read, adapt, and follow.",
     repositoryLabel: "View repository",
     downloadsLabel: "Downloads by platform",
@@ -71,7 +71,7 @@ const PROMO_UI_TEXT: Record<
   es: {
     navLabel: "Navegación promocional",
     heroStatsLabel: "Resumen de Personal News",
-    layoutsLabel: "Layouts disponibles",
+    layoutsLabel: "Herramientas disponibles",
     openSourceSummary: "Código abierto para leer, adaptar y seguir.",
     repositoryLabel: "Ver repositorio",
     downloadsLabel: "Descargas por sistema",
@@ -182,18 +182,23 @@ const promoScreenAsset = (fileName: string) =>
 
 const HERO_SCREENSHOTS = [
   promoScreenAsset("hero-narrow-01.webp"),
-  promoScreenAsset("hero-narrow-02.webp"),
+  promoScreenAsset("hero-narrow-light-02.webp"),
   promoScreenAsset("hero-narrow-03.webp"),
-  promoScreenAsset("hero-narrow-04.webp"),
+  promoScreenAsset("hero-narrow-light-04.webp"),
   promoScreenAsset("hero-narrow-05.webp"),
+  promoScreenAsset("hero-narrow-light-06.webp"),
+  promoScreenAsset("hero-narrow-02.webp"),
+  promoScreenAsset("hero-narrow-light-03.webp"),
+  promoScreenAsset("hero-narrow-04.webp"),
+  promoScreenAsset("hero-narrow-light-01.webp"),
   promoScreenAsset("hero-narrow-06.webp"),
+  promoScreenAsset("hero-narrow-light-05.webp"),
 ];
 
-const LAYOUT_SCREENSHOTS: Record<string, string> = {
-  magazine: promoScreenAsset("promo-layout-magazine.webp"),
-  editorial: promoScreenAsset("promo-layout-editorial.webp"),
-  gallery: promoScreenAsset("promo-layout-gallery.webp"),
-  brutalist: promoScreenAsset("promo-layout-brutalist.webp"),
+const CAPABILITY_SCREENSHOTS: Record<string, string> = {
+  collections: promoScreenAsset("promo-feature-collections.webp"),
+  personalization: promoScreenAsset("promo-feature-personalization.webp"),
+  cache: promoScreenAsset("promo-feature-cache.webp"),
 };
 
 const SectionIntro = ({
@@ -707,7 +712,9 @@ const LandingPage = ({
                 <article key={mode.id} className="promo-mode-card">
                   <LayoutPreview
                     variant={mode.id}
-                    imageSrc={LAYOUT_SCREENSHOTS[mode.id] ?? HERO_SCREENSHOTS[0]}
+                    imageSrc={
+                      CAPABILITY_SCREENSHOTS[mode.id] ?? HERO_SCREENSHOTS[0]
+                    }
                   />
                   <span>{mode.label}</span>
                   <h3>{mode.title}</h3>

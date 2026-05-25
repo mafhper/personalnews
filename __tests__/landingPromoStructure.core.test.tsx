@@ -206,6 +206,22 @@ describe("LandingPage promo structure", () => {
     );
   });
 
+  it("shows operational feature cards with product screenshots", () => {
+    const { container } = render(<LandingPage onOpenFeed={vi.fn()} />);
+    const featureImages = Array.from(
+      container.querySelectorAll(".promo-reading .promo-layout-preview img"),
+    ).map((image) => image.getAttribute("src"));
+
+    expect(screen.getByText("Gerencie fontes e categorias.")).toBeInTheDocument();
+    expect(screen.getByText("Uma leitura com sua identidade.")).toBeInTheDocument();
+    expect(screen.getByText("Dados rápidos, sob controle.")).toBeInTheDocument();
+    expect(featureImages).toEqual([
+      expect.stringContaining("promo-feature-collections.webp"),
+      expect.stringContaining("promo-feature-personalization.webp"),
+      expect.stringContaining("promo-feature-cache.webp"),
+    ]);
+  });
+
   it("keeps support labels localized in Spanish", () => {
     languageState.current = "es";
 
@@ -217,7 +233,7 @@ describe("LandingPage promo structure", () => {
     expect(
       screen.getByLabelText("Resumen de Personal News"),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Layouts disponibles")).toBeInTheDocument();
+    expect(screen.getByLabelText("Herramientas disponibles")).toBeInTheDocument();
     expect(
       screen.getByText("Código abierto para leer, adaptar y seguir."),
     ).toBeInTheDocument();

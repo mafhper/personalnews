@@ -473,6 +473,8 @@ class DesktopBackendClient {
   }
 
   private shouldRecordCircuitFailure(error: unknown): boolean {
+    if (isAbortLikeError(error)) return false;
+
     if (error instanceof BackendRequestError) {
       return error.statusCode >= 500 || error.statusCode === 408;
     }
@@ -933,6 +935,7 @@ class DesktopBackendClient {
     path: string,
     init: RequestInit,
     parse: (value: unknown) => T,
+    options: { httpErrorConfirmsBackendReachable?: boolean } = {},
   ): Promise<T> {
     this.assertCircuitAllowsRequest();
     if (!this.healthState.available) {
@@ -966,6 +969,9 @@ class DesktopBackendClient {
                 (body as { error?: unknown }).error || `HTTP ${response.status}`,
               )
             : `HTTP ${response.status}`;
+        if (options.httpErrorConfirmsBackendReachable) {
+          this.recordBackendSuccess();
+        }
         throw new BackendRequestError(message, response.status, body);
       }
 
@@ -973,7 +979,14 @@ class DesktopBackendClient {
       this.recordBackendSuccess();
       return parsed;
     } catch (error) {
-      this.recordBackendFailure(error);
+      if (
+        !(
+          options.httpErrorConfirmsBackendReachable &&
+          error instanceof BackendRequestError
+        )
+      ) {
+        this.recordBackendFailure(error);
+      }
       throw error;
     }
   }
@@ -1021,6 +1034,7 @@ class DesktopBackendClient {
         headers,
       },
       (value) => FeedFetchResponseSchema.parse(value),
+      { httpErrorConfirmsBackendReachable: true },
     );
   }
 
