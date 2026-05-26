@@ -202,7 +202,7 @@ describe("LandingPage promo structure", () => {
     expect(liquidCanvas).toBeInTheDocument();
     expect(liquidCanvas?.getAttribute("aria-hidden")).toBeNull();
     expect(heroImage?.getAttribute("src")).toContain(
-      "assets/promo/screens/hero-narrow-01.webp",
+      "assets/promo/screens/hero-narrow-02.webp",
     );
   });
 

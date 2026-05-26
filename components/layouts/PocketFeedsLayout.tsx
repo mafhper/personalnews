@@ -1,12 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   Columns2,
   Disc3,
   Grid3X3,
   List,
-  Maximize2,
-  Minimize2,
   Music2,
   Pause,
   Play,
@@ -18,6 +16,11 @@ import { LazyImage } from "../LazyImage";
 import { ArticleReaderModal } from "../ArticleReaderModal";
 import { FavoriteButton } from "../FavoriteButton";
 import { buildImagePlaceholderDataUri } from "../../utils/imagePlaceholders";
+import {
+  buildMediaOriginFromArticle,
+  useMediaPlayback,
+} from "../../contexts/MediaPlaybackContext";
+import { useMediaOriginScope } from "../../contexts/MediaOriginScopeContext";
 
 interface PocketFeedsLayoutProps {
   articles: Article[];
@@ -237,9 +240,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
 }) => {
   const layoutMeasureRef = useRef<HTMLDivElement | null>(null);
   const layoutPickerRef = useRef<HTMLDivElement | null>(null);
+  const mediaItemCleanupRef = useRef<Map<HTMLElement, () => void>>(new Map());
+  const mediaCategoryId = useMediaOriginScope();
+  const { state: mediaState, playPodcast, pausePodcast, registerMediaItem } =
+    useMediaPlayback();
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const [activeEpisode, setActiveEpisode] = useState<Article | null>(null);
   const [expandedPodcast, setExpandedPodcast] = useState<string | null>(null);
   const [activeMixtapePodcast, setActiveMixtapePodcast] = useState<
     string | null
@@ -253,19 +258,12 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
     null,
   );
   const [isLayoutPickerOpen, setLayoutPickerOpen] = useState(false);
-  const [isPlayerMinimized, setPlayerMinimized] = useState(false);
   const [layoutWidth, setLayoutWidth] = useState(0);
   const [storedViewMode, setStoredViewMode] =
     useLocalStorage<PocketFeedsViewMode>(
       POCKETFEEDS_VIEW_STORAGE_KEY,
       DEFAULT_POCKETFEEDS_VIEW_MODE,
     );
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.9);
-  const [playbackRate, setPlaybackRate] = useState(1);
-  const [playbackError, setPlaybackError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const selectedViewMode = isPocketFeedsViewMode(storedViewMode)
     ? storedViewMode
@@ -324,6 +322,45 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isLayoutPickerOpen]);
+
+  useEffect(
+    () => () => {
+      mediaItemCleanupRef.current.forEach((cleanup) => cleanup());
+      mediaItemCleanupRef.current.clear();
+    },
+    [],
+  );
+
+  const bindMediaItem = useCallback(
+    (episode: Article): React.RefCallback<HTMLElement> => {
+      let currentNode: HTMLElement | null = null;
+
+      return (node) => {
+        if (currentNode) {
+          mediaItemCleanupRef.current.get(currentNode)?.();
+          mediaItemCleanupRef.current.delete(currentNode);
+        }
+
+        currentNode = node;
+        if (!node) return;
+
+        const cleanup = registerMediaItem(
+          buildMediaOriginFromArticle(episode, mediaCategoryId),
+          () => {
+          node.scrollIntoView({ block: "center", behavior: "smooth" });
+          node.focus({ preventScroll: true });
+          node.classList.add("media-return-highlight");
+          window.setTimeout(
+            () => node.classList.remove("media-return-highlight"),
+            1600,
+          );
+          },
+        );
+        mediaItemCleanupRef.current.set(node, cleanup);
+      };
+    },
+    [mediaCategoryId, registerMediaItem],
+  );
 
   const podcastGroups = useMemo<PodcastGroup[]>(() => {
     const groups = new Map<string, Article[]>();
@@ -427,83 +464,24 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
     }
   }, [activeMixtapePodcast, podcastGroups, podcastMap, viewMode]);
 
-  const formatPlaybackTime = (seconds: number): string => {
-    if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const closePlayer = () => {
-    audioRef.current?.pause();
-    if (audioRef.current) {
-      audioRef.current.removeAttribute("src");
-    }
-    setPlayingAudio(null);
-    setActiveEpisode(null);
-    setCurrentTime(0);
-    setDuration(0);
-    setPlaybackError(null);
-    setPlayerMinimized(false);
-  };
-
   const handlePlayPause = async (episode: Article) => {
     if (!episode.audioUrl) return;
 
-    if (playingAudio === episode.audioUrl) {
-      audioRef.current?.pause();
-      setPlayingAudio(null);
-      setPlaybackError(null);
+    if (
+      mediaState.kind === "podcast" &&
+      mediaState.src === episode.audioUrl &&
+      mediaState.status === "playing"
+    ) {
+      pausePodcast();
       return;
     }
 
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (audio.src !== episode.audioUrl) {
-      audio.src = episode.audioUrl;
-      setCurrentTime(0);
-      setDuration(0);
-    }
-    audio.volume = volume;
-    audio.playbackRate = playbackRate;
-    setActiveEpisode(episode);
-    setPlaybackError(null);
-    setPlayerMinimized(false);
-
-    try {
-      await audio.play();
-      setPlayingAudio(episode.audioUrl);
-    } catch {
-      setPlayingAudio(null);
-      setPlaybackError(
-        "Não foi possível iniciar o áudio. Verifique sua conexão ou tente outro episódio.",
-      );
-    }
-  };
-
-  const handleSeek = (nextTime: number) => {
-    if (!audioRef.current) return;
-    audioRef.current.currentTime = nextTime;
-    setCurrentTime(nextTime);
-  };
-
-  const handleVolumeChange = (nextVolume: number) => {
-    setVolume(nextVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = nextVolume;
-    }
-  };
-
-  const handlePlaybackRateChange = (nextRate: number) => {
-    setPlaybackRate(nextRate);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = nextRate;
-    }
+    await playPodcast({
+      src: episode.audioUrl,
+      title: episode.title,
+      artworkUrl: episode.imageUrl,
+      origin: buildMediaOriginFromArticle(episode, mediaCategoryId),
+    });
   };
 
   const togglePodcast = (podcastName: string) => {
@@ -531,7 +509,10 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       );
     }
 
-    const isPlaying = playingAudio === episode.audioUrl;
+    const isPlaying =
+      mediaState.kind === "podcast" &&
+      mediaState.src === episode.audioUrl &&
+      mediaState.status === "playing";
     return (
       <button
         type="button"
@@ -561,9 +542,12 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
     options: { compact?: boolean; showArtwork?: boolean } = {},
   ) => (
     <div
+      ref={bindMediaItem(episode)}
+      tabIndex={-1}
       key={getEpisodeKey(episode, index)}
       className="group flex items-center gap-4 border-b border-[rgb(var(--color-border))] p-4 transition-colors last:border-b-0 hover:bg-[rgba(var(--color-text),0.03)]"
       data-testid="pocketfeeds-episode-row"
+      data-media-article-link={episode.link}
     >
       {renderPlayButton(episode, "h-10 w-10", "episódio")}
 
@@ -983,11 +967,14 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
                   <div className="custom-scrollbar flex gap-2 overflow-x-auto sm:grid sm:grid-cols-3 sm:overflow-visible">
                     {highlightedEpisodes.map((episode, index) => (
                       <div
+                        ref={bindMediaItem(episode)}
+                        tabIndex={-1}
                         key={getEpisodeKey(episode, index)}
                         className="group flex min-w-[11rem] items-center gap-2 rounded-[calc(var(--feed-card-radius)*0.82)] border border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.035)] p-2 transition-colors hover:bg-[rgba(var(--color-text),0.065)] sm:min-w-0"
                         onMouseEnter={() => setHoveredMixtapeEpisode(episode)}
                         onMouseLeave={() => setHoveredMixtapeEpisode(null)}
                         data-testid="pocketfeeds-mixtape-highlight"
+                        data-media-article-link={episode.link}
                       >
                         {renderPlayButton(episode, "h-8 w-8", episode.title)}
                         <EpisodeArtwork
@@ -1041,11 +1028,14 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
             <div className="custom-scrollbar max-h-[min(32rem,calc(100vh-var(--space-20)))] overflow-y-auto">
               {activeGroup.episodes.map((episode, index) => (
                 <div
+                  ref={bindMediaItem(episode)}
+                  tabIndex={-1}
                   key={getEpisodeKey(episode, index)}
                   className="group flex items-center gap-3 border-b border-[rgb(var(--color-border))] p-3 last:border-b-0 hover:bg-[rgba(var(--color-text),0.04)]"
                   onMouseEnter={() => setHoveredMixtapeEpisode(episode)}
                   onMouseLeave={() => setHoveredMixtapeEpisode(null)}
                   data-testid="pocketfeeds-mixtape-panel-episode"
+                  data-media-article-link={episode.link}
                 >
                   <span className="w-6 flex-shrink-0 text-right font-mono text-xs text-[rgb(var(--color-textSecondary))]">
                     {String(index + 1).padStart(2, "0")}
@@ -1138,25 +1128,6 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
       className="feed-top-clearance w-full bg-[rgba(var(--color-background),0.5)] px-4 pb-8 sm:px-6 md:px-8"
       data-testid="pocketfeeds-layout-measure"
     >
-      <audio
-        ref={audioRef}
-        onLoadedMetadata={(event) =>
-          setDuration(event.currentTarget.duration || 0)
-        }
-        onTimeUpdate={(event) =>
-          setCurrentTime(event.currentTarget.currentTime || 0)
-        }
-        onEnded={() => {
-          setPlayingAudio(null);
-          setPlaybackError(null);
-        }}
-        onError={() => {
-          setPlayingAudio(null);
-          setPlaybackError("Não foi possível carregar o áudio deste episódio.");
-        }}
-        className="hidden"
-      />
-
       <header
         className={`${layoutFrameClass} mb-8 flex items-center justify-between gap-4 border-b border-[rgb(var(--color-border))] pb-4`}
         data-testid="pocketfeeds-layout-header"
@@ -1261,8 +1232,11 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
 
                       return (
                         <article
+                          ref={bindMediaItem(episode)}
+                          tabIndex={-1}
                           key={episodeKey}
                           data-testid="pocketfeeds-timeline-episode"
+                          data-media-article-link={episode.link}
                           className="border-b border-[rgb(var(--color-border))] bg-[rgba(var(--color-text),0.025)] last:border-b-0"
                         >
                           <div className="flex items-center gap-3 p-3 md:p-4">
@@ -1350,184 +1324,6 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
 
         {renderSelectedLayout()}
       </div>
-
-      {activeEpisode?.audioUrl && (
-        <div
-          className={`sticky bottom-4 z-40 mx-auto mt-8 border border-[rgb(var(--color-border))] bg-[rgb(var(--color-surface))]/95 shadow-2xl backdrop-blur-xl ${
-            isPlayerMinimized
-              ? "max-w-3xl rounded-full p-2"
-              : "max-w-screen-2xl rounded-2xl p-4"
-          }`}
-          data-testid={
-            isPlayerMinimized
-              ? "pocketfeeds-player-minimized"
-              : "pocketfeeds-player-expanded"
-          }
-        >
-          {isPlayerMinimized ? (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handlePlayPause(activeEpisode)}
-                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.75)] text-white transition-colors hover:bg-[rgb(var(--color-accent))]"
-                aria-label={
-                  playingAudio === activeEpisode.audioUrl
-                    ? "Pausar episódio"
-                    : "Tocar episódio"
-                }
-              >
-                {playingAudio === activeEpisode.audioUrl ? (
-                  <Pause className="h-5 w-5" aria-hidden />
-                ) : (
-                  <Play className="ml-0.5 h-5 w-5" aria-hidden />
-                )}
-              </button>
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-[rgb(var(--color-text))]">
-                  {activeEpisode.title}
-                </p>
-                <p className="truncate text-xs text-[rgb(var(--color-textSecondary))]">
-                  {activeEpisode.sourceTitle} •{" "}
-                  {formatPlaybackTime(currentTime)}
-                </p>
-              </div>
-
-              <div className="flex flex-shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setPlayerMinimized(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[rgb(var(--color-textSecondary))] transition-colors hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
-                  aria-label="Expandir player"
-                  title="Expandir player"
-                >
-                  <Maximize2 className="h-4 w-4" aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  onClick={closePlayer}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[rgb(var(--color-textSecondary))] transition-colors hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
-                  aria-label="Fechar player e parar reprodução"
-                  title="Fechar player e parar reprodução"
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-              <button
-                type="button"
-                onClick={() => handlePlayPause(activeEpisode)}
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(var(--color-accent),0.75)] text-white transition-colors hover:bg-[rgb(var(--color-accent))]"
-                aria-label={
-                  playingAudio === activeEpisode.audioUrl
-                    ? "Pausar episódio"
-                    : "Tocar episódio"
-                }
-              >
-                {playingAudio === activeEpisode.audioUrl ? (
-                  <Pause className="h-5 w-5" aria-hidden />
-                ) : (
-                  <Play className="ml-0.5 h-5 w-5" aria-hidden />
-                )}
-              </button>
-
-              <div className="min-w-0 flex-1">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-[rgb(var(--color-text))]">
-                      {activeEpisode.title}
-                    </p>
-                    <p className="truncate text-xs text-[rgb(var(--color-textSecondary))]">
-                      {activeEpisode.sourceTitle}
-                    </p>
-                  </div>
-                  <span className="flex-shrink-0 text-xs tabular-nums text-[rgb(var(--color-textSecondary))]">
-                    {formatPlaybackTime(currentTime)} /{" "}
-                    {formatPlaybackTime(
-                      duration || Number(activeEpisode.audioDuration) || 0,
-                    )}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={duration || 0}
-                  step={1}
-                  value={duration ? Math.min(currentTime, duration) : 0}
-                  onChange={(event) =>
-                    handleSeek(Number(event.currentTarget.value))
-                  }
-                  className="w-full accent-[rgb(var(--color-accent))]"
-                  aria-label="Posição da reprodução"
-                />
-                {playbackError && (
-                  <p className="mt-2 text-xs text-red-300" role="status">
-                    {playbackError}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs text-[rgb(var(--color-textSecondary))] sm:flex sm:items-center">
-                <label className="flex items-center gap-2">
-                  <span>Volume</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={volume}
-                    onChange={(event) =>
-                      handleVolumeChange(Number(event.currentTarget.value))
-                    }
-                    className="w-24 accent-[rgb(var(--color-accent))]"
-                    aria-label="Volume"
-                  />
-                </label>
-                <label className="flex items-center gap-2">
-                  <span>Velocidade</span>
-                  <select
-                    value={playbackRate}
-                    onChange={(event) =>
-                      handlePlaybackRateChange(Number(event.currentTarget.value))
-                    }
-                    className="rounded-md border border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))] px-2 py-1 text-[rgb(var(--color-text))]"
-                    aria-label="Velocidade de reprodução"
-                  >
-                    {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                      <option key={rate} value={rate}>
-                        {rate}x
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="flex flex-shrink-0 items-center gap-1 self-end lg:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setPlayerMinimized(true)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[rgb(var(--color-textSecondary))] transition-colors hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
-                  aria-label="Minimizar player"
-                  title="Minimizar player"
-                >
-                  <Minimize2 className="h-4 w-4" aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  onClick={closePlayer}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-[rgb(var(--color-textSecondary))] transition-colors hover:bg-[rgba(var(--color-text),0.08)] hover:text-[rgb(var(--color-text))]"
-                  aria-label="Fechar player e parar reprodução"
-                  title="Fechar player e parar reprodução"
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {modalGroup && (
         <div

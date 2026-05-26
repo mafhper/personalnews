@@ -20,7 +20,7 @@ export const MinimalSkeleton: React.FC = () => {
   return (
     <div className="feed-page-frame feed-page-frame--wide">
       {/* HERO SKELETON */}
-      <div className="mb-32 flex flex-col lg:grid lg:grid-cols-12 h-[500px] rounded overflow-hidden border border-[rgb(var(--color-border))]/22">
+      <div className="mb-32 flex min-h-[360px] flex-col overflow-hidden rounded border border-[rgb(var(--color-border))]/22 lg:grid lg:h-[min(520px,calc(100vh-12rem))] lg:grid-cols-12">
         <div className="lg:col-span-1 border-r border-[rgb(var(--color-border))]/22 feed-skeleton-block" />
         <div className="lg:col-span-6 feed-skeleton-block" />
         <div className="lg:col-span-5 p-16 flex flex-col justify-center space-y-8">
@@ -92,7 +92,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ articles }) => {
               </div>
 
               {/* Hero Image Side */}
-              <div className="lg:col-span-6 relative aspect-video sm:aspect-[16/10] md:aspect-square lg:aspect-auto overflow-hidden order-first lg:order-last">
+              <div className="relative order-first h-[clamp(220px,52vw,420px)] overflow-hidden md:h-[clamp(260px,38vw,460px)] lg:order-last lg:col-span-6 lg:h-auto lg:min-h-[420px] lg:max-h-[min(620px,calc(100vh-12rem))]">
                 {heroArticle.imageUrl ? (
                   <SmallOptimizedImage
                     src={heroArticle.imageUrl}

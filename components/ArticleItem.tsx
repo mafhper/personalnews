@@ -1,4 +1,4 @@
-import React, { memo, useEffect } from "react";
+import React, { memo, useEffect, useRef } from "react";
 import type { Article } from "../types";
 import { ArticleImage } from "./ArticleImage";
 import { FavoriteButton } from "./FavoriteButton";
@@ -9,6 +9,11 @@ import { ArticleItemLight } from "./ArticleItemLight";
 import { FeedInteractiveActions } from "./FeedInteractiveActions";
 import { FeedResponsiveDate } from "./FeedResponsiveDate";
 import { getVideoEmbed } from "../utils/videoEmbed";
+import {
+  buildMediaOriginFromArticle,
+  useMediaPlayback,
+} from "../contexts/MediaPlaybackContext";
+import { useMediaOriginScope } from "../contexts/MediaOriginScopeContext";
 
 const ChatBubbleIcon: React.FC = memo(() => (
   <svg
@@ -61,6 +66,9 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
   onClick,
 }) => {
   const { startRenderTiming, endRenderTiming } = usePerformance();
+  const { registerMediaItem } = useMediaPlayback();
+  const mediaCategoryId = useMediaOriginScope();
+  const articleRef = useRef<HTMLElement | null>(null);
   const { settings: layoutSettings } = useArticleLayout();
   const { contentConfig } = useAppearance();
   const authorLabel =
@@ -77,10 +85,35 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
     };
   }, [startRenderTiming, endRenderTiming]);
 
+  useEffect(
+    () =>
+      registerMediaItem(buildMediaOriginFromArticle(article, mediaCategoryId), () => {
+        const element = articleRef.current;
+        if (!element) return;
+        element.scrollIntoView({ block: "center", behavior: "smooth" });
+        element.focus({ preventScroll: true });
+        element.classList.add("media-return-highlight");
+        window.setTimeout(
+          () => element.classList.remove("media-return-highlight"),
+          1600,
+        );
+      }),
+    [
+      article.feedUrl,
+      article.link,
+      article.sourceTitle,
+      mediaCategoryId,
+      registerMediaItem,
+    ],
+  );
+
   const isHorizontal = layoutMode === "list" || layoutMode === "minimal";
 
   return (
     <article
+      ref={articleRef}
+      tabIndex={-1}
+      data-media-article-link={article.link}
       className={`h-full flex flex-col transition-all duration-300 ${className}`}
     >
       <div

@@ -1,6 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
 import type { Article } from "../types";
+import { GlobalMediaLayer } from "../components/GlobalMediaLayer";
+import { MediaPlaybackProvider } from "../contexts/MediaPlaybackContext";
 
 type FetchFullContentFn = typeof import("../services/articleFetcher").fetchFullContent;
 type OpenExternalLinkFn = typeof import("../utils/openExternalLink").openExternalLink;
@@ -12,8 +15,12 @@ const readStatusMocks = vi.hoisted(() => ({
   markAsRead: vi.fn(),
 }));
 
+const environmentState = vi.hoisted(() => ({
+  isTauri: false,
+}));
+
 vi.mock("../services/environmentDetector", () => ({
-  detectEnvironment: () => ({ isTauri: false }),
+  detectEnvironment: () => ({ isTauri: environmentState.isTauri }),
 }));
 
 vi.mock("../hooks/useLanguage", () => ({
@@ -42,8 +49,13 @@ vi.mock("../hooks/useReadStatus", () => ({
   }),
 }));
 
+const renderWithMediaProvider = (ui: ReactElement) =>
+  render(<MediaPlaybackProvider>{ui}</MediaPlaybackProvider>);
+
 describe("ArticleReaderModal", () => {
   beforeEach(async () => {
+    environmentState.isTauri = false;
+    vi.useRealTimers();
     readStatusMocks.markAsRead.mockClear();
     vi.stubGlobal(
       "fetch",
@@ -68,6 +80,10 @@ describe("ArticleReaderModal", () => {
       .mockResolvedValue(undefined);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const mockFullContent = (content: string) => {
     fetchFullContentMock.mockResolvedValue({
       content,
@@ -89,7 +105,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    render(
+    renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}
@@ -125,7 +141,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(firstArticle.content || "");
 
-    const { rerender } = render(
+    const { rerender } = renderWithMediaProvider(
       <ArticleReaderModal
         article={firstArticle}
         onClose={vi.fn()}
@@ -141,14 +157,16 @@ describe("ArticleReaderModal", () => {
     });
 
     rerender(
-      <ArticleReaderModal
-        article={nextArticle}
-        onClose={vi.fn()}
-        onNext={vi.fn()}
-        onPrev={vi.fn()}
-        hasNext={false}
-        hasPrev={true}
-      />,
+      <MediaPlaybackProvider>
+        <ArticleReaderModal
+          article={nextArticle}
+          onClose={vi.fn()}
+          onNext={vi.fn()}
+          onPrev={vi.fn()}
+          hasNext={false}
+          hasPrev={true}
+        />
+      </MediaPlaybackProvider>,
     );
 
     await waitFor(() => {
@@ -170,7 +188,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    render(
+    renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}
@@ -207,7 +225,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    render(
+    renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}
@@ -244,7 +262,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    const { container } = render(
+    const { container } = renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}
@@ -263,5 +281,47 @@ describe("ArticleReaderModal", () => {
     await waitFor(() => {
       expect(fetchFullContentMock).toHaveBeenCalledWith(article.link);
     });
+  });
+
+  it("does not report a desktop video timeout after its global iframe loads", async () => {
+    environmentState.isTauri = true;
+    vi.useFakeTimers();
+    const { ArticleReaderModal } = await import(
+      "../components/ArticleReaderModal"
+    );
+    const article: Article = {
+      title: "Desktop video",
+      link: "https://www.youtube.com/watch?v=video-test",
+      pubDate: new Date("2026-04-29T10:00:00.000Z"),
+      sourceTitle: "Video creator",
+      content: "",
+    };
+
+    renderWithMediaProvider(
+      <>
+        <ArticleReaderModal
+          article={article}
+          onClose={vi.fn()}
+          onNext={vi.fn()}
+          onPrev={vi.fn()}
+          hasNext={false}
+          hasPrev={false}
+        />
+        <GlobalMediaLayer />
+      </>,
+    );
+
+    expect(
+      screen.getByText(/se o player pedir login ou não iniciar/i),
+    ).toBeInTheDocument();
+    fireEvent.load(screen.getByTitle(article.title));
+
+    act(() => {
+      vi.advanceTimersByTime(4600);
+    });
+
+    expect(
+      screen.queryByText(/o player não respondeu dentro do esperado/i),
+    ).not.toBeInTheDocument();
   });
 });

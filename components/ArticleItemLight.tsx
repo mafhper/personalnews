@@ -1,6 +1,11 @@
-import React, { memo } from "react";
+import React, { memo, useEffect, useRef } from "react";
 import type { Article } from "../types";
 import { FavoriteButton } from "./FavoriteButton";
+import {
+  buildMediaOriginFromArticle,
+  useMediaPlayback,
+} from "../contexts/MediaPlaybackContext";
+import { useMediaOriginScope } from "../contexts/MediaOriginScopeContext";
 
 interface ArticleItemLightProps {
   article: Article;
@@ -29,13 +34,43 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
   className = "",
   onClick,
 }) => {
+  const { registerMediaItem } = useMediaPlayback();
+  const mediaCategoryId = useMediaOriginScope();
+  const articleRef = useRef<HTMLElement | null>(null);
   const authorLabel =
     article.author && article.author !== article.sourceTitle
       ? article.author
       : undefined;
-  // Pure rendering - No Hooks, No Contexts, No Side Effects
+
+  useEffect(
+    () =>
+      registerMediaItem(buildMediaOriginFromArticle(article, mediaCategoryId), () => {
+        const element = articleRef.current;
+        if (!element) return;
+        element.scrollIntoView({ block: "center", behavior: "smooth" });
+        element.focus({ preventScroll: true });
+        element.classList.add("media-return-highlight");
+        window.setTimeout(
+          () => element.classList.remove("media-return-highlight"),
+          1600,
+        );
+      }),
+    [
+      article.feedUrl,
+      article.link,
+      article.sourceTitle,
+      mediaCategoryId,
+      registerMediaItem,
+    ],
+  );
+
   return (
-    <article className={`h-full flex flex-col ${className}`}>
+    <article
+      ref={articleRef}
+      tabIndex={-1}
+      data-media-article-link={article.link}
+      className={`h-full flex flex-col ${className}`}
+    >
       <div className="feed-card feed-card--flat flex flex-col h-full group p-4 sm:p-5">
         {/* Article image container */}
         <div className="feed-media relative mb-4 w-full aspect-[4/3] sm:aspect-[3/2]">

@@ -15,6 +15,7 @@ import { ModalProvider } from "./contexts/ModalContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { FeedProvider } from "./contexts/FeedContext";
 import { useFeeds } from "./contexts/FeedContextState";
+import { MediaPlaybackProvider } from "./contexts/MediaPlaybackContext";
 import { UIProvider } from "./contexts/UIContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { NotificationContainer } from "./components/NotificationToast";
@@ -243,14 +244,16 @@ const FeedView: React.FC = () => {
   }, [isFirstPaint]);
 
   const appWithProviders = (
-    <React.Suspense fallback={<FirstPaintShell layoutMode={initialLayout} />}>
-      <ModalProvider>
-        <UIProvider>
-          <AppContent />
-          <NotificationContainer />
-        </UIProvider>
-      </ModalProvider>
-    </React.Suspense>
+    <MediaPlaybackProvider>
+      <React.Suspense fallback={<FirstPaintShell layoutMode={initialLayout} />}>
+        <ModalProvider>
+          <UIProvider>
+            <AppContent />
+            <NotificationContainer />
+          </UIProvider>
+        </ModalProvider>
+      </React.Suspense>
+    </MediaPlaybackProvider>
   );
 
   if (isFirstPaint) {

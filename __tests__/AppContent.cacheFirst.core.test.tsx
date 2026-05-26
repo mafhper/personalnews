@@ -2,6 +2,7 @@ import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppContent from "../components/AppContent";
+import { MediaPlaybackProvider } from "../contexts/MediaPlaybackContext";
 import { useKeyboardNavigation } from "../hooks/useKeyboardNavigation";
 import type { Article, FeedSource } from "../types";
 
@@ -533,6 +534,19 @@ vi.mock("../components/PerformanceDebugger", () => ({
   default: () => null,
 }));
 
+const renderAppContent = () =>
+  render(
+    <MediaPlaybackProvider>
+      <AppContent />
+    </MediaPlaybackProvider>,
+  );
+
+const appContentWithMediaProvider = (
+  <MediaPlaybackProvider>
+    <AppContent />
+  </MediaPlaybackProvider>
+);
+
 describe("AppContent cache-first rendering", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -563,7 +577,7 @@ describe("AppContent cache-first rendering", () => {
 
   it("passes the configured cache TTL to category navigation requests", async () => {
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -584,7 +598,7 @@ describe("AppContent cache-first rendering", () => {
 
   it("keeps manual refresh on the force-refresh context path", async () => {
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -608,7 +622,7 @@ describe("AppContent cache-first rendering", () => {
     mockFeedState.articles = [techArticle, designArticle];
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -635,7 +649,7 @@ describe("AppContent cache-first rendering", () => {
     mockFeedState.articles = [techArticle, designArticle];
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -659,7 +673,7 @@ describe("AppContent cache-first rendering", () => {
 
     let view!: ReturnType<typeof render>;
     await act(async () => {
-      view = render(<AppContent />);
+      view = renderAppContent();
       await Promise.resolve();
     });
 
@@ -668,7 +682,7 @@ describe("AppContent cache-first rendering", () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText("Go podcasts"));
-      view.rerender(<AppContent />);
+      view.rerender(appContentWithMediaProvider);
       await Promise.resolve();
     });
 
@@ -701,7 +715,7 @@ describe("AppContent cache-first rendering", () => {
     mockReadLinks = new Set(["https://example.com/read-favorite"]);
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -743,7 +757,7 @@ describe("AppContent cache-first rendering", () => {
     mockReadLinks = new Set(["https://example.com/read-favorite"]);
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -776,7 +790,7 @@ describe("AppContent cache-first rendering", () => {
     ];
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -813,7 +827,7 @@ describe("AppContent cache-first rendering", () => {
     ];
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -840,7 +854,7 @@ describe("AppContent cache-first rendering", () => {
     mockFeedState.articles = [];
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -883,7 +897,7 @@ describe("AppContent cache-first rendering", () => {
     mockFeedState.articles = [techArticle];
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -918,7 +932,7 @@ describe("AppContent cache-first rendering", () => {
     });
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -943,7 +957,7 @@ describe("AppContent cache-first rendering", () => {
 
     let view!: ReturnType<typeof render>;
     await act(async () => {
-      view = render(<AppContent />);
+      view = renderAppContent();
       await Promise.resolve();
     });
 
@@ -951,7 +965,7 @@ describe("AppContent cache-first rendering", () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText("Go design"));
-      view.rerender(<AppContent />);
+      view.rerender(appContentWithMediaProvider);
       await Promise.resolve();
     });
 
@@ -983,7 +997,7 @@ describe("AppContent cache-first rendering", () => {
 
     let view!: ReturnType<typeof render>;
     await act(async () => {
-      view = render(<AppContent />);
+      view = renderAppContent();
       await Promise.resolve();
     });
 
@@ -991,7 +1005,7 @@ describe("AppContent cache-first rendering", () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText("Go videos"));
-      view.rerender(<AppContent />);
+      view.rerender(appContentWithMediaProvider);
       await Promise.resolve();
     });
 
@@ -1011,7 +1025,7 @@ describe("AppContent cache-first rendering", () => {
     });
 
     await act(async () => {
-      view.rerender(<AppContent />);
+      view.rerender(appContentWithMediaProvider);
       await Promise.resolve();
     });
 
@@ -1042,7 +1056,7 @@ describe("AppContent cache-first rendering", () => {
 
     let view!: ReturnType<typeof render>;
     await act(async () => {
-      view = render(<AppContent />);
+      view = renderAppContent();
       await Promise.resolve();
     });
 
@@ -1051,7 +1065,7 @@ describe("AppContent cache-first rendering", () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText("Go all"));
-      view.rerender(<AppContent />);
+      view.rerender(appContentWithMediaProvider);
       await Promise.resolve();
     });
 
@@ -1083,7 +1097,7 @@ describe("AppContent cache-first rendering", () => {
     });
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -1111,7 +1125,7 @@ describe("AppContent cache-first rendering", () => {
     });
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
@@ -1147,7 +1161,7 @@ describe("AppContent cache-first rendering", () => {
     });
 
     await act(async () => {
-      render(<AppContent />);
+      renderAppContent();
       await Promise.resolve();
     });
 
