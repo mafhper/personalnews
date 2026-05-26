@@ -9,7 +9,11 @@ import { ArticleItemLight } from "./ArticleItemLight";
 import { FeedInteractiveActions } from "./FeedInteractiveActions";
 import { FeedResponsiveDate } from "./FeedResponsiveDate";
 import { getVideoEmbed } from "../utils/videoEmbed";
-import { useMediaPlayback } from "../contexts/MediaPlaybackContext";
+import {
+  buildMediaOriginFromArticle,
+  useMediaPlayback,
+} from "../contexts/MediaPlaybackContext";
+import { useMediaOriginScope } from "../contexts/MediaOriginScopeContext";
 
 const ChatBubbleIcon: React.FC = memo(() => (
   <svg
@@ -63,6 +67,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
 }) => {
   const { startRenderTiming, endRenderTiming } = usePerformance();
   const { registerMediaItem } = useMediaPlayback();
+  const mediaCategoryId = useMediaOriginScope();
   const articleRef = useRef<HTMLElement | null>(null);
   const { settings: layoutSettings } = useArticleLayout();
   const { contentConfig } = useAppearance();
@@ -82,7 +87,7 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
 
   useEffect(
     () =>
-      registerMediaItem(article.link, () => {
+      registerMediaItem(buildMediaOriginFromArticle(article, mediaCategoryId), () => {
         const element = articleRef.current;
         if (!element) return;
         element.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -93,7 +98,13 @@ const ArticleItemFull: React.FC<ArticleItemProps> = ({
           1600,
         );
       }),
-    [article.link, registerMediaItem],
+    [
+      article.feedUrl,
+      article.link,
+      article.sourceTitle,
+      mediaCategoryId,
+      registerMediaItem,
+    ],
   );
 
   const isHorizontal = layoutMode === "list" || layoutMode === "minimal";

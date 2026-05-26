@@ -71,7 +71,10 @@ describe("feed layout polish wiring", () => {
 
   it("removes Newspaper secondary stories below the hero", () => {
     const source = read("components/layouts/NewspaperLayout.tsx");
-    expect(source).toContain("const rest = articles.slice(1)");
+    expect(source).toContain("const mainIndex = Math.max(");
+    expect(source).toContain(
+      "const rest = articles.filter((_, index) => index !== mainIndex)",
+    );
     expect(source).not.toContain("const secondary");
     expect(source).not.toContain("{secondary.length > 0");
   });

@@ -73,6 +73,12 @@ describe("mediaPlaybackReducer", () => {
       payload: {
         ...video,
         iframeSrc: "https://www.youtube.com/embed/changed",
+        title: "Updated title and origin",
+        origin: {
+          categoryId: "design",
+          articleLink: "https://example.com/updated-video-origin",
+          sourceTitle: "Updated creator",
+        },
       },
       iframeKey: "iframe-2",
     });
@@ -81,6 +87,11 @@ describe("mediaPlaybackReducer", () => {
       kind: "video",
       iframeKey: "iframe-1",
       iframeSrc: video.iframeSrc,
+      title: "Updated title and origin",
+      origin: {
+        categoryId: "design",
+        articleLink: "https://example.com/updated-video-origin",
+      },
       ui: "docked",
     });
   });
@@ -108,6 +119,23 @@ describe("mediaPlaybackReducer", () => {
       iframeKey: "iframe-2",
       iframeSrc: nextVideo.iframeSrc,
       title: "Video two",
+      hasLoaded: false,
+    });
+  });
+
+  it("records that an active video iframe loaded without changing its identity", () => {
+    const videoState = mediaPlaybackReducer(
+      { kind: "none" },
+      { type: "OPEN_VIDEO_DOCKED", payload: video, iframeKey: "iframe-1" },
+    );
+
+    const loaded = mediaPlaybackReducer(videoState, { type: "VIDEO_LOADED" });
+
+    expect(loaded).toMatchObject({
+      kind: "video",
+      iframeKey: "iframe-1",
+      iframeSrc: video.iframeSrc,
+      hasLoaded: true,
     });
   });
 

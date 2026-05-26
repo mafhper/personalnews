@@ -80,6 +80,7 @@ export const GlobalMediaLayer: React.FC<GlobalMediaLayerProps> = ({
     setVolume,
     setPlaybackRate,
     detachVideo,
+    markVideoLoaded,
     minimize,
     expand,
     close,
@@ -339,6 +340,7 @@ export const GlobalMediaLayer: React.FC<GlobalMediaLayerProps> = ({
             allowFullScreen
             referrerPolicy="strict-origin-when-cross-origin"
             title={state.title}
+            onLoad={markVideoLoaded}
           />
 
           <div className="absolute left-2 right-2 top-2 flex items-center justify-between gap-2">

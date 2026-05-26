@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 import { PocketFeedsLayout } from "../components/layouts/PocketFeedsLayout";
 import { GlobalMediaLayer } from "../components/GlobalMediaLayer";
@@ -101,6 +101,8 @@ const renderPocketFeeds = (ui: ReactElement) =>
     </MediaPlaybackProvider>,
   );
 
+const originalMediaMetadata = globalThis.MediaMetadata;
+
 describe("PocketFeedsLayout audio player", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -116,6 +118,18 @@ describe("PocketFeedsLayout audio player", () => {
       configurable: true,
       value: vi.fn(),
     });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(window.navigator, "mediaSession");
+    if (originalMediaMetadata) {
+      Object.defineProperty(globalThis, "MediaMetadata", {
+        configurable: true,
+        value: originalMediaMetadata,
+      });
+      return;
+    }
+    Reflect.deleteProperty(globalThis, "MediaMetadata");
   });
 
   it("opens player controls with play, seek, volume and speed", async () => {
@@ -217,6 +231,43 @@ describe("PocketFeedsLayout audio player", () => {
     expect(await screen.findByText(/não foi possível iniciar o áudio/i)).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /tocar episódio/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /pausar episódio/i })).not.toBeInTheDocument();
+  });
+
+  it("ignores unsupported MediaSession actions while registering podcast controls", async () => {
+    const setActionHandler = vi.fn((action: string) => {
+      if (action === "seekforward") {
+        throw new Error("Unsupported action");
+      }
+    });
+    Object.defineProperty(window.navigator, "mediaSession", {
+      configurable: true,
+      value: { metadata: null, setActionHandler },
+    });
+    Object.defineProperty(globalThis, "MediaMetadata", {
+      configurable: true,
+      value: class MediaMetadataMock {
+        constructor(_metadata: MediaMetadataInit) {}
+      },
+    });
+    window.localStorage.setItem(
+      "pocketfeeds-view-mode",
+      JSON.stringify("single"),
+    );
+
+    renderPocketFeeds(<PocketFeedsLayout articles={[podcastEpisode]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("pocketfeeds-player-expanded"),
+      ).toBeInTheDocument(),
+    );
+    expect(setActionHandler).toHaveBeenCalledWith("play", expect.any(Function));
+    expect(setActionHandler).toHaveBeenCalledWith(
+      "seekforward",
+      expect.any(Function),
+    );
   });
 
   it("renders episode artwork, author, summary and duration metadata", () => {

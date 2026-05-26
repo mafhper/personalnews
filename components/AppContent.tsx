@@ -102,7 +102,7 @@ const AppContent: React.FC = () => {
     retryFailedFeeds,
     cancelLoading: _cancelLoading,
   } = useFeeds();
-  const { requestFocusForLink } = useMediaPlayback();
+  const { requestFocusForOrigin } = useMediaPlayback();
   const { settings: layoutSettings } = useArticleLayout();
 
   const buildLoadRequest = useCallback(
@@ -836,10 +836,10 @@ const AppContent: React.FC = () => {
 
   const handleMediaReturnToOrigin = useCallback(
     (origin: MediaOrigin) => {
-      requestFocusForLink(origin.articleLink);
+      requestFocusForOrigin(origin);
       handleNavigation(origin.categoryId, origin.feedUrl);
     },
-    [handleNavigation, requestFocusForLink],
+    [handleNavigation, requestFocusForOrigin],
   );
 
   const handleTitleNavigation = useCallback(() => {

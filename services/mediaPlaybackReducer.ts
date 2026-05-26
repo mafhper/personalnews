@@ -26,6 +26,7 @@ const createVideoState = (
   kind: "video",
   ...payload,
   iframeKey,
+  hasLoaded: false,
   ui: "docked",
 });
 
@@ -90,6 +91,9 @@ export const mediaPlaybackReducer = (
       if (state.kind === "video" && !action.replace) {
         return {
           ...state,
+          ...action.payload,
+          iframeSrc: state.iframeSrc,
+          iframeKey: state.iframeKey,
           ui: "docked",
           anchorRect: undefined,
         };
@@ -102,7 +106,8 @@ export const mediaPlaybackReducer = (
       return { ...state, anchorRect: action.payload };
 
     case "VIDEO_LOADED":
-      return state;
+      if (state.kind !== "video") return state;
+      return { ...state, hasLoaded: true };
 
     case "DETACH_VIDEO":
       if (state.kind !== "video") return state;

@@ -5,7 +5,11 @@ import { FavoriteButton } from "../FavoriteButton";
 import { ArticleReaderModal } from "../ArticleReaderModal";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
 import { FeedResponsiveDate } from "../FeedResponsiveDate";
-import { useMediaPlayback } from "../../contexts/MediaPlaybackContext";
+import {
+  buildMediaOriginFromArticle,
+  useMediaPlayback,
+} from "../../contexts/MediaPlaybackContext";
+import { useMediaOriginScope } from "../../contexts/MediaOriginScopeContext";
 
 interface BrutalistLayoutProps {
   articles: Article[];
@@ -36,11 +40,12 @@ const BrutalistCard: React.FC<{
 }> = ({ article, onRead }) => {
   const embedUrl = getVideoEmbed(article.link);
   const { registerMediaItem } = useMediaPlayback();
+  const mediaCategoryId = useMediaOriginScope();
   const articleRef = useRef<HTMLElement | null>(null);
 
   useEffect(
     () =>
-      registerMediaItem(article.link, () => {
+      registerMediaItem(buildMediaOriginFromArticle(article, mediaCategoryId), () => {
         const element = articleRef.current;
         if (!element) return;
         element.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -51,7 +56,13 @@ const BrutalistCard: React.FC<{
           1600,
         );
       }),
-    [article.link, registerMediaItem],
+    [
+      article.feedUrl,
+      article.link,
+      article.sourceTitle,
+      mediaCategoryId,
+      registerMediaItem,
+    ],
   );
 
   return (

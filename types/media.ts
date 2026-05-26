@@ -45,6 +45,7 @@ export interface VideoPayload {
 export interface VideoState extends VideoPayload {
   kind: "video";
   iframeKey: string;
+  hasLoaded: boolean;
   ui: "docked" | "floating" | "minimized";
   anchorRect?: VideoAnchorRect;
 }

@@ -1,7 +1,11 @@
 import React, { memo, useEffect, useRef } from "react";
 import type { Article } from "../types";
 import { FavoriteButton } from "./FavoriteButton";
-import { useMediaPlayback } from "../contexts/MediaPlaybackContext";
+import {
+  buildMediaOriginFromArticle,
+  useMediaPlayback,
+} from "../contexts/MediaPlaybackContext";
+import { useMediaOriginScope } from "../contexts/MediaOriginScopeContext";
 
 interface ArticleItemLightProps {
   article: Article;
@@ -31,6 +35,7 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
   onClick,
 }) => {
   const { registerMediaItem } = useMediaPlayback();
+  const mediaCategoryId = useMediaOriginScope();
   const articleRef = useRef<HTMLElement | null>(null);
   const authorLabel =
     article.author && article.author !== article.sourceTitle
@@ -39,7 +44,7 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
 
   useEffect(
     () =>
-      registerMediaItem(article.link, () => {
+      registerMediaItem(buildMediaOriginFromArticle(article, mediaCategoryId), () => {
         const element = articleRef.current;
         if (!element) return;
         element.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -50,7 +55,13 @@ const ArticleItemLightComponent: React.FC<ArticleItemLightProps> = ({
           1600,
         );
       }),
-    [article.link, registerMediaItem],
+    [
+      article.feedUrl,
+      article.link,
+      article.sourceTitle,
+      mediaCategoryId,
+      registerMediaItem,
+    ],
   );
 
   return (

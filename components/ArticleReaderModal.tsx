@@ -85,6 +85,10 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     !!videoDetails?.mayRequireExternalFallback &&
     videoDetails.provider === "youtube" &&
     isTauri;
+  const monitoredVideoHasLoaded =
+    mediaState.kind === "video" &&
+    mediaState.iframeSrc === videoEmbed &&
+    mediaState.hasLoaded;
 
   useDocumentScrollLock(true);
 
@@ -307,7 +311,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   useEffect(() => {
     setShowVideoFallbackHint(false);
 
-    if (!shouldMonitorDesktopVideo) {
+    if (!shouldMonitorDesktopVideo || monitoredVideoHasLoaded) {
       return;
     }
 
@@ -316,7 +320,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     }, 4500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [article.link, shouldMonitorDesktopVideo]);
+  }, [article.link, monitoredVideoHasLoaded, shouldMonitorDesktopVideo]);
 
   const rawContent = fullContent || article.content || article.description;
   const contentHtml = useMemo(

@@ -33,14 +33,15 @@ interface MediaPlaybackContextValue {
   setVolume: (volume: number) => void;
   setPlaybackRate: (playbackRate: PlaybackRate) => void;
   openVideoDocked: (payload: VideoPayload, anchorRect?: VideoAnchorRect) => void;
+  markVideoLoaded: () => void;
   setVideoAnchorRect: (rect?: VideoAnchorRect) => void;
   detachVideo: () => void;
   minimize: () => void;
   expand: () => void;
   close: () => void;
-  requestFocusForLink: (articleLink: string) => void;
+  requestFocusForOrigin: (origin: MediaOrigin) => void;
   registerMediaItem: (
-    articleLink: string,
+    origin: MediaOrigin,
     callback: () => void,
   ) => () => void;
 }
@@ -60,6 +61,9 @@ const createIframeKey = () => {
   return `media-iframe-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
+export const buildMediaOriginKey = (origin: MediaOrigin) =>
+  `${origin.categoryId}::${origin.feedUrl || ""}::${origin.articleLink}`;
+
 export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -70,7 +74,7 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const iframeKeyRef = useRef<string | null>(null);
   const pendingFocusRef = useRef<Set<string>>(new Set());
-  const focusRegistryRef = useRef<Map<string, () => void>>(new Map());
+  const focusRegistryRef = useRef<Map<string, Set<() => void>>>(new Map());
   const stateRef = useRef(state);
   const { preferences, playbackRates, setVolume, setPlaybackRate } =
     useMediaPreferences();
@@ -79,28 +83,34 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
     stateRef.current = state;
   }, [state]);
 
-  const requestFocusForLink = useCallback((articleLink: string) => {
-    const callback = focusRegistryRef.current.get(articleLink);
+  const requestFocusForOrigin = useCallback((origin: MediaOrigin) => {
+    const originKey = buildMediaOriginKey(origin);
+    const callback = focusRegistryRef.current.get(originKey)?.values().next().value;
     if (callback) {
       window.setTimeout(callback, 50);
       return;
     }
-    pendingFocusRef.current.add(articleLink);
+    pendingFocusRef.current.add(originKey);
   }, []);
 
   const registerMediaItem = useCallback(
-    (articleLink: string, callback: () => void) => {
-      focusRegistryRef.current.set(articleLink, callback);
+    (origin: MediaOrigin, callback: () => void) => {
+      const originKey = buildMediaOriginKey(origin);
+      const callbacks =
+        focusRegistryRef.current.get(originKey) ?? new Set<() => void>();
+      callbacks.add(callback);
+      focusRegistryRef.current.set(originKey, callbacks);
 
-      if (pendingFocusRef.current.has(articleLink)) {
-        pendingFocusRef.current.delete(articleLink);
+      if (pendingFocusRef.current.has(originKey)) {
+        pendingFocusRef.current.delete(originKey);
         window.setTimeout(callback, 50);
       }
 
       return () => {
-        const current = focusRegistryRef.current.get(articleLink);
-        if (current === callback) {
-          focusRegistryRef.current.delete(articleLink);
+        const current = focusRegistryRef.current.get(originKey);
+        current?.delete(callback);
+        if (current?.size === 0) {
+          focusRegistryRef.current.delete(originKey);
         }
       };
     },
@@ -114,6 +124,8 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
     audio.src = "";
     audio.load();
   }, []);
+
+  useEffect(() => () => releaseAudio(), [releaseAudio]);
 
   const close = useCallback(() => {
     if (stateRef.current.kind === "podcast") {
@@ -228,6 +240,10 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
     dispatch({ type: "SET_VIDEO_ANCHOR_RECT", payload: rect });
   }, []);
 
+  const markVideoLoaded = useCallback(() => {
+    dispatch({ type: "VIDEO_LOADED" });
+  }, []);
+
   const detachVideo = useCallback(() => {
     dispatch({ type: "DETACH_VIDEO" });
   }, []);
@@ -269,7 +285,9 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) {
+      return;
+    }
 
     if (state.kind !== "podcast") {
       navigator.mediaSession.metadata = null;
@@ -284,24 +302,35 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
         : undefined,
     });
 
-    navigator.mediaSession.setActionHandler("play", () => {
+    const setActionHandlerSafely = (
+      action: Parameters<MediaSession["setActionHandler"]>[0],
+      handler: Parameters<MediaSession["setActionHandler"]>[1],
+    ) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        // Some partial Media Session implementations reject specific actions.
+      }
+    };
+
+    setActionHandlerSafely("play", () => {
       void togglePodcast();
     });
-    navigator.mediaSession.setActionHandler("pause", pausePodcast);
-    navigator.mediaSession.setActionHandler("seekbackward", () => {
+    setActionHandlerSafely("pause", pausePodcast);
+    setActionHandlerSafely("seekbackward", () => {
       const audio = audioRef.current;
       if (audio) seekPodcast(Math.max(0, audio.currentTime - 15));
     });
-    navigator.mediaSession.setActionHandler("seekforward", () => {
+    setActionHandlerSafely("seekforward", () => {
       const audio = audioRef.current;
       if (audio) seekPodcast(Math.min(audio.duration || 0, audio.currentTime + 15));
     });
 
     return () => {
-      navigator.mediaSession.setActionHandler("play", null);
-      navigator.mediaSession.setActionHandler("pause", null);
-      navigator.mediaSession.setActionHandler("seekbackward", null);
-      navigator.mediaSession.setActionHandler("seekforward", null);
+      setActionHandlerSafely("play", null);
+      setActionHandlerSafely("pause", null);
+      setActionHandlerSafely("seekbackward", null);
+      setActionHandlerSafely("seekforward", null);
     };
   }, [pausePodcast, seekPodcast, state, togglePodcast]);
 
@@ -318,12 +347,13 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
       setVolume,
       setPlaybackRate,
       openVideoDocked,
+      markVideoLoaded,
       setVideoAnchorRect,
       detachVideo,
       minimize,
       expand,
       close,
-      requestFocusForLink,
+      requestFocusForOrigin,
       registerMediaItem,
     }),
     [
@@ -337,12 +367,13 @@ export const MediaPlaybackProvider: React.FC<{ children: ReactNode }> = ({
       setVolume,
       setPlaybackRate,
       openVideoDocked,
+      markVideoLoaded,
       setVideoAnchorRect,
       detachVideo,
       minimize,
       expand,
       close,
-      requestFocusForLink,
+      requestFocusForOrigin,
       registerMediaItem,
     ],
   );

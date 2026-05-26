@@ -240,7 +240,7 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
 }) => {
   const layoutMeasureRef = useRef<HTMLDivElement | null>(null);
   const layoutPickerRef = useRef<HTMLDivElement | null>(null);
-  const mediaItemCleanupRef = useRef<Map<string, () => void>>(new Map());
+  const mediaItemCleanupRef = useRef<Map<HTMLElement, () => void>>(new Map());
   const mediaCategoryId = useMediaOriginScope();
   const { state: mediaState, playPodcast, pausePodcast, registerMediaItem } =
     useMediaPlayback();
@@ -332,17 +332,21 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
   );
 
   const bindMediaItem = useCallback(
-    (episode: Article): React.RefCallback<HTMLElement> =>
-      (node) => {
-        const existingCleanup = mediaItemCleanupRef.current.get(episode.link);
-        if (existingCleanup) {
-          existingCleanup();
-          mediaItemCleanupRef.current.delete(episode.link);
+    (episode: Article): React.RefCallback<HTMLElement> => {
+      let currentNode: HTMLElement | null = null;
+
+      return (node) => {
+        if (currentNode) {
+          mediaItemCleanupRef.current.get(currentNode)?.();
+          mediaItemCleanupRef.current.delete(currentNode);
         }
 
+        currentNode = node;
         if (!node) return;
 
-        const cleanup = registerMediaItem(episode.link, () => {
+        const cleanup = registerMediaItem(
+          buildMediaOriginFromArticle(episode, mediaCategoryId),
+          () => {
           node.scrollIntoView({ block: "center", behavior: "smooth" });
           node.focus({ preventScroll: true });
           node.classList.add("media-return-highlight");
@@ -350,10 +354,12 @@ export const PocketFeedsLayout: React.FC<PocketFeedsLayoutProps> = ({
             () => node.classList.remove("media-return-highlight"),
             1600,
           );
-        });
-        mediaItemCleanupRef.current.set(episode.link, cleanup);
-      },
-    [registerMediaItem],
+          },
+        );
+        mediaItemCleanupRef.current.set(node, cleanup);
+      };
+    },
+    [mediaCategoryId, registerMediaItem],
   );
 
   const podcastGroups = useMemo<PodcastGroup[]>(() => {

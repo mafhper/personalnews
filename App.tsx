@@ -244,14 +244,16 @@ const FeedView: React.FC = () => {
   }, [isFirstPaint]);
 
   const appWithProviders = (
-    <React.Suspense fallback={<FirstPaintShell layoutMode={initialLayout} />}>
-      <ModalProvider>
-        <UIProvider>
-          <AppContent />
-          <NotificationContainer />
-        </UIProvider>
-      </ModalProvider>
-    </React.Suspense>
+    <MediaPlaybackProvider>
+      <React.Suspense fallback={<FirstPaintShell layoutMode={initialLayout} />}>
+        <ModalProvider>
+          <UIProvider>
+            <AppContent />
+            <NotificationContainer />
+          </UIProvider>
+        </ModalProvider>
+      </React.Suspense>
+    </MediaPlaybackProvider>
   );
 
   if (isFirstPaint) {
@@ -339,20 +341,18 @@ const App: React.FC = () => {
   return (
     <LanguageProvider>
       <NotificationProvider>
-        <MediaPlaybackProvider>
-          <FeedProvider autoStart={false}>
-            <FeedBootstrap active={shouldStartFeed} />
-            {view === "feed" ? (
-              <FeedView />
-            ) : (
-              <LandingPage
-                onOpenFeed={openFeed}
-                onFooterVisible={handleFooterVisible}
-                onHomeDataReady={handleHomeDataReady}
-              />
-            )}
-          </FeedProvider>
-        </MediaPlaybackProvider>
+        <FeedProvider autoStart={false}>
+          <FeedBootstrap active={shouldStartFeed} />
+          {view === "feed" ? (
+            <FeedView />
+          ) : (
+            <LandingPage
+              onOpenFeed={openFeed}
+              onFooterVisible={handleFooterVisible}
+              onHomeDataReady={handleHomeDataReady}
+            />
+          )}
+        </FeedProvider>
       </NotificationProvider>
     </LanguageProvider>
   );
