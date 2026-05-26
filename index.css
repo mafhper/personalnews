@@ -3822,7 +3822,9 @@ Newspaper Editorial Desk
   margin-right: auto;
   margin-left: auto;
   padding: clamp(1rem, 2.6vw, 2.5rem);
-  color: rgb(var(--theme-text-readable, var(--color-text)));
+  color: rgb(
+    var(--theme-text-on-surface, var(--theme-text-readable, var(--color-text)))
+  );
   background: rgb(
     var(--theme-surface-readable, var(--theme-manager-surface, var(--color-surface)))
   );
@@ -3837,7 +3839,12 @@ Newspaper Editorial Desk
   gap: 1rem;
   padding-bottom: 0.9rem;
   margin-bottom: clamp(1.25rem, 2vw, 2rem);
-  color: rgb(var(--theme-text-secondary-readable, var(--color-textSecondary)));
+  color: rgb(
+    var(
+      --theme-text-secondary-on-surface,
+      var(--theme-text-secondary-readable, var(--color-textSecondary))
+    )
+  );
   font-size: 0.75rem;
   font-weight: 650;
   line-height: 1.4;
@@ -3914,7 +3921,12 @@ Newspaper Editorial Desk
   flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem 0.75rem;
-  color: rgb(var(--theme-text-secondary-readable, var(--color-textSecondary)));
+  color: rgb(
+    var(
+      --theme-text-secondary-on-surface,
+      var(--theme-text-secondary-readable, var(--color-textSecondary))
+    )
+  );
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.35;
@@ -3922,14 +3934,18 @@ Newspaper Editorial Desk
 }
 
 .newspaper-source {
-  color: rgb(var(--theme-text-readable, var(--color-text)));
+  color: rgb(
+    var(--theme-text-on-surface, var(--theme-text-readable, var(--color-text)))
+  );
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .newspaper-lead__title {
   margin: 0;
-  color: rgb(var(--theme-text-readable, var(--color-text)));
+  color: rgb(
+    var(--theme-text-on-surface, var(--theme-text-readable, var(--color-text)))
+  );
   font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
   font-size: clamp(1.875rem, 2.35vw, 2.3rem);
   font-weight: 700;
@@ -3941,7 +3957,12 @@ Newspaper Editorial Desk
   display: -webkit-box;
   overflow: hidden;
   margin: 0;
-  color: rgb(var(--theme-text-secondary-readable, var(--color-textSecondary)));
+  color: rgb(
+    var(
+      --theme-text-secondary-on-surface,
+      var(--theme-text-secondary-readable, var(--color-textSecondary))
+    )
+  );
   font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
   max-width: 54rem;
   font-size: 0.98rem;
@@ -3999,10 +4020,31 @@ Newspaper Editorial Desk
   border-top: 1px solid rgba(var(--color-border), 0.22);
 }
 
+.newspaper-story-link {
+  display: block;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.newspaper-story-link:focus-visible {
+  outline: 2px solid rgb(var(--color-accent));
+  outline-offset: 0.25rem;
+}
+
 .newspaper-latest__story h3,
 .newspaper-story h2 {
   margin: 0.45rem 0 0;
-  color: rgb(var(--theme-text-readable, var(--color-text)));
+  color: rgb(
+    var(--theme-text-on-surface, var(--theme-text-readable, var(--color-text)))
+  );
   font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
   font-size: 1.04rem;
   font-weight: 700;
@@ -4054,7 +4096,12 @@ Newspaper Editorial Desk
 
 .newspaper-story__excerpt {
   margin: 0;
-  color: rgb(var(--theme-text-secondary-readable, var(--color-textSecondary)));
+  color: rgb(
+    var(
+      --theme-text-secondary-on-surface,
+      var(--theme-text-secondary-readable, var(--color-textSecondary))
+    )
+  );
   font-size: 0.88rem;
   line-height: 1.55;
   letter-spacing: 0;
@@ -4063,7 +4110,12 @@ Newspaper Editorial Desk
 .newspaper-footer {
   padding-top: 1.25rem;
   margin-top: clamp(2rem, 4vw, 3.5rem);
-  color: rgb(var(--theme-text-secondary-readable, var(--color-textSecondary)));
+  color: rgb(
+    var(
+      --theme-text-secondary-on-surface,
+      var(--theme-text-secondary-readable, var(--color-textSecondary))
+    )
+  );
   font-size: 0.72rem;
   font-weight: 650;
   letter-spacing: 0;
@@ -4093,6 +4145,16 @@ Newspaper Editorial Desk
   .newspaper-lead-skeleton__media {
     aspect-ratio: 16 / 7;
   }
+
+  .newspaper-latest {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  .newspaper-latest__heading {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -4112,6 +4174,7 @@ Newspaper Editorial Desk
   }
 
   .newspaper-latest {
+    display: block;
     padding-top: 0;
     padding-left: clamp(1.25rem, 2vw, 2rem);
     margin-top: 0;

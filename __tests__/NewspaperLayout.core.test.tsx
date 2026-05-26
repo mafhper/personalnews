@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NewspaperLayout } from "../components/layouts/NewspaperLayout";
 import type { Article } from "../types";
@@ -37,7 +38,9 @@ vi.mock("../components/FeedInteractiveActions", () => ({
 }));
 
 vi.mock("../components/ArticleReaderModal", () => ({
-  ArticleReaderModal: () => null,
+  ArticleReaderModal: ({ article }: { article: Article }) => (
+    <div data-testid="reader-modal">{article.title}</div>
+  ),
 }));
 
 const makeArticle = (
@@ -157,6 +160,29 @@ describe("NewspaperLayout editorial desk", () => {
     expect(within(lead).getByText("Primeira noticia")).toBeInTheDocument();
   });
 
+  it("opens a story from its keyboard-accessible headline control", async () => {
+    const user = userEvent.setup();
+    outcomes.set(newest.imageUrl!, "load");
+
+    renderNewspaper([newest, second, third, fourth, fifth, sixth]);
+
+    const lead = await screen.findByTestId("newspaper-lead");
+    const titleAction = within(lead).getByRole("button", {
+      name: "Primeira noticia",
+    });
+    titleAction.focus();
+    await user.keyboard("{Enter}");
+
+    expect(screen.getByTestId("reader-modal")).toHaveTextContent(
+      "Primeira noticia",
+    );
+    expect(
+      screen
+        .getByTestId("newspaper-latest")
+        .querySelectorAll(".newspaper-story-link"),
+    ).toHaveLength(4);
+  });
+
   it("validates at most six image candidates for the lead", async () => {
     const candidates = [
       newest,
@@ -186,7 +212,11 @@ describe("NewspaperLayout editorial desk", () => {
     expect(screen.queryByText(/23/)).not.toBeInTheDocument();
 
     const latestRail = screen.getByTestId("newspaper-latest");
-    expect(within(latestRail).getAllByRole("article").map((item) => item.textContent)).toEqual(
+    expect(
+      Array.from(latestRail.querySelectorAll(".newspaper-latest__story")).map(
+        (item) => item.textContent,
+      ),
+    ).toEqual(
       expect.arrayContaining([
         expect.stringContaining("Primeira noticia"),
         expect.stringContaining("Terceira noticia"),

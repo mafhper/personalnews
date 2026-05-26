@@ -308,7 +308,16 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({
                     <FeedResponsiveDate date={main.pubDate} />
                   </div>
                   <h1 className="newspaper-lead__title feed-card-title-clamp">
-                    {main.title}
+                    <button
+                      type="button"
+                      className="newspaper-story-link"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setReadingArticle(main);
+                      }}
+                    >
+                      {main.title}
+                    </button>
                   </h1>
                   <p className="newspaper-lead__excerpt">
                     {mainExcerpt || main.title}
@@ -346,7 +355,18 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({
                         </span>
                         <FeedResponsiveDate date={article.pubDate} />
                       </div>
-                      <h3 className="feed-card-title-clamp">{article.title}</h3>
+                      <h3 className="feed-card-title-clamp">
+                        <button
+                          type="button"
+                          className="newspaper-story-link"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setReadingArticle(article);
+                          }}
+                        >
+                          {article.title}
+                        </button>
+                      </h3>
                     </article>
                   ))}
                 </aside>
@@ -373,7 +393,18 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({
                         </span>
                         <FeedResponsiveDate date={article.pubDate} />
                       </div>
-                      <h2 className="feed-card-title-clamp">{article.title}</h2>
+                      <h2 className="feed-card-title-clamp">
+                        <button
+                          type="button"
+                          className="newspaper-story-link"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setReadingArticle(article);
+                          }}
+                        >
+                          {article.title}
+                        </button>
+                      </h2>
                       {article.description && (
                         <p className="newspaper-story__excerpt">
                           {sanitizeArticleDescription(article.description, 260)}
