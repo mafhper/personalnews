@@ -58,8 +58,12 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
   const { data: weatherData, city, getWeatherIcon, isLoading, changeCity } = useWeather();
   const { t } = useLanguage();
 
-  const main = articles[0];
-  const rest = articles.slice(1);
+  const mainIndex = Math.max(
+    articles.findIndex((article, index) => index > 0 && Boolean(article.imageUrl)),
+    0,
+  );
+  const main = articles[mainIndex];
+  const rest = articles.filter((_, index) => index !== mainIndex);
   const mainExcerpt = sanitizeArticleDescription(
     [main?.description, main?.content].filter(Boolean).join(" "),
     1200,
