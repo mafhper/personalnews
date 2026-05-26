@@ -142,6 +142,10 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   const { getCategoryById } = useFeedCategories();
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
   const mediaOriginCategoryId = selectedCategory || "all";
+  const newspaperEdition =
+    selectedCategory && selectedCategory.toLowerCase() !== "all"
+      ? getCategoryById(selectedCategory)
+      : undefined;
 
   // T4 & T10 & T36: Log articles arriving and trigger mount handshake
   useEffect(() => {
@@ -257,7 +261,14 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
         case 'brutalist': return <BrutalistLayout articles={articles} timeFormat={timeFormat} />;
         case 'timeline': return <TimelineLayout articles={articles} timeFormat={timeFormat} />;
         case 'bento': return <BentoLayout articles={articles} timeFormat={timeFormat} />;
-        case 'newspaper': return <NewspaperLayout articles={articles} timeFormat={timeFormat} />;
+        case 'newspaper': return (
+          <NewspaperLayout
+            articles={articles}
+            timeFormat={timeFormat}
+            editionLabel={newspaperEdition?.name}
+            editionColor={newspaperEdition?.color}
+          />
+        );
         case 'focus': return <FocusLayout articles={articles} timeFormat={timeFormat} />;
         case 'gallery': return <GalleryLayout articles={articles} timeFormat={timeFormat} />;
         case 'compact': return <CompactLayout articles={articles} timeFormat={timeFormat} />;

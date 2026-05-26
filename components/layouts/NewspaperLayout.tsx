@@ -1,312 +1,436 @@
-import React, { useState } from 'react';
-import type { Article } from '../../types';
-import { ArticleReaderModal } from '../ArticleReaderModal';
-import { useWeather } from '../../hooks/useWeather';
-import { useLanguage } from '../../hooks/useLanguage';
-import { ArticleImage } from '../ArticleImage';
-import { FavoriteButton } from '../FavoriteButton';
-import { FeedInteractiveActions } from '../FeedInteractiveActions';
-import { FeedResponsiveDate } from '../FeedResponsiveDate';
-import { getVideoEmbed } from '../../utils/videoEmbed';
-import { sanitizeArticleDescription } from '../../utils/sanitization';
+import React, { useEffect, useMemo, useState } from "react";
+import type { Article } from "../../types";
+import { ArticleReaderModal } from "../ArticleReaderModal";
+import { useLanguage } from "../../hooks/useLanguage";
+import { FavoriteButton } from "../FavoriteButton";
+import { FeedInteractiveActions } from "../FeedInteractiveActions";
+import { FeedResponsiveDate } from "../FeedResponsiveDate";
+import { getVideoEmbed } from "../../utils/videoEmbed";
+import { sanitizeArticleDescription } from "../../utils/sanitization";
 
 interface NewspaperLayoutProps {
   articles: Article[];
-  timeFormat: '12h' | '24h';
+  timeFormat: "12h" | "24h";
+  editionLabel?: string;
+  editionColor?: string;
 }
+
+interface LeadResolution {
+  key: string;
+  article: Article | null;
+  hasValidatedImage: boolean;
+  isResolving: boolean;
+}
+
+const MAX_LEAD_IMAGE_CANDIDATES = 6;
 
 const Bone: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`feed-skeleton-block ${className}`} />
 );
 
-export const NewspaperSkeleton: React.FC = () => {
+const getResolutionKey = (articles: Article[]) =>
+  articles
+    .map((article) => `${article.link}|${article.imageUrl || ""}`)
+    .join("||");
+
+const initialResolution = (
+  articles: Article[],
+  key: string,
+): LeadResolution => {
+  const hasCandidate = articles.some((article) => Boolean(article.imageUrl));
+  return {
+    key,
+    article: hasCandidate ? null : articles[0] || null,
+    hasValidatedImage: false,
+    isResolving: hasCandidate,
+  };
+};
+
+const canLoadOriginalImage = (src: string) =>
+  new Promise<boolean>((resolve) => {
+    if (typeof Image === "undefined") {
+      resolve(false);
+      return;
+    }
+
+    const probe = new Image();
+    probe.onload = () => resolve(true);
+    probe.onerror = () => resolve(false);
+    probe.src = src;
+  });
+
+const useResolvedLeadArticle = (articles: Article[]) => {
+  const resolutionKey = useMemo(() => getResolutionKey(articles), [articles]);
+  const [resolution, setResolution] = useState<LeadResolution>(() =>
+    initialResolution(articles, resolutionKey),
+  );
+  const visibleResolution =
+    resolution.key === resolutionKey
+      ? resolution
+      : initialResolution(articles, resolutionKey);
+
+  useEffect(() => {
+    let cancelled = false;
+    const candidates = articles
+      .filter((article) => Boolean(article.imageUrl))
+      .slice(0, MAX_LEAD_IMAGE_CANDIDATES);
+    const fallbackArticle = articles[0] || null;
+
+    if (candidates.length === 0) {
+      setResolution({
+        key: resolutionKey,
+        article: fallbackArticle,
+        hasValidatedImage: false,
+        isResolving: false,
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setResolution({
+      key: resolutionKey,
+      article: null,
+      hasValidatedImage: false,
+      isResolving: true,
+    });
+
+    const resolveLead = async () => {
+      for (const candidate of candidates) {
+        if (await canLoadOriginalImage(candidate.imageUrl!)) {
+          if (!cancelled) {
+            setResolution({
+              key: resolutionKey,
+              article: candidate,
+              hasValidatedImage: true,
+              isResolving: false,
+            });
+          }
+          return;
+        }
+      }
+
+      if (!cancelled) {
+        setResolution({
+          key: resolutionKey,
+          article: fallbackArticle,
+          hasValidatedImage: false,
+          isResolving: false,
+        });
+      }
+    };
+
+    void resolveLead();
+    return () => {
+      cancelled = true;
+    };
+  }, [articles, resolutionKey]);
+
+  return visibleResolution;
+};
+
+const ActionRail: React.FC<{
+  article: Article;
+  onRead: () => void;
+}> = ({ article, onRead }) => {
+  const embedUrl = getVideoEmbed(article.link);
+
   return (
-    <div className="min-h-screen px-6 md:px-10 py-8 max-w-[1400px] 2xl:max-w-[1680px] mx-auto border border-white/5 rounded-2xl">
-      {/* Masthead Skeleton */}
-      <div className="border-b border-white/5 pb-6 mb-10 flex justify-between">
-        <Bone className="h-4 w-24" />
-        <Bone className="h-4 w-32" />
-        <Bone className="h-4 w-24" />
-      </div>
-
-      {/* Hero Skeleton */}
-      <div className="grid lg:grid-cols-12 gap-8 mb-16 h-[450px]">
-        <div className="lg:col-span-7 2xl:col-span-8 feed-skeleton-block rounded-xl" />
-        <div className="lg:col-span-5 2xl:col-span-4 flex flex-col justify-center space-y-6">
-          <Bone className="h-4 w-32" />
-          <Bone className="h-12 w-full" />
-          <Bone className="h-24 w-full" />
-        </div>
-      </div>
-
-      {/* Grid Skeleton */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-10">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="space-y-4 border-t border-white/5 pt-4">
-            <Bone className="h-40 w-full" />
-            <Bone className="h-4 w-3/4" />
-            <Bone className="h-6 w-full" />
-          </div>
-        ))}
-      </div>
+    <div className="feed-card-action-rail newspaper-action-rail">
+      <FeedInteractiveActions
+        articleLink={article.link}
+        onRead={onRead}
+        showRead={!embedUrl}
+        showWatch={Boolean(embedUrl)}
+        showVisit
+        compact
+        className="!mt-0"
+      />
     </div>
   );
 };
 
-export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) => {
-  const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-  const { data: weatherData, city, getWeatherIcon, isLoading, changeCity } = useWeather();
-  const { t } = useLanguage();
+const ValidatedStoryMedia: React.FC<{ article: Article }> = ({ article }) => {
+  const [canRender, setCanRender] = useState(false);
 
-  const mainIndex = Math.max(
-    articles.findIndex((article, index) => index > 0 && Boolean(article.imageUrl)),
-    0,
-  );
-  const main = articles[mainIndex];
-  const rest = articles.filter((_, index) => index !== mainIndex);
-  const mainExcerpt = sanitizeArticleDescription(
-    [main?.description, main?.content].filter(Boolean).join(" "),
-    1200,
-  );
+  useEffect(() => {
+    let cancelled = false;
+    setCanRender(false);
 
-  const handleCityChange = () => {
-    const next = prompt(t('weather.city_prompt'), city);
-    if (next) changeCity(next);
-  };
+    if (!article.imageUrl) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void canLoadOriginalImage(article.imageUrl).then((loaded) => {
+      if (!cancelled) {
+        setCanRender(loaded);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [article.imageUrl]);
+
+  if (!article.imageUrl || !canRender) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen">
-      <div
-            className="
-              mx-auto px-6 md:px-10 py-8
-              max-w-[1400px]
-              2xl:max-w-[1680px]
-              feed-surface
-              rounded-2xl
-              border border-[rgb(var(--color-border))]/20
-            "
-      >
+    <div className="newspaper-story__media">
+      <img
+        src={article.imageUrl}
+        alt={article.title}
+        loading="lazy"
+        onError={() => setCanRender(false)}
+        className="absolute inset-0 h-full w-full object-cover object-center"
+        width={720}
+        height={480}
+      />
+    </div>
+  );
+};
 
-        {/* Masthead */}
-        <header className="border-b border-[rgb(var(--color-border))] pb-6 mb-10">
-          <div className="flex justify-between items-center text-xs uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-            <span>{t('article.vol')} {new Date().getFullYear()}</span>
+export const NewspaperSkeleton: React.FC = () => (
+  <div className="newspaper-page">
+    <div className="newspaper-sheet">
+      <div className="newspaper-edition-line">
+        <Bone className="h-4 w-28" />
+        <Bone className="h-4 w-24" />
+      </div>
+      <section className="newspaper-lead-skeleton">
+        <Bone className="newspaper-lead-skeleton__media" />
+        <div className="space-y-4">
+          <Bone className="h-4 w-28" />
+          <Bone className="h-14 w-full" />
+          <Bone className="h-24 w-full" />
+        </div>
+      </section>
+    </div>
+  </div>
+);
 
-            <button
-              onClick={handleCityChange}
-              className="flex items-center gap-2 hover:text-white"
-            >
-              {isLoading ? '...' : weatherData && (
-                <>
-                  <span>{getWeatherIcon()}</span>
-                  <span>{weatherData.temperature}°</span>
-                  <span className="hidden sm:inline">{city}</span>
-                </>
-              )}
-            </button>
+export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({
+  articles,
+  editionLabel,
+  editionColor,
+}) => {
+  const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const [failedLeadMediaLink, setFailedLeadMediaLink] = useState<string | null>(
+    null,
+  );
+  const { t } = useLanguage();
+  const resolution = useResolvedLeadArticle(articles);
+  const main = resolution.article;
+  const showLeadMedia =
+    resolution.hasValidatedImage && failedLeadMediaLink !== main?.link;
+  const remaining = main
+    ? articles.filter((article) => article.link !== main.link)
+    : [];
+  const latest = remaining.slice(0, 4);
+  const storyFlow = remaining.slice(4);
+  const mainExcerpt = main
+    ? sanitizeArticleDescription(
+        [main.description, main.content].filter(Boolean).join(" "),
+        220,
+      )
+    : "";
+  const currentDate = new Date().toLocaleDateString("pt-BR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
-            <span>
-              {new Date().toLocaleDateString('pt-BR', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short'
-              })}
-            </span>
+  return (
+    <div className="newspaper-page min-h-screen">
+      <div className="newspaper-sheet">
+        <header className="newspaper-edition-line">
+          <div className="newspaper-edition-line__label">
+            <span
+              className="newspaper-edition-line__marker"
+              style={{
+                backgroundColor:
+                  editionColor || "rgb(var(--color-accent))",
+              }}
+              aria-hidden="true"
+            />
+            <span>{editionLabel || "Edição geral"}</span>
           </div>
+          <time dateTime={new Date().toISOString()}>{currentDate}</time>
         </header>
 
-        {/* HERO — ESTÁVEL EM TODOS OS BREAKPOINTS */}
-        {main && (
+        {resolution.isResolving ? (
           <section
-            onClick={() => setReadingArticle(main)}
-            className="
-              relative mb-16 cursor-pointer group
-              grid grid-cols-1
-              lg:grid-cols-12
-              gap-8
-              items-stretch
-              lg:min-h-[420px]
-              2xl:min-h-[480px]
-            "
+            className="newspaper-lead-skeleton"
+            data-testid="newspaper-lead-skeleton"
+            aria-label="Carregando manchete"
           >
-            {/* Media */}
-            <div
-              className="
-                relative overflow-hidden rounded-xl
-                h-[260px]
-                sm:h-[320px]
-                md:h-[360px]
-                lg:h-full
-                lg:min-h-[420px]
-                2xl:min-h-[480px]
-                lg:col-span-7
-                2xl:col-span-8
-                bg-[rgb(var(--color-background))]
-              "
-            >
-              <ArticleImage
-                article={main}
-                fill={true}
-                className="absolute inset-0 w-full h-full object-cover object-center"
-                width={1600}
-                height={900}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgb(var(--color-background))]/90 via-[rgb(var(--color-background))]/20 to-transparent" />
-              <div className="feed-card-action-rail absolute left-4 top-4 z-20">
-                {(() => {
-                  const embedUrl = getVideoEmbed(main.link);
-                  return (
-                    <FeedInteractiveActions
-                      variant="onDarkMedia"
-                      articleLink={main.link}
-                      onRead={() => setReadingArticle(main)}
-                      showRead={!embedUrl}
-                      showWatch={!!embedUrl}
-                      showVisit={true}
-                      compact
-                      className="!mt-0"
-                    />
-                  );
-                })()}
-              </div>
-              <FavoriteButton
-                article={main}
-                size="small"
-                position="overlay"
-                className="right-4 top-4 z-20"
-              />
-              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-                <h2
-                  className="
-                    feed-card-title-clamp
-                    font-serif font-bold leading-tight
-                    text-xl
-                    sm:text-2xl
-                    md:text-3xl
-                    lg:text-3xl
-                    2xl:text-4xl
-                    text-[rgb(var(--color-text))]
-                    drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]
-                  "
-                  style={{ "--feed-title-lines": 5 } as React.CSSProperties}
-                >
-                  {main.title}
-                </h2>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div
-              className="
-                lg:col-span-5
-                2xl:col-span-4
-                flex flex-col justify-start
-                gap-5
-                h-full
-                max-w-none
-                text-left
-              "
-            >
-              <div className="feed-card-top-rail text-left">
-                <div className="feed-card-meta-stack">
-                  <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full text-xs font-bold uppercase tracking-widest">
-                    {main.sourceTitle}
-                  </span>
-                  <FeedResponsiveDate
-                    date={main.pubDate}
-                    className="text-xs text-[rgb(var(--color-textSecondary))]"
-                  />
-                </div>
-              </div>
-
-              <div className="feed-card-bottom-copy !mt-0 text-left">
-                <p
-                  className="feed-desc max-w-none text-left font-serif text-base leading-8 text-[rgb(var(--color-text))]/82 first-letter:float-left first-letter:mr-2 first-letter:text-5xl first-letter:font-bold first-letter:leading-none"
-                  style={{ columnCount: 1 }}
-                >
-                  {mainExcerpt || main.title}
-                </p>
-              </div>
+            <Bone className="newspaper-lead-skeleton__media" />
+            <div className="space-y-4">
+              <Bone className="h-4 w-28" />
+              <Bone className="h-14 w-full" />
+              <Bone className="h-24 w-full" />
             </div>
           </section>
-        )}
-
-        {/* EDITORIAL GRID */}
-        <section className="grid grid-cols-1 items-start gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-          {rest.map(article => (
-            <article
-              key={article.link}
-              onClick={() => setReadingArticle(article)}
-              className="group flex h-full cursor-pointer flex-col border-t border-[rgb(var(--color-border))] pt-4 text-left"
-            >
-              <div className="mb-3 flex min-h-[4.6rem] items-end text-left sm:min-h-[5.05rem]">
-                <h3
-                  className="feed-card-title-clamp w-full text-left font-serif text-base font-bold leading-snug group-hover:text-[rgb(var(--color-accent))]"
-                  style={{ "--feed-title-lines": 4 } as React.CSSProperties}
-                >
-                  {article.title}
-                </h3>
-              </div>
-              <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-[rgb(var(--color-background))] mb-3">
-                <ArticleImage
-                  article={article}
-                  fill={true}
-                  className="absolute inset-0 w-full h-full object-cover object-center"
-                  width={600}
-                  height={400}
-                />
-                <div className="feed-card-action-rail absolute left-3 top-3 z-20">
-                  {(() => {
-                    const embedUrl = getVideoEmbed(article.link);
-                    return (
-                      <FeedInteractiveActions
-                        variant="onDarkMedia"
-                        articleLink={article.link}
-                        onRead={() => setReadingArticle(article)}
-                        showRead={!embedUrl}
-                        showWatch={!!embedUrl}
-                        showVisit={true}
-                        compact
-                        className="!mt-0"
-                      />
-                    );
-                  })()}
-                </div>
-                <FavoriteButton
-                  article={article}
-                  size="small"
-                  position="overlay"
-                  className="right-3 top-3 z-20"
-                />
-              </div>
-
-              <div className="feed-card-bottom-copy flex flex-1 flex-col gap-2">
-                <div className="flex min-w-0 flex-col items-start gap-1 text-left">
-                  <span className="feed-chip feed-chip-fit inline-flex w-fit max-w-full whitespace-normal break-words rounded px-2 py-0.5 text-left text-[10px] font-bold uppercase leading-tight tracking-widest">
-                    {article.sourceTitle}
-                  </span>
-                  <FeedResponsiveDate
-                    date={article.pubDate}
-                    className="w-full text-left text-xs text-[rgb(var(--color-textSecondary))]"
-                  />
-                </div>
-                {article.description && (
-                  <p
-                    className="feed-desc feed-card-desc-clamp w-full text-left text-sm"
-                    style={{ "--feed-desc-lines": 3 } as React.CSSProperties}
-                  >
-                    {sanitizeArticleDescription(article.description, 360)}
-                  </p>
+        ) : main ? (
+          <>
+            <section className="newspaper-desk">
+              <article
+                className={`newspaper-lead group ${
+                  showLeadMedia
+                    ? ""
+                    : "newspaper-lead--text-only"
+                }`}
+                data-testid="newspaper-lead"
+                onClick={() => setReadingArticle(main)}
+              >
+                {showLeadMedia && main.imageUrl && (
+                  <div className="newspaper-lead__media">
+                    <img
+                      src={main.imageUrl}
+                      alt={main.title}
+                      loading="eager"
+                      fetchPriority="high"
+                      onError={() => setFailedLeadMediaLink(main.link)}
+                      className="absolute inset-0 h-full w-full object-cover object-center"
+                      width={1600}
+                      height={900}
+                    />
+                  </div>
                 )}
-              </div>
-            </article>
-          ))}
-        </section>
 
-        <footer className="mt-16 pt-6 border-t border-[rgb(var(--color-border))] text-center">
-          <p className="text-xs uppercase tracking-widest text-[rgb(var(--color-textSecondary))]">
-            {t('article.end') || 'Fim da edição'}
-          </p>
+                <div className="newspaper-lead__copy feed-card-bottom-copy">
+                  <div className="newspaper-story-meta">
+                    <span className="newspaper-source">{main.sourceTitle}</span>
+                    <FeedResponsiveDate date={main.pubDate} />
+                  </div>
+                  <h1 className="newspaper-lead__title feed-card-title-clamp">
+                    <button
+                      type="button"
+                      className="newspaper-story-link"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setReadingArticle(main);
+                      }}
+                    >
+                      {main.title}
+                    </button>
+                  </h1>
+                  <p className="newspaper-lead__excerpt">
+                    {mainExcerpt || main.title}
+                  </p>
+                  <div className="newspaper-story-actions">
+                    <ActionRail
+                      article={main}
+                      onRead={() => setReadingArticle(main)}
+                    />
+                    <FavoriteButton
+                      article={main}
+                      size="small"
+                      position="inline"
+                    />
+                  </div>
+                </div>
+              </article>
+
+              {latest.length > 0 && (
+                <aside
+                  className="newspaper-latest"
+                  data-testid="newspaper-latest"
+                  aria-label="Agora"
+                >
+                  <h2 className="newspaper-latest__heading">Agora</h2>
+                  {latest.map((article) => (
+                    <article
+                      key={article.link}
+                      className="newspaper-latest__story"
+                      onClick={() => setReadingArticle(article)}
+                    >
+                      <div className="newspaper-story-meta">
+                        <span className="newspaper-source">
+                          {article.sourceTitle}
+                        </span>
+                        <FeedResponsiveDate date={article.pubDate} />
+                      </div>
+                      <h3 className="feed-card-title-clamp">
+                        <button
+                          type="button"
+                          className="newspaper-story-link"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setReadingArticle(article);
+                          }}
+                        >
+                          {article.title}
+                        </button>
+                      </h3>
+                    </article>
+                  ))}
+                </aside>
+              )}
+            </section>
+
+            {storyFlow.length > 0 && (
+              <section
+                className="newspaper-story-flow"
+                data-testid="newspaper-story-flow"
+                aria-label="Mais noticias"
+              >
+                {storyFlow.map((article) => (
+                  <article
+                    key={article.link}
+                    className="newspaper-story group"
+                    onClick={() => setReadingArticle(article)}
+                  >
+                    <ValidatedStoryMedia article={article} />
+                    <div className="newspaper-story__copy feed-card-bottom-copy">
+                      <div className="newspaper-story-meta">
+                        <span className="newspaper-source">
+                          {article.sourceTitle}
+                        </span>
+                        <FeedResponsiveDate date={article.pubDate} />
+                      </div>
+                      <h2 className="feed-card-title-clamp">
+                        <button
+                          type="button"
+                          className="newspaper-story-link"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setReadingArticle(article);
+                          }}
+                        >
+                          {article.title}
+                        </button>
+                      </h2>
+                      {article.description && (
+                        <p className="newspaper-story__excerpt">
+                          {sanitizeArticleDescription(article.description, 260)}
+                        </p>
+                      )}
+                      <div className="newspaper-story-actions">
+                        <ActionRail
+                          article={article}
+                          onRead={() => setReadingArticle(article)}
+                        />
+                        <FavoriteButton
+                          article={article}
+                          size="small"
+                          position="inline"
+                        />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </section>
+            )}
+          </>
+        ) : null}
+
+        <footer className="newspaper-footer">
+          <p>{t("article.end") || "Fim da edição"}</p>
         </footer>
       </div>
 
@@ -314,8 +438,8 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({ articles }) =>
         <ArticleReaderModal
           article={readingArticle}
           onClose={() => setReadingArticle(null)}
-          onNext={() => { }}
-          onPrev={() => { }}
+          onNext={() => {}}
+          onPrev={() => {}}
           hasNext={false}
           hasPrev={false}
         />

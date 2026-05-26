@@ -69,14 +69,14 @@ describe("feed layout polish wiring", () => {
     }
   });
 
-  it("removes Newspaper secondary stories below the hero", () => {
+  it("builds Newspaper as an editorial desk with category metadata", () => {
     const source = read("components/layouts/NewspaperLayout.tsx");
-    expect(source).toContain("const mainIndex = Math.max(");
-    expect(source).toContain(
-      "const rest = articles.filter((_, index) => index !== mainIndex)",
-    );
-    expect(source).not.toContain("const secondary");
-    expect(source).not.toContain("{secondary.length > 0");
+    const feedContent = read("components/FeedContent.tsx");
+    expect(source).toContain("editionLabel");
+    expect(source).toContain("newspaper-latest");
+    expect(source).toContain("newspaper-story-flow");
+    expect(feedContent).toContain("editionLabel=");
+    expect(feedContent).toContain("editionColor=");
   });
 
   it("keeps Newspaper, Masonry, Immersive, Brutalist, and ArticleItem on top-rail composition", () => {
