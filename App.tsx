@@ -15,6 +15,7 @@ import { ModalProvider } from "./contexts/ModalContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { FeedProvider } from "./contexts/FeedContext";
 import { useFeeds } from "./contexts/FeedContextState";
+import { MediaPlaybackProvider } from "./contexts/MediaPlaybackContext";
 import { UIProvider } from "./contexts/UIContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { NotificationContainer } from "./components/NotificationToast";
@@ -338,18 +339,20 @@ const App: React.FC = () => {
   return (
     <LanguageProvider>
       <NotificationProvider>
-        <FeedProvider autoStart={false}>
-          <FeedBootstrap active={shouldStartFeed} />
-          {view === "feed" ? (
-            <FeedView />
-          ) : (
-            <LandingPage
-              onOpenFeed={openFeed}
-              onFooterVisible={handleFooterVisible}
-              onHomeDataReady={handleHomeDataReady}
-            />
-          )}
-        </FeedProvider>
+        <MediaPlaybackProvider>
+          <FeedProvider autoStart={false}>
+            <FeedBootstrap active={shouldStartFeed} />
+            {view === "feed" ? (
+              <FeedView />
+            ) : (
+              <LandingPage
+                onOpenFeed={openFeed}
+                onFooterVisible={handleFooterVisible}
+                onHomeDataReady={handleHomeDataReady}
+              />
+            )}
+          </FeedProvider>
+        </MediaPlaybackProvider>
       </NotificationProvider>
     </LanguageProvider>
   );

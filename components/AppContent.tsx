@@ -83,6 +83,9 @@ const PerformanceDebugger = lazy(() => import("./PerformanceDebugger"));
 
 import { useFeeds } from "../contexts/FeedContextState";
 import { LoadingSpinner } from "./ProgressIndicator";
+import { GlobalMediaLayer } from "./GlobalMediaLayer";
+import { useMediaPlayback } from "../contexts/MediaPlaybackContext";
+import type { MediaOrigin } from "../types/media";
 
 // AppContent component doesn't require props for now
 const AppContent: React.FC = () => {
@@ -99,6 +102,7 @@ const AppContent: React.FC = () => {
     retryFailedFeeds,
     cancelLoading: _cancelLoading,
   } = useFeeds();
+  const { requestFocusForLink } = useMediaPlayback();
   const { settings: layoutSettings } = useArticleLayout();
 
   const buildLoadRequest = useCallback(
@@ -830,6 +834,14 @@ const AppContent: React.FC = () => {
     ],
   );
 
+  const handleMediaReturnToOrigin = useCallback(
+    (origin: MediaOrigin) => {
+      requestFocusForLink(origin.articleLink);
+      handleNavigation(origin.categoryId, origin.feedUrl);
+    },
+    [handleNavigation, requestFocusForLink],
+  );
+
   const handleTitleNavigation = useCallback(() => {
     const category = "all";
     if (selectedCategory === category && !selectedFeedUrl) {
@@ -1540,6 +1552,7 @@ const AppContent: React.FC = () => {
         <Suspense fallback={null}>
           <PerformanceDebugger />
         </Suspense>
+        <GlobalMediaLayer onReturnToOrigin={handleMediaReturnToOrigin} />
       </div>
     </>
   );

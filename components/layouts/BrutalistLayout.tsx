@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Article } from "../../types";
 import { getVideoEmbed } from "../../utils/videoEmbed";
 import { FavoriteButton } from "../FavoriteButton";
 import { ArticleReaderModal } from "../ArticleReaderModal";
 import { FeedInteractiveActions } from "../FeedInteractiveActions";
 import { FeedResponsiveDate } from "../FeedResponsiveDate";
+import { useMediaPlayback } from "../../contexts/MediaPlaybackContext";
 
 interface BrutalistLayoutProps {
   articles: Article[];
@@ -34,9 +35,32 @@ const BrutalistCard: React.FC<{
   onRead: (a: Article) => void;
 }> = ({ article, onRead }) => {
   const embedUrl = getVideoEmbed(article.link);
+  const { registerMediaItem } = useMediaPlayback();
+  const articleRef = useRef<HTMLElement | null>(null);
+
+  useEffect(
+    () =>
+      registerMediaItem(article.link, () => {
+        const element = articleRef.current;
+        if (!element) return;
+        element.scrollIntoView({ block: "center", behavior: "smooth" });
+        element.focus({ preventScroll: true });
+        element.classList.add("media-return-highlight");
+        window.setTimeout(
+          () => element.classList.remove("media-return-highlight"),
+          1600,
+        );
+      }),
+    [article.link, registerMediaItem],
+  );
 
   return (
-    <article className="group relative flex flex-col border-2 border-[rgb(var(--color-text))]/70 bg-[rgb(var(--color-surface))] transition-all duration-300 hover:-translate-y-1 hover:border-[rgb(var(--color-text))] hover:shadow-[10px_10px_0px_0px_rgba(var(--color-text),0.14)] dark:hover:shadow-[10px_10px_0px_0px_rgba(var(--color-text),0.1)]">
+    <article
+      ref={articleRef}
+      tabIndex={-1}
+      data-media-article-link={article.link}
+      className="group relative flex flex-col border-2 border-[rgb(var(--color-text))]/70 bg-[rgb(var(--color-surface))] transition-all duration-300 hover:-translate-y-1 hover:border-[rgb(var(--color-text))] hover:shadow-[10px_10px_0px_0px_rgba(var(--color-text),0.14)] dark:hover:shadow-[10px_10px_0px_0px_rgba(var(--color-text),0.1)]"
+    >
       {/* Media Content */}
       <div className="relative overflow-hidden border-b-2 border-[rgb(var(--color-text))]/60 transition-all duration-500 aspect-[4/3]">
         <ArticleImage

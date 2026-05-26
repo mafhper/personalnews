@@ -6383,6 +6383,12 @@ body::-webkit-scrollbar-corner,
     pointer-events: auto;
   }
 
+  .media-return-highlight {
+    outline: 2px solid rgb(var(--color-accent));
+    outline-offset: 4px;
+    box-shadow: 0 0 0 6px rgba(var(--color-accent), 0.18);
+  }
+
   .feed-card-action-rail--always-visible {
     opacity: 1;
     transform: none;

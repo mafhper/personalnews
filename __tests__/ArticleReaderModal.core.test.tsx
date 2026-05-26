@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
 import type { Article } from "../types";
+import { MediaPlaybackProvider } from "../contexts/MediaPlaybackContext";
 
 type FetchFullContentFn = typeof import("../services/articleFetcher").fetchFullContent;
 type OpenExternalLinkFn = typeof import("../utils/openExternalLink").openExternalLink;
@@ -41,6 +43,9 @@ vi.mock("../hooks/useReadStatus", () => ({
     markAsRead: readStatusMocks.markAsRead,
   }),
 }));
+
+const renderWithMediaProvider = (ui: ReactElement) =>
+  render(<MediaPlaybackProvider>{ui}</MediaPlaybackProvider>);
 
 describe("ArticleReaderModal", () => {
   beforeEach(async () => {
@@ -89,7 +94,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    render(
+    renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}
@@ -125,7 +130,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(firstArticle.content || "");
 
-    const { rerender } = render(
+    const { rerender } = renderWithMediaProvider(
       <ArticleReaderModal
         article={firstArticle}
         onClose={vi.fn()}
@@ -141,14 +146,16 @@ describe("ArticleReaderModal", () => {
     });
 
     rerender(
-      <ArticleReaderModal
-        article={nextArticle}
-        onClose={vi.fn()}
-        onNext={vi.fn()}
-        onPrev={vi.fn()}
-        hasNext={false}
-        hasPrev={true}
-      />,
+      <MediaPlaybackProvider>
+        <ArticleReaderModal
+          article={nextArticle}
+          onClose={vi.fn()}
+          onNext={vi.fn()}
+          onPrev={vi.fn()}
+          hasNext={false}
+          hasPrev={true}
+        />
+      </MediaPlaybackProvider>,
     );
 
     await waitFor(() => {
@@ -170,7 +177,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    render(
+    renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}
@@ -207,7 +214,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    render(
+    renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}
@@ -244,7 +251,7 @@ describe("ArticleReaderModal", () => {
     };
     mockFullContent(article.content);
 
-    const { container } = render(
+    const { container } = renderWithMediaProvider(
       <ArticleReaderModal
         article={article}
         onClose={vi.fn()}

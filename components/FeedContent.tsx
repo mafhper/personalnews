@@ -26,6 +26,7 @@ const ArticleReaderModal = lazy(() =>
   })),
 );
 import { useLogger } from "../services/logger";
+import { MediaOriginScopeProvider } from "../contexts/MediaOriginScopeContext";
 
 // Lazy-loaded layouts to reduce main bundle size
 const MasonryLayout = lazy(() =>
@@ -140,6 +141,7 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
   const { contentConfig } = useAppearance();
   const { getCategoryById } = useFeedCategories();
   const [readingArticle, setReadingArticle] = useState<Article | null>(null);
+  const mediaOriginCategoryId = selectedCategory || "all";
 
   // T4 & T10 & T36: Log articles arriving and trigger mount handshake
   useEffect(() => {
@@ -272,11 +274,13 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
     };
 
     return (
-      <div className="feed-layout" data-layout={effectiveLayout}>
-        <Suspense fallback={<div className="feed-page-frame"><FeedSkeleton count={6} layoutMode={effectiveLayout} /></div>}>
-          {renderComplexLayout()}
-        </Suspense>
-      </div>
+      <MediaOriginScopeProvider categoryId={mediaOriginCategoryId}>
+        <div className="feed-layout" data-layout={effectiveLayout}>
+          <Suspense fallback={<div className="feed-page-frame"><FeedSkeleton count={6} layoutMode={effectiveLayout} /></div>}>
+            {renderComplexLayout()}
+          </Suspense>
+        </div>
+      </MediaOriginScopeProvider>
     );
   }
 
@@ -289,18 +293,51 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
 
   if (effectiveLayout === 'magazine') {
     return (
+      <MediaOriginScopeProvider categoryId={mediaOriginCategoryId}>
+        <div className="feed-layout" data-layout={effectiveLayout}>
+          <div className="feed-page-frame" style={{ minHeight: '80vh' }}>
+            <Suspense fallback={virtuosoFallback}>
+              <Virtuoso
+                useWindowScroll
+                data={listArticles}
+                components={magazineComponents}
+                itemContent={magazineItemContent}
+                overscan={200}
+              />
+            </Suspense>
+          </div>
+          {readingArticle && (
+            <Suspense fallback={null}>
+              <ArticleReaderModal
+                article={readingArticle}
+                onClose={() => setReadingArticle(null)}
+                onNext={handleNextArticle}
+                onPrev={handlePrevArticle}
+                hasNext={true}
+                hasPrev={true}
+              />
+            </Suspense>
+          )}
+        </div>
+      </MediaOriginScopeProvider>
+    );
+  }
+
+  // Default / List Fallback
+  return (
+    <MediaOriginScopeProvider categoryId={mediaOriginCategoryId}>
       <div className="feed-layout" data-layout={effectiveLayout}>
         <div className="feed-page-frame" style={{ minHeight: '80vh' }}>
           <Suspense fallback={virtuosoFallback}>
             <Virtuoso
               useWindowScroll
-              data={listArticles}
-              components={magazineComponents}
-              itemContent={magazineItemContent}
+              data={articles}
+              itemContent={genericItemContent}
               overscan={200}
             />
           </Suspense>
         </div>
+
         {readingArticle && (
           <Suspense fallback={null}>
             <ArticleReaderModal
@@ -308,42 +345,13 @@ const FeedContentComponent: React.FC<FeedContentProps> = ({
               onClose={() => setReadingArticle(null)}
               onNext={handleNextArticle}
               onPrev={handlePrevArticle}
-              hasNext={true}
-              hasPrev={true}
+              hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
+              hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
             />
           </Suspense>
         )}
       </div>
-    );
-  }
-
-  // Default / List Fallback
-  return (
-    <div className="feed-layout" data-layout={effectiveLayout}>
-      <div className="feed-page-frame" style={{ minHeight: '80vh' }}>
-        <Suspense fallback={virtuosoFallback}>
-          <Virtuoso
-            useWindowScroll
-            data={articles}
-            itemContent={genericItemContent}
-            overscan={200}
-          />
-        </Suspense>
-      </div>
-
-      {readingArticle && (
-        <Suspense fallback={null}>
-          <ArticleReaderModal
-            article={readingArticle}
-            onClose={() => setReadingArticle(null)}
-            onNext={handleNextArticle}
-            onPrev={handlePrevArticle}
-            hasNext={articles.findIndex(a => a.link === readingArticle.link) < articles.length - 1}
-            hasPrev={articles.findIndex(a => a.link === readingArticle.link) > 0}
-          />
-        </Suspense>
-      )}
-    </div>
+    </MediaOriginScopeProvider>
   );
 };
 

@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Article } from "../types";
 import { getVideoEmbedDetails } from "../utils/videoEmbed";
 import { useLanguage } from "../hooks/useLanguage";
@@ -9,6 +15,11 @@ import { useDocumentScrollLock } from "../hooks/useDocumentScrollLock";
 import { openExternalLink } from "../utils/openExternalLink";
 import { sanitizeFeedHtmlForRender, sanitizeUrl } from "../utils/sanitization";
 import { detectEnvironment } from "../services/environmentDetector";
+import {
+  buildMediaOriginFromArticle,
+  useMediaPlayback,
+} from "../contexts/MediaPlaybackContext";
+import { useMediaOriginScope } from "../contexts/MediaOriginScopeContext";
 
 interface ArticleReaderModalProps {
   article: Article;
@@ -43,22 +54,33 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 }) => {
   const { isTauri } = detectEnvironment();
   const { markAsRead } = useReadStatus();
-  const videoDetails = getVideoEmbedDetails(article.link, {
-    origin: typeof window !== "undefined" ? window.location.origin : null,
-    runtime: isTauri ? "desktop" : "web",
-  });
+  const videoDetails = useMemo(
+    () =>
+      getVideoEmbedDetails(article.link, {
+        origin: typeof window !== "undefined" ? window.location.origin : null,
+        runtime: isTauri ? "desktop" : "web",
+      }),
+    [article.link, isTauri],
+  );
   const videoEmbed = videoDetails?.embedUrl ?? null;
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchNotice, setFetchNotice] = useState<string | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [playerLoaded, setPlayerLoaded] = useState(false);
   const [showVideoFallbackHint, setShowVideoFallbackHint] = useState(false);
   const { t } = useLanguage();
   const { setModalOpen } = useModal();
+  const mediaCategoryId = useMediaOriginScope();
+  const {
+    state: mediaState,
+    openVideoDocked,
+    setVideoAnchorRect,
+    close: closeMedia,
+  } = useMediaPlayback();
   const contentRef = useRef<HTMLDivElement>(null);
   const modalContainerRef = useRef<HTMLDivElement>(null);
+  const videoDockRef = useRef<HTMLDivElement>(null);
   const shouldMonitorDesktopVideo =
     !!videoDetails?.mayRequireExternalFallback &&
     videoDetails.provider === "youtube" &&
@@ -142,6 +164,75 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     [article.link],
   );
 
+  const measureVideoAnchor = useCallback(() => {
+    const rect = videoDockRef.current?.getBoundingClientRect();
+    if (!rect) return undefined;
+    return {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    };
+  }, []);
+
+  const handleClose = useCallback(() => {
+    if (
+      videoEmbed &&
+      mediaState.kind === "video" &&
+      mediaState.origin.articleLink === article.link &&
+      mediaState.ui === "docked"
+    ) {
+      closeMedia();
+    }
+    onClose();
+  }, [article.link, closeMedia, mediaState, onClose, videoEmbed]);
+
+  useEffect(() => {
+    if (!videoEmbed || !videoDetails) return;
+
+    openVideoDocked(
+      {
+        iframeSrc: videoEmbed,
+        title: article.title,
+        externalUrl: videoDetails.externalUrl,
+        provider: videoDetails.provider,
+        mayRequireExternalFallback: videoDetails.mayRequireExternalFallback,
+        origin: buildMediaOriginFromArticle(article, mediaCategoryId),
+      },
+      measureVideoAnchor(),
+    );
+
+    const updateAnchorRect = () => setVideoAnchorRect(measureVideoAnchor());
+    const frameId = window.requestAnimationFrame(updateAnchorRect);
+    const scrollElement = contentRef.current;
+
+    window.addEventListener("resize", updateAnchorRect);
+    scrollElement?.addEventListener("scroll", updateAnchorRect, {
+      passive: true,
+    });
+
+    let observer: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined" && videoDockRef.current) {
+      observer = new ResizeObserver(updateAnchorRect);
+      observer.observe(videoDockRef.current);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", updateAnchorRect);
+      scrollElement?.removeEventListener("scroll", updateAnchorRect);
+      observer?.disconnect();
+    };
+  }, [
+    article,
+    mediaCategoryId,
+    measureVideoAnchor,
+    openVideoDocked,
+    setVideoAnchorRect,
+    videoDetails,
+    videoEmbed,
+  ]);
+
   useEffect(() => {
     setModalOpen(true);
 
@@ -189,7 +280,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
         if (showPreferences) {
           setShowPreferences(false);
         } else {
-          onClose();
+          handleClose();
         }
       }
       if (e.key === "ArrowRight" && hasNext) onNext();
@@ -205,7 +296,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     article.link,
     hasNext,
     hasPrev,
-    onClose,
+    handleClose,
     onNext,
     onPrev,
     setModalOpen,
@@ -214,7 +305,6 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   ]);
 
   useEffect(() => {
-    setPlayerLoaded(false);
     setShowVideoFallbackHint(false);
 
     if (!shouldMonitorDesktopVideo) {
@@ -222,11 +312,11 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     }
 
     const timeoutId = window.setTimeout(() => {
-      setShowVideoFallbackHint((current) => current || !playerLoaded);
+      setShowVideoFallbackHint(true);
     }, 4500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [article.link, playerLoaded, shouldMonitorDesktopVideo]);
+  }, [article.link, shouldMonitorDesktopVideo]);
 
   const rawContent = fullContent || article.content || article.description;
   const contentHtml = useMemo(
@@ -287,7 +377,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
       {!isFocusMode && (
         <div
           className="absolute inset-0 bg-black/90 backdrop-blur-md hidden md:block"
-          onClick={onClose}
+          onClick={handleClose}
         />
       )}
 
@@ -311,7 +401,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
         >
           {/* Back Button */}
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex items-center gap-2 text-[rgb(var(--color-textSecondary))] hover:text-[rgb(var(--color-text))] transition-colors"
           >
             <svg
@@ -605,14 +695,14 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
           {videoEmbed ? (
             /* Cinema Mode (Video) */
             <div className="w-full flex flex-col">
-              <div className="aspect-video w-full bg-black shrink-0 md:max-h-[70vh] mx-auto">
-                <iframe
-                  src={videoEmbed}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  onLoad={() => setPlayerLoaded(true)}
-                />
+              <div
+                ref={videoDockRef}
+                className="relative aspect-video w-full shrink-0 overflow-hidden bg-black md:max-h-[70vh] mx-auto"
+                data-media-video-placeholder="true"
+              >
+                <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+                  Player de vídeo
+                </div>
               </div>
               {shouldMonitorDesktopVideo && (
                 <div className="mx-auto mt-4 w-full max-w-[62ch] rounded-xl border border-[rgb(var(--color-border))]/30 bg-[rgb(var(--color-background))]/70 px-4 py-3 text-sm text-[rgb(var(--color-textSecondary))]">

@@ -7,7 +7,10 @@ import {
   within,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
 import { PocketFeedsLayout } from "../components/layouts/PocketFeedsLayout";
+import { GlobalMediaLayer } from "../components/GlobalMediaLayer";
+import { MediaPlaybackProvider } from "../contexts/MediaPlaybackContext";
 import type { Article } from "../types";
 
 vi.mock("../hooks/useLanguage", () => ({
@@ -90,6 +93,14 @@ const openLayoutPicker = () => {
   );
 };
 
+const renderPocketFeeds = (ui: ReactElement) =>
+  render(
+    <MediaPlaybackProvider>
+      {ui}
+      <GlobalMediaLayer />
+    </MediaPlaybackProvider>,
+  );
+
 describe("PocketFeedsLayout audio player", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -101,6 +112,10 @@ describe("PocketFeedsLayout audio player", () => {
       configurable: true,
       value: vi.fn(),
     });
+    Object.defineProperty(HTMLMediaElement.prototype, "load", {
+      configurable: true,
+      value: vi.fn(),
+    });
   });
 
   it("opens player controls with play, seek, volume and speed", async () => {
@@ -109,7 +124,7 @@ describe("PocketFeedsLayout audio player", () => {
       JSON.stringify("single"),
     );
 
-    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
 
@@ -131,7 +146,7 @@ describe("PocketFeedsLayout audio player", () => {
       JSON.stringify("single"),
     );
 
-    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
 
@@ -161,7 +176,7 @@ describe("PocketFeedsLayout audio player", () => {
       JSON.stringify("single"),
     );
 
-    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
 
@@ -195,7 +210,7 @@ describe("PocketFeedsLayout audio player", () => {
       JSON.stringify("single"),
     );
 
-    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /tocar/i }));
 
@@ -210,7 +225,7 @@ describe("PocketFeedsLayout audio player", () => {
       JSON.stringify("single"),
     );
 
-    render(<PocketFeedsLayout articles={[richPodcastEpisode]} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={[richPodcastEpisode]} />);
 
     expect(screen.getByAltText("Science Podcast")).toBeInTheDocument();
     expect(screen.getByAltText("Episode with rich metadata")).toBeInTheDocument();
@@ -241,7 +256,7 @@ describe("PocketFeedsLayout audio player", () => {
       description: "Newest episode details",
     };
 
-    render(
+    renderPocketFeeds(
       <PocketFeedsLayout
         articles={[olderEpisode, podcastEpisode, newestEpisode]}
       />,
@@ -269,7 +284,7 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("uses grid by default and sizes the podcast header per layout", () => {
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     expect(screen.getByTestId("pocketfeeds-grid-layout")).toBeInTheDocument();
     expect(screen.getByTestId("pocketfeeds-grid-layout")).toHaveStyle({
@@ -317,7 +332,7 @@ describe("PocketFeedsLayout audio player", () => {
   it("caps grid artwork when a single selected podcast is rendered", () => {
     window.localStorage.setItem("pocketfeeds-view-mode", JSON.stringify("grid"));
 
-    render(<PocketFeedsLayout articles={[podcastEpisode]} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={[podcastEpisode]} />);
 
     expect(screen.getByTestId("pocketfeeds-grid-layout")).toHaveStyle({
       gridTemplateColumns: "minmax(min(100%, 18rem), 18rem)",
@@ -352,7 +367,7 @@ describe("PocketFeedsLayout audio player", () => {
         JSON.stringify("double"),
       );
 
-      render(<PocketFeedsLayout articles={podcastEpisodes} />);
+      renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
       await waitFor(() =>
         expect(
@@ -377,7 +392,7 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("hides the two-column option for larger podcast libraries and falls back to grid", () => {
-    render(<PocketFeedsLayout articles={manyPodcastFeeds} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={manyPodcastFeeds} />);
 
     expect(screen.getByTestId("pocketfeeds-grid-layout")).toBeInTheDocument();
 
@@ -395,7 +410,7 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("persists the selected podcast layout mode", async () => {
-    const { unmount } = render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    const { unmount } = renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     openLayoutPicker();
     fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
@@ -409,13 +424,13 @@ describe("PocketFeedsLayout audio player", () => {
     });
 
     unmount();
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     expect(screen.getByTestId("pocketfeeds-mixtape-layout")).toBeInTheDocument();
   });
 
   it("keeps the layout picker open until selection, Escape, or outside click", () => {
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     openLayoutPicker();
     const pickerGroup = screen.getByRole("group", {
@@ -463,7 +478,7 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("opens the podcast episode modal from grid mode", () => {
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     fireEvent.click(
       screen.getByRole("button", { name: /ver episódios de science podcast/i }),
@@ -483,7 +498,7 @@ describe("PocketFeedsLayout audio player", () => {
       JSON.stringify("single"),
     );
 
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     const scienceCard = screen
       .getAllByTestId("pocketfeeds-podcast-card")
@@ -522,7 +537,7 @@ describe("PocketFeedsLayout audio player", () => {
       imageUrl: undefined,
     };
 
-    render(
+    renderPocketFeeds(
       <PocketFeedsLayout
         articles={[textOnlyNewest, podcastEpisodes[1], ...podcastEpisodes.slice(2)]}
       />,
@@ -557,7 +572,7 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("renders mixtape as a deck with feed strip, stage and episode panel", async () => {
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     openLayoutPicker();
     fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
@@ -591,7 +606,7 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("previews mixtape feed and episode artwork without changing the selected feed", () => {
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     openLayoutPicker();
     fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
@@ -642,7 +657,7 @@ describe("PocketFeedsLayout audio player", () => {
   });
 
   it("plays mixtape highlights and panel episodes through the podcast player", async () => {
-    render(<PocketFeedsLayout articles={podcastEpisodes} />);
+    renderPocketFeeds(<PocketFeedsLayout articles={podcastEpisodes} />);
 
     openLayoutPicker();
     fireEvent.click(screen.getByRole("button", { name: /mixtape/i }));
@@ -693,7 +708,7 @@ describe("PocketFeedsLayout audio player", () => {
       audioUrl: undefined,
     };
 
-    render(
+    renderPocketFeeds(
       <PocketFeedsLayout
         articles={[textOnlyNewest, podcastEpisodes[1], ...podcastEpisodes.slice(2)]}
       />,
