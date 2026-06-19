@@ -212,6 +212,7 @@ O formato é rigoroso para permitir a sincronização automática.
 ### tech
 
 - Ars Technica: <https://arstechnica.com/feed/>
+- BR Linux: <https://br-linux.org/feed>
 - CNET: <http://www.cnet.com/rss/news/>
 - Tecnoblog: <https://tecnoblog.net/feed/>
 - The Next Web: <https://thenextweb.com/feed>
@@ -264,6 +265,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### tech
 
 - Diolinux: <https://diolinux.com.br/feed>
+- BR Linux: <https://br-linux.org/feed>
 - MacMagazine: <https://macmagazine.com.br/feed/>
 - Meio Bit: <https://meiobit.com/feed/>
 - Tecnoblog: <https://tecnoblog.net/feed/>
@@ -315,6 +317,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### youtube
 
+- Any Austin: <https://www.youtube.com/feeds/videos.xml?channel_id=UCH_7doiCkWeq0v3ycWE5lDw> | Hide-from-All: true
 - Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug> | Hide-from-All: true
 - Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
 - Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A> | Hide-from-All: true
@@ -358,6 +361,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - 9to5Linux: <https://9to5linux.com/feed/>
 - 9to5Mac: <https://9to5mac.com/feed/>
 - Ars Technica: <https://arstechnica.com/feed/>
+- BR Linux: <https://br-linux.org/feed>
 - CNET: <http://www.cnet.com/rss/news/>
 - Digital Trends: <https://www.digitaltrends.com/feed/>
 - Diolinux: <https://diolinux.com.br/feed>
@@ -390,6 +394,7 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### youtube
 
 - 1155 do ET: <https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug> | Hide-from-All: true
+- Any Austin: <https://www.youtube.com/feeds/videos.xml?channel_id=UCH_7doiCkWeq0v3ycWE5lDw> | Hide-from-All: true
 - Alex Ziskind: <https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug> | Hide-from-All: true
 - Benn Jordan: <https://www.youtube.com/feeds/videos.xml?channel_id=UCshObcm-nLhbu8MY50EZ5Ng> | Hide-from-All: true
 - Bizly: <https://www.youtube.com/feeds/videos.xml?channel_id=UCMPGiQ8gwDXFYpwQhX6kK9A> | Hide-from-All: true
