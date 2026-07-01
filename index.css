@@ -4983,15 +4983,13 @@ Newspaper Editorial Desk
 }
 
 .feed-header-layout {
-  grid-template-columns: minmax(max-content, auto) minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(var(--space-12), 1fr) minmax(0, max-content) minmax(var(--space-12), 1fr);
   column-gap: clamp(0.5rem, 1vw, 1rem);
 }
 
-.feed-header-layout--centered {
-  grid-template-columns: minmax(max-content, auto) minmax(0, 1fr) max-content;
-}
-
 .feed-header-brand {
+  grid-column: 1;
+  justify-self: start;
   max-width: clamp(10rem, 20vw, 15rem);
 }
 
@@ -5009,13 +5007,16 @@ Newspaper Editorial Desk
 
 .feed-header-category-rail {
   min-width: 0;
-  width: 100%;
+  grid-column: 2;
+  width: fit-content;
+  max-width: 100%;
+  justify-self: center;
   padding-inline: 0.15rem;
 }
 
 .feed-header-category-scroll {
   min-width: 0;
-  width: 100%;
+  width: max-content;
   max-height: 100%;
   padding-inline: 1.75rem;
   align-self: center;
@@ -5035,6 +5036,8 @@ Newspaper Editorial Desk
 
 .feed-header-actions {
   min-width: max-content;
+  grid-column: 3;
+  justify-self: end;
 }
 
 .feed-header-action-menu {
@@ -5086,10 +5089,6 @@ Newspaper Editorial Desk
 @media (max-width: 900px) {
   .feed-header-layout--many-categories .feed-header-brand-logo {
     display: none;
-  }
-
-  .feed-header-layout--many-categories {
-    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .feed-header-layout--many-categories .feed-header-brand {

@@ -43,6 +43,87 @@ async function openActionsMenu(page: Page) {
   await menuToggle.dispatchEvent('click');
 }
 
+type HeaderLayoutMetrics = {
+  viewportWidth: number;
+  viewportClientWidth: number;
+  gridTemplateColumns: string;
+  headerCenterDelta: number;
+  layoutCenterDelta: number;
+  viewportCenterDelta: number;
+  railActionsGap: number;
+  scrollWidth: number;
+  clientWidth: number;
+};
+
+async function measureHeaderLayout(page: Page): Promise<HeaderLayoutMetrics> {
+  return page.evaluate(() => {
+    const layout = document.querySelector<HTMLElement>('.feed-header-layout');
+    const header = layout?.closest<HTMLElement>('header');
+    const rail = document.querySelector<HTMLElement>('.feed-header-category-rail');
+    const actions = document.querySelector<HTMLElement>('.feed-header-actions');
+    const scroll = document.querySelector<HTMLElement>('.feed-header-category-scroll');
+
+    if (!layout || !header || !rail || !actions || !scroll) {
+      throw new Error('Header navigation elements were not rendered');
+    }
+
+    const headerRect = header.getBoundingClientRect();
+    const layoutRect = layout.getBoundingClientRect();
+    const railRect = rail.getBoundingClientRect();
+    const actionsRect = actions.getBoundingClientRect();
+    const railCenter = railRect.left + railRect.width / 2;
+
+    return {
+      viewportWidth: window.innerWidth,
+      viewportClientWidth: document.documentElement.clientWidth,
+      gridTemplateColumns: getComputedStyle(layout).gridTemplateColumns,
+      headerCenterDelta: Math.abs(
+        railCenter - (headerRect.left + headerRect.width / 2),
+      ),
+      layoutCenterDelta: Math.abs(
+        railCenter - (layoutRect.left + layoutRect.width / 2),
+      ),
+      viewportCenterDelta: Math.abs(
+        railCenter - document.documentElement.clientWidth / 2,
+      ),
+      railActionsGap: actionsRect.left - railRect.right,
+      scrollWidth: scroll.scrollWidth,
+      clientWidth: scroll.clientWidth,
+    };
+  });
+}
+
+test('desktop category rail stays centered and clear of actions at compact widths', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 844 });
+  await openFeed(page);
+
+  for (const width of [768, 900]) {
+    await test.step(`${width}px viewport`, async () => {
+      await page.setViewportSize({ width, height: 844 });
+
+      const layout = page.locator('.feed-header-layout');
+      const rail = page.locator('.feed-header-category-rail');
+      const actions = page.locator('.feed-header-actions');
+      await expect(layout).toBeVisible();
+      await expect(rail).toBeVisible();
+      await expect(actions).toBeVisible();
+      await page.evaluate(
+        () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+      );
+
+      const metrics = await measureHeaderLayout(page);
+      console.info('[header-layout-metrics]', JSON.stringify(metrics));
+
+      expect.soft(metrics.headerCenterDelta).toBeLessThanOrEqual(2);
+      expect.soft(metrics.layoutCenterDelta).toBeLessThanOrEqual(2);
+      expect.soft(metrics.railActionsGap).toBeGreaterThanOrEqual(0);
+      if (width === 768) {
+        expect.soft(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
+      }
+    });
+  }
+});
+
 test('mobile action menu opens collection shortcuts', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openFeed(page);

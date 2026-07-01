@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 const readProjectFile = (path: string) =>
   readFileSync(resolve(process.cwd(), path), "utf8");
 
+const readStyleRule = (styles: string, selector: string) => {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return styles.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+};
+
 describe("Header responsive navigation rules", () => {
   it("keeps many-category desktop navigation on a protected grid", () => {
     const source = readProjectFile("components/Header.tsx");
@@ -13,6 +18,46 @@ describe("Header responsive navigation rules", () => {
     expect(source).toContain("hidden md:grid");
     expect(source).toContain("feed-header-category-rail");
     expect(source).toContain("feed-header-actions");
+  });
+
+  it("centers desktop categories independently from brand and actions", () => {
+    const styles = readProjectFile("index.css");
+    const source = readProjectFile("components/Header.tsx");
+    const layoutRule = readStyleRule(styles, ".feed-header-layout");
+    const brandRule = readStyleRule(styles, ".feed-header-brand");
+    const railRule = readStyleRule(styles, ".feed-header-category-rail");
+    const scrollRule = readStyleRule(styles, ".feed-header-category-scroll");
+    const actionsRule = readStyleRule(styles, ".feed-header-actions");
+
+    expect(layoutRule).toContain(
+      "grid-template-columns: minmax(var(--space-12), 1fr) minmax(0, max-content) minmax(var(--space-12), 1fr);",
+    );
+    expect(brandRule).toContain("grid-column: 1;");
+    expect(brandRule).toContain("justify-self: start;");
+    expect(railRule).toContain("grid-column: 2;");
+    expect(railRule).toContain("width: fit-content;");
+    expect(railRule).toContain("max-width: 100%;");
+    expect(railRule).toContain("justify-self: center;");
+    expect(scrollRule).toContain("width: max-content;");
+    expect(actionsRule).toContain("grid-column: 3;");
+    expect(actionsRule).toContain("justify-self: end;");
+    expect(styles).not.toMatch(
+      /@media \(max-width: 900px\)[\s\S]*?\.feed-header-layout--many-categories\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\) auto;\s*\}/,
+    );
+    expect(source).toMatch(
+      /feed-header-category-scroll[^`]*\bmax-w-full\b[^`]*\boverflow-x-auto\b/,
+    );
+  });
+
+  it("lets the desktop header use the available viewport width before categories overflow", () => {
+    const source = readProjectFile("components/Header.tsx");
+
+    expect(source).toMatch(/floating:\s*"[^"]*w-\[96%\][^"]*"/);
+    expect(source).not.toMatch(/floating:\s*"[^"]*max-w-7xl/);
+    expect(source).toContain(
+      "feed-header-inner mx-auto w-full px-3 sm:px-4",
+    );
+    expect(source).not.toContain("!isFloating ? 'container' : ''");
   });
 
   it("collapses action icons before reducing categories", () => {
