@@ -74,6 +74,21 @@ apps/desktop/src-tauri/target/release/bundle/nsis/
 apps/desktop/src-tauri/target/release/bundle/msi/
 ```
 
+## GitHub Release Notes
+
+Installer releases use a compact, image-led body defined in
+`.github/workflows/release-desktop.yml`:
+
+1. One wide product image.
+2. One sentence describing the product.
+3. A download table that maps each operating system to the recommended asset.
+4. Secondary installation guidance inside a collapsed details block.
+5. Automatically generated changes grouped by `.github/release.yml`.
+
+Release titles, headings, lists, and generated changelog categories must not use
+emojis. Dependency-only pull requests are omitted so the public notes remain
+focused on user-visible changes.
+
 ## Manual QA
 
 - NSIS opens with the custom sidebar, not the default blue NSIS artwork.

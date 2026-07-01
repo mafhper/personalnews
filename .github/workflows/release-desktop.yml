@@ -68,21 +68,32 @@ jobs:
           tagName: v__VERSION__ # tauri-action will replace this
           releaseName: "Personal News v__VERSION__"
           releaseBody: |
-            ## Downloads
+            <p align="center">
+              <img src="https://raw.githubusercontent.com/mafhper/personalnews/main/public/og-image.png" alt="PersonalNews" width="960">
+            </p>
 
-            ### Windows
-            - **Setup EXE** - recommended for most users.
-            - **MSI** - recommended for managed environments.
+            PersonalNews reúne seus feeds, podcasts e vídeos em uma experiência de leitura local e personalizável.
 
-            ### Linux
-            - **DEB** - recommended for Ubuntu/Debian.
+            ## Instalação
 
-            ### macOS
-            - **DMG** - manual installation by dragging the app to Applications.
+            | Sistema | Arquivo recomendado | Uso |
+            | --- | --- | --- |
+            | Windows | `PersonalNews_*_x64-setup.exe` | Instalação comum, sem exigir privilégios de administrador |
+            | Windows | `PersonalNews_*_x64_pt-BR.msi` | Ambientes gerenciados em português |
+            | Linux | `PersonalNews_*_amd64.deb` | Ubuntu, Debian e derivados |
+            | macOS | `PersonalNews_*_aarch64.dmg` | Macs com Apple Silicon |
 
-            ## Notes
-            - Windows installation uses current-user mode.
-            - Windows installers are generated with NSIS and MSI/WiX.
+            <details>
+            <summary>Outros detalhes de instalação</summary>
+
+            - O instalador EXE é a opção recomendada para a maioria das pessoas no Windows.
+            - O MSI em inglês também está disponível entre os arquivos da versão.
+            - No macOS, arraste o PersonalNews para a pasta Aplicativos.
+
+            </details>
+
+            ---
+          generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: false
