@@ -69,7 +69,7 @@ jobs:
           releaseName: "Personal News v__VERSION__"
           releaseBody: |
             <p align="center">
-              <img src="https://raw.githubusercontent.com/mafhper/personalnews/main/public/og-image.png" alt="PersonalNews" width="960">
+              <img src="https://raw.githubusercontent.com/mafhper/personalnews/main/public/release-feed.png" alt="Feed do PersonalNews com navegação por categorias" width="960">
             </p>
 
             PersonalNews reúne seus feeds, podcasts e vídeos em uma experiência de leitura local e personalizável.

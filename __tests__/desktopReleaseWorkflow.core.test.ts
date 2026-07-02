@@ -48,7 +48,7 @@ describe("desktop release workflow", () => {
     expect(workflow).toContain("generateReleaseNotes: true");
     expect(workflow).toContain('<p align="center">');
     expect(workflow).toContain(
-      "https://raw.githubusercontent.com/mafhper/personalnews/main/public/og-image.png",
+      "https://raw.githubusercontent.com/mafhper/personalnews/main/public/release-feed.png",
     );
     expect(workflow).toContain("## Instalação");
     expect(workflow).toContain("| Sistema | Arquivo recomendado | Uso |");
