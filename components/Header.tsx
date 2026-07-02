@@ -272,7 +272,7 @@ const Header: React.FC<HeaderProps> = (props) => {
   const headerPositionClasses = {
     static: "relative w-full",
     sticky: "fixed left-0 right-0 z-50 w-full",
-    floating: "fixed left-1/2 -translate-x-1/2 w-[96%] max-w-7xl rounded-xl md:rounded-2xl border z-50",
+    floating: "fixed left-1/2 -translate-x-1/2 w-[96%] rounded-xl md:rounded-2xl border z-50",
     hidden: `fixed left-0 right-0 z-50 transition-all duration-500 ease-in-out ${effectiveHeaderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`,
   };
 
@@ -880,7 +880,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 : ''
           }`}
         />
-        <div className={`mx-auto px-3 sm:px-4 ${!isFloating ? 'container' : ''} ${isFloating ? 'rounded-xl md:rounded-2xl' : ''}`}>
+        <div className={`feed-header-inner mx-auto w-full px-3 sm:px-4 ${isFloating ? 'rounded-xl md:rounded-2xl' : ''}`}>
 
           {/* Main header row - desktop/tablet shell. Phones use the compact category rail below. */}
           {/* Auto height when logo and title are both hidden */}
