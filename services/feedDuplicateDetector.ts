@@ -178,28 +178,41 @@ export class FeedDuplicateDetector {
   }
 
   /**
-   * Check if a feed is duplicate of existing feeds
+   * Check only normalized URL equality without fetching feed contents.
    */
-  async detectDuplicate(
+  detectUrlDuplicate(
     newFeedUrl: string,
-    existingFeeds: FeedSource[]
-  ): Promise<DuplicateDetectionResult> {
+    existingFeeds: FeedSource[],
+  ): DuplicateDetectionResult {
     const normalizedNewUrl = this.normalizeUrl(newFeedUrl);
-
-    // First check: URL normalization
     for (const existingFeed of existingFeeds) {
-      const normalizedExistingUrl = this.normalizeUrl(existingFeed.url);
-
-      if (normalizedExistingUrl === normalizedNewUrl) {
+      if (this.normalizeUrl(existingFeed.url) === normalizedNewUrl) {
         return {
           isDuplicate: true,
           duplicateOf: existingFeed,
-          confidence: 1.0,
+          confidence: 1,
           reason: "Identical normalized URLs",
           normalizedUrl: normalizedNewUrl,
         };
       }
     }
+    return {
+      isDuplicate: false,
+      confidence: 0,
+      reason: "No normalized URL match",
+      normalizedUrl: normalizedNewUrl,
+    };
+  }
+
+  /**
+   * Check if a feed is duplicate of existing feeds
+   */
+  async detectDuplicate(
+    newFeedUrl: string,
+    existingFeeds: FeedSource[],
+  ): Promise<DuplicateDetectionResult> {
+    const urlDuplicate = this.detectUrlDuplicate(newFeedUrl, existingFeeds);
+    if (urlDuplicate.isDuplicate) return urlDuplicate;
 
     // Second check: Content fingerprinting
     const newFingerprint = await this.generateContentFingerprint(newFeedUrl);

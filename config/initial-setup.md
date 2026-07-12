@@ -237,6 +237,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Corridor Crew: <https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ> | Hide-from-All: true
 - Diolinux: <https://www.youtube.com/feeds/videos.xml?channel_id=UCEf5U1dB5a2e2S-XUlnhxSA> | Hide-from-All: true
 - Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg> | Hide-from-All: true
+- Tech Notice: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRzScB0a-dc6OCYYZlP9qpA> | Hide-from-All: true
 
 
 # Listas Curadas
@@ -407,4 +408,5 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - NORMOSE: <https://www.youtube.com/feeds/videos.xml?channel_id=UCqBY-VQ2BxHOWnVpuC7swrw> | Hide-from-All: true
 - Stuff Made Here: <https://www.youtube.com/feeds/videos.xml?channel_id=UCj1VqrHhDte54oLgPG4xpuQ> | Hide-from-All: true
 - Tecnologia e Classe: <https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg> | Hide-from-All: true
+- Tech Notice: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRzScB0a-dc6OCYYZlP9qpA> | Hide-from-All: true
 - The Spiffing Brit: <https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ> | Hide-from-All: true

@@ -223,6 +223,35 @@ export const FeedValidateResponseSchema = z.object({
 });
 export type FeedValidateResponse = z.infer<typeof FeedValidateResponseSchema>;
 
+export const YouTubeResolveQuerySchema = z.object({
+  url: z.string().url(),
+});
+
+export const YouTubeResolutionMethodSchema = z.enum([
+  "direct-feed",
+  "direct-channel-id",
+  "direct-playlist-id",
+  "youtube-api-handle",
+  "youtube-api-username",
+  "youtube-api-video",
+  "html-link",
+  "html-channel-id",
+]);
+
+export const YouTubeFeedResolutionSchema = z.object({
+  originalUrl: z.string(),
+  feedUrl: z.string().url(),
+  title: z.string().optional(),
+  kind: z.enum(["channel", "playlist"]),
+  method: YouTubeResolutionMethodSchema,
+  channelId: z.string().optional(),
+  playlistId: z.string().optional(),
+  validated: z.boolean().optional(),
+});
+export type YouTubeFeedResolutionWire = z.infer<
+  typeof YouTubeFeedResolutionSchema
+>;
+
 export const UserPreferencesV2Schema = z.object({
   backendMode: BackendModeSchema.default("auto"),
   windowStyle: WindowStyleSchema.default("native_thin"),

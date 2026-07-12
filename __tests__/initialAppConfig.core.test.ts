@@ -48,6 +48,7 @@ describe("initial app configuration", () => {
       "Corridor Crew",
       "Diolinux",
       "Tecnologia e Classe",
+      "Tech Notice",
     ]);
     expect(curatedYouTubeFeeds.some((feed) => feed.customTitle === "Alex Ziskind")).toBe(
       true,

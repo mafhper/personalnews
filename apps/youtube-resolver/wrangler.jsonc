@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "personalnews-youtube-resolver",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-12",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "ALLOWED_ORIGINS": "https://mafhper.github.io,http://127.0.0.1:5173,http://localhost:5173"
+  }
+}

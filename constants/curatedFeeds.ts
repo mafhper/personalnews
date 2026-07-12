@@ -142,6 +142,11 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "customTitle": "Ars Technica"
   },
   {
+    "url": "https://br-linux.org/feed",
+    "categoryId": "tech",
+    "customTitle": "BR Linux"
+  },
+  {
     "url": "http://www.cnet.com/rss/news/",
     "categoryId": "tech",
     "customTitle": "CNET"
@@ -244,6 +249,12 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "categoryId": "youtube",
     "customTitle": "Tecnologia e Classe",
     "hideFromAll": true
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRzScB0a-dc6OCYYZlP9qpA",
+    "categoryId": "youtube",
+    "customTitle": "Tech Notice",
+    "hideFromAll": true
   }
 ];
 
@@ -288,6 +299,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://diolinux.com.br/feed",
       "categoryId": "tech",
       "customTitle": "Diolinux"
+    },
+    {
+      "url": "https://br-linux.org/feed",
+      "categoryId": "tech",
+      "customTitle": "BR Linux"
     },
     {
       "url": "https://macmagazine.com.br/feed/",
@@ -456,6 +472,12 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "XDA"
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCH_7doiCkWeq0v3ycWE5lDw",
+      "categoryId": "youtube",
+      "customTitle": "Any Austin",
+      "hideFromAll": true
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
       "categoryId": "youtube",
       "customTitle": "Alex Ziskind",
@@ -612,6 +634,11 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "Ars Technica"
     },
     {
+      "url": "https://br-linux.org/feed",
+      "categoryId": "tech",
+      "customTitle": "BR Linux"
+    },
+    {
       "url": "http://www.cnet.com/rss/news/",
       "categoryId": "tech",
       "customTitle": "CNET"
@@ -749,6 +776,12 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "hideFromAll": true
     },
     {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCH_7doiCkWeq0v3ycWE5lDw",
+      "categoryId": "youtube",
+      "customTitle": "Any Austin",
+      "hideFromAll": true
+    },
+    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCajiMK_CY9icRhLepS8_3ug",
       "categoryId": "youtube",
       "customTitle": "Alex Ziskind",
@@ -818,6 +851,12 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYVrkMZdrjq5eICOG6Rxiwg",
       "categoryId": "youtube",
       "customTitle": "Tecnologia e Classe",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRzScB0a-dc6OCYYZlP9qpA",
+      "categoryId": "youtube",
+      "customTitle": "Tech Notice",
       "hideFromAll": true
     },
     {

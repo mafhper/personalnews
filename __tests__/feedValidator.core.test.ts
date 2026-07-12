@@ -16,6 +16,7 @@ import {
 } from "../services/feedValidator";
 import { feedDiscoveryService } from "../services/feedDiscoveryService";
 import { proxyManager } from "../services/proxyManager";
+import { smartValidationCache } from "../services/smartValidationCache";
 
 // Mock do fetch global
 global.fetch = vi.fn();
@@ -240,6 +241,54 @@ describe("FeedValidator", () => {
       expect(result.url).toBe("https://www.nature.com/nature.rss");
       expect(result.title).toBe("Nature");
       expect(discoverySpy).not.toHaveBeenCalled();
+    });
+
+    it("trusts a recently validated canonical feed returned by the YouTube resolver", async () => {
+      const inputUrl = "https://www.youtube.com/@studiocanalinternational";
+      const canonicalUrl =
+        "https://www.youtube.com/feeds/videos.xml?channel_id=UCwsZQonex0zei1ZRWdUU8QA";
+      const cachedInvalidResult = {
+        url: inputUrl,
+        isValid: false,
+        status: "parse_error" as const,
+        lastChecked: Date.now(),
+        validationAttempts: [],
+        suggestions: [],
+        totalRetries: 0,
+        totalValidationTime: 1,
+      };
+      smartValidationCache.set(`validation:${inputUrl}`, cachedInvalidResult);
+      const validateSpy = vi
+        .spyOn(feedValidator, "validateFeed")
+        .mockResolvedValueOnce(cachedInvalidResult);
+      vi.spyOn(feedDiscoveryService, "discoverFromWebsite").mockResolvedValue({
+        originalUrl: inputUrl,
+        discoveredFeeds: [
+          {
+            url: canonicalUrl,
+            title: "STUDIOCANAL",
+            type: "atom",
+            discoveryMethod: "link-tag",
+            confidence: 1,
+            lastValidated: Date.now(),
+          },
+        ],
+        discoveryMethods: ["youtube-resolver"],
+        totalAttempts: 1,
+        successfulAttempts: 1,
+        discoveryTime: 1,
+        suggestions: [],
+      });
+
+      const result = await feedValidator.validateFeedWithDiscovery(inputUrl);
+
+      expect(result).toMatchObject({
+        isValid: true,
+        url: canonicalUrl,
+        title: "STUDIOCANAL",
+        finalMethod: "discovery",
+      });
+      expect(validateSpy).not.toHaveBeenCalled();
     });
   });
 

@@ -10,6 +10,7 @@ import {
   FeedBatchResponseSchema,
   FeedFetchResponseSchema,
   FeedValidateResponseSchema,
+  YouTubeFeedResolutionSchema,
   ProxyStatsResponseSchema,
   CacheClearResponseSchema,
   CacheStatsSchema,
@@ -21,6 +22,7 @@ import {
   type FeedBatchResponse,
   type FeedFetchResponse,
   type FeedValidateResponse,
+  type YouTubeFeedResolutionWire,
   type ProxyStatsResponse,
   type CacheStats,
 } from "../shared/contracts/backend";
@@ -1097,6 +1099,22 @@ class DesktopBackendClient {
         },
       },
       (value) => ProxyStatsResponseSchema.parse(value),
+    );
+  }
+
+  async resolveYouTubeFeed(
+    url: string,
+    signal?: AbortSignal,
+  ): Promise<YouTubeFeedResolutionWire> {
+    return this.requestJson(
+      `/api/v1/youtube/resolve?url=${encodeURIComponent(url)}`,
+      {
+        method: "GET",
+        signal,
+        headers: { Accept: "application/json" },
+      },
+      (value) => YouTubeFeedResolutionSchema.parse(value),
+      { httpErrorConfirmsBackendReachable: true },
     );
   }
 

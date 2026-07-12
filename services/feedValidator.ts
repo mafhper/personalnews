@@ -22,6 +22,7 @@ import {
   type FeedRouteInfo,
 } from "./feedDiagnostics";
 import { detectEnvironment, isCrossOrigin } from "./environmentDetector";
+import { parseYouTubeUrl } from "../shared/youtubeFeedResolver";
 
 // =============================================================================
 // BLOCK 1: Raw Types (External Contract)
@@ -261,7 +262,11 @@ class FeedValidatorService {
     const validationStartTime = Date.now();
 
     const cached = this.getCachedResult(url);
-    if (cached && !cached.requiresUserSelection && cached.url === url) {
+    if (
+      cached?.isValid &&
+      !cached.requiresUserSelection &&
+      cached.url === url
+    ) {
       return cached;
     }
 
@@ -279,7 +284,15 @@ class FeedValidatorService {
 
     progressCallback?.("Starting validation...", 10);
 
-    const directResult = await this.validateFeed(url);
+    const shouldResolveYouTubeFirst =
+      Boolean(parseYouTubeUrl(url)) && !this.isDirectFeedUrl(url);
+    const directResult = shouldResolveYouTubeFirst
+      ? ({
+          ...result,
+          status: "invalid",
+          error: "YouTube page requires canonical feed discovery",
+        } satisfies FeedValidationResult)
+      : await this.validateFeed(url);
     result.validationAttempts = directResult.validationAttempts;
     result.totalRetries = directResult.totalRetries;
 
@@ -348,6 +361,24 @@ class FeedValidatorService {
         };
       } else if (discoveryResult.discoveredFeeds.length === 1) {
         const discoveredFeed = discoveryResult.discoveredFeeds[0];
+        const wasRecentlyValidated =
+          typeof discoveredFeed.lastValidated === "number" &&
+          Date.now() - discoveredFeed.lastValidated < 5 * 60 * 1000;
+
+        if (wasRecentlyValidated) {
+          result.isValid = true;
+          result.status = "valid";
+          result.title = discoveredFeed.title;
+          result.description = discoveredFeed.description;
+          result.url = discoveredFeed.url;
+          result.finalMethod = "discovery";
+          result.responseTime = Date.now() - validationStartTime;
+          result.totalValidationTime = result.responseTime;
+          result.lastChecked = Date.now();
+          smartValidationCache.set(`validation:${url}`, result);
+          return result;
+        }
+
         const discoveredValidation = await this.validateFeed(
           discoveredFeed.url,
         );

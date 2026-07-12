@@ -5,6 +5,8 @@ import {
   CacheStatsSchema,
   FeedValidateRequestSchema,
   FeedValidateResponseSchema,
+  YouTubeFeedResolutionSchema,
+  YouTubeResolveQuerySchema,
   FeedBatchRequestSchema,
   FeedBatchResponseSchema,
   type FeedBatchErrorType,
@@ -29,6 +31,7 @@ import {
 } from "./security";
 import { mapUnhandledErrorStatus } from "./errors";
 import { classifyValidationStatus } from "./validationStatus";
+import { resolveYouTubeFeed, YouTubeResolutionError } from "./youtubeResolver";
 import {
   buildJsonHeaders,
   preflightResponse,
@@ -252,6 +255,23 @@ async function handleFeedRequest(req: Request, reqUrl: URL): Promise<Response> {
     lastModified: req.headers.get("if-modified-since"),
   });
   return json(result, 200, req);
+}
+
+async function handleYouTubeResolveRequest(req: Request, reqUrl: URL): Promise<Response> {
+  const parsedQuery = YouTubeResolveQuerySchema.safeParse({
+    url: reqUrl.searchParams.get("url"),
+  });
+  if (!parsedQuery.success) {
+    return json(
+      { error: "Invalid YouTube URL", code: "unsupported_youtube_url" },
+      400,
+      req,
+    );
+  }
+
+  const resolution = await resolveYouTubeFeed(parsedQuery.data.url);
+  YouTubeFeedResolutionSchema.parse(resolution);
+  return json(resolution, 200, req);
 }
 
 async function handleFeedBatchRequest(req: Request): Promise<Response> {
@@ -479,6 +499,10 @@ const server = Bun.serve({
         return await handleFeedRequest(req, reqUrl);
       }
 
+      if (req.method === "GET" && pathname === "/api/v1/youtube/resolve") {
+        return await handleYouTubeResolveRequest(req, reqUrl);
+      }
+
       if (req.method === "POST" && pathname === "/api/v1/feeds/batch") {
         return await handleFeedBatchRequest(req);
       }
@@ -519,6 +543,10 @@ const server = Bun.serve({
     } catch (error) {
       if (error instanceof SecurityValidationError) {
         return errorResponse(error.status, error.message, req);
+      }
+
+      if (error instanceof YouTubeResolutionError) {
+        return json({ error: error.message, code: error.code }, error.status, req);
       }
 
       const message = error instanceof Error ? error.message : "Internal server error";

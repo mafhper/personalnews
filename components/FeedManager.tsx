@@ -32,7 +32,6 @@ import {
   Plus,
   Power,
   RefreshCw,
-  RotateCcw,
   Rss,
   Search,
   Settings2,
@@ -46,6 +45,7 @@ import {
   X,
 } from "lucide-react";
 import type { FeedSource, Article, FeedCategory } from "../types";
+import { parseYouTubeUrl } from "../shared/youtubeFeedResolver";
 import { detectEnvironment } from "../services/environmentDetector";
 import { parseOpml } from "../services/rssParser";
 import { FeedDiscoveryModal } from "./FeedDiscoveryModal";
@@ -102,7 +102,6 @@ import {
   buildResetCategoriesConfirmation,
   buildRestoreDefaultFeedsConfirmation,
 } from "../utils/feedDangerConfirmation";
-import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
 import { DEFAULT_CURATED_LISTS } from "../config/defaultConfig";
 import { FeedDuplicateModal } from "./FeedDuplicateModal";
 import {
@@ -143,11 +142,8 @@ import {
   type FeedErrorHistoryItem,
   isFeedActive,
   isFeedQuarantined,
-  markFeedInactive,
   quarantineFeed,
-  restoreQuarantinedFeed,
   shouldRecommendQuarantine,
-  updateQuarantineAfterValidation,
 } from "../utils/feedQuarantine";
 
 const appVersion = pkg.version;
@@ -267,9 +263,6 @@ const isFeedManagerAccordionRoute = (
   route: FeedManagerRoute,
 ): route is FeedManagerAccordionRoute =>
   Object.prototype.hasOwnProperty.call(feedManagerAccordionDefaults, route);
-
-const getFeedManagerSectionId = (route: FeedManagerRoute) =>
-  `feed-manager-section-${canonicalizeFeedManagerRoute(route).replace(":", "-")}`;
 
 const normalizePersistedRoute = (
   value?: string,
@@ -604,15 +597,15 @@ const getCuratedListMeta = (
   };
 };
 
-const getCuratedLists = () =>
+const CURATED_LISTS =
   Object.entries(DEFAULT_CURATED_LISTS).map(([name, feeds]) =>
     getCuratedListMeta(name, feeds),
   );
 
-const getCuratedIcon = (id: string) => {
-  if (id === "brasil-mix") return Flag;
-  if (id === "internacional-mix") return Globe;
-  return Layers;
+const getCuratedIcon = (id: string, className: string) => {
+  if (id === "brasil-mix") return <Flag className={className} />;
+  if (id === "internacional-mix") return <Globe className={className} />;
+  return <Layers className={className} />;
 };
 
 const FeedManagerPageTitle: React.FC<{
@@ -751,12 +744,9 @@ const CollectionDragHandle: React.FC<{
 );
 
 const FeedManagerSourceIcon: React.FC<{ feed: FeedSource }> = ({ feed }) => {
-  const [failed, setFailed] = React.useState(false);
+  const [failedUrl, setFailedUrl] = React.useState<string | null>(null);
   const favicon = feed.faviconUrl?.trim();
-
-  React.useEffect(() => {
-    setFailed(false);
-  }, [favicon]);
+  const failed = !!favicon && failedUrl === favicon;
 
   return (
     <span className="feed-manager-light-row__icon collection-central-source-icon">
@@ -765,7 +755,7 @@ const FeedManagerSourceIcon: React.FC<{ feed: FeedSource }> = ({ feed }) => {
           src={favicon}
           alt=""
           loading="lazy"
-          onError={() => setFailed(true)}
+          onError={() => setFailedUrl(favicon)}
         />
       ) : (
         <Rss className="h-[17px] w-[17px]" />
@@ -1016,7 +1006,7 @@ const FeedManagerSourcesPage: React.FC<{
   const [sourceQuery, setSourceQuery] = React.useState("");
   const [sourceFilter, setSourceFilter] =
     React.useState<SourceFilterId>("all");
-  const curatedLists = React.useMemo(getCuratedLists, []);
+  const curatedLists = CURATED_LISTS;
   const categoryById = React.useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
     [categories],
@@ -1029,18 +1019,44 @@ const FeedManagerSourcesPage: React.FC<{
     });
     return counts;
   }, [articles]);
-  const getSourceStatus = (feed: FeedSource) => {
-    const validation = feedValidations.get(feed.url);
-    if (isFeedQuarantined(feed) || quarantineRecommendedUrls.has(feed.url)) {
-      return "quarantine" as const;
-    }
-    if (feed.hideFromAll) return "hidden" as const;
-    if (!validation || validation.status === "checking") return "pending" as const;
-    if (validation.isValid) return "valid" as const;
-    return "error" as const;
-  };
-  const getSourceTitle = (feed: FeedSource) =>
-    feed.customTitle || feedValidations.get(feed.url)?.title || getFeedManagerFeedTitle(feed);
+  const getSourceStatus = React.useCallback(
+    (feed: FeedSource) => {
+      const validation = feedValidations.get(feed.url);
+      if (isFeedQuarantined(feed) || quarantineRecommendedUrls.has(feed.url)) {
+        return "quarantine" as const;
+      }
+      if (feed.hideFromAll) return "hidden" as const;
+      if (!validation || validation.status === "checking") return "pending" as const;
+      if (validation.isValid) return "valid" as const;
+      return "error" as const;
+    },
+    [feedValidations, quarantineRecommendedUrls],
+  );
+  const getSourceTitle = React.useCallback(
+    (feed: FeedSource) =>
+      feed.customTitle ||
+      feedValidations.get(feed.url)?.title ||
+      getFeedManagerFeedTitle(feed),
+    [feedValidations],
+  );
+  const sourceStatusCounts = activeFeeds.reduce(
+    (counts, feed) => {
+      const status = getSourceStatus(feed);
+      counts[status] += 1;
+      return counts;
+    },
+    {
+      error: 0,
+      hidden: 0,
+      pending: 0,
+      quarantine: 0,
+      valid: 0,
+    },
+  );
+  const effectiveSourceFilter =
+    sourceFilter === "pending" && sourceStatusCounts.pending === 0
+      ? "all"
+      : sourceFilter;
   const sourceRows = React.useMemo(() => {
     const query = sourceQuery.trim().toLowerCase();
     return activeFeeds
@@ -1062,10 +1078,10 @@ const FeedManagerSourcesPage: React.FC<{
       })
       .filter((row) => {
         const matchesFilter =
-          sourceFilter === "all" ||
-          (sourceFilter === "attention" &&
+          effectiveSourceFilter === "all" ||
+          (effectiveSourceFilter === "attention" &&
             (row.status === "error" || row.status === "quarantine")) ||
-          row.status === sourceFilter;
+          row.status === effectiveSourceFilter;
         if (!matchesFilter) return false;
         if (!query) return true;
         return (
@@ -1079,9 +1095,10 @@ const FeedManagerSourcesPage: React.FC<{
     activeFeeds,
     articlesByFeed,
     categoryById,
+    effectiveSourceFilter,
     feedValidations,
-    quarantineRecommendedUrls,
-    sourceFilter,
+    getSourceStatus,
+    getSourceTitle,
     sourceQuery,
   ]);
   const sourceGroups = [
@@ -1106,31 +1123,15 @@ const FeedManagerSourcesPage: React.FC<{
       ),
     },
   ];
-  const sourceStatusCounts = activeFeeds.reduce(
-    (counts, feed) => {
-      const status = getSourceStatus(feed);
-      counts[status] += 1;
-      return counts;
-    },
-    {
-      error: 0,
-      hidden: 0,
-      pending: 0,
-      quarantine: 0,
-      valid: 0,
-    },
-  );
   const attentionSourceCount =
     sourceStatusCounts.error + sourceStatusCounts.quarantine;
-  React.useEffect(() => {
-    if (sourceFilter === "pending" && sourceStatusCounts.pending === 0) {
-      setSourceFilter("all");
-    }
-  }, [sourceFilter, sourceStatusCounts.pending]);
   const visibleSourceGroups = sourceGroups.filter((group) => {
     if (group.id === "pending" && group.rows.length === 0) return false;
     if (group.id === "attention" && group.rows.length === 0) {
-      return sourceFilter === "all" || sourceFilter === "attention";
+      return (
+        effectiveSourceFilter === "all" ||
+        effectiveSourceFilter === "attention"
+      );
     }
     return group.rows.length > 0;
   });
@@ -1422,7 +1423,6 @@ const FeedManagerSourcesPage: React.FC<{
             </div>
             <div className="collection-central-curated-preview">
               {curatedLists.slice(0, 3).map((list) => {
-                const Icon = getCuratedIcon(list.id);
                 return (
                 <button
                   key={list.name}
@@ -1431,7 +1431,7 @@ const FeedManagerSourcesPage: React.FC<{
                   className="collection-central-curated-preview-card"
                 >
                   <span className="feed-manager-light-row__icon">
-                    <Icon className="h-4 w-4" />
+                    {getCuratedIcon(list.id, "h-4 w-4")}
                   </span>
                   <span>
                     <strong>{list.name}</strong>
@@ -1480,7 +1480,7 @@ const FeedManagerSourcesPage: React.FC<{
                   type="button"
                   onClick={() => setSourceFilter(filter.id)}
                   className={
-                    sourceFilter === filter.id
+                    effectiveSourceFilter === filter.id
                       ? "collection-central-filter-chip collection-central-filter-chip--active"
                       : "collection-central-filter-chip"
                   }
@@ -1552,15 +1552,14 @@ type CuratedImportMode = "merge" | "replace";
 
 const CuratedListsDialog: React.FC<{
   categories: FeedCategory[];
-  isOpen: boolean;
   onClose: () => void;
   onImport: (
     mode: CuratedImportMode,
     selectedFeeds: FeedSource[],
     listName: string,
   ) => void | Promise<void>;
-}> = ({ categories, isOpen, onClose, onImport }) => {
-  const curatedLists = React.useMemo(getCuratedLists, []);
+}> = ({ categories, onClose, onImport }) => {
+  const curatedLists = CURATED_LISTS;
   const [activeName, setActiveName] = React.useState(
     curatedLists[0]?.name || "",
   );
@@ -1570,16 +1569,16 @@ const CuratedListsDialog: React.FC<{
   >({});
   const activeList =
     curatedLists.find((list) => list.name === activeName) || curatedLists[0];
-  const ActiveIcon = getCuratedIcon(activeList?.id || "");
   const categoryNames = React.useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
   );
-  const visibleFeeds = React.useMemo(() => {
-    if (!activeList) return [];
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return activeList.feeds;
-    return activeList.feeds.filter((feed) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleFeeds = !activeList
+    ? []
+    : !normalizedQuery
+      ? activeList.feeds
+      : activeList.feeds.filter((feed) => {
       const title = getFeedManagerFeedTitle(feed).toLowerCase();
       const categoryName = feed.categoryId
         ? categoryNames.get(feed.categoryId)?.toLowerCase() || ""
@@ -1589,14 +1588,7 @@ const CuratedListsDialog: React.FC<{
         feed.url.toLowerCase().includes(normalizedQuery) ||
         categoryName.includes(normalizedQuery)
       );
-    });
-  }, [activeList, categoryNames, query]);
-
-  React.useEffect(() => {
-    if (!isOpen) return;
-    setActiveName((current) => current || curatedLists[0]?.name || "");
-    setQuery("");
-  }, [curatedLists, isOpen]);
+      });
 
   const getKey = (feed: FeedSource) => `${activeList?.name || ""}::${feed.url}`;
   const selectedFeeds = activeList
@@ -1610,7 +1602,7 @@ const CuratedListsDialog: React.FC<{
 
   return (
     <CollectionDialog
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title="Listas curadas"
       description="Pré-visualize os itens da lista e desmarque o que não quiser importar."
@@ -1653,7 +1645,6 @@ const CuratedListsDialog: React.FC<{
       <div className="collection-central-curated-dialog">
         <nav className="collection-central-curated-dialog__nav">
           {curatedLists.map((list) => {
-            const Icon = getCuratedIcon(list.id);
             const active = list.name === activeList?.name;
             return (
               <button
@@ -1669,7 +1660,7 @@ const CuratedListsDialog: React.FC<{
                     : "collection-central-curated-list-option"
                 }
               >
-                <Icon className="h-4 w-4" />
+                {getCuratedIcon(list.id, "h-4 w-4")}
                 <span>
                   <strong>{list.name}</strong>
                   <small>{list.feeds.length} fontes</small>
@@ -1682,7 +1673,7 @@ const CuratedListsDialog: React.FC<{
         <div className="collection-central-curated-dialog__main">
           <div className="collection-central-curated-dialog__intro">
             <span className="feed-manager-light-row__icon">
-              <ActiveIcon className="h-[18px] w-[18px]" />
+              {getCuratedIcon(activeList?.id || "", "h-[18px] w-[18px]")}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -2418,9 +2409,8 @@ const formatCacheBytes = (bytes: number): string => {
 };
 
 const CollectionCachePolicyDialog: React.FC<{
-  isOpen: boolean;
   onClose: () => void;
-}> = ({ isOpen, onClose }) => {
+}> = ({ onClose }) => {
   const [draft, setDraft] = React.useState<CachePolicySettingsV1>(() =>
     getEffectiveCachePolicy(),
   );
@@ -2444,34 +2434,26 @@ const CollectionCachePolicyDialog: React.FC<{
   }, []);
 
   React.useEffect(() => {
-    if (!isOpen) return;
-    const policy = getEffectiveCachePolicy();
-    setDraft(policy);
-    setSavedPolicy(policy);
-    setCleanupResult(null);
-    setSaveState("idle");
-    setCleanupState("idle");
-    setErrorMessage(null);
-    void refreshStats();
-  }, [isOpen, refreshStats]);
-
-  React.useEffect(() => {
-    if (saveState === "saving") return;
-    const dirty = JSON.stringify(draft) !== JSON.stringify(savedPolicy);
-    setSaveState((current) => {
-      if (current === "error" && dirty) return "dirty";
-      if (current === "saved" && !dirty) return "saved";
-      return dirty ? "dirty" : "idle";
+    let active = true;
+    void getCacheStatsSnapshot().then((snapshot) => {
+      if (active) setStats(snapshot);
     });
-  }, [draft, savedPolicy, saveState]);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const updateDraft = React.useCallback(
     (updates: Partial<CachePolicySettingsV1>) => {
-      setDraft((current) => ({ ...current, ...updates, version: 1 }));
+      const next = { ...draft, ...updates, version: 1 as const };
+      setDraft(next);
+      setSaveState(
+        JSON.stringify(next) === JSON.stringify(savedPolicy) ? "idle" : "dirty",
+      );
       setCleanupResult(null);
       setErrorMessage(null);
     },
-    [],
+    [draft, savedPolicy],
   );
 
   const handleSavePolicy = async () => {
@@ -2564,7 +2546,7 @@ const CollectionCachePolicyDialog: React.FC<{
 
   return (
     <CollectionDialog
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title="Política de cache"
       description="Controle local de retenção, revalidação e limpeza segura dos caches."
@@ -3079,10 +3061,9 @@ const CollectionProxyPanel: React.FC = () => {
         onSave={handleSaveApiKey}
         error={apiKeyTarget ? validationErrors[apiKeyTarget] : undefined}
       />
-      <CollectionCachePolicyDialog
-        isOpen={cacheDialogOpen}
-        onClose={() => setCacheDialogOpen(false)}
-      />
+      {cacheDialogOpen && (
+        <CollectionCachePolicyDialog onClose={() => setCacheDialogOpen(false)} />
+      )}
     </section>
   );
 };
@@ -3413,15 +3394,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   >(feedManagerAccordionDefaults);
   const sidebarCollapsed = false;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [expandedAreas, setExpandedAreas] = useState<
-    Record<FeedManagerArea, boolean>
-  >({
-    overview: true,
-    sources: true,
-    organization: true,
-    maintenance: true,
-    diagnostics: false,
-  });
   const [diagnosticsFocus, setDiagnosticsFocus] = useState<string | null>(null);
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [newFeedTitle, setNewFeedTitle] = useState("");
@@ -3596,14 +3568,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
   const navigateToRoute = React.useCallback(
     (route: FeedManagerRoute, focusSection?: string) => {
       const nextRoute = canonicalizeFeedManagerRoute(route);
-      const nextArea = routeAreaMap[nextRoute];
       openAccordionRoute(nextRoute);
       setActiveRoute(nextRoute);
       setDiagnosticsFocus(focusSection || null);
-      setExpandedAreas((current) => ({
-        ...current,
-        [nextArea]: true,
-      }));
       const scrollContainer = contentScrollRef.current;
       if (typeof scrollContainer?.scrollTo === "function") {
         scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
@@ -3611,17 +3578,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     },
     [openAccordionRoute],
   );
-
-  useEffect(() => {
-    setExpandedAreas((current) =>
-      current[activeArea]
-        ? current
-        : {
-            ...current,
-            [activeArea]: true,
-          },
-    );
-  }, [activeArea]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -4003,40 +3959,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
   };
 
-  const moveFeedToCategory = (feedUrl: string, categoryId: string) => {
-    setFeeds((prev) =>
-      prev.map((feed) =>
-        feed.url === feedUrl
-          ? {
-              ...feed,
-              categoryId:
-                categoryId === "uncategorized" || categoryId === ""
-                  ? undefined
-                  : categoryId,
-            }
-          : feed,
-      ),
-    );
-    void alertSuccess("Categoria atualizada!");
-  };
-
-  const moveFeedsToCategory = React.useCallback(
-    async (feedUrls: string[], categoryId: string) => {
-      const targetCategory = categories.find((category) => category.id === categoryId);
-      if (!targetCategory || feedUrls.length === 0) return;
-      const urlSet = new Set(feedUrls);
-      setFeeds((prev) =>
-        prev.map((feed) =>
-          urlSet.has(feed.url) ? { ...feed, categoryId } : feed,
-        ),
-      );
-      await alertSuccess(
-        `${feedUrls.length} feed${feedUrls.length === 1 ? "" : "s"} movido${feedUrls.length === 1 ? "" : "s"} para ${targetCategory.name}.`,
-      );
-    },
-    [alertSuccess, categories, setFeeds],
-  );
-
   const handleToggleHideFromAll = (feedUrl: string) => {
     setFeeds((prev) =>
       prev.map((feed) =>
@@ -4252,74 +4174,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     [alertError, alertSuccess, validateSingleFeed],
   );
 
-  const handleValidateQuarantinedFeed = React.useCallback(
-    async (url: string) => {
-      const result = await validateSingleFeed(url);
-      if (!result) {
-        await alertError("Não foi possível validar este feed.");
-        return;
-      }
-
-      let nextFeed: FeedSource | undefined;
-      setFeeds((prev) =>
-        prev.map((feed) => {
-          if (feed.url !== url) return feed;
-          nextFeed = updateQuarantineAfterValidation(feed, {
-            isValid: result.isValid,
-            status: result.status,
-            error: result.error,
-          });
-          return nextFeed;
-        }),
-      );
-
-      if (result.isValid) {
-        const successes = (nextFeed?.quarantine?.recoverySuccesses || 0);
-        if (successes >= 2) {
-          await alertSuccess("Feed recuperado. Você já pode restaurá-lo.");
-        } else {
-          await alertSuccess("Feed validado. Mais uma validação libera a restauração recomendada.");
-        }
-        return;
-      }
-
-      await alertError("O feed ainda falhou na validação.");
-    },
-    [alertError, alertSuccess, setFeeds],
-  );
-
-  const handleRestoreQuarantinedFeed = React.useCallback(
-    async (url: string) => {
-      const confirmed = await confirmWarning(
-        "Restaurar este feed para a coleção ativa?",
-        "Restaurar feed",
-      );
-      if (!confirmed) return;
-      setFeeds((prev) =>
-        prev.map((feed) =>
-          feed.url === url ? restoreQuarantinedFeed(feed) : feed,
-        ),
-      );
-      await alertSuccess("Feed restaurado para a coleção ativa.");
-    },
-    [alertSuccess, confirmWarning, setFeeds],
-  );
-
-  const handleMarkFeedInactive = React.useCallback(
-    async (url: string) => {
-      const confirmed = await confirmWarning(
-        "Marcar este feed como inativo? Ele continuará preservado, mas fora da circulação.",
-        "Marcar inativo",
-      );
-      if (!confirmed) return;
-      setFeeds((prev) =>
-        prev.map((feed) => (feed.url === url ? markFeedInactive(feed) : feed)),
-      );
-      await alertSuccess("Feed marcado como inativo.");
-    },
-    [alertSuccess, confirmWarning, setFeeds],
-  );
-
   const handleConfirmOpmlImport = async (
     candidates: ImportCandidate[],
     action: OpmlImportConfirmAction,
@@ -4425,6 +4279,20 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
       );
 
       if (result.isValid) {
+        if (result.url !== url) {
+          const canonicalDuplicate = feedDuplicateDetector.detectUrlDuplicate(
+            result.url,
+            currentFeeds,
+          );
+          if (canonicalDuplicate.isDuplicate) {
+            setDuplicateWarning({
+              show: true,
+              result: canonicalDuplicate,
+              newUrl: result.url,
+            });
+            return;
+          }
+        }
         setFeeds((prev) => [
           ...prev,
           {
@@ -4439,6 +4307,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         setNewFeedCategory("");
         setNewFeedHideFromAll(false);
         await alertSuccess("Feed adicionado com sucesso!");
+        return;
+      }
+
+      if (parseYouTubeUrl(url)) {
+        await alertError(
+          `Não foi possível identificar o feed deste endereço do YouTube: ${result.error || "origem indisponível"}. A página do canal não será salva como se fosse um feed.`,
+        );
         return;
       }
 
@@ -4494,7 +4369,9 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     }
 
     const url = newFeedUrl.trim();
-    const duplicateResult = await checkForDuplicates(url);
+    const duplicateResult = parseYouTubeUrl(url)
+      ? feedDuplicateDetector.detectUrlDuplicate(url, currentFeeds)
+      : await checkForDuplicates(url);
     if (duplicateResult.isDuplicate) {
       setDuplicateWarning({ show: true, result: duplicateResult, newUrl: url });
       return;
@@ -4621,14 +4498,6 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
     if (mobileSidebarOpen) {
       setMobileSidebarOpen(false);
     }
-    setExpandedAreas({
-      overview: false,
-      sources: false,
-      organization: false,
-      maintenance: false,
-      diagnostics: false,
-      [group.id]: true,
-    });
     navigateToRoute(group.overviewRoute, group.focusSection);
   };
 
@@ -5049,12 +4918,13 @@ export const FeedManager: React.FC<FeedManagerProps> = ({
         }
       />
 
-      <CuratedListsDialog
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        categories={categories}
-        onImport={handleImportCurated}
-      />
+      {showImportModal && (
+        <CuratedListsDialog
+          onClose={() => setShowImportModal(false)}
+          categories={categories}
+          onImport={handleImportCurated}
+        />
+      )}
 
       <Modal
         isOpen={showErrorModal && !!selectedErrorFeed}
