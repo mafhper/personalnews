@@ -75,10 +75,10 @@ function splitFilesIntoChunks(fileList, maxLength) {
   return chunks;
 }
 
-function runEslintWithCmd(cmd, chunks) {
+function runEslintWithCmd(cmd, chunks, prefixArgs = []) {
   for (let idx = 0; idx < chunks.length; idx += 1) {
     const chunk = chunks[idx];
-    const eslintArgs = ['eslint', ...chunk, ...ESLINT_COMMON_ARGS];
+    const eslintArgs = [...prefixArgs, 'eslint', ...chunk, ...ESLINT_COMMON_ARGS];
     if (chunks.length > 1) {
       console.log(`[lint:fast] Lote ${idx + 1}/${chunks.length} (${chunk.length} arquivos)`);
     }
@@ -99,7 +99,7 @@ function runEslint(fileList) {
     console.log(`[lint:fast] Dividido em ${chunks.length} lotes para evitar limite de comando no Windows.`);
   }
 
-  let status = runEslintWithCmd('bunx', chunks);
+  let status = runEslintWithCmd('bun', chunks, ['x']);
   if (status === 127) {
     status = runEslintWithCmd('npx', chunks);
   }

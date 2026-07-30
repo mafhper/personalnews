@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import type { StabilityMetrics } from '@/lib/mock-data';
 import { useQualityData } from '@/contexts/QualityDataContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { MiniSparkline } from './MiniSparkline';
 
 interface SystemStatusProps {
