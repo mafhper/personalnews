@@ -1,6 +1,6 @@
 /**
  * Master Quality Orchestrator & Reporter
- * 
+ *
  * Executa toda a suíte de qualidade, classifica impactos e gera relatório consolidado.
  */
 
@@ -39,7 +39,7 @@ function stripAnsi(str) {
 function runStep(name, command, impact, description) {
   process.stdout.write(`${STYLES.cyan}START: ${name}...${STYLES.reset}`);
   auditResults.summary.total++;
-  
+
   const start = Date.now();
   let status = 'PASSED';
   let output = '';
@@ -48,7 +48,7 @@ function runStep(name, command, impact, description) {
   try {
     output = execSync(command, { encoding: 'utf8', stdio: 'pipe' });
     const cleanOutput = stripAnsi(output);
-    
+
     if (name === 'Build & Bundle') {
       const match = cleanOutput.match(/index-.*\.js\s+([\d.]+)\s+kB/i);
       if (match) {
@@ -69,7 +69,7 @@ function runStep(name, command, impact, description) {
   }
 
   const duration = ((Date.now() - start) / 1000).toFixed(2);
-  
+
   if (status === 'FAILED') {
     auditResults.summary.failed++;
     console.log(` ${STYLES.red}FAILED (${duration}s)${STYLES.reset}`);
@@ -99,7 +99,7 @@ async function main() {
 
   // 1. CRÍTICOS (Bloqueantes)
   runStep('Testes Core', 'bun run test', 'BLOQUEANTE', 'Validação da lógica fundamental e resiliência.');
-  runStep('Type Check', 'bunx tsc --noEmit', 'BLOQUEANTE', 'Verificação de integridade de tipos TypeScript.');
+  runStep('Type Check', 'bun x tsc --noEmit', 'BLOQUEANTE', 'Verificação de integridade de tipos TypeScript.');
   runStep('Linting', 'bun run lint', 'BLOQUEANTE', 'Padronização de código e detecção de code smells.');
   runStep('Build & Bundle', 'bun run build', 'BLOQUEANTE', 'Verificação de sucesso do build e tamanho do bundle.');
 

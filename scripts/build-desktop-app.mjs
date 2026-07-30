@@ -20,7 +20,7 @@ const env = {
 const steps = [
   { cmd: "bun", args: ["run", "promo:changelog", ...passthroughFlags] },
   { cmd: "bun", args: ["run", "config:sync", ...passthroughFlags] },
-  { cmd: "bunx", args: ["tsc", "--noEmit"] },
+  { cmd: "bun", args: ["x", "tsc", "--noEmit"] },
   { cmd: "bun", args: ["vite", "build"] },
 ];
 

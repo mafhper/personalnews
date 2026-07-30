@@ -76,7 +76,7 @@ export function QuickActionsModal({ isOpen, onClose }: QuickActionsModalProps) {
         id: 'type-check',
         label: 'Verificação de Tipos',
         description: 'Valida todos os tipos TypeScript',
-        command: 'bunx tsc --noEmit',
+        command: 'bun x tsc --noEmit',
         icon: '✓',
         category: 'analysis'
       },

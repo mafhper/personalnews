@@ -1,6 +1,6 @@
 /**
  * Performance Test - Lighthouse CLI Runner (Autonomo)
- * 
+ *
  * 1. Inicia servidor de desenvolvimento se necessario
  * 2. Executa Lighthouse para Mobile e Desktop
  * 3. Salva reports JSON
@@ -96,19 +96,6 @@ function resolveBunBinary() {
     return process.platform === 'win32' ? 'bun.exe' : 'bun';
 }
 
-function resolveBunxBinary(bunBin) {
-    if (process.env.BUNX_PATH) return process.env.BUNX_PATH;
-
-    const binName = process.platform === 'win32' ? 'bunx.exe' : 'bunx';
-    const bunDir = bunBin ? path.dirname(bunBin) : '';
-    if (bunDir) {
-        const sibling = path.join(bunDir, binName);
-        if (fs.existsSync(sibling)) return sibling;
-    }
-
-    return binName;
-}
-
 function withBunPath(baseEnv, bunBin) {
     const env = { ...baseEnv };
     const bunDir = bunBin ? path.dirname(bunBin) : '';
@@ -123,7 +110,6 @@ function withBunPath(baseEnv, bunBin) {
 }
 
 const bunCmd = resolveBunBinary();
-const bunxCmd = resolveBunxBinary(bunCmd);
 
 function normalizeTarget(input) {
     if (!input) return null;
@@ -661,7 +647,7 @@ function runLighthouseOnce(url, formFactor, target, attempt, totalAttempts) {
         }
 
         let stderr = '';
-        const child = spawn(bunxCmd, lhArgs, {
+        const child = spawn(bunCmd, ['x', ...lhArgs], {
             shell: false,
             stdio: ['ignore', 'ignore', 'pipe'], // Capture stderr
             env: withBunPath(process.env, bunCmd),
