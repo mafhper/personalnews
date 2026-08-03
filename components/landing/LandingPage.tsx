@@ -9,6 +9,10 @@ import {
 } from "../../config/brand";
 import { PromoLiquidMeshBackdrop } from "./PromoLiquidMeshBackdrop";
 import {
+  RELEASE_PLATFORM_BY_LABEL,
+  useLatestReleaseAssets,
+} from "../../hooks/useLatestReleaseAssets";
+import {
   getPromoContent,
   PROMO_PAGE_HASHES,
   PROMO_PAGE_ORDER,
@@ -412,6 +416,18 @@ const LandingPage = ({
   const featuredVersion = content.versions.items.find(
     (version) => version.featured,
   );
+  const latestAssets = useLatestReleaseAssets();
+  const featuredPlatformLinks = React.useMemo(
+    () =>
+      featuredVersion?.platformLinks?.map((link) => {
+        const platformKey = RELEASE_PLATFORM_BY_LABEL[link.label];
+        const resolvedHref = platformKey
+          ? latestAssets?.[platformKey]
+          : undefined;
+        return resolvedHref ? { ...link, href: resolvedHref } : link;
+      }),
+    [featuredVersion, latestAssets],
+  );
   const secondaryVersions = content.versions.items.filter(
     (version) => !version.featured,
   );
@@ -791,14 +807,14 @@ const LandingPage = ({
                   <span>{featuredVersion.label}</span>
                   <h3>{featuredVersion.title}</h3>
                   <p>{featuredVersion.description}</p>
-                  {featuredVersion.platformLinks && (
+                  {featuredPlatformLinks && (
                     <div
                       className="promo-version-card__platforms"
                       aria-label={uiText.downloadsLabel}
                     >
-                      {featuredVersion.platformLinks.map((link) => (
+                      {featuredPlatformLinks.map((link) => (
                         <a
-                          key={link.href}
+                          key={link.label}
                           href={link.href}
                           target="_blank"
                           rel="noreferrer"

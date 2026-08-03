@@ -315,15 +315,15 @@ const ptBR: PromoContent = {
         platformLinks: [
           {
             label: "Windows",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_x64-setup.exe",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
           {
             label: "macOS",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_aarch64.dmg",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
           {
             label: "Linux",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_amd64.deb",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
         ],
       },
@@ -594,15 +594,15 @@ const enUS: PromoContent = {
         platformLinks: [
           {
             label: "Windows",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_x64-setup.exe",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
           {
             label: "macOS",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_aarch64.dmg",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
           {
             label: "Linux",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_amd64.deb",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
         ],
       },
@@ -871,15 +871,15 @@ const es: PromoContent = {
         platformLinks: [
           {
             label: "Windows",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_x64-setup.exe",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
           {
             label: "macOS",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_aarch64.dmg",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
           {
             label: "Linux",
-            href: "https://github.com/mafhper/personalnews/releases/download/v1.10.2/PersonalNews_1.10.2_amd64.deb",
+            href: PERSONAL_NEWS_RELEASES_URL,
           },
         ],
       },

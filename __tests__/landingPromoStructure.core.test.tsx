@@ -12,6 +12,15 @@ vi.mock("../hooks/useLanguage", () => ({
   useLanguage: () => ({ language: languageState.current }),
 }));
 
+vi.mock("../hooks/useLatestReleaseAssets", () => ({
+  useLatestReleaseAssets: () => null,
+  RELEASE_PLATFORM_BY_LABEL: {
+    Windows: "windows",
+    macOS: "macos",
+    Linux: "linux",
+  },
+}));
+
 const scrollIntoViewMock = vi.fn();
 const scrollToMock = vi.fn();
 const pushStateMock = vi.fn();
