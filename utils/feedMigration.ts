@@ -48,14 +48,14 @@ const normalizeFeedUrlForMigration = (url: string): string => {
  * Returns the default list of feeds to start with
  */
 export const getDefaultFeeds = (): FeedSource[] => {
-  return [...DEFAULT_FEEDS];
+  return DEFAULT_FEEDS.map((feed) => ({ ...feed }));
 };
 
 /**
  * Resets feeds to the default list
  */
 export const resetToDefaultFeeds = (): FeedSource[] => {
-  return [...DEFAULT_FEEDS];
+  return DEFAULT_FEEDS.map((feed) => ({ ...feed }));
 };
 
 /**
@@ -125,8 +125,12 @@ export const migrateFeeds = (currentFeeds: FeedSource[]): { migrated: boolean; f
         changed = true;
       }
 
-      // Sync hideFromAll from defaults
-      if (feedToSync.hideFromAll !== knownFeed.hideFromAll) {
+      // Apply the default only when no persisted user preference exists;
+      // explicit true/false chosen by the user must survive reloads.
+      if (
+        feedToSync.hideFromAll === undefined &&
+        knownFeed.hideFromAll !== undefined
+      ) {
         updatedFeed.hideFromAll = knownFeed.hideFromAll;
         changed = true;
       }
