@@ -8,8 +8,11 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DEFAULT_FEEDS } from "../constants/curatedFeeds";
-import { migrateFeeds } from "../utils/feedMigration";
+import { getDefaultFeeds, migrateFeeds } from "../utils/feedMigration";
 import { FeedSource } from "../types";
+
+const CANONICAL_FORO_URL = "https://feeds.megaphone.fm/NPP2619427256";
+const XDA_URL = "https://www.xda-developers.com/feed/";
 
 describe("[CORE][MIGRATION] state migration logic", () => {
   beforeEach(() => {
@@ -179,5 +182,105 @@ describe("[CORE][MIGRATION] state migration logic", () => {
         (feed) => feed.url === "https://feeds.megaphone.fm/NPP2619427256",
       ),
     ).toHaveLength(1);
+  });
+
+  it("should preserve an explicit hideFromAll=false when the default is true", () => {
+    const result = migrateFeeds([
+      {
+        url: CANONICAL_FORO_URL,
+        customTitle: "Foro de Teresina",
+        categoryId: "podcasts",
+        hideFromAll: false,
+      },
+    ]);
+
+    expect(result.feeds[0].hideFromAll).toBe(false);
+  });
+
+  it("should preserve an explicit hideFromAll=true when the default has none", () => {
+    const result = migrateFeeds([
+      {
+        url: XDA_URL,
+        title: "XDA",
+        categoryId: "tech",
+        hideFromAll: true,
+      },
+    ]);
+
+    expect(result.feeds[0].hideFromAll).toBe(true);
+  });
+
+  it("should apply the default hideFromAll when the persisted state has no preference", () => {
+    const result = migrateFeeds([
+      {
+        url: CANONICAL_FORO_URL,
+        customTitle: "Foro de Teresina",
+        categoryId: "podcasts",
+      },
+    ]);
+
+    expect(result.feeds[0].hideFromAll).toBe(true);
+  });
+
+  it("should preserve the user hideFromAll preference across a canonical URL migration", () => {
+    const result = migrateFeeds([
+      {
+        url: "https://piaui.folha.uol.com.br/feed/",
+        customTitle: "Foro de Teresina",
+        categoryId: "politics",
+        hideFromAll: false,
+      },
+    ]);
+
+    expect(result.feeds[0]).toMatchObject({
+      url: CANONICAL_FORO_URL,
+      hideFromAll: false,
+    });
+  });
+
+  it("should not reset a user custom title during metadata sync", () => {
+    const result = migrateFeeds([
+      {
+        url: XDA_URL,
+        categoryId: "tech",
+        customTitle: "Meu XDA",
+      },
+    ]);
+
+    expect(
+      result.feeds.find((feed) => feed.url === XDA_URL)?.customTitle,
+    ).toBe("Meu XDA");
+  });
+
+  it("should preserve a user categoryId outside canonical replacements", () => {
+    const result = migrateFeeds([
+      {
+        url: XDA_URL,
+        title: "XDA",
+        categoryId: "personal",
+      },
+    ]);
+
+    expect(
+      result.feeds.find((feed) => feed.url === XDA_URL)?.categoryId,
+    ).toBe("personal");
+  });
+
+  it("should never mutate DEFAULT_FEEDS during migration", () => {
+    const snapshot = JSON.parse(JSON.stringify(DEFAULT_FEEDS));
+
+    migrateFeeds([
+      {
+        url: "https://piaui.folha.uol.com.br/feed/",
+        customTitle: "Foro de Teresina",
+        categoryId: "politics",
+        hideFromAll: false,
+      },
+    ]);
+    getDefaultFeeds().forEach((feed) => {
+      feed.hideFromAll = false;
+    });
+
+    expect(DEFAULT_FEEDS).toEqual(snapshot);
   });
 });
