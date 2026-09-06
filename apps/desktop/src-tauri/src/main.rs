@@ -668,6 +668,7 @@ fn enforce_restart_rate_limit(app: &AppHandle) -> Result<(), String> {
 
 fn main() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .manage(BackendSidecarState::default())

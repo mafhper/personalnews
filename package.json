@@ -1,6 +1,6 @@
 {
   "name": "personal-news",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "private": true,
   "type": "module",
   "description": "A fast, modern personal news aggregator that serves as your browser homepage. Built with React, TypeScript, and optimized with Bun.",
@@ -166,6 +166,7 @@
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
     "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-window-state": "^2",
     "@xmldom/xmldom": "^0.9.10",
     "baseline-browser-mapping": "^2.10.31",
     "caniuse-lite": "^1.0.30001792",
