@@ -59,6 +59,64 @@ jobs:
         if: runner.os == 'Windows'
         run: bun run desktop:installer-assets:check
 
+      - id: release-body
+        name: build release body from per-version notes
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          notes_file=".github/release-notes/${GITHUB_REF_NAME}.md"
+          body_file="$RUNNER_TEMP/release-body.md"
+          {
+            printf '%s\n' '<p align="center">'
+            printf '%s\n' '  <img src="https://raw.githubusercontent.com/mafhper/personalnews/v__VERSION__/public/releases/release-feed-__VERSION__.png" alt="Feed do PersonalNews com navegação por categorias" width="960">'
+            printf '%s\n' '</p>'
+            printf '%s\n' ''
+            printf '%s\n' 'PersonalNews reúne seus feeds, podcasts e vídeos em uma experiência de leitura local e personalizável.'
+            if [ -f "$notes_file" ]; then
+              printf '%s\n' ''
+              printf '%s\n' '## O que tem de novo nesta versão'
+              cat "$notes_file"
+            fi
+            printf '%s\n' ''
+            printf '%s\n' '## Instalação'
+            printf '%s\n' ''
+            printf '%s\n' '| Sistema | Arquivo recomendado | Uso |'
+            printf '%s\n' '| --- | --- | --- |'
+            printf '%s\n' '| Windows | `PersonalNews_*_x64-setup.exe` | Instalação comum, sem exigir privilégios de administrador |'
+            printf '%s\n' '| Windows | `PersonalNews_*_x64_pt-BR.msi` | Ambientes gerenciados em português |'
+            printf '%s\n' '| Linux | `PersonalNews_*_amd64.deb` | Ubuntu, Debian e derivados |'
+            printf '%s\n' '| macOS | `PersonalNews_*_aarch64.dmg` | Macs com Apple Silicon |'
+            printf '%s\n' ''
+            printf '%s\n' '<details>'
+            printf '%s\n' '<summary>Outros detalhes de instalação</summary>'
+            printf '%s\n' ''
+            printf '%s\n' '- O instalador EXE é a opção recomendada para a maioria das pessoas no Windows.'
+            printf '%s\n' '- O MSI em inglês também está disponível entre os arquivos da versão.'
+            printf '%s\n' '- No macOS, arraste o PersonalNews para a pasta Aplicativos.'
+            printf '%s\n' ''
+            printf '%s\n' '</details>'
+            printf '%s\n' ''
+            printf '%s\n' '---'
+          } > "$body_file"
+          generated="$(gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name="$GITHUB_REF_NAME" -f target_commitish="main" --jq '.body' 2>/dev/null || true)"
+          if [ -n "$generated" ]; then
+            {
+              printf '%s\n' ''
+              printf '%s\n' '<details>'
+              printf '%s\n' '<summary>Lista de mudanças (gerada automaticamente)</summary>'
+              printf '%s\n' ''
+              printf '%s\n' "$generated"
+              printf '%s\n' ''
+              printf '%s\n' '</details>'
+            } >> "$body_file"
+          fi
+          {
+            echo "body<<RELEASE_BODY_EOF"
+            cat "$body_file"
+            echo "RELEASE_BODY_EOF"
+          } >> "$GITHUB_OUTPUT"
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -67,33 +125,9 @@ jobs:
           projectPath: apps/desktop
           tagName: v__VERSION__ # tauri-action will replace this
           releaseName: "Personal News v__VERSION__"
-          releaseBody: |
-            <p align="center">
-              <img src="https://raw.githubusercontent.com/mafhper/personalnews/v__VERSION__/public/releases/release-feed-__VERSION__.png" alt="Feed do PersonalNews com navegação por categorias" width="960">
-            </p>
+          releaseBody: ${{ steps.release-body.outputs.body }}
+          generateReleaseNotes: false
 
-            PersonalNews reúne seus feeds, podcasts e vídeos em uma experiência de leitura local e personalizável.
-
-            ## Instalação
-
-            | Sistema | Arquivo recomendado | Uso |
-            | --- | --- | --- |
-            | Windows | `PersonalNews_*_x64-setup.exe` | Instalação comum, sem exigir privilégios de administrador |
-            | Windows | `PersonalNews_*_x64_pt-BR.msi` | Ambientes gerenciados em português |
-            | Linux | `PersonalNews_*_amd64.deb` | Ubuntu, Debian e derivados |
-            | macOS | `PersonalNews_*_aarch64.dmg` | Macs com Apple Silicon |
-
-            <details>
-            <summary>Outros detalhes de instalação</summary>
-
-            - O instalador EXE é a opção recomendada para a maioria das pessoas no Windows.
-            - O MSI em inglês também está disponível entre os arquivos da versão.
-            - No macOS, arraste o PersonalNews para a pasta Aplicativos.
-
-            </details>
-
-            ---
-          generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
           uploadUpdaterJson: false

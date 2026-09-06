@@ -45,7 +45,12 @@ describe("desktop release workflow", () => {
     );
     const releaseConfigPath = join(repoRoot, ".github", "release.yml");
 
-    expect(workflow).toContain("generateReleaseNotes: true");
+expect(workflow).toContain("releaseBody: ${{ steps.release-body.outputs.body }}");
+    expect(workflow).toContain("generateReleaseNotes: false");
+    expect(workflow).toContain("id: release-body");
+    expect(workflow).toContain(".github/release-notes/${GITHUB_REF_NAME}.md");
+    expect(workflow).toContain("releases/generate-notes");
+    expect(workflow).toContain("## O que tem de novo nesta versão");
     expect(workflow).toContain('<p align="center">');
     expect(workflow).toContain(
       "https://raw.githubusercontent.com/mafhper/personalnews/v__VERSION__/public/releases/release-feed-__VERSION__.png",
@@ -53,6 +58,8 @@ describe("desktop release workflow", () => {
     expect(workflow).not.toContain(
       "https://raw.githubusercontent.com/mafhper/personalnews/main/public/release-feed.png",
     );
+    expect(workflow).not.toContain("generateReleaseNotes: true");
+    expect(workflow).not.toContain("releaseBody: |");
     expect(workflow).toContain("## Instalação");
     expect(workflow).toContain("| Sistema | Arquivo recomendado | Uso |");
     expect(workflow).not.toMatch(/\p{Extended_Pictographic}/u);
