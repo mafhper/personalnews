@@ -38,7 +38,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Tecnologia",
     "id": "tech",
     "color": "#0078D7",
-    "layoutMode": "minimal",
+    "layoutMode": "bento",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Notícias sobre desenvolvimento, gadgets e o mundo tech."
@@ -49,7 +49,7 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "name": "Design",
     "id": "design",
     "color": "#663399",
-    "layoutMode": "gallery",
+    "layoutMode": "split",
     "isPinned": false,
     "autoDiscovery": true,
     "description": "Inspiração visual, UX/UI e tendências de design."
@@ -57,13 +57,13 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
   {
     "order": 3,
     "isDefault": true,
-    "name": "Games",
-    "id": "games",
+    "name": "Mídia",
+    "id": "midia",
     "color": "#FFDA03",
-    "layoutMode": "modern",
+    "layoutMode": "immersive",
     "isPinned": false,
     "autoDiscovery": true,
-    "description": "Lançamentos, reviews e cultura gamer."
+    "description": "Lançamentos, reviews e cultura."
   },
   {
     "order": 4,
@@ -79,17 +79,6 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
   {
     "order": 5,
     "isDefault": true,
-    "name": "Podcasts",
-    "id": "podcasts",
-    "color": "#FF8C00",
-    "layoutMode": "pocketfeeds",
-    "isPinned": false,
-    "autoDiscovery": true,
-    "description": "Seus podcasts preferidos direto no feed."
-  },
-  {
-    "order": 6,
-    "isDefault": true,
     "name": "Vídeos",
     "id": "youtube",
     "color": "#8B0000",
@@ -97,6 +86,17 @@ export const DEFAULT_CATEGORIES: FeedCategory[] = [
     "isPinned": false,
     "autoDiscovery": false,
     "description": "Canais preferidos do Youtube."
+  },
+  {
+    "order": 6,
+    "isDefault": true,
+    "name": "Podcasts",
+    "id": "podcasts",
+    "color": "#FF8C00",
+    "layoutMode": "pocketfeeds",
+    "isPinned": false,
+    "autoDiscovery": true,
+    "description": "Seus podcasts preferidos direto no feed."
   }
 ];
 
@@ -104,22 +104,28 @@ export const DEFAULT_FEEDS: FeedSource[] = [
   {
     "url": "https://www.b9.com.br/feed/",
     "categoryId": "design",
-    "customTitle": "B9"
+    "customTitle": "B9",
+    "hideFromAll": true
   },
   {
     "url": "https://kotaku.com/rss",
-    "categoryId": "games",
+    "categoryId": "midia",
     "customTitle": "Kotaku"
   },
   {
     "url": "https://jogabilida.de/feed/",
-    "categoryId": "games",
+    "categoryId": "midia",
     "customTitle": "Jogabilidade"
   },
   {
     "url": "https://br.ign.com/feed.xml",
-    "categoryId": "games",
+    "categoryId": "midia",
     "customTitle": "IGN Brasil"
+  },
+  {
+    "url": "https://midianinja.org/feed/",
+    "categoryId": "politics",
+    "customTitle": "Mídia Ninja"
   },
   {
     "url": "https://piaui.folha.uol.com.br/feed/",
@@ -130,11 +136,6 @@ export const DEFAULT_FEEDS: FeedSource[] = [
     "url": "https://theintercept.com/brasil/feed/",
     "categoryId": "politics",
     "customTitle": "The Intercept Brasil"
-  },
-  {
-    "url": "https://midianinja.org/feed/",
-    "categoryId": "politics",
-    "customTitle": "Mídia Ninja"
   },
   {
     "url": "https://arstechnica.com/feed/",
@@ -263,21 +264,22 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     {
       "url": "https://www.b9.com.br/feed/",
       "categoryId": "design",
-      "customTitle": "B9"
+      "customTitle": "B9",
+      "hideFromAll": true
     },
     {
       "url": "https://adrenaline.com.br/feed/",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Adrenaline"
     },
     {
       "url": "https://br.ign.com/feed.xml",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "IGN Brasil"
     },
     {
       "url": "https://jogabilida.de/feed/",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Jogabilidade"
     },
     {
@@ -299,11 +301,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://diolinux.com.br/feed",
       "categoryId": "tech",
       "customTitle": "Diolinux"
-    },
-    {
-      "url": "https://br-linux.org/feed",
-      "categoryId": "tech",
-      "customTitle": "BR Linux"
     },
     {
       "url": "https://macmagazine.com.br/feed/",
@@ -351,12 +348,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "hideFromAll": true
     },
     {
-      "url": "https://anchor.fm/s/1075f6ce0/podcast/rss",
-      "categoryId": "podcasts",
-      "customTitle": "Tecnocast",
-      "hideFromAll": true
-    },
-    {
       "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG-KRRI41P4TsaOMeAM9dug",
       "categoryId": "youtube",
       "customTitle": "1155 do ET",
@@ -382,6 +373,27 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "UX Collective"
     },
     {
+      "url": "https://feeds.feedburner.com/core77/blog",
+      "categoryId": "design",
+      "customTitle": "Core77",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://design-milk.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Desing Milk"
+    },
+    {
+      "url": "https://www.designboom.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Desing Boom"
+    },
+    {
+      "url": "https://thedsgnblog.com/rss",
+      "categoryId": "design",
+      "customTitle": "The Design Blog"
+    },
+    {
       "url": "https://www.thisiscolossal.com/feed/",
       "categoryId": "design",
       "customTitle": "This is Colossal"
@@ -393,17 +405,17 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     },
     {
       "url": "https://kotaku.com/rss",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Kotaku"
     },
     {
       "url": "https://www.pcgamer.com/feeds.xml",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "PC Gamer"
     },
     {
       "url": "https://www.polygon.com/feed/",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Polygon"
     },
     {
@@ -417,11 +429,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "CNET"
     },
     {
-      "url": "https://www.digitaltrends.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "Digital Trends"
-    },
-    {
       "url": "https://electrek.co/feed/",
       "categoryId": "tech",
       "customTitle": "ElecTrek"
@@ -430,11 +437,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "https://www.engadget.com/rss.xml",
       "categoryId": "tech",
       "customTitle": "Engadget"
-    },
-    {
-      "url": "https://www.omgubuntu.co.uk/feed",
-      "categoryId": "tech",
-      "customTitle": "OMG! Ubuntu"
     },
     {
       "url": "https://the-decoder.com/feed/",
@@ -539,9 +541,31 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "customTitle": "UX Collective"
     },
     {
+      "url": "https://feeds.feedburner.com/core77/blog",
+      "categoryId": "design",
+      "customTitle": "Core77",
+      "hideFromAll": true
+    },
+    {
       "url": "https://www.b9.com.br/feed/",
       "categoryId": "design",
-      "customTitle": "B9"
+      "customTitle": "B9",
+      "hideFromAll": true
+    },
+    {
+      "url": "https://design-milk.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Desing Milk"
+    },
+    {
+      "url": "https://www.designboom.com/feed/",
+      "categoryId": "design",
+      "customTitle": "Desing Boom"
+    },
+    {
+      "url": "https://thedsgnblog.com/rss",
+      "categoryId": "design",
+      "customTitle": "The Design Blog"
     },
     {
       "url": "https://www.thisiscolossal.com/feed/",
@@ -555,43 +579,49 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     },
     {
       "url": "https://adrenaline.com.br/feed/",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Adrenaline"
     },
     {
+      "url": "https://www.absolutegeeks.com/feed/",
+      "categoryId": "midia",
+      "customTitle": "Absolute Geeks"
+    },
+    {
       "url": "https://br.ign.com/feed.xml",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "IGN Brasil"
     },
     {
       "url": "https://naogames.jogabilida.de/",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Jogabilidade (Não Games)"
     },
     {
       "url": "https://jogabilida.de/feed/",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Jogabilidade"
     },
     {
       "url": "https://kotaku.com/rss",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Kotaku"
     },
     {
       "url": "https://www.pcgamer.com/feeds.xml",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "PC Gamer"
     },
     {
       "url": "https://www.polygon.com/feed/",
-      "categoryId": "games",
+      "categoryId": "midia",
       "customTitle": "Polygon"
     },
     {
       "url": "https://g1.globo.com/rss/g1/politica/",
       "categoryId": "politics",
-      "customTitle": "G1 Política"
+      "customTitle": "G1 Política",
+      "hideFromAll": true
     },
     {
       "url": "https://midianinja.org/feed/",
@@ -611,17 +641,13 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
     {
       "url": "https://iclnoticias.com.br/feed/",
       "categoryId": "politics",
-      "customTitle": "ICL Notícias"
+      "customTitle": "ICL Notícias",
+      "hideFromAll": true
     },
     {
       "url": "https://9to5google.com/feed/",
       "categoryId": "tech",
       "customTitle": "9to5Google"
-    },
-    {
-      "url": "https://9to5linux.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "9to5Linux"
     },
     {
       "url": "https://9to5mac.com/feed/",
@@ -642,11 +668,6 @@ export const CURATED_LISTS: Record<string, FeedSource[]> = {
       "url": "http://www.cnet.com/rss/news/",
       "categoryId": "tech",
       "customTitle": "CNET"
-    },
-    {
-      "url": "https://www.digitaltrends.com/feed/",
-      "categoryId": "tech",
-      "customTitle": "Digital Trends"
     },
     {
       "url": "https://diolinux.com.br/feed",

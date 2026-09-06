@@ -124,7 +124,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Tecnologia;
 - ID: tech;
 - Cor: #0078D7;
-- Layout: minimal;
+- Layout: bento;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Notícias sobre desenvolvimento, gadgets e o mundo tech.;
@@ -136,7 +136,7 @@ O formato é rigoroso para permitir a sincronização automática.
 - Nome: Design;
 - ID: design;
 - Cor: #663399;
-- Layout: gallery;
+- Layout: split;
 - Pinned: false;
 - Auto-Discovery: true;
 - Descrição: Inspiração visual, UX/UI e tendências de design.;
@@ -145,13 +145,13 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ---
 
-- Nome: Games;
-- ID: games;
+- Nome: Mídia;
+- ID: midia;
 - Cor: #FFDA03;
-- Layout: modern;
+- Layout: immersive;
 - Pinned: false;
 - Auto-Discovery: true;
-- Descrição: Lançamentos, reviews e cultura gamer.;
+- Descrição: Lançamentos, reviews e cultura.;
 
 ---
 
@@ -169,18 +169,6 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ---
 
-- Nome: Podcasts;
-- ID: podcasts;
-- Cor: #FF8C00;
-- Layout: pocketfeeds;
-- Pinned: false;
-- Auto-Discovery: true;
-- Descrição: Seus podcasts preferidos direto no feed.;
-
----
-
----
-
 - Nome: Vídeos;
 - ID: youtube;
 - Cor: #8B0000;
@@ -191,13 +179,25 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ---
 
+---
+
+- Nome: Podcasts;
+- ID: podcasts;
+- Cor: #FF8C00;
+- Layout: pocketfeeds;
+- Pinned: false;
+- Auto-Discovery: true;
+- Descrição: Seus podcasts preferidos direto no feed.;
+
+---
+
 ## Feeds Iniciais
 
 ### design
 
-- B9: <https://www.b9.com.br/feed/>
+- B9: <https://www.b9.com.br/feed/> | Hide-from-All: true
 
-### games
+### midia
 
 - Kotaku: <https://kotaku.com/rss>
 - Jogabilidade: <https://jogabilida.de/feed/>
@@ -205,9 +205,9 @@ O formato é rigoroso para permitir a sincronização automática.
 
 ### politics
 
+- Mídia Ninja: <https://midianinja.org/feed/>
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
-- Mídia Ninja: <https://midianinja.org/feed/>
 
 ### tech
 
@@ -249,9 +249,9 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### design
 
-- B9: <https://www.b9.com.br/feed/>
+- B9: <https://www.b9.com.br/feed/> | Hide-from-All: true
 
-### games
+### midia
 
 - Adrenaline: <https://adrenaline.com.br/feed/>
 - IGN Brasil: <https://br.ign.com/feed.xml>
@@ -266,7 +266,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### tech
 
 - Diolinux: <https://diolinux.com.br/feed>
-- BR Linux: <https://br-linux.org/feed>
 - MacMagazine: <https://macmagazine.com.br/feed/>
 - Meio Bit: <https://meiobit.com/feed/>
 - Tecnoblog: <https://tecnoblog.net/feed/>
@@ -278,7 +277,6 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 - RapaduraCast: <https://anchor.fm/s/f064cfa8/podcast/rss> | Hide-from-All: true
 - MIDCast Política: <https://feeds.simplecast.com/kfPT8_s8> | Hide-from-All: true
 - 99Vidas: <https://anchor.fm/s/f0480b34/podcast/rss> | Hide-from-All: true
-- Tecnocast: <https://anchor.fm/s/1075f6ce0/podcast/rss> | Hide-from-All: true
 
 ### youtube
 
@@ -291,10 +289,14 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### design
 
 - UX Collective: <https://uxdesign.cc/feed>
+- Core77: <https://feeds.feedburner.com/core77/blog> | Hide-from-All: true
+- Desing Milk: <https://design-milk.com/feed/>
+- Desing Boom: <https://www.designboom.com/feed/>
+- The Design Blog: <https://thedsgnblog.com/rss>
 - This is Colossal: <https://www.thisiscolossal.com/feed/>
 - Thedieline: <https://thedieline.com/feed/>
 
-### games
+### midia
 
 - Kotaku: <https://kotaku.com/rss>
 - PC Gamer: <https://www.pcgamer.com/feeds.xml>
@@ -304,10 +306,8 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 - Ars Technica: <https://arstechnica.com/feed/>
 - CNET: <http://www.cnet.com/rss/news/>
-- Digital Trends: <https://www.digitaltrends.com/feed/>
 - ElecTrek: <https://electrek.co/feed/>
 - Engadget: <https://www.engadget.com/rss.xml>
-- OMG! Ubuntu: <https://www.omgubuntu.co.uk/feed>
 - The Decoder: <https://the-decoder.com/feed/>
 - The Next Web: <https://thenextweb.com/feed>
 - The Verge: <https://www.theverge.com/rss/index.xml>
@@ -334,13 +334,18 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 ### design
 
 - UX Collective: <https://uxdesign.cc/feed>
-- B9: <https://www.b9.com.br/feed/>
+- Core77: <https://feeds.feedburner.com/core77/blog> | Hide-from-All: true
+- B9: <https://www.b9.com.br/feed/> | Hide-from-All: true
+- Desing Milk: <https://design-milk.com/feed/>
+- Desing Boom: <https://www.designboom.com/feed/>
+- The Design Blog: <https://thedsgnblog.com/rss>
 - This is Colossal: <https://www.thisiscolossal.com/feed/>
 - Thedieline: <https://thedieline.com/feed/>
 
-### games
+### midia
 
 - Adrenaline: <https://adrenaline.com.br/feed/>
+- Absolute Geeks: <https://www.absolutegeeks.com/feed/>
 - IGN Brasil: <https://br.ign.com/feed.xml>
 - Jogabilidade (Não Games): <https://naogames.jogabilida.de/>
 - Jogabilidade: <https://jogabilida.de/feed/>
@@ -350,21 +355,19 @@ Formato: `## Nome da Lista` seguido pelos feeds agrupados por categoria (igual a
 
 ### politics
 
-- G1 Política: <https://g1.globo.com/rss/g1/politica/>
+- G1 Política: <https://g1.globo.com/rss/g1/politica/> | Hide-from-All: true
 - Mídia Ninja: <https://midianinja.org/feed/>
 - Piauí: <https://piaui.folha.uol.com.br/feed/>
 - The Intercept Brasil: <https://theintercept.com/brasil/feed/>
-- ICL Notícias: <https://iclnoticias.com.br/feed/>
+- ICL Notícias: <https://iclnoticias.com.br/feed/> | Hide-from-All: true
 
 ### tech
 
 - 9to5Google: <https://9to5google.com/feed/>
-- 9to5Linux: <https://9to5linux.com/feed/>
 - 9to5Mac: <https://9to5mac.com/feed/>
 - Ars Technica: <https://arstechnica.com/feed/>
 - BR Linux: <https://br-linux.org/feed>
 - CNET: <http://www.cnet.com/rss/news/>
-- Digital Trends: <https://www.digitaltrends.com/feed/>
 - Diolinux: <https://diolinux.com.br/feed>
 - ElecTrek: <https://electrek.co/feed/>
 - Engadget: <https://www.engadget.com/rss.xml>
