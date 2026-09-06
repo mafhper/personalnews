@@ -112,11 +112,25 @@ jobs:
               printf '%s\n' '</details>'
             } >> "$body_file"
           fi
-          {
-            echo "body<<RELEASE_BODY_EOF"
-            cat "$body_file"
-            echo "RELEASE_BODY_EOF"
-          } >> "$GITHUB_OUTPUT"
+
+      - id: create-release
+        name: resolve or create the release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ref="${{ github.ref_name }}"
+          for i in $(seq 1 24); do
+            if id="$(gh release view "$ref" --json id --jq '.id' 2>/dev/null)"; then
+              echo "release_id=$id" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            gh release create "$ref" --target main --title "Personal News $ref" --notes-file "$RUNNER_TEMP/release-body.md" >/dev/null 2>&1 || true
+            sleep 5
+          done
+          echo "could not resolve or create release $ref" >&2
+          exit 1
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -125,7 +139,8 @@ jobs:
           projectPath: apps/desktop
           tagName: v__VERSION__ # tauri-action will replace this
           releaseName: "Personal News v__VERSION__"
-          releaseBody: ${{ steps.release-body.outputs.body }}
+          releaseId: ${{ steps.create-release.outputs.release_id }}
+
           generateReleaseNotes: false
 
           releaseDraft: false

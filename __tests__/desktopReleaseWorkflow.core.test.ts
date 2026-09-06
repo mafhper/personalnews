@@ -45,9 +45,11 @@ describe("desktop release workflow", () => {
     );
     const releaseConfigPath = join(repoRoot, ".github", "release.yml");
 
-expect(workflow).toContain("releaseBody: ${{ steps.release-body.outputs.body }}");
+expect(workflow).toContain("releaseId: ${{ steps.create-release.outputs.release_id }}");
     expect(workflow).toContain("generateReleaseNotes: false");
     expect(workflow).toContain("id: release-body");
+    expect(workflow).toContain("id: create-release");
+    expect(workflow).not.toContain("releaseBody:");
     expect(workflow).toContain(".github/release-notes/${GITHUB_REF_NAME}.md");
     expect(workflow).toContain("releases/generate-notes");
     expect(workflow).toContain("## O que tem de novo nesta versão");
