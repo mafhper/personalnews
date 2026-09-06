@@ -69,11 +69,19 @@ jobs:
           releaseName: "Personal News v__VERSION__"
           releaseBody: |
             <p align="center">
-              <img src="https://raw.githubusercontent.com/mafhper/personalnews/main/public/release-feed.png" alt="Feed do PersonalNews com navegação por categorias" width="960">
+              <img src="https://raw.githubusercontent.com/mafhper/personalnews/v__VERSION__/public/releases/release-feed-__VERSION__.png" alt="Feed do PersonalNews com navegação por categorias" width="960">
             </p>
 
             PersonalNews reúne seus feeds, podcasts e vídeos em uma experiência de leitura local e personalizável.
 
+            <p align="center">
+              <a href="https://github.com/mafhper/personalnews/releases">Todas as versões</a> ·
+              <a href="https://github.com/mafhper/personalnews/releases/tag/v__VERSION__">Notas de versão</a> ·
+              <a href="https://github.com/mafhper/personalnews/issues">Reportar problema</a>
+            </p>
+
+            Abaixo estão as notas geradas automaticamente com o que mudou nesta versão.
+            
             ## Instalação
 
             | Sistema | Arquivo recomendado | Uso |
