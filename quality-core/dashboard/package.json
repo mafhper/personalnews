@@ -85,7 +85,7 @@
     "postcss": "^8.5.25",
     "tailwindcss": "^4.2.4",
     "terser": "^5.47.1",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.59.3",
     "vite": "8.2.2",
     "vitest": "^4.1.6"
