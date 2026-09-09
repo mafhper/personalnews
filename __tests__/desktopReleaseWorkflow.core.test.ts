@@ -50,13 +50,14 @@ expect(workflow).toContain("releaseId: ${{ steps.create-release.outputs.release_
     expect(workflow).toContain("id: release-body");
     expect(workflow).toContain("id: create-release");
     expect(workflow).not.toContain("releaseBody:");
-    expect(workflow).toContain(".github/release-notes/${GITHUB_REF_NAME}.md");
+    expect(workflow).toContain(".github/release-notes/${TAG}.md");
     expect(workflow).toContain("releases/generate-notes");
     expect(workflow).toContain("## O que tem de novo nesta versão");
     expect(workflow).toContain('<p align="center">');
     expect(workflow).toContain(
-      "https://raw.githubusercontent.com/mafhper/personalnews/v__VERSION__/public/releases/release-feed-__VERSION__.png",
+      "https://raw.githubusercontent.com/${REPOSITORY}/${TAG}/${image_path}",
     );
+    expect(workflow).toContain("docs/images/releases/release.webp");
     expect(workflow).not.toContain(
       "https://raw.githubusercontent.com/mafhper/personalnews/main/public/release-feed.png",
     );
@@ -75,5 +76,41 @@ expect(workflow).toContain("releaseId: ${{ steps.create-release.outputs.release_
     expect(releaseConfig).toContain("title: Outras mudanças");
     expect(releaseConfig).toContain("- dependencies");
     expect(releaseConfig).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+
+  it("validates the version tag against package.json, tauri.conf.json, and Cargo.toml", () => {
+    const workflow = readFileSync(
+      join(repoRoot, ".github", "workflows", "release-desktop.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("id: version");
+    expect(workflow).toContain("node scripts/release-version.mjs");
+    expect(workflow).toContain("Expected format: vX.Y.Z");
+    expect(workflow).toContain("does not match tag core version");
+  });
+
+  it("requires a single release.webp updated when the major.minor line changes", () => {
+    const workflow = readFileSync(
+      join(repoRoot, ".github", "workflows", "release-desktop.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("id: release-image");
+    expect(workflow).toContain("git diff --quiet \"$prev_tag\"..\"$TAG\" -- \"$image_path\"");
+    expect(workflow).toContain("was not updated for the new major.minor line");
+    expect(workflow).toContain("Same major.minor line; reusing the image (patch release)");
+  });
+
+  it("supports workflow_dispatch with an explicit version tag and idempotent re-release", () => {
+    const workflow = readFileSync(
+      join(repoRoot, ".github", "workflows", "release-desktop.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("inputs:");
+    expect(workflow).toContain("Existing version tag to release");
+    expect(workflow).toContain("ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}");
+    expect(workflow).toContain("gh release edit \"$ref\"");
   });
 });
