@@ -30,6 +30,8 @@
     "build:members": "bun run build:dashboard",
     "build": "bun run build:app && bun run build:members",
     "build:all": "bun run build",
+    "release:check": "node scripts/release-version.mjs",
+    "test:release-version": "bun test scripts/release-version.test.mjs",
     "install:dashboard": "cd quality-core/dashboard && bun install",
     "install:members": "bun run install:dashboard",
     "install:all": "bun install",
