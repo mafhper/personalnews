@@ -190,11 +190,6 @@ jobs:
             printf '%s\n' ''
             printf '%s\n' '---'
           } > "$body_file"
-          {
-            echo "body<<RELEASE_BODY_EOF"
-            cat "$body_file"
-            echo "RELEASE_BODY_EOF"
-          } >> "$GITHUB_OUTPUT"
           generated=""
           for attempt in 1 2 3; do
             if generated="$(gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name="$TAG" -f target_commitish="main" --jq '.body' 2> "$RUNNER_TEMP/generate-notes.err")"; then
@@ -214,6 +209,11 @@ jobs:
               printf '%s\n' '</details>'
             } >> "$body_file"
           fi
+          {
+            echo "body<<RELEASE_BODY_EOF"
+            cat "$body_file"
+            echo "RELEASE_BODY_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - id: create-release
         name: resolve or create the release
