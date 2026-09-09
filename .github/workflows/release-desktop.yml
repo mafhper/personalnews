@@ -190,6 +190,11 @@ jobs:
             printf '%s\n' ''
             printf '%s\n' '---'
           } > "$body_file"
+          {
+            echo "body<<RELEASE_BODY_EOF"
+            cat "$body_file"
+            echo "RELEASE_BODY_EOF"
+          } >> "$GITHUB_OUTPUT"
           generated="$(gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name="$TAG" -f target_commitish="main" --jq '.body' 2>/dev/null || true)"
           if [ -n "$generated" ]; then
             {
@@ -231,7 +236,7 @@ jobs:
           tagName: v__VERSION__ # tauri-action will replace this
           releaseName: "Personal News v__VERSION__"
           releaseId: ${{ steps.create-release.outputs.release_id }}
-
+          releaseBody: ${{ steps.release-body.outputs.body }}
           generateReleaseNotes: false
 
           releaseDraft: false
