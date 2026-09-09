@@ -6,9 +6,6 @@ on:
       - "package.json"
       - "package-lock.json"
       - "bun.lock"
-      - "quality-core/dashboard/package.json"
-      - "quality-core/dashboard/package-lock.json"
-      - "quality-core/dashboard/bun.lockb"
       - ".github/dependabot.yml"
       - ".github/workflows/**"
 
@@ -32,7 +29,6 @@ jobs:
           cache: "npm"
           cache-dependency-path: |
             package-lock.json
-            quality-core/dashboard/package-lock.json
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -48,24 +44,8 @@ jobs:
       - name: Audit root known vulnerabilities
         run: npm audit --audit-level=high
 
-      - name: Install dashboard npm dependencies without lifecycle scripts
-        run: npm ci --ignore-scripts
-        working-directory: quality-core/dashboard
-
-      - name: Verify dashboard npm registry signatures
-        run: npm audit signatures
-        working-directory: quality-core/dashboard
-
-      - name: Audit dashboard known vulnerabilities
-        run: npm audit --audit-level=high
-        working-directory: quality-core/dashboard
-
       - name: Check root Bun lockfile
         run: bun install --frozen-lockfile --ignore-scripts
-
-      - name: Check dashboard Bun lockfile
-        run: bun install --frozen-lockfile --ignore-scripts
-        working-directory: quality-core/dashboard
 
       - name: Dependency Review
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
