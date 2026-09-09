@@ -195,7 +195,14 @@ jobs:
             cat "$body_file"
             echo "RELEASE_BODY_EOF"
           } >> "$GITHUB_OUTPUT"
-          generated="$(gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name="$TAG" -f target_commitish="main" --jq '.body' 2>/dev/null || true)"
+          generated=""
+          for attempt in 1 2 3; do
+            if generated="$(gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name="$TAG" -f target_commitish="main" --jq '.body' 2> "$RUNNER_TEMP/generate-notes.err")"; then
+              break
+            fi
+            echo "::warning::generate-notes attempt $attempt failed: $(cat "$RUNNER_TEMP/generate-notes.err" | head -n 1)"
+            sleep 3
+          done
           if [ -n "$generated" ]; then
             {
               printf '%s\n' ''
