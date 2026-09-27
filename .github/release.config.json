@@ -1,0 +1,49 @@
+{
+  "release": {
+    "title": "Personal News",
+    "tagline": "Reúne seus feeds, podcasts e vídeos em uma experiência de leitura local e personalizável.",
+    "language": "pt-BR",
+    "image": {
+      "path": "docs/images/releases/release.webp",
+      "required": true,
+      "granularity": "minor",
+      "upload": true,
+      "title_in_body": false
+    },
+    "notes": {
+      "granularity": "minor"
+    },
+    "sections": {
+      "usage": "## Instalação\n\n| Sistema | Arquivo recomendado | Uso |\n| --- | --- | --- |\n| Windows | `PersonalNews_*_x64-setup.exe` | Instalação comum, sem exigir privilégios de administrador |\n| Windows | `PersonalNews_*_x64_pt-BR.msi` | Ambientes gerenciados em português |\n| Linux | `PersonalNews_*_amd64.deb` | Ubuntu, Debian e derivados |\n| macOS | `PersonalNews_*_aarch64.dmg` | Macs com Apple Silicon |",
+      "extra": "## Outros detalhes de instalação\n\n- O instalador EXE é a opção recomendada para a maioria das pessoas no Windows.\n- O MSI em inglês (`PersonalNews_*_x64_en-US.msi`) também está disponível entre os arquivos da versão.\n- No macOS, arraste o PersonalNews para a pasta Aplicativos."
+    }
+  },
+  "build": {
+    "package_manager": "bun",
+    "node": "20",
+    "bun": "1.x",
+    "rust": "stable",
+    "apt": [
+      "libwebkit2gtk-4.1-dev",
+      "libayatana-appindicator3-dev",
+      "librsvg2-dev",
+      "patchelf"
+    ],
+    "gates": [
+      "bun run desktop:installer-assets:check"
+    ],
+    "pre": [
+      "node scripts/prepare-backend.mjs"
+    ]
+  },
+  "desktop": {
+    "enabled": true,
+    "project_path": "apps/desktop"
+  },
+  "versions": {
+    "files": [
+      { "path": "apps/desktop/src-tauri/tauri.conf.json", "format": "json", "field": "version" },
+      { "path": "apps/desktop/src-tauri/Cargo.toml", "format": "toml", "field": "package.version" }
+    ]
+  }
+}
