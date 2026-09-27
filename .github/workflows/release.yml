@@ -1,0 +1,42 @@
+# GitHub Release e instaladores desktop são criados apenas quando uma tag de versão
+# é empurrada (ex.: git tag -a v1.19.3 -m "Release v1.19.3" && git push origin v1.19.3).
+# Pushes em main atualizam o GitHub Pages (deploy.yml) mas não criam Release.
+#
+# Este arquivo é só o caller: dispara, declara a matrix e chama o release-core.
+# Toolchain, arte, notas, seções e as fontes de versão vivem em
+# .github/release.config.json.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing version tag to release (e.g. v1.19.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: mafhper/release-core/.github/workflows/release.yml@v1.2.5
+    with:
+      # `args` é repassado direto ao tauri-action; o campo precisa ser a string
+      # inteira, não um "bundles" separado.
+      matrix: |-
+        [
+          { "os": "windows-latest", "args": "--bundles nsis,msi --verbose" },
+          { "os": "ubuntu-22.04",   "args": "--bundles deb --verbose" },
+          { "os": "macos-latest",   "args": "--bundles dmg --verbose" }
+        ]
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
