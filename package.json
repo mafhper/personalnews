@@ -195,10 +195,11 @@
   },
   "overrides": {
     "basic-ftp": "5.3.1",
-    "brace-expansion": "5.0.9",
+    "brace-expansion": "5.0.12",
     "nanoid": "3.3.18",
     "picomatch": "4.0.5",
     "shell-quote": "1.10.0",
+    "undici": "8.11.2",
     "ws": "8.21.0",
     "yaml": "1.10.3"
   }
