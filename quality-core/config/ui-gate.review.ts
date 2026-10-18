@@ -1,5 +1,10 @@
 import type { UiGateReview } from "../ui-gate";
-import { DEV_PORT, PREVIEW_PORT } from "../../ports.mjs";
+import { DEV_PORT } from "../../ports.mjs";
+
+// 4175 e a porta do promo (`scripts/serve-promo.cjs`, default do `bun run
+// promo`), nao do vite preview. As evidencias com base path `/personalnews/`
+// sao servidas por ele; as sem base path (o app) usam `DEV_PORT`.
+const PROMO_PORT = 4175;
 
 export const uiGateReviews: UiGateReview[] = [
   {
@@ -14,7 +19,7 @@ export const uiGateReviews: UiGateReview[] = [
     ],
     evidence: [
       `http://localhost:${DEV_PORT}/#home`,
-      `http://localhost:${PREVIEW_PORT}/personalnews/#home`,
+      `http://localhost:${PROMO_PORT}/personalnews/#home`,
     ],
     scores: {
       purpose: 9.2,
@@ -37,7 +42,7 @@ export const uiGateReviews: UiGateReview[] = [
     ],
     evidence: [
       `http://localhost:${DEV_PORT}/#experience`,
-      `http://localhost:${PREVIEW_PORT}/personalnews/#experience`,
+      `http://localhost:${PROMO_PORT}/personalnews/#experience`,
     ],
     scores: {
       purpose: 9.0,
@@ -60,7 +65,7 @@ export const uiGateReviews: UiGateReview[] = [
     ],
     evidence: [
       `http://localhost:${DEV_PORT}/#project`,
-      `http://localhost:${PREVIEW_PORT}/personalnews/#project`,
+      `http://localhost:${PROMO_PORT}/personalnews/#project`,
     ],
     scores: {
       purpose: 9.1,
@@ -83,7 +88,7 @@ export const uiGateReviews: UiGateReview[] = [
     ],
     evidence: [
       `http://localhost:${DEV_PORT}/#faq`,
-      `http://localhost:${PREVIEW_PORT}/personalnews/#faq`,
+      `http://localhost:${PROMO_PORT}/personalnews/#faq`,
     ],
     scores: {
       purpose: 9.0,

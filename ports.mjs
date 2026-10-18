@@ -14,7 +14,7 @@
 // defendia um cenario que nao acontece, e pagava por isso: `5290` (a porta
 // nomeada) ficava FORA dela, entao o proprio app era rejeitado pelo backend.
 //
-// Faixa e permissiva e_barulhenta; conjunto explicito e mais curto de auditar.
+// Faixa e permissiva e barulhenta; conjunto explicito e mais curto de auditar.
 // Este e o conjunto explicito. `tauri://localhost` continua na lista porque e a
 // origem real do app desktop e nao tem porta nenhuma.
 //
@@ -35,6 +35,10 @@ export const BACKEND_PORT = 3001;
  * Origens que o backend aceita em dev. `httpSecurity.ts` importa estas listas
  * direto daqui (o backend roda em Bun, que resolve `.mjs`); cobre o allowlist
  * o teste `__tests__/httpSecurity.ports.core.test.ts`.
+ *
+ * O backend NAO tem origem de pagina: ele so serve JSON/403 em 3001, entao
+ * nao existe lista `BACKEND_ORIGINS` — aceitar 3001-3011 daria CORS a qualquer
+ * app local que sirva pagina por perto (achado do review automatico da #312).
  */
 export const DEV_ORIGINS = [
   `http://localhost:${DEV_PORT}`,
@@ -43,10 +47,6 @@ export const DEV_ORIGINS = [
 export const PREVIEW_ORIGINS = [
   `http://localhost:${PREVIEW_PORT}`,
   `http://127.0.0.1:${PREVIEW_PORT}`,
-];
-export const BACKEND_ORIGINS = [
-  `http://localhost:${BACKEND_PORT}`,
-  `http://127.0.0.1:${BACKEND_PORT}`,
 ];
 /** Tauri nao tem porta: a origem vem do esquema do webview. */
 export const TAURI_ORIGINS = [
