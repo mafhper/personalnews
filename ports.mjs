@@ -14,7 +14,7 @@
 // defendia um cenario que nao acontece, e pagava por isso: `5290` (a porta
 // nomeada) ficava FORA dela, entao o proprio app era rejeitado pelo backend.
 //
-// Faixa e permissiva e_barulhenta; conjunto explicito e mais curto de auditar.
+// Faixa e permissiva e barulhenta; conjunto explicito e mais curto de auditar.
 // Este e o conjunto explicito. `tauri://localhost` continua na lista porque e a
 // origem real do app desktop e nao tem porta nenhuma.
 //
