@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { assertPortFree } from "./scripts/sonda-porta";
 
 // https://vitejs.dev/config/
 const isWindows = process.platform === "win32";
@@ -9,12 +10,32 @@ const minifyMode =
 const simpleBundle =
   process.env.DASHBOARD_SIMPLE_BUNDLE === "true" || isWindows;
 
-export default defineConfig(({ mode }) => ({
+// 5282 — o app principal usa 5290 e o backend 3001. Este painel e uma terceira
+// superficie, entao tem numero proprio. Antes era 8080, que nao disputava com a
+// frota, mas tambem nao era nomeado e colidia com `mark-lee/apps/site`.
+const DEV_PORT = 5282;
+
+export default defineConfig(async ({ mode, command }) => {
+  // `host: '::'` e IPv6-only no Windows: `127.0.0.1:8080` da ECONNRESET e
+  // `[::1]:8080` responde 200 (medido em 2026-10-01,
+  // `.dev/scripts/medir-host-alcance.mjs`). Como `::` aceita o bind mesmo com
+  // `127.0.0.1:8080` ocupado, `strictPort` sozinho nunca dispara — e `push_`,
+  // `mark-lee/apps/site` e este painel disputam a MESMA 8080.
+  //
+  // Este painel nao tem `devUrl` fixo, entao realocar seria possivel, mas o
+  // dashboard e aberto por script em varios lugares. Verificar e abortar deixa
+  // o conflito visivel em vez de servir o painel errado em 8081.
+  if (command === "serve") {
+    await assertPortFree(DEV_PORT);
+  }
+
+  return {
   root: __dirname,
   base: "/",
   server: {
     host: "::",
-    port: 8080,
+    port: DEV_PORT,
+    strictPort: true,
     hmr: {
       overlay: false,
     },
@@ -122,4 +143,5 @@ export default defineConfig(({ mode }) => ({
       polyfill: true,
     },
   },
-}));
+};
+});

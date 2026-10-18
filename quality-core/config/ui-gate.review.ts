@@ -1,4 +1,5 @@
 import type { UiGateReview } from "../ui-gate";
+import { DEV_PORT, PREVIEW_PORT } from "../../ports.mjs";
 
 export const uiGateReviews: UiGateReview[] = [
   {
@@ -12,8 +13,8 @@ export const uiGateReviews: UiGateReview[] = [
       "Nao ha CTA duplicado no mesmo viewport.",
     ],
     evidence: [
-      "http://localhost:5173/#home",
-      "http://localhost:4175/personalnews/#home",
+      `http://localhost:${DEV_PORT}/#home`,
+      `http://localhost:${PREVIEW_PORT}/personalnews/#home`,
     ],
     scores: {
       purpose: 9.2,
@@ -35,8 +36,8 @@ export const uiGateReviews: UiGateReview[] = [
       "Customizacao e onboarding aparecem em secoes separadas, sem colunas competindo.",
     ],
     evidence: [
-      "http://localhost:5173/#experience",
-      "http://localhost:4175/personalnews/#experience",
+      `http://localhost:${DEV_PORT}/#experience`,
+      `http://localhost:${PREVIEW_PORT}/personalnews/#experience`,
     ],
     scores: {
       purpose: 9.0,
@@ -58,8 +59,8 @@ export const uiGateReviews: UiGateReview[] = [
       "O sobre deixa claro que mafhper e o desenvolvedor do projeto.",
     ],
     evidence: [
-      "http://localhost:5173/#project",
-      "http://localhost:4175/personalnews/#project",
+      `http://localhost:${DEV_PORT}/#project`,
+      `http://localhost:${PREVIEW_PORT}/personalnews/#project`,
     ],
     scores: {
       purpose: 9.1,
@@ -81,8 +82,8 @@ export const uiGateReviews: UiGateReview[] = [
       "A estrutura reduz atrito no primeiro uso sem virar documentacao tecnica pesada.",
     ],
     evidence: [
-      "http://localhost:5173/#faq",
-      "http://localhost:4175/personalnews/#faq",
+      `http://localhost:${DEV_PORT}/#faq`,
+      `http://localhost:${PREVIEW_PORT}/personalnews/#faq`,
     ],
     scores: {
       purpose: 9.0,
@@ -103,7 +104,7 @@ export const uiGateReviews: UiGateReview[] = [
       "Layout validado como referencia principal do feed.",
       "Contraste e ritmo vertical alinhados ao contrato atual do feed.",
     ],
-    evidence: ["http://localhost:5173/#feed"],
+    evidence: [`http://localhost:${DEV_PORT}/#feed`],
     scores: {
       purpose: 9.0,
       typography: 9.0,
@@ -122,7 +123,7 @@ export const uiGateReviews: UiGateReview[] = [
     notes: [
       "Grid refinado para manter espacamento do header ate a pagina final.",
     ],
-    evidence: ["http://localhost:5173/#feed"],
+    evidence: [`http://localhost:${DEV_PORT}/#feed`],
     scores: {
       purpose: 9.0,
       typography: 9.0,
@@ -141,7 +142,7 @@ export const uiGateReviews: UiGateReview[] = [
     notes: [
       "Lead principal e coluna de apoio seguem hierarquia clara.",
     ],
-    evidence: ["http://localhost:5173/#feed"],
+    evidence: [`http://localhost:${DEV_PORT}/#feed`],
     scores: {
       purpose: 9.0,
       typography: 9.0,
@@ -160,7 +161,7 @@ export const uiGateReviews: UiGateReview[] = [
     notes: [
       "Magazine prioriza hierarquia editorial com contraste controlado.",
     ],
-    evidence: ["http://localhost:5173/#feed"],
+    evidence: [`http://localhost:${DEV_PORT}/#feed`],
     scores: {
       purpose: 9.0,
       typography: 9.0,
@@ -179,7 +180,7 @@ export const uiGateReviews: UiGateReview[] = [
     notes: [
       "Layout minimal preserva metadata e titulos sem overlays ruidosos.",
     ],
-    evidence: ["http://localhost:5173/#feed"],
+    evidence: [`http://localhost:${DEV_PORT}/#feed`],
     scores: {
       purpose: 9.0,
       typography: 9.0,
@@ -198,7 +199,7 @@ export const uiGateReviews: UiGateReview[] = [
     notes: [
       "Bento ajustado com chip intrinseco e horario na mesma linha.",
     ],
-    evidence: ["http://localhost:5173/#feed"],
+    evidence: [`http://localhost:${DEV_PORT}/#feed`],
     scores: {
       purpose: 9.0,
       typography: 9.0,

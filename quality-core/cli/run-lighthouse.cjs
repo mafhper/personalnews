@@ -242,7 +242,7 @@ async function resolveTargetUrl(baseUrl, basePath, isSilent) {
 
 // Configuracao
 const CONFIG = {
-    port: 5173,
+    // A porta e a nomeada de `ports.mjs` (DEV_PORT), resolvida em `main()`.
     host: serverHost,
     outputDir: path.resolve(__dirname, '../../performance-reports/lighthouse'),
     categories: ['performance', 'accessibility', 'best-practices', 'seo'],
@@ -852,11 +852,13 @@ async function main() {
     const projectRoot = path.resolve(__dirname, '../../');
     const basePath = resolveBasePath(projectRoot);
 
-    const port = await findAvailablePort(CONFIG.port, 5);
+    // Fonte unica: a porta nomeada de `ports.mjs` (antes: 5173 literal).
+    const { DEV_PORT } = await import('../../ports.mjs');
+    const port = await findAvailablePort(DEV_PORT, 5);
     const baseUrl = `http://${CONFIG.host}:${port}`;
 
-    if (port !== CONFIG.port) {
-        log(`Porta ${CONFIG.port} em uso. Usando ${port}.`, 'warn');
+    if (port !== DEV_PORT) {
+        log(`Porta ${DEV_PORT} em uso. Usando ${port}.`, 'warn');
     }
 
     const serverLogs = {
