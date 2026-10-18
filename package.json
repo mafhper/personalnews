@@ -190,7 +190,8 @@
     "brace-expansion": "5.0.9",
     "nanoid": "3.3.18",
     "picomatch": "4.0.5",
-    "shell-quote": "1.10.0",
+    "shell-quote": "1.12.0",
+    "source-map-js": "1.2.2",
     "yaml": "1.10.3"
   },
   "overrides": {
@@ -198,7 +199,8 @@
     "brace-expansion": "5.0.12",
     "nanoid": "3.3.18",
     "picomatch": "4.0.5",
-    "shell-quote": "1.10.0",
+    "shell-quote": "1.12.0",
+    "source-map-js": "1.2.2",
     "undici": "8.11.2",
     "ws": "8.21.0",
     "yaml": "1.10.3"

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 // Local dev-only RSS proxy middleware (attached below in plugins)
 import rssProxyMiddleware from './quality-core/scripts/rss-proxy-server.mjs';
+import { DEV_PORT, PREVIEW_PORT } from './ports.mjs';
 
 const productionFrameSources = [
   'https://www.youtube.com',
@@ -40,8 +41,11 @@ const resolvePort = (value: string | undefined, fallback: number) => {
 };
 
 export default defineConfig(({ command, mode }) => {
-  const devPort = resolvePort(process.env.DEV_PORT ?? process.env.PORT, 5173);
-  const previewPort = resolvePort(process.env.PREVIEW_PORT ?? process.env.PORT, 4175);
+  // Fonte unica: `ports.mjs`. Antes o numero vivia aqui, no playwright e no
+  // allowlist do backend, e o Playwright ainda passava `--port` na linha de
+  // comando — que prevalece sobre este config.
+  const devPort = resolvePort(process.env.DEV_PORT ?? process.env.PORT, DEV_PORT);
+  const previewPort = resolvePort(process.env.PREVIEW_PORT ?? process.env.PORT, PREVIEW_PORT);
   const usePublishedBase = command === 'build' || mode === 'production';
   const isTauri = process.env.VITE_TAURI === 'true';
 
