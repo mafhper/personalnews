@@ -18,10 +18,14 @@ const mode = modeArg === "preview" ? "preview" : "dev";
 const startViewArg = (positionalArgs[1] || "").toLowerCase();
 const startView = startViewArg === "home" ? "home" : "feed";
 const BACKEND_HOST = "127.0.0.1";
-const BACKEND_PREFERRED_PORT = 3001;
-const BACKEND_MAX_PORT = 3015;
-const FRONTEND_PREFERRED_PORT = 5173;
-const FRONTEND_MAX_PORT = 5190;
+// Fonte unica: `ports.mjs`. Antes o numero vivia aqui, no vite.config, no
+// playwright e no allowlist do backend, e o Playwright ainda passava `--port`
+// na linha de comando — que prevalece sobre o config.
+const { DEV_PORT: FRONTEND_PREFERRED_PORT, BACKEND_PORT: BACKEND_PREFERRED_PORT } = await import("../ports.mjs");
+// A varredura sobe de 10 em 10: com passo 1, o fallback do Vite cairia na porta
+// do vizinho em vez de ficar visivel.
+const BACKEND_MAX_PORT = BACKEND_PREFERRED_PORT + 14;
+const FRONTEND_MAX_PORT = FRONTEND_PREFERRED_PORT + 10;
 const ALLOW_BACKEND_REUSE = process.env.LOCAL_STACK_REUSE_BACKEND !== "false";
 const repoRoot = process.cwd();
 

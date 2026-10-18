@@ -53,7 +53,7 @@ try {
     Start-Process $psExe -ArgumentList "-NoProfile", "-NoExit", "-Command", "Write-Host '--- QUALITY CORE DASHBOARD ---' -ForegroundColor Blue; bun run dashboard"
 
     Write-Host "`n✅ Sistema pronto! Terminais abertos separadamente." -ForegroundColor Green
-    Write-Host "🔗 App: http://localhost:5173"
+    Write-Host "🔗 App: http://localhost:5290"
     Write-Host "🔗 Dashboard: http://localhost:3334`n"
 
 } catch {

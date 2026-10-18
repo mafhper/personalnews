@@ -1,3 +1,5 @@
+import { DEV_PORT } from '../ports.mjs';
+
 /**
  * Environment Detection and Configuration
  *
@@ -27,11 +29,15 @@ export function detectEnvironment(): EnvironmentConfig {
   const port = typeof window !== "undefined" ? window.location.port : "";
 
   // Check if running in development
+  // A porta nomeada (DEV_PORT) entra na lista. Antes eram 5173 e 3000 — o
+  // default do Vite e um numero solto; nenhum dos dois e o deste projeto.
+  // `hostname === "localhost"` ja cobre o caso comum, entao esta lista e uma
+  // segunda rede de seguranca, nao a unica.
   const isDevelopment =
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
     hostname.startsWith("192.168.") ||
-    port === "5173" ||
+    port === String(DEV_PORT) ||
     port === "3000" ||
     process.env.NODE_ENV === "development";
 

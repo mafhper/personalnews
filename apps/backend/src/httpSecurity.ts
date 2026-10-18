@@ -1,23 +1,33 @@
 import { BACKEND_AUTH_TOKEN_HEADER } from "../../../shared/contracts/backend";
+import {
+  BACKEND_ORIGINS,
+  BACKEND_PORT,
+  DEV_ORIGINS,
+  DEV_PORT,
+  PREVIEW_ORIGINS,
+  PREVIEW_PORT,
+  TAURI_ORIGINS,
+} from "../../../ports.mjs";
 
-const DEFAULT_ALLOWED_ORIGINS = new Set([
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:4175",
-  "http://127.0.0.1:4175",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://tauri.localhost",
-  "https://tauri.localhost",
-  "tauri://localhost",
+// Conjunto EXPLICITO, e nao faixa.
+//
+// Antes era `5173-5190` e `4175-4190`, para tolerar o incremento do Vite — mas
+// este projeto roda `strictPort: true`, entao a porta NUNCA incrementa. A faixa
+// defendia um cenario inexistente e cobrava por isso: a porta nomeada (5290)
+// ficava fora dela e o proprio app era rejeitado pelo backend.
+//
+// A lista abaixo vem de `ports.mjs`, que e a fonte unica — este arquivo nao
+// repete os numeros. O teste `__tests__/httpSecurity.ports.core.test.ts` cobre
+// o allowlist (porta nomeada aceita, 5173 recusado, env como acrescimo).
+const DEFAULT_ALLOWED_ORIGINS = new Set<string>([
+  ...DEV_ORIGINS,
+  ...PREVIEW_ORIGINS,
+  ...BACKEND_ORIGINS,
+  ...TAURI_ORIGINS,
 ]);
 
 const CORS_METHODS = "GET,POST,PUT,OPTIONS";
 const CORS_HEADERS = `content-type,accept,${BACKEND_AUTH_TOKEN_HEADER}`;
-const LOCAL_DEV_PORT_START = 5173;
-const LOCAL_DEV_PORT_END = 5190;
-const LOCAL_PREVIEW_PORT_START = 4175;
-const LOCAL_PREVIEW_PORT_END = 4190;
 
 function configuredAllowedOrigins(): Set<string> {
   const configured = process.env.BACKEND_ALLOWED_ORIGINS;
@@ -35,18 +45,30 @@ export function isAllowedBackendOrigin(origin: string | null): boolean {
   if (!origin) return true;
   if (configuredAllowedOrigins().has(origin)) return true;
 
+  // `run-local-stack.mjs` SOBE a porta quando a preferida esta ocupada
+  // (5290 → 5291, 4290 → 4291). Por isso a faixa curta em torno de cada porta
+  // nomeada continua aceita — o `npm run dev:local` depende disso, e o teste
+  // `backendSecurity.core.test.ts > allows loopback dev origins on fallback
+  // local stack ports` cobre exatamente esse caso.
+  //
+  // A faixa e CURTA e ANCORADA na porta nomeada (nao 5173-5190 inteiro), entao
+  // continua recusando origem de outra porta. E a porta do Vite, 5173, nao esta
+  // mais em nenhuma faixa daqui.
   try {
     const parsed = new URL(origin);
     const port = Number.parseInt(parsed.port, 10);
     const isLoopback =
       parsed.protocol === "http:" &&
       (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1");
-    const isDevPort =
-      port >= LOCAL_DEV_PORT_START && port <= LOCAL_DEV_PORT_END;
-    const isPreviewPort =
-      port >= LOCAL_PREVIEW_PORT_START && port <= LOCAL_PREVIEW_PORT_END;
+    const isNearNamedPort = (nomeada: number) =>
+      port >= nomeada && port <= nomeada + 10;
 
-    return isLoopback && (isDevPort || isPreviewPort);
+    return (
+      isLoopback &&
+      (isNearNamedPort(DEV_PORT) ||
+        isNearNamedPort(PREVIEW_PORT) ||
+        isNearNamedPort(BACKEND_PORT))
+    );
   } catch {
     return false;
   }

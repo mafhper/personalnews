@@ -1,85 +1,96 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Build outputs
-build/
-*.local
-dist/
-
-# Agent & AI Configuration
+# Workspace privado
+.dev/
+_dev/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+QWEN.md
+KIMI.md
+.codex/
 .agents/
+.claude/
+.claude-code/
+.cursor/
 .gemini/
 .gemini-clipboard/
-GEMINI.md
-AGENTS.md
+.kimi/
+.qwen/
+.roo/
+.windsurf/
 
-# Development & Temporary
-_dev
-.dev
-tmp/
-temp/
-output/
-.bun/
+# Sistema operacional
+desktop.ini
+Thumbs.db
+ehthumbs.db
+.DS_Store
+*.lnk
 
-# Logs & Reports
+# Dependencias
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+*.local
+
+# Temporarios
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# Logs
 logs/
 *.log
+*.out
+*.err
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-performance-reports/*
-coverage/
+
+# Ambiente
+.env
+.env.*
+!*.example
+
+# Editores
+.vscode/
+!/.vscode/
+/.vscode/*
+!/.vscode/extensions.json
+.idea/
+.cache/
+*.sw?
+*.sublime-project
+*.sublime-workspace
+.pnp
+.pnp.js
+.bun/
+tmp/
+temp/
+output/
+performance-reports/
 playwright-report/
 test-results/
 __tests_unused/
 temp-vitest-report.json
-
-# Editor & IDE
-.vscode/
-.idea/
-.ds_store
-*.swp
-*.swo
-*.tgz
-
-# OS
-.DS_Store
-Thumbs.db
-ehthumbs.db
-
-# Cache
 .eslintcache
-.cache
 .parcel-cache
 *.db
-
-# Rust / Tauri
 **/target/
-**/node_modules/
-
-# Stash / backup artifacts (do not commit)
 stash_scripts.json
 stash_summary.txt
-
-# Temporary Fix Scripts & Backups
+*.tgz
 **/*.exe
 **/*.msi
 **/*.deb
 **/*.app
 **/*.dmg
-
-# WSL/Windows artifacts (from lighthouse/chrome)
-C:*
-google-chrome-stable_current_amd64.deb
 **/*.timestamp-*.mjs
+

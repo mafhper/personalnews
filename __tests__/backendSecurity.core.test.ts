@@ -10,6 +10,7 @@ import {
   validateTargetFeedUrl,
 } from "../apps/backend/src/security";
 import { BACKEND_AUTH_TOKEN_HEADER } from "../shared/contracts/backend";
+import { DEV_PORT, PREVIEW_PORT } from "../ports.mjs";
 import { allowConsoleWarn } from "../src/test-console";
 
 describe("backend security controls", () => {
@@ -125,9 +126,13 @@ describe("backend security controls", () => {
   });
 
   it("rejects untrusted browser origins and reflects only trusted CORS origins", () => {
+    // A origem confiavel vem de `ports.mjs`, nao escrita a mao: a porta mudou
+    // de 5173 para 5290 e um literal aqui teria continued testando a porta
+    // antiga (que o allowlist recusa — e o teste falharia, por enquanto).
+    const trusted = `http://localhost:${DEV_PORT}`;
     const allowedRequest = new Request("http://127.0.0.1:3001/api/v1/settings", {
       method: "OPTIONS",
-      headers: { origin: "http://localhost:5173" },
+      headers: { origin: trusted },
     });
     const blockedRequest = new Request("http://127.0.0.1:3001/api/v1/settings", {
       method: "OPTIONS",
@@ -136,40 +141,44 @@ describe("backend security controls", () => {
 
     expect(preflightResponse(allowedRequest).status).toBe(204);
     expect(buildJsonHeaders(allowedRequest)).toMatchObject({
-      "access-control-allow-origin": "http://localhost:5173",
+      "access-control-allow-origin": trusted,
     });
     expect(preflightResponse(blockedRequest).status).toBe(403);
     expect(validateBackendRequest(blockedRequest)?.status).toBe(403);
   });
 
   it("allows loopback dev origins on fallback local stack ports", () => {
+    // `run-local-stack.mjs` sobe a porta quando a preferida esta ocupada; o
+    // backend tem de aceitar o vizinho imediato (5290 → 5291). Fora dessa
+    // janela curta, recusa.
     const devFallbackRequest = new Request("http://127.0.0.1:3001/health", {
-      headers: { origin: "http://localhost:5174" },
+      headers: { origin: `http://localhost:${DEV_PORT + 1}` },
     });
     const previewFallbackRequest = new Request("http://127.0.0.1:3001/health", {
-      headers: { origin: "http://127.0.0.1:4176" },
+      headers: { origin: `http://127.0.0.1:${PREVIEW_PORT + 1}` },
     });
     const outOfRangeRequest = new Request("http://127.0.0.1:3001/health", {
-      headers: { origin: "http://localhost:5191" },
+      headers: { origin: "http://127.0.0.1:5350" },
     });
 
     expect(buildJsonHeaders(devFallbackRequest)).toMatchObject({
-      "access-control-allow-origin": "http://localhost:5174",
+      "access-control-allow-origin": `http://localhost:${DEV_PORT + 1}`,
     });
     expect(buildJsonHeaders(previewFallbackRequest)).toMatchObject({
-      "access-control-allow-origin": "http://127.0.0.1:4176",
+      "access-control-allow-origin": `http://127.0.0.1:${PREVIEW_PORT + 1}`,
     });
     expect(validateBackendRequest(outOfRangeRequest)?.status).toBe(403);
   });
 
   it("requires the backend token when BACKEND_AUTH_TOKEN is configured", () => {
     vi.stubEnv("BACKEND_AUTH_TOKEN", "1234567890abcdef1234567890abcdef");
+    const trusted = `http://localhost:${DEV_PORT}`;
     const protectedRequest = new Request("http://127.0.0.1:3001/api/v1/settings", {
-      headers: { origin: "http://localhost:5173" },
+      headers: { origin: trusted },
     });
     const authorizedRequest = new Request("http://127.0.0.1:3001/api/v1/settings", {
       headers: {
-        origin: "http://localhost:5173",
+        origin: trusted,
         [BACKEND_AUTH_TOKEN_HEADER]: "1234567890abcdef1234567890abcdef",
       },
     });
