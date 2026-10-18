@@ -29,7 +29,7 @@ jobs:
   release:
     permissions:
       contents: write
-    uses: mafhper/release-core/.github/workflows/release.yml@v1.2.5
+    uses: mafhper/release-core/.github/workflows/release.yml@v1.3.0
     with:
       # `args` é repassado direto ao tauri-action; o campo precisa ser a string
       # inteira, não um "bundles" separado.
