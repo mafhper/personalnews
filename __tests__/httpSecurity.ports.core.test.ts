@@ -1,6 +1,6 @@
 // O allowlist do backend vem de `ports.mjs` (import direto), e este teste o
-// cobre de ponta a ponta: porta nomeada aceita, 5173 recusado, Tauri aceito,
-// `BACKEND_ALLOWED_ORIGINS` como acrescimo.
+// cobre de ponta a ponta: porta nomeada aceita, 5173 recusado, porta do
+// backend recusada, Tauri aceito, `BACKEND_ALLOWED_ORIGINS` como acrescimo.
 //
 // Sem ele, trocar a porta no `ports.mjs` pode produzir um backend que
 // **rejeita o proprio app**: o Vite sobe, o fetch leva 403/CSRF, e o sintoma e
@@ -12,7 +12,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { isAllowedBackendOrigin } from "../apps/backend/src/httpSecurity";
 import {
-  BACKEND_ORIGINS,
   DEV_ORIGINS,
   DEV_PORT,
   PREVIEW_ORIGINS,
@@ -58,12 +57,21 @@ describe("portas do backend x ports.mjs", () => {
     }
   });
 
+  it("a porta do backend NAO e aceita como origem", () => {
+    // Nada serve pagina HTML em 3001 (o backend so responde JSON/403), entao
+    // aceitar a janela 3001-3011 daria CORS a qualquer app local que sirva
+    // pagina por perto — achado do review automatico da #312. O codigo
+    // pre-#312 tambem nao aceitava.
+    expect(isAllowedBackendOrigin("http://localhost:3001")).toBe(false);
+    // 3002 cobre a janela +10 que existia ancorada na porta do backend
+    expect(isAllowedBackendOrigin("http://127.0.0.1:3002")).toBe(false);
+  });
+
   it("as listas de ports.mjs nao se sobrepoem", () => {
     expect(DEV_ORIGINS).toHaveLength(2);
     expect(PREVIEW_ORIGINS).toHaveLength(2);
-    expect(BACKEND_ORIGINS).toHaveLength(2);
     expect(TAURI_ORIGINS).toHaveLength(3);
-    const todas = [...DEV_ORIGINS, ...PREVIEW_ORIGINS, ...BACKEND_ORIGINS, ...TAURI_ORIGINS];
+    const todas = [...DEV_ORIGINS, ...PREVIEW_ORIGINS, ...TAURI_ORIGINS];
     expect(new Set(todas).size).toBe(todas.length);
   });
 

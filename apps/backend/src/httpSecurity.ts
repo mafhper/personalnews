@@ -1,7 +1,5 @@
 import { BACKEND_AUTH_TOKEN_HEADER } from "../../../shared/contracts/backend";
 import {
-  BACKEND_ORIGINS,
-  BACKEND_PORT,
   DEV_ORIGINS,
   DEV_PORT,
   PREVIEW_ORIGINS,
@@ -19,10 +17,15 @@ import {
 // A lista abaixo vem de `ports.mjs`, que e a fonte unica — este arquivo nao
 // repete os numeros. O teste `__tests__/httpSecurity.ports.core.test.ts` cobre
 // o allowlist (porta nomeada aceita, 5173 recusado, env como acrescimo).
+//
+// A porta do BACKEND (3001) fica FORA de proposito: nada serve pagina HTML
+// nela (o backend so responde JSON/403 — `git grep` confirma), entao nao ha
+// origem de pagina a aceitar ali. Aceitar a janela 3001-3011 daria permissao
+// de CORS a qualquer app local que sirva pagina por perto — achado do review
+// automatico da #312. O codigo pre-#312 tambem nao aceitava porta de backend.
 const DEFAULT_ALLOWED_ORIGINS = new Set<string>([
   ...DEV_ORIGINS,
   ...PREVIEW_ORIGINS,
-  ...BACKEND_ORIGINS,
   ...TAURI_ORIGINS,
 ]);
 
@@ -49,7 +52,9 @@ export function isAllowedBackendOrigin(origin: string | null): boolean {
   // (5290 → 5291, 4290 → 4291). Por isso a faixa curta em torno de cada porta
   // nomeada continua aceita — o `npm run dev:local` depende disso, e o teste
   // `backendSecurity.core.test.ts > allows loopback dev origins on fallback
-  // local stack ports` cobre exatamente esse caso.
+  // local stack ports` cobre exatamente esse caso. A janela cobre APENAS
+  // dev/preview (as unicas portas que o `run-local-stack` sobe); porta de
+  // backend nao tem janela — ver o comentario de `DEFAULT_ALLOWED_ORIGINS`.
   //
   // A faixa e CURTA e ANCORADA na porta nomeada (nao 5173-5190 inteiro), entao
   // continua recusando origem de outra porta. E a porta do Vite, 5173, nao esta
@@ -65,9 +70,7 @@ export function isAllowedBackendOrigin(origin: string | null): boolean {
 
     return (
       isLoopback &&
-      (isNearNamedPort(DEV_PORT) ||
-        isNearNamedPort(PREVIEW_PORT) ||
-        isNearNamedPort(BACKEND_PORT))
+      (isNearNamedPort(DEV_PORT) || isNearNamedPort(PREVIEW_PORT))
     );
   } catch {
     return false;

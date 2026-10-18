@@ -14,8 +14,13 @@ const simpleBundle =
 // superficie, entao tem numero proprio. Antes era 8080, que nao disputava com a
 // frota, mas tambem nao era nomeado e colidia com `mark-lee/apps/site`.
 const DEV_PORT = 5282;
+// Convencao da frota: preview = dev - 1000 (5290/4290, 5173/4173). A 4282 e a
+// superficie de preview deste painel; sem ela o preview herdava a 5282 por
+// omissao e o probe abortava por conflito no proprio dev (achado do review
+// automatico da #312).
+const PREVIEW_PORT = 4282;
 
-export default defineConfig(async ({ mode, command }) => {
+export default defineConfig(async ({ mode, command, isPreview }) => {
   // `host: '::'` e IPv6-only no Windows: `127.0.0.1:8080` da ECONNRESET e
   // `[::1]:8080` responde 200 (medido em 2026-10-01,
   // `.dev/scripts/medir-host-alcance.mjs`). Como `::` aceita o bind mesmo com
@@ -25,8 +30,14 @@ export default defineConfig(async ({ mode, command }) => {
   // Este painel nao tem `devUrl` fixo, entao realocar seria possivel, mas o
   // dashboard e aberto por script em varios lugares. Verificar e abortar deixa
   // o conflito visivel em vez de servir o painel errado em 8081.
+  //
+  // O Vite resolve o `preview` com `command === "serve"` e `isPreview === true`
+  // (conferido no vite instalado), entao o probe rodava no preview tambem —
+  // bloqueava `bun run preview` por conflito na 5282 e nao media a porta real
+  // do preview. Agora `isPreview` escolhe a porta a sondar (achado do review
+  // automatico da #312).
   if (command === "serve") {
-    await assertPortFree(DEV_PORT);
+    await assertPortFree(isPreview ? PREVIEW_PORT : DEV_PORT);
   }
 
   return {
@@ -39,6 +50,10 @@ export default defineConfig(async ({ mode, command }) => {
     hmr: {
       overlay: false,
     },
+  },
+  preview: {
+    port: PREVIEW_PORT,
+    strictPort: true,
   },
   plugins: [react()].filter(
     Boolean,
