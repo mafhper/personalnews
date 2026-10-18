@@ -33,7 +33,7 @@ describe("desktop release workflow", () => {
 
     // a matrix é topologia do projeto, e por isso vive no caller
     expect(workflow).toContain(
-      "mafhper/release-core/.github/workflows/release.yml@v1.2.5",
+      "mafhper/release-core/.github/workflows/release.yml@v1.3.0",
     );
     expect(contract().desktop).toMatchObject({
       enabled: true,
