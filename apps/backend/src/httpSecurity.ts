@@ -16,9 +16,9 @@ import {
 // defendia um cenario inexistente e cobrava por isso: a porta nomeada (5290)
 // ficava fora dela e o proprio app era rejeitado pelo backend.
 //
-// A lista abaixo vem de `ports.mjs`, que e a fonte unica. Se o numero mudar
-// la, muda aqui — e o teste `apps/backend/tests/httpSecurity.ports.test.ts`
-// falha se as duas copias divergirem.
+// A lista abaixo vem de `ports.mjs`, que e a fonte unica — este arquivo nao
+// repete os numeros. O teste `__tests__/httpSecurity.ports.core.test.ts` cobre
+// o allowlist (porta nomeada aceita, 5173 recusado, env como acrescimo).
 const DEFAULT_ALLOWED_ORIGINS = new Set<string>([
   ...DEV_ORIGINS,
   ...PREVIEW_ORIGINS,

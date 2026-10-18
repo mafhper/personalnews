@@ -32,10 +32,9 @@ export const PREVIEW_PORT = 4290;
 export const BACKEND_PORT = 3001;
 
 /**
- * Origens que o backend aceita em dev. O backend roda em Node puro e nao
- * importa este arquivo (o `tsconfig` dele tem `rootDir` proprio), entao a lista
- * e repetida aqui como dado — e `httpSecurity.ts` tem um TESTE que falha se as
- * duas divergirem. Ver `apps/backend/tests/httpSecurity.ports.test.ts`.
+ * Origens que o backend aceita em dev. `httpSecurity.ts` importa estas listas
+ * direto daqui (o backend roda em Bun, que resolve `.mjs`); cobre o allowlist
+ * o teste `__tests__/httpSecurity.ports.core.test.ts`.
  */
 export const DEV_ORIGINS = [
   `http://localhost:${DEV_PORT}`,

@@ -1,13 +1,10 @@
-// O allowlist do backend e uma COPIA dos numeros de `ports.mjs`.
+// O allowlist do backend vem de `ports.mjs` (import direto), e este teste o
+// cobre de ponta a ponta: porta nomeada aceita, 5173 recusado, Tauri aceito,
+// `BACKEND_ALLOWED_ORIGINS` como acrescimo.
 //
-// O backend roda em Node puro e nao importa `ports.mjs` (o `tsconfig` dele tem
-// `rootDir` proprio, e atravessar a fronteira seria acoplamento). Entao a lista
-// e repetida como dado — e este teste e o que garante que as duas copias nao
-// divirjam.
-//
-// Sem ele, trocar a porta no `ports.mjs` produz um backend que **rejeita o
-// proprio app**: o Vite sobe, o fetch leva 403/CSRF, e o sintoma e "o app nao
-// fala com o backend" — sem nenhuma mensagem sobre porta.
+// Sem ele, trocar a porta no `ports.mjs` pode produzir um backend que
+// **rejeita o proprio app**: o Vite sobe, o fetch leva 403/CSRF, e o sintoma e
+// "o app nao fala com o backend" — sem nenhuma mensagem sobre porta.
 //
 // Roda com `bun vitest` (o resto da suite deste projeto), nao com `node --test`.
 
