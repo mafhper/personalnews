@@ -247,7 +247,10 @@ export const NewspaperLayout: React.FC<NewspaperLayoutProps> = ({
   return (
     <div className="newspaper-page min-h-screen">
       <div className="newspaper-sheet">
-        <header className="newspaper-edition-line">
+        <header
+          className="newspaper-edition-line"
+          data-testid="newspaper-edition-line"
+        >
           <div className="newspaper-edition-line__label">
             <span
               className="newspaper-edition-line__marker"
