@@ -209,7 +209,9 @@ describe("NewspaperLayout editorial desk", () => {
     renderNewspaper([newest, second, third, fourth, fifth, sixth]);
 
     expect(await screen.findByText("Politica")).toBeInTheDocument();
-    expect(screen.queryByText(/23/)).not.toBeInTheDocument();
+    const editionLine = screen.getByTestId("newspaper-edition-line");
+    expect(editionLine.querySelector("time")).not.toBeNull();
+    expect(within(editionLine).queryAllByText(/°/)).toHaveLength(0);
 
     const latestRail = screen.getByTestId("newspaper-latest");
     expect(
