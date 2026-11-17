@@ -13,7 +13,7 @@ Thanks for your interest in contributing. This document focuses on the current w
 ### Requirements
 
 - Bun 1.2+
-- Node.js 20+
+- Node.js 22+
 - Git
 
 ### Install and run
@@ -21,9 +21,11 @@ Thanks for your interest in contributing. This document focuses on the current w
 ```bash
 git clone https://github.com/mafhper/personalnews.git
 cd personalnews
-bun install
+npm ci
 bun run dev
 ```
+
+Install uses npm (`package-lock.json` is the source of truth); the npm scripts still run through Bun while the migration is in progress.
 
 If you need the local helper stack as well:
 
@@ -78,8 +80,8 @@ Use the full gate when a change touches multiple layers or when you want a relea
 
 ## Repository hygiene
 
-- `bun.lock` is the operational lockfile for local installs, builds, and app validation. Use `bun install --frozen-lockfile` for normal verification.
-- `package-lock.json` is kept for npm supply-chain validation only. Do not run `npm install` just to refresh dependencies; update it only when a dependency or npm audit task explicitly requires it.
+- `package-lock.json` is the operational lockfile: CI installs with `npm ci`, and it is the file Dependabot updates and the dependency graph reads.
+- Bun lockfiles (`bun.lock`/`bun.lockb`) must not be committed at the repository root. `bun` is still required to *run* the npm scripts until the migration finishes.
 - The canonical Playwright config for npm scripts is `playwright.config.cjs`. Keep `playwright.config.ts` aligned if it remains present for editor or tool compatibility.
 - Build and test artifacts such as `dist/`, `test-results/`, `playwright-report/`, and `coverage/` must stay out of commits.
 

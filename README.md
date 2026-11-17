@@ -43,14 +43,14 @@ Exact tool and library versions live in `package.json` and the desktop metadata 
 ### Requirements
 
 - Bun 1.2+
-- Node.js 20+ for ecosystem compatibility
+- Node.js 22+ for ecosystem compatibility
 
 ### Run locally
 
 ```bash
 git clone https://github.com/mafhper/personalnews.git
 cd personalnews
-bun install
+npm ci
 bun run dev
 ```
 

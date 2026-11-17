@@ -28,6 +28,10 @@ ehthumbs.db
 # Dependencias
 node_modules/
 
+# Bun lockfiles (npm is the install source of truth)
+/bun.lock
+/bun.lockb
+
 # Build
 dist/
 dist-ssr/

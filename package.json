@@ -6,6 +6,10 @@
   "description": "A fast, modern personal news aggregator that serves as your browser homepage. Built with React, TypeScript, and optimized with Bun.",
   "author": "mafhper",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@11.6.0",
   "keywords": [
     "rss",
     "news",
@@ -34,7 +38,7 @@
     "test:release-version": "bun test scripts/release-version.test.mjs",
     "install:dashboard": "cd quality-core/dashboard && bun install",
     "install:members": "bun run install:dashboard",
-    "install:all": "bun install",
+    "install:all": "npm ci",
     "preview": "bun vite preview",
     "format:check": "node scripts/check-format.mjs",
     "test:drift": "node quality-core/scripts/check-test-classification.cjs",
@@ -184,16 +188,6 @@
     "rimraf": "^6.1.2",
     "zod": "^4.4.1"
   },
-  "resolutions": {
-    "basic-ftp": "5.3.1",
-    "yauzl": "3.2.1",
-    "brace-expansion": "5.0.9",
-    "nanoid": "3.3.18",
-    "picomatch": "4.0.5",
-    "shell-quote": "1.12.0",
-    "source-map-js": "1.2.2",
-    "yaml": "1.10.3"
-  },
   "overrides": {
     "basic-ftp": "5.3.1",
     "brace-expansion": "5.0.12",
@@ -201,7 +195,7 @@
     "picomatch": "4.0.5",
     "shell-quote": "1.12.0",
     "source-map-js": "1.2.2",
-    "undici": "8.11.2",
+    "undici": "8.12.2",
     "ws": "8.21.0",
     "yaml": "1.10.3"
   }
