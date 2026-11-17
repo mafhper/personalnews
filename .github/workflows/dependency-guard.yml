@@ -32,8 +32,26 @@ jobs:
       - name: Install root npm dependencies without lifecycle scripts
         run: npm ci --ignore-scripts
 
+      # o registro npm ocasionalmente não serve a chave pública de um pacote e
+      # `npm audit signatures` falha com EMISSINGSIGNATUREKEY mesmo com a árvore
+      # correta (medido: o mesmo commit passa em 3 de 3 tentativas localmente).
+      # Retry com cache limpo evita um vermelho que não é da dependência.
       - name: Verify root npm registry signatures
-        run: npm audit signatures
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::npm audit signatures (attempt $attempt/3)"
+            npm cache clean --force >/dev/null 2>&1 || true
+            if npm audit signatures; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 10))
+            fi
+          done
+          echo "::error::npm audit signatures failed after 3 attempts"
+          exit 1
 
       # a superfície publicada é o que importa para os usuários; a dívida da
       # árvore de desenvolvimento não bloqueia, apenas fica reportada abaixo
