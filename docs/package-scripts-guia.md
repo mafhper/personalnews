@@ -56,7 +56,7 @@ The canonical Playwright config for these scripts is `playwright.config.cjs`. If
 
 ## Lockfiles and generated output
 
-Use `bun.lock` as the operational lockfile. The npm lockfile is present for supply-chain validation (`npm ci --ignore-scripts`, `npm audit signatures`, and `npm audit --audit-level=high`) and should not be refreshed outside dependency or audit work.
+`package-lock.json` is the operational lockfile: CI installs with `npm ci --ignore-scripts`, and the tree is audited with `npm audit signatures` and `npm audit --omit=dev --audit-level=high`. Bun lockfiles (`bun.lock`/`bun.lockb`) are not committed at the repository root; `bun` remains only the script runner while the migration is in progress.
 
 Generated output from `dist/`, `test-results/`, `playwright-report/`, and `coverage/` is local or CI output. It must not be committed.
 

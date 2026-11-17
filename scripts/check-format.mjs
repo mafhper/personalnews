@@ -26,7 +26,6 @@ const TEXT_BASENAMES = new Set([
   '.env.example',
   '.gitignore',
   'AGENTS.md',
-  'bun.lock',
   'Dockerfile',
 ]);
 

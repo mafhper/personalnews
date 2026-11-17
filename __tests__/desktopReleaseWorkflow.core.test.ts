@@ -32,8 +32,10 @@ describe("desktop release workflow", () => {
     expect(workflow).toContain("dmg");
 
     // a matrix é topologia do projeto, e por isso vive no caller
-    expect(workflow).toContain(
-      "mafhper/release-core/.github/workflows/release.yml@v1.3.0",
+    // a versão do release-core pertence ao Dependabot, não a este teste: o
+    // contrato garante uma tag versionada (e não uma branch móvel), não qual tag
+    expect(workflow).toMatch(
+      /mafhper\/release-core\/\.github\/workflows\/release\.yml@v\d+\.\d+\.\d+/,
     );
     expect(contract().desktop).toMatchObject({
       enabled: true,
